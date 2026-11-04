@@ -1,0 +1,93 @@
+{
+  "id": "scenezoi.standing_idle",
+  "label": "Standing Idle Hub",
+  "kind": "loop",
+  "hub": "standing",
+  "duration": 3,
+  "fps": 60,
+  "tracks": {
+    "male": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Standing_idle_M.SceneZOI_Standing_idle_M",
+    "female": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Standing_idle_F.SceneZOI_Standing_idle_F"
+  },
+  "navigation": [],
+  "participants": {
+    "male": {
+      "body": "male",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    },
+    "female": {
+      "body": "female",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    }
+  },
+  "anchor_participant": "male",
+  "gaze": {
+    "male": {
+      "participant": "female",
+      "component": "head",
+      "bones": [
+        "FACIAL_L_Eye",
+        "FACIAL_R_Eye"
+      ]
+    },
+    "female": {
+      "participant": "male",
+      "component": "head",
+      "bones": [
+        "FACIAL_L_Eye",
+        "FACIAL_R_Eye"
+      ]
+    }
+  },
+  "expressions": {
+    "male": {
+      "context": "Idle"
+    },
+    "female": {
+      "context": "Idle"
+    }
+  },
+  "starting_hub": true,
+  "tags": [
+    "affectionate",
+    "standing",
+    "eye_contact"
+  ],
+  "participant_tags": {
+    "male": [
+      "standing"
+    ],
+    "female": [
+      "standing",
+      "leaning_against_partner",
+      "hand_on_partner_chest",
+      "arm_around_partner_hips"
+    ]
+  },
+  "actions": [
+    {
+      "type": "hug",
+      "actor": "male",
+      "target": "female",
+      "performer": "male"
+    },
+    {
+      "type": "hug",
+      "actor": "female",
+      "target": "male",
+      "performer": "female"
+    }
+  ]
+}

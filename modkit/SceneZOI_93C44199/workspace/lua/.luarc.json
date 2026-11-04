@@ -1,0 +1,9 @@
+{
+  "runtime.version": "Lua 5.4",
+  "workspace.library": [
+    "C:/Users/jvrui/Documents/inZOI/luals-defs",
+    "S:/Epic Games/inZOIModKit/inZOIModKit/Content/Data/Lua/luals-defs"
+  ],
+  "workspace.checkThirdParty": false,
+  "diagnostics.globals": ["inzoi", "INZOI", "UE"]
+}

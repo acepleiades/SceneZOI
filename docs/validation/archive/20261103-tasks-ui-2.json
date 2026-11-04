@@ -1,0 +1,74 @@
+{
+  "historical": true,
+  "record_type": "portable checkpoint summary",
+  "date": "2026-11-03",
+  "build": "20261103-tasks-1",
+  "ui_build": "20261103-tasks-ui-2",
+  "scope": "Generic independently discovered numerical scene tasks, participant/session state, rates/caps/holds/decay, deferred completion events and circular task tray; first HZoi task declaration and scene data.",
+  "author_live_acceptance": "Author reports Tier 4 mostly working, with two native ring-display defects. UI revision 2 fixes those defects and has a synthetic native-render check; author scene-mode acceptance of the visual fix remains pending. No live authored 3+ task scene was available.",
+  "suggested_live_checks": [
+    "Enter normal Scene Mode and HZoi idle: no tray at zero.",
+    "Enter an activity: blue/pink participant rings advance at declared independent rates; outfit/personality panels shift beside the tray.",
+    "Return to idle: progress decays, zero rows disappear and original panel arrangement returns.",
+    "Pause/unpause the game; change animation speed separately; verify the stated game-time rate behavior.",
+    "Resize/move the main panel with a configuration panel open; scroll the task tray independently.",
+    "Stay in rear long enough for completion/reset and another cycle; no completion media/consequences should run.",
+    "Exit/re-enter: progress resets, preferences/outfits still restore; normal movement remains available.",
+    "Optionally disable HZoi: framework hub remains usable without task declarations. Larger roster behavior has isolated coverage, not authored live group content."
+  ],
+  "outcomes": [
+    {
+      "check": "verification.native_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "verification.native_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "verification.native_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "verification.native_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "packaging.no_game_or_engine_payloads",
+      "result": true
+    },
+    {
+      "check": "installation.live_acceptance",
+      "result": "Pending author testing; game was not launched"
+    },
+    {
+      "check": "author_live_acceptance",
+      "result": "Author reports Tier 4 mostly working, with two native ring-display defects. UI revision 2 fixes those defects and has a synthetic native-render check; author scene-mode acceptance of the visual fix remains pending. No live authored 3+ task scene was available."
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.roster_review.live_boundary",
+      "result": "No authored 3+ scene was played; task mechanics have isolated coverage and source review, not live group choreography acceptance."
+    }
+  ],
+  "evidence_note": "Original detailed development record backed up outside the repository; this summary is not a new test or current acceptance claim."
+}

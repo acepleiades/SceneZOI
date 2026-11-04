@@ -1,0 +1,34 @@
+{
+  "bindings": {
+    "B2": [
+      {
+        "type": "Zoi",
+        "key": "*",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "*",
+        "script": "Zoi.SceneZOIStarter"
+      }
+    ],
+    "B1": [
+      {
+        "type": "Zoi",
+        "key": "*",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "*",
+        "script": "Zoi.SceneZOIStarter"
+      }
+    ]
+  },
+  "chunkScripts": {
+    "B2": [
+      "Systems.B2ZoiGroupManager",
+      "Components.B2SlotComponent"
+    ]
+  }
+}

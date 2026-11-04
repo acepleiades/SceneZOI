@@ -1,0 +1,1091 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.open_o",
+  "label": "Rounded open mouth",
+  "poses": {
+    "female": [
+      {
+        "bone": "FACIAL_C_MouthUpper",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          0.006797611,
+          4.510834125,
+          8.342915719
+        ],
+        "rotation": [
+          -1.7129e-05,
+          -0.000123063,
+          2.8518e-05,
+          0.999999992
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipUpper",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -0.026918235,
+          -0.526688655,
+          2.589028518
+        ],
+        "rotation": [
+          0.074097215,
+          0.000170213,
+          -0.000859668,
+          0.997250638
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipUpper2",
+        "parent": "FACIAL_C_LipUpper",
+        "position": [
+          -0.006771377,
+          0.694095847,
+          0.060998965
+        ],
+        "rotation": [
+          -0.002476781,
+          4.4236e-05,
+          0.000513241,
+          0.9999968
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper1",
+        "parent": "FACIAL_C_LipUpper",
+        "position": [
+          0.24461222,
+          -0.503826571,
+          0.559895066
+        ],
+        "rotation": [
+          -0.000221437,
+          0.002227502,
+          0.010566531,
+          0.999941667
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper1",
+        "parent": "FACIAL_C_LipUpper",
+        "position": [
+          -0.275077209,
+          -0.500862742,
+          0.559139646
+        ],
+        "rotation": [
+          -4.3644e-05,
+          -0.001955817,
+          -0.010159776,
+          0.999946474
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipUpper",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          0.796086229,
+          -0.472227867,
+          2.306363637
+        ],
+        "rotation": [
+          0.067017622,
+          0.164794045,
+          0.041915048,
+          0.983155476
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper6",
+        "parent": "FACIAL_L_LipUpper",
+        "position": [
+          -0.347084746,
+          -0.539447687,
+          0.503772755
+        ],
+        "rotation": [
+          -0.001117575,
+          -0.000709787,
+          0.003204405,
+          0.999993989
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper8",
+        "parent": "FACIAL_L_LipUpper",
+        "position": [
+          0.264980857,
+          -0.527368381,
+          0.373493256
+        ],
+        "rotation": [
+          -0.00015579,
+          0.000739922,
+          -0.002266308,
+          0.999997146
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipUpper",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -0.832916243,
+          -0.518149433,
+          2.356372761
+        ],
+        "rotation": [
+          0.066867209,
+          -0.16424647,
+          -0.040517782,
+          0.983315912
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper6",
+        "parent": "FACIAL_R_LipUpper",
+        "position": [
+          0.288609054,
+          -0.514393777,
+          0.469425998
+        ],
+        "rotation": [
+          -0.000666226,
+          0.000373149,
+          -0.003269964,
+          0.999994362
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper8",
+        "parent": "FACIAL_R_LipUpper",
+        "position": [
+          -0.312751095,
+          -0.486088947,
+          0.336878704
+        ],
+        "rotation": [
+          0.000302597,
+          -2.5101e-05,
+          0.002209891,
+          0.999997512
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipUpperOuter",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          1.228646629,
+          -0.435443377,
+          1.940498762
+        ],
+        "rotation": [
+          0.095578591,
+          0.240953801,
+          0.104567664,
+          0.960141449
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper16",
+        "parent": "FACIAL_L_LipUpperOuter",
+        "position": [
+          0.213999701,
+          -0.315510757,
+          0.356874441
+        ],
+        "rotation": [
+          0.000308185,
+          -0.000921795,
+          -0.003970496,
+          0.999991645
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipUpperOuter",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -1.271674809,
+          -0.535267775,
+          1.950742495
+        ],
+        "rotation": [
+          0.097063683,
+          -0.238298112,
+          -0.104759353,
+          0.960634233
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper16",
+        "parent": "FACIAL_R_LipUpperOuter",
+        "position": [
+          -0.257964796,
+          -0.218528246,
+          0.330275589
+        ],
+        "rotation": [
+          -0.00031118,
+          0.00041244,
+          0.004778074,
+          0.999988451
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipCorner",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          1.968352614,
+          0.399206805,
+          1.087496802
+        ],
+        "rotation": [
+          0.000451,
+          -0.219976788,
+          0.002375244,
+          -0.975502111
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipCorner",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -2.015723656,
+          0.417917198,
+          0.994141594
+        ],
+        "rotation": [
+          -0.001038719,
+          0.219105605,
+          -0.000112655,
+          -0.975700591
+        ]
+      },
+      {
+        "bone": "FACIAL_C_TeethUpper",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          0.00658752,
+          2.97116388,
+          7.789636828
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          -0.0,
+          1.0
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LowerLipRotation",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          -0.082082829,
+          2.12439531,
+          2.906949053
+        ],
+        "rotation": [
+          0.452592495,
+          0.000650661,
+          0.000580228,
+          -0.891717037
+        ]
+      },
+      {
+        "bone": "FACIAL_C_MouthLower",
+        "parent": "FACIAL_C_LowerLipRotation",
+        "position": [
+          0.097009723,
+          -2.051685805,
+          5.547636028
+        ],
+        "rotation": [
+          -0.342003913,
+          0.000125346,
+          1.5145e-05,
+          -0.93969852
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipLower",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          -0.00147575,
+          0.705775533,
+          2.272684756
+        ],
+        "rotation": [
+          -0.069581258,
+          0.001354555,
+          -0.002325861,
+          0.997572656
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipLower2",
+        "parent": "FACIAL_C_LipLower",
+        "position": [
+          -0.027248649,
+          -0.52146626,
+          0.170527087
+        ],
+        "rotation": [
+          -0.008891185,
+          -0.000229316,
+          1.575e-06,
+          -0.999960446
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower1",
+        "parent": "FACIAL_C_LipLower",
+        "position": [
+          0.234940353,
+          0.436518613,
+          -0.015580986
+        ],
+        "rotation": [
+          0.003113839,
+          -0.002104659,
+          -0.004337094,
+          0.999983532
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower1",
+        "parent": "FACIAL_C_LipLower",
+        "position": [
+          -0.257770105,
+          0.44522804,
+          -0.02175477
+        ],
+        "rotation": [
+          0.001421811,
+          0.00098016,
+          0.003126587,
+          0.999993621
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipLower",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          0.689099658,
+          0.729808748,
+          2.079728425
+        ],
+        "rotation": [
+          -0.082309955,
+          0.127532856,
+          -0.030346828,
+          0.98794712
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower6",
+        "parent": "FACIAL_L_LipLower",
+        "position": [
+          -0.065278109,
+          0.6289831,
+          0.148838482
+        ],
+        "rotation": [
+          0.001317987,
+          0.001092808,
+          0.001385332,
+          0.999997575
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower8",
+        "parent": "FACIAL_L_LipLower",
+        "position": [
+          0.352700378,
+          0.800415029,
+          0.114393566
+        ],
+        "rotation": [
+          0.00060566,
+          -0.00122878,
+          0.000212395,
+          0.999999039
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipLower",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          -0.759956025,
+          0.774757826,
+          2.135075329
+        ],
+        "rotation": [
+          -0.081904375,
+          -0.127326662,
+          0.034995575,
+          0.987853686
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower6",
+        "parent": "FACIAL_R_LipLower",
+        "position": [
+          0.081272283,
+          0.603514923,
+          0.110379982
+        ],
+        "rotation": [
+          0.000631793,
+          -0.000723874,
+          -0.002370978,
+          0.999996728
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower8",
+        "parent": "FACIAL_R_LipLower",
+        "position": [
+          -0.323972311,
+          0.815793469,
+          0.089624646
+        ],
+        "rotation": [
+          6.587e-06,
+          0.000653979,
+          0.001563738,
+          0.999998563
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipLowerOuter",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          1.093279156,
+          0.478925184,
+          1.863947626
+        ],
+        "rotation": [
+          -0.086025335,
+          0.235001236,
+          -0.036881284,
+          0.967478078
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower16",
+        "parent": "FACIAL_L_LipLowerOuter",
+        "position": [
+          0.225858945,
+          0.791798475,
+          0.296461369
+        ],
+        "rotation": [
+          0.000505196,
+          3.4824e-05,
+          0.001513431,
+          0.999998727
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipLowerOuter",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          -1.137485843,
+          0.582996255,
+          1.750688614
+        ],
+        "rotation": [
+          -0.085731532,
+          -0.234861025,
+          0.037185718,
+          0.96752655
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower16",
+        "parent": "FACIAL_R_LipLowerOuter",
+        "position": [
+          -0.153832039,
+          0.659840083,
+          0.322258875
+        ],
+        "rotation": [
+          0.000994241,
+          -0.000903886,
+          -0.003046873,
+          0.999994456
+        ]
+      },
+      {
+        "bone": "FACIAL_C_TeethLower",
+        "parent": "FACIAL_C_LowerLipRotation",
+        "position": [
+          0.095360689,
+          -1.148334354,
+          5.332986731
+        ],
+        "rotation": [
+          -0.342020128,
+          0.0,
+          -0.0,
+          -0.939692626
+        ]
+      },
+      {
+        "bone": "FACIAL_C_Jaw",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          -0.082082829,
+          2.12439531,
+          3.089348015
+        ],
+        "rotation": [
+          -0.452592496,
+          -0.000650662,
+          -0.000580229,
+          0.891717036
+        ]
+      }
+    ],
+    "male": [
+      {
+        "bone": "FACIAL_C_MouthUpper",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          0.002593387,
+          5.101957708,
+          9.203217178
+        ],
+        "rotation": [
+          3.159e-06,
+          -2.2748e-05,
+          5.251e-06,
+          -1.0
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipUpper",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -0.053526864,
+          -0.876665652,
+          2.829458348
+        ],
+        "rotation": [
+          0.116139322,
+          0.002821066,
+          -0.001306389,
+          0.993228067
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipUpper2",
+        "parent": "FACIAL_C_LipUpper",
+        "position": [
+          -0.010876624,
+          0.779369499,
+          0.071943146
+        ],
+        "rotation": [
+          -0.005586852,
+          6.9911e-05,
+          0.000247639,
+          0.99998436
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper1",
+        "parent": "FACIAL_C_LipUpper",
+        "position": [
+          0.358389576,
+          -0.456866988,
+          0.633652861
+        ],
+        "rotation": [
+          -0.003519485,
+          0.005438073,
+          0.025560285,
+          0.999652296
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper1",
+        "parent": "FACIAL_C_LipUpper",
+        "position": [
+          -0.402674907,
+          -0.451424312,
+          0.644600465
+        ],
+        "rotation": [
+          -0.004279364,
+          -0.006032123,
+          -0.025363225,
+          0.999650943
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipUpper",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          1.030579461,
+          -0.845178917,
+          2.389011388
+        ],
+        "rotation": [
+          0.102513082,
+          0.170761813,
+          0.046982879,
+          0.978838128
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper6",
+        "parent": "FACIAL_L_LipUpper",
+        "position": [
+          -0.610076723,
+          -0.481214037,
+          0.553562008
+        ],
+        "rotation": [
+          -0.004654143,
+          0.000156338,
+          0.002516921,
+          0.99998599
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper8",
+        "parent": "FACIAL_L_LipUpper",
+        "position": [
+          0.098086542,
+          -0.427736112,
+          0.431246298
+        ],
+        "rotation": [
+          0.001744823,
+          -0.000679434,
+          -0.002133084,
+          0.999995972
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipUpper",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -1.097284002,
+          -0.880410578,
+          2.427073879
+        ],
+        "rotation": [
+          0.102403302,
+          -0.174947518,
+          -0.041643715,
+          0.978352048
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper6",
+        "parent": "FACIAL_R_LipUpper",
+        "position": [
+          0.5328456,
+          -0.463710495,
+          0.485566091
+        ],
+        "rotation": [
+          -0.005177781,
+          -0.000261797,
+          -0.00280962,
+          0.999982614
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper8",
+        "parent": "FACIAL_R_LipUpper",
+        "position": [
+          -0.166181258,
+          -0.389865123,
+          0.35507941
+        ],
+        "rotation": [
+          0.000742834,
+          0.000676476,
+          0.002262677,
+          0.999996935
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipUpperOuter",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          1.598171534,
+          -0.907330067,
+          1.715201977
+        ],
+        "rotation": [
+          0.107724519,
+          0.240905007,
+          0.108312412,
+          0.958451161
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipUpper16",
+        "parent": "FACIAL_L_LipUpperOuter",
+        "position": [
+          0.151637505,
+          -0.089429438,
+          0.28444642
+        ],
+        "rotation": [
+          -0.001460084,
+          -0.0015607,
+          -0.01259029,
+          0.999918455
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipUpperOuter",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -1.607355738,
+          -0.93737701,
+          1.775677739
+        ],
+        "rotation": [
+          0.109923579,
+          -0.242314678,
+          -0.107018066,
+          0.957991408
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipUpper16",
+        "parent": "FACIAL_R_LipUpperOuter",
+        "position": [
+          -0.215269391,
+          -0.137256731,
+          0.232755255
+        ],
+        "rotation": [
+          4.5173e-05,
+          0.002726353,
+          0.01220826,
+          0.999921759
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipCorner",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          2.008064266,
+          0.102699248,
+          1.057885875
+        ],
+        "rotation": [
+          0.002299296,
+          0.222870372,
+          0.00132967,
+          0.974844471
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipCorner",
+        "parent": "FACIAL_C_MouthUpper",
+        "position": [
+          -2.068560414,
+          0.138293621,
+          0.903242922
+        ],
+        "rotation": [
+          -0.00188269,
+          -0.228137279,
+          -0.003874912,
+          0.973619444
+        ]
+      },
+      {
+        "bone": "FACIAL_C_TeethUpper",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          0.014626471,
+          3.411666312,
+          8.689978199
+        ],
+        "rotation": [
+          -0.0,
+          0.0,
+          0.0,
+          -1.0
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LowerLipRotation",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          -0.100504349,
+          2.170068731,
+          3.220962271
+        ],
+        "rotation": [
+          0.439491298,
+          -0.000674518,
+          0.000235399,
+          -0.898246564
+        ]
+      },
+      {
+        "bone": "FACIAL_C_MouthLower",
+        "parent": "FACIAL_C_LowerLipRotation",
+        "position": [
+          0.102687776,
+          -1.975347754,
+          6.346849932
+        ],
+        "rotation": [
+          0.342017121,
+          2.3153e-05,
+          2.785e-06,
+          0.93969372
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipLower",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          -0.022926169,
+          0.629423159,
+          2.605902267
+        ],
+        "rotation": [
+          -0.090182391,
+          0.000517174,
+          -0.003422153,
+          0.995919253
+        ]
+      },
+      {
+        "bone": "FACIAL_C_LipLower2",
+        "parent": "FACIAL_C_LipLower",
+        "position": [
+          -0.032226058,
+          -0.86191819,
+          0.239363444
+        ],
+        "rotation": [
+          0.014464097,
+          -0.001757024,
+          0.001146018,
+          0.999893189
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower1",
+        "parent": "FACIAL_C_LipLower",
+        "position": [
+          0.352298763,
+          0.561589791,
+          0.01764137
+        ],
+        "rotation": [
+          0.006956139,
+          -0.00156423,
+          -0.00349065,
+          0.99996849
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower1",
+        "parent": "FACIAL_C_LipLower",
+        "position": [
+          -0.386774082,
+          0.597252733,
+          0.009328065
+        ],
+        "rotation": [
+          0.004480542,
+          0.001078084,
+          0.001951496,
+          0.999987477
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipLower",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          0.78468964,
+          0.702124362,
+          2.317180132
+        ],
+        "rotation": [
+          -0.084196552,
+          0.122476904,
+          -0.026046583,
+          0.988550416
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower6",
+        "parent": "FACIAL_L_LipLower",
+        "position": [
+          -0.064362678,
+          0.520507753,
+          0.149065674
+        ],
+        "rotation": [
+          0.004214242,
+          0.001796274,
+          0.00059546,
+          0.999989329
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower8",
+        "parent": "FACIAL_L_LipLower",
+        "position": [
+          0.326428527,
+          0.786076244,
+          0.198423118
+        ],
+        "rotation": [
+          -0.000323384,
+          -0.001147114,
+          -0.000110831,
+          0.999999284
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipLower",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          -0.891781221,
+          0.798906148,
+          2.314413117
+        ],
+        "rotation": [
+          -0.088696101,
+          -0.118917663,
+          0.027261898,
+          0.988558739
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower6",
+        "parent": "FACIAL_R_LipLower",
+        "position": [
+          0.107257348,
+          0.532674941,
+          0.161439464
+        ],
+        "rotation": [
+          0.003223587,
+          -0.002020033,
+          -0.001546959,
+          0.999991567
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower8",
+        "parent": "FACIAL_R_LipLower",
+        "position": [
+          -0.27600258,
+          0.802671937,
+          0.204631596
+        ],
+        "rotation": [
+          -0.000148486,
+          0.000841405,
+          0.001215845,
+          0.999998896
+        ]
+      },
+      {
+        "bone": "FACIAL_L_LipLowerOuter",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          1.467333078,
+          0.675157715,
+          1.625425391
+        ],
+        "rotation": [
+          -0.089709011,
+          0.231566085,
+          -0.029672783,
+          0.968219483
+        ]
+      },
+      {
+        "bone": "FACIAL_L_12IPV_LipLower16",
+        "parent": "FACIAL_L_LipLowerOuter",
+        "position": [
+          0.166282348,
+          0.56433417,
+          0.239793444
+        ],
+        "rotation": [
+          0.003826606,
+          0.002693085,
+          0.001830354,
+          0.999987377
+        ]
+      },
+      {
+        "bone": "FACIAL_R_LipLowerOuter",
+        "parent": "FACIAL_C_MouthLower",
+        "position": [
+          -1.530439742,
+          0.925842227,
+          1.401423749
+        ],
+        "rotation": [
+          -0.083551006,
+          -0.228206045,
+          0.033630107,
+          0.969438109
+        ]
+      },
+      {
+        "bone": "FACIAL_R_12IPV_LipLower16",
+        "parent": "FACIAL_R_LipLowerOuter",
+        "position": [
+          -0.033813744,
+          0.349594939,
+          0.274569039
+        ],
+        "rotation": [
+          0.002495462,
+          -0.000523286,
+          -0.002569658,
+          0.999993448
+        ]
+      },
+      {
+        "bone": "FACIAL_C_TeethLower",
+        "parent": "FACIAL_C_LowerLipRotation",
+        "position": [
+          0.089380711,
+          -1.163104316,
+          6.103065143
+        ],
+        "rotation": [
+          0.342020128,
+          -0.0,
+          -0.0,
+          0.939692626
+        ]
+      },
+      {
+        "bone": "FACIAL_C_Jaw",
+        "parent": "FACIAL_C_FacialRoot",
+        "position": [
+          -0.100504349,
+          2.17006897,
+          3.282985064
+        ],
+        "rotation": [
+          -0.439491298,
+          0.000674518,
+          -0.000235399,
+          0.898246563
+        ]
+      }
+    ]
+  }
+}

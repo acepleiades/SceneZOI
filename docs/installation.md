@@ -1,0 +1,106 @@
+# Developer setup
+
+Set up this checkout to contribute to SceneZOI or build your own fork in the
+inZOI ModKit. The repository supplies source code, author data and build tools.
+
+## Prerequisites
+
+- Windows and an installed inZOI ModKit. The test runner uses the ModKit's Windows
+  `Lua.dll`; native validation and packaging use its editor and Unreal tools.
+- Git, 64-bit Python 3.11 (the tested Python version), and Node.js for UI tests.
+  The Python tools use the standard library; no pip dependency setup is required.
+- For a full native build, a ModKit-registered working project and the framework
+  animation assets described below. JSON staging and isolated source checks can
+  run without the animation binaries.
+
+## Clone and check the source
+
+```powershell
+git clone https://github.com/acepleiades/SceneZOI.git
+cd SceneZOI
+$repoRoot = (Get-Location).Path
+$modkitRoot = "C:/Path/To/inZOIModKit"
+
+python tools/build_catalog.py
+python tools/test.py --modkit-root $modkitRoot
+```
+
+`$modkitRoot` is the directory containing both `Engine/` and `inZOIModKit/`.
+Build and test from the repository root. The default JSON build writes the
+framework's native declaration patch and ownership inventory under
+`modkit/SceneZOI_93C44199/`; it does not import animations, register a native project
+or package the mod. The tests cover Lua behavior, author-data validation and UI
+behavior in isolation, without launching a household.
+
+The default checks do not need HZoi or another content checkout. HZoi is private
+and is not a contributor prerequisite. If you already have a compatible external
+author checkout with its own `packs/` and framework-compatible `tests/`, you can
+opt into those checks:
+
+```powershell
+python tools/test.py --modkit-root $modkitRoot --content-root "C:/Path/To/content-checkout"
+```
+
+For public content examples, use [the framework pack](../packs/scenezoi.json),
+[neutral scene files](../packs/scenezoi/scenes/) and the
+[authoring documentation](README.md).
+
+## Prepare a native ModKit working project
+
+Use a project registered through ModKit's native project workflow. A copied Lua
+folder or manually fabricated descriptor does not establish registration. The
+canonical project identity is `SceneZOI_93C44199`; keep its native metadata intact
+when working with an existing SceneZOI project.
+
+The checkout's `modkit/SceneZOI_93C44199/` directory is a source overlay. Generated
+ModKit metadata, imported `Content/` assets, prepared `lua/`, cook output and
+intermediate files are separate working-project inputs or build products.
+
+1. Open the registered working project in ModKit. Back up an existing project
+   before changing its source overlay, and preserve unrelated ModKit work.
+2. Synchronize the checkout's `workspace/lua/` and `ui/` into that project. Edit
+   authoritative source in the checkout; prepared `lua/` is generated output.
+   Remove obsolete framework-owned scripts when synchronizing a changed source
+   tree, without deleting unrelated project files.
+3. Stage declarations and their ownership inventory directly into the working
+   project:
+
+   ```powershell
+   $nativeProject = Join-Path $modkitRoot "inZOIModKit/Mods/SceneZOI_93C44199"
+   python tools/build_catalog.py --project $nativeProject
+   ```
+
+4. Prepare Lua in ModKit and verify that prepared files match `workspace/lua/`.
+   Validate the Lua workspace and both UI apps before packaging.
+
+### Animation assets
+
+Full native packaging requires the **four framework animation packages** listed
+in [asset-inventory.json](../asset-inventory.json): female/male standing idle and
+female/male bed idle. Their object paths and FBX inputs are recorded in
+[imports.json](../imports.json), with source fingerprints in
+[animation-inventory.json](../animation-inventory.json).
+
+The source checkout does not include the FBX inputs or imported binary `Content/`
+assets. An existing native project can supply the imported packages. Reconstructing
+them requires the matching source inputs and the import workflow; cloning alone
+does not produce a complete native asset project.
+
+`tools/import_animations.py` runs inside the ModKit's Unreal Python environment.
+It validates source hashes, target skeletons and duration, and preserves the
+reference skeleton. Its environment variables and selected-source reimport option
+are documented in the script. See [content authoring](authoring.md) for animation
+requirements. Native game assets remain references and are excluded from the
+framework's owned asset inventory.
+
+### Fork identity
+
+A fork may retain the canonical native identity for development. If you create a
+new project identity, update runtime mod IDs, UI manifests, declaration ownership,
+asset object paths, import plans and packaging inventories consistently with your
+registered project. Renaming the folder alone is insufficient. Changes to native
+identity need fresh-start validation.
+
+Continue with [development and packaging](development.md). For an independent
+content pack or gameplay add-on, use [package authoring](package-split.md) or
+[add-on authoring](addon-authoring.md); those projects have their own native identity.

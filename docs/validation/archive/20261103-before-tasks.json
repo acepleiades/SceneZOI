@@ -1,0 +1,63 @@
+{
+  "historical": true,
+  "record_type": "portable checkpoint summary",
+  "date": "2026-11-02",
+  "build": "20261102-voice-1",
+  "ui_build": "20261102-voice-ui-2",
+  "scope": "Generic independently discovered voice declarations, per-Zoi archetype/context preferences and participant-owned continuous playback; HZoi reference data and requested scene bindings/rename.",
+  "author_live_acceptance": {
+    "current_voice_build": "Author reports voice build working perfectly out of the box; requested minor UI wrapping and note-placement improvements.",
+    "prior_split_build": "Accepted scope retained in previous_checkpoint.",
+    "current_ui_update": "Hot-loaded; visual acceptance of wrapping/note placement remains for author."
+  },
+  "suggested_live_checks": [
+    "Enter via normal native picker; open Personality Management. Female has Mature and male None unless previously assigned. Expression defaults remain data-driven.",
+    "Change Cute/Mature/Downer; verify every context resets to that archetype. Choose another set or None; Exit/re-enter and verify persistence.",
+    "Both hubs are silent. Handjob uses Breath, Male Standing Female Kneeling Fellatio uses Fellatio, rear uses Sex.",
+    "Check simultaneous SFX, scene-speed changes, native pause/rate, clothing holds, navigation, Exit and normal movement/re-entry.",
+    "Optionally disable/re-enable HZoi: no voice content or hard failure in framework-only mode. New voice declarations have isolated coverage; current native voice-discovery activation/removal acceptance is pending."
+  ],
+  "outcomes": [
+    {
+      "check": "tests.modkit_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "tests.modkit_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "tests.modkit_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "tests.modkit_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "packaging.no_game_or_engine_payloads",
+      "result": true
+    },
+    {
+      "check": "installation.live_acceptance",
+      "result": "Pending author testing; game was not launched"
+    },
+    {
+      "check": "ui_hot_update.tests.modkit_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "ui_hot_update.tests.modkit_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "ui_hot_update.package_uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "ui_hot_update.native_visual_acceptance",
+      "result": "pending author check"
+    }
+  ],
+  "evidence_note": "Original detailed development record backed up outside the repository; this summary is not a new test or current acceptance claim."
+}

@@ -1,0 +1,16 @@
+{
+  "historical": true,
+  "date": "2026-11-04",
+  "build": "20261104-guardrails-4",
+  "ui_build": "20261103-guardrails-ui-1",
+  "scope": "Before bindings exist, find the declared anchor participant by role rather than roster order. Running 35m policy unchanged.",
+  "all_source_checks_pass": true,
+  "native_lua_errors": 0,
+  "native_lua_warnings": 0,
+  "uat_exit_code": 0,
+  "installed_candidate_hashes_match": true,
+  "cooked_files_changed": 0,
+  "hzoi_files_changed": 0,
+  "native_activation": "Idle/ok; matching host/receiver generation and ready launcher.",
+  "author_acceptance": "35m running-scene exit accepted on guardrails-3; preparation fallback correction has automated regression/native validation, not a separate live author trial."
+}

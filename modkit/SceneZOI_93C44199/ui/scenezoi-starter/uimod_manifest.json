@@ -1,0 +1,28 @@
+{
+  "name": "SceneZOI Demo Launcher",
+  "entry": "index.html",
+  "display": {
+    "width": 1920,
+    "height": 1080,
+    "transparent": true,
+    "input_policy": "passthrough"
+  },
+  "triggers": [
+    {
+      "id": "scenezoi_starter_lifetime",
+      "type": "always_on"
+    },
+    {
+      "id": "scenezoi_demo",
+      "type": "interaction_menu",
+      "target": "character",
+      "label_key": "Start SceneZOI"
+    },
+    {
+      "id": "scenezoi_furniture",
+      "type": "interaction_menu",
+      "target": "object",
+      "label_key": "Start SceneZOI"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "runtime_build": "20261104-api-5",
+  "native_plugin": "SceneZOIAddonExample_6F2CD7DE",
+  "startup": {
+    "registered_native_project": true,
+    "lua_started_automatically": true,
+    "both_declaration_rows_loaded_automatically": true,
+    "manual_mount_used": false,
+    "diagnostic_data_patching_used": false
+  },
+  "post_restart_suite": {
+    "passed": true,
+    "assertions_and_checked_responses": 95,
+    "run_id": "acceptance.1793820383640471000",
+    "cleanup": "confirmed_ended"
+  },
+  "source_checks": {
+    "lua_suites_with_content": 52,
+    "python_tests": 79,
+    "javascript_suites": 7,
+    "post_migration_sdk_regressions": "passed"
+  },
+  "native_example_validation": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "package": {
+    "uat_exit_code": 0,
+    "owned_assets": 0,
+    "cooked_containers": 0,
+    "files_verified": 13,
+    "filtered": true
+  },
+  "final_state": {
+    "idle": true,
+    "all_four_collision_autonomy_match_baseline": true,
+    "original_settings_and_controlled_entity_restored": true,
+    "bed_slots_match_baseline": true
+  },
+  "author_visual_acceptance": "not inferred; temporary test scripts retained pending acceptance",
+  "cleanup": {
+    "requested_by_author": true,
+    "installed_test_mods_removed": true,
+    "native_projects_removed": true,
+    "test_controllers_and_fixtures_removed": true,
+    "sdk_retained_at": "sdk/lua/SceneZOIAddon/",
+    "isolated_regressions_retained": true,
+    "game_closed_during_removal": true,
+    "runtime_payload_changed": false
+  }
+}

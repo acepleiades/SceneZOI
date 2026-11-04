@@ -1,0 +1,95 @@
+{
+  "id": "scenezoi.bed_queen_idle",
+  "label": "Queen Bed Idle Hub",
+  "kind": "loop",
+  "hub": "bed.queen",
+  "duration": 4,
+  "fps": 60,
+  "tracks": {
+    "male": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Bed_idle_M.SceneZOI_Bed_idle_M",
+    "female": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Bed_idle_F.SceneZOI_Bed_idle_F"
+  },
+  "navigation": [],
+  "participants": {
+    "male": {
+      "body": "male",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    },
+    "female": {
+      "body": "female",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    }
+  },
+  "anchor_participant": "male",
+  "expressions": {
+    "male": {
+      "context": "Idle"
+    },
+    "female": {
+      "context": "Idle"
+    }
+  },
+  "starting_hub": true,
+  "furniture": {
+    "kind": "bed.queen",
+    "surface_height_cm": 0
+  },
+  "gaze": {
+    "female": {
+      "participant": "female",
+      "component": "body",
+      "bones": [
+        "hand_l"
+      ]
+    }
+  },
+  "tags": [
+    "affectionate",
+    "lying"
+  ],
+  "participant_tags": {
+    "male": [
+      "lying_on_back",
+      "looking_up"
+    ],
+    "female": [
+      "lying_on_side",
+      "leg_over_partner_leg",
+      "hand_on_partner_chest",
+      "head_on_partner_shoulder",
+      "looking_at_own_hand"
+    ]
+  },
+  "actions": [
+    {
+      "type": "hug",
+      "actor": "male",
+      "target": "female",
+      "performer": "male"
+    },
+    {
+      "type": "hug",
+      "actor": "female",
+      "target": "male",
+      "performer": "female"
+    },
+    {
+      "type": "holding_waist",
+      "actor": "male",
+      "target": "female",
+      "performer": "male"
+    }
+  ]
+}

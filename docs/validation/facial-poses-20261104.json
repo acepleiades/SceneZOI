@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-04",
+  "runtime_build": "20261104-facial-1",
+  "native_startup": {
+    "declarations": 42,
+    "warnings": 0,
+    "facial_pose_declarations": 1
+  },
+  "author_acceptance": {
+    "female_o_looks_unchanged": true,
+    "expression_outfit_speed_pause_navigation_and_bed_pass_reported_normal": true
+  },
+  "native_final_state": {
+    "phase": "idle",
+    "code": "ok",
+    "latest_exit_code": "ok",
+    "autosave_lease_released": true,
+    "autosave_enabled": true,
+    "autosave_interval_minutes": 15,
+    "participants_original_collision_autonomy_inheritance_restored": true,
+    "participant_count": 2
+  },
+  "source_checks": {
+    "lua_suites": 52,
+    "python_tests": 81,
+    "ui_suites": 7,
+    "passed": true
+  },
+  "native_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0
+  },
+  "limits": [
+    "New arbitrary facial poses require author visual fit checks.",
+    "No new tongue mesh was created, installed or visually tested.",
+    "Head-component parenting and generic non-mouth/eye handoff cases have source regression coverage; current native rendered acceptance uses the preserved O and existing content.",
+    "Bed behavior accepted by author; retained final native journal is the later standing session."
+  ]
+}

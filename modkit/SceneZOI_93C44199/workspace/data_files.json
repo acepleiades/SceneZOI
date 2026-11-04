@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "transport": "native_table",
+  "files": [
+    {
+      "path": "Content/JsonPatch/Text_UI_patch.json",
+      "sha256": "8dee73b07e28ab6c3a990a0c9a52c56b4bc74a6b10b7b07395960d5c7113fe0c"
+    }
+  ],
+  "records": [
+    {
+      "id": "SceneZOI_Declaration_scenezoi__action_dictionary__actions",
+      "owner": "scenezoi",
+      "kind": "action_dictionary",
+      "source": "actions.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__facial_pose__open_o",
+      "owner": "scenezoi",
+      "kind": "facial_pose",
+      "source": "open_o.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__bed.queen.futon",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "bed.queen.futon.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__bed.queen.standard",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "bed.queen.standard.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__bed.queen.wide",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "bed.queen.wide.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__bed.single.futon",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "bed.single.futon.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__bed.single.standard",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "bed.single.standard.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__scene_pack__scenezoi",
+      "owner": "scenezoi",
+      "kind": "scene_pack",
+      "source": "scenezoi.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__tag_dictionary__tags",
+      "owner": "scenezoi",
+      "kind": "tag_dictionary",
+      "source": "tags.json"
+    }
+  ]
+}

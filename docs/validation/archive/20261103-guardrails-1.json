@@ -1,0 +1,13 @@
+{
+  "historical": true,
+  "date": "2026-11-03",
+  "build": "20261103-guardrails-1",
+  "ui_build": "20261103-guardrails-ui-1",
+  "controller_max_distance_cm": 5000,
+  "controller_distance_grace_real_seconds": 1,
+  "author_acceptance": {
+    "busy_entry_toast": "Accepted",
+    "distance_exit": "Failed: fresh attempt reached restore_timeout."
+  },
+  "boundary": "Old final status did not retain the initiating cause. The older input-restoration error alone did not identify this attempt's initial trigger."
+}

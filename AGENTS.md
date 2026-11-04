@@ -1,0 +1,109 @@
+# Working on SceneZOI
+
+## Repository purpose
+
+This repository is for framework contributors, mod authors and developers building
+forks in the inZOI ModKit. Read [README.md](README.md),
+[CONTRIBUTING.md](CONTRIBUTING.md) and the relevant subsystem documentation before
+changing its contract. Use [developer setup](docs/installation.md) and
+[development](docs/development.md) for build prerequisites and native workflows.
+
+Current source contracts and validation reports take precedence over dated
+investigation notes. Consult relevant existing tests and the concise
+[issue ledger](docs/investigations/runtime-and-ui-issues.md) when investigating a
+known subsystem. Do not front-load every historical document.
+
+## Ownership and release scope
+
+- SceneZOI owns the reusable runtime, participants, placement, playback,
+  navigation, outfits, attachments, expressions, gaze, audio, tasks, transitions,
+  completion responses, furniture and UI. Keep it all-ages and free of adult
+  geometry or content-pack-specific runtime logic.
+- Content packs own their assets and inert JSON. Gameplay integrations own
+  availability decisions, persistence and consequences. Independent add-ons use
+  the public native-message API and SDK; private runtime modules are not that API.
+- The first release supports one active session with a controlled initiator and
+  fixed participants. Concurrent/NPC-autonomous sessions and predetermined
+  watch-only sequences are deferred. Do not expand that scope without a request.
+- Preserve unrestricted manual Start entry together with technical eligibility,
+  role/participant compatibility and furniture availability checks. Roles remain
+  distinct from body type and control status; reusable subsystems support 2+
+  participants, repeated bodies and independent resource ownership.
+
+HZoi is a private, optional content/integration-test project containing proprietary
+audio. Do not assume its checkout, assets or tools are available to contributors.
+Do not link public instructions to its private repository or copy its audio into
+SceneZOI. A separate audio-muted reference copy is planned, but is not currently
+available. Use public examples and framework sources for authoring guidance.
+
+## Source layout and contracts
+
+- Authoritative Lua: `modkit/SceneZOI_93C44199/workspace/lua/`.
+- UI: `modkit/SceneZOI_93C44199/ui/`. Public add-on SDK: `sdk/`.
+- Framework declarations: `packs/`. Author one scene per JSON file; manifests
+  specify scene directories collected by the build. Do not recreate `demo/` or
+  `prototype/` source trees.
+- Enabled native packages contribute their own inert `Text_UI` JSON patches;
+  retail discovery uses `Text`. No author whitelist, executable content-pack
+  registration or discovery limited to SceneZOI's package.
+- Preserve game animation instances, the native picker/input handshake,
+  session-owned original snapshots and independent cleanup/retry behavior. Never
+  introduce Smart Zoi toggling.
+- For unreleased contract changes, update author data, SDK/API docs and tests;
+  remove replaced code instead of retaining obsolete compatibility paths. Preserve
+  existing user settings, personality preferences and attribution during updates.
+
+## Checks and evidence
+
+Run applicable checks from the repository root using the available ModKit root:
+
+```powershell
+python tools/build_catalog.py
+python tools/test.py --modkit-root "C:/Path/To/inZOIModKit"
+```
+
+The default build/tests must work independently of any private content checkout.
+Use `--content-root` only when a compatible external author checkout is available
+and its integration checks are relevant. Each content owner has its own native
+project and asset inventory; see [package ownership](docs/package-split.md).
+
+Start with logs and narrow reproductions. Make the smallest sound fix and retain
+meaningful regression coverage where warranted. Repeat checks only after relevant
+changes or failures. Documentation-only or byte-identical source relocations do
+not require native rebuilding/reinstallation. Check links, examples and formatting.
+
+Keep automated results, native diagnostic evidence and visual/audible acceptance
+distinct. Record applicable runtime/UI/data changes and measured evidence in
+`validation.json`; update the issue ledger for distinct resolved/deferred bugs.
+Keep raw probes, private paths and proprietary dumps outside public documentation.
+If native tools or asset inputs are unavailable, run independent checks and state
+what remains unverified.
+
+## Native builds and requested in-game tests
+
+Discover the actual checkout, registered native project and ModKit paths from the
+current environment or user. Do not assume a maintainer's drive letters, username,
+sibling repositories or authorization to modify another installation.
+
+For native changes, synchronize owned sources/declarations to the registered
+working project while preserving unrelated work. Prepare Lua, verify it against
+`workspace/lua/`, and validate Lua/UI in ModKit. Native binary asset inputs are
+separate from the source checkout; do not invent missing assets or metadata.
+
+Package through supported `PackageUGC` with a fresh isolated
+`-ExportToGameMods` directory, avoiding the default raw export into the game Mods
+root. Verify AutomationTool exit 0 and `BUILD SUCCESSFUL`, then run the exact
+owned-payload filter. Raw exports can include referenced Game/Engine assets and
+must never be installed or distributed as candidates.
+
+When an installed test build is requested or already authorized, finish the
+verified installation; packaging alone does not complete that request. Check the
+game/session state first and avoid interrupting active scenes or house editing.
+Cooked-container replacement requires the game closed. Back up outside Mods,
+preserve settings/preferences/credits, update only owned payloads and verify
+installed hashes. Use the established idle hot-update path only when appropriate,
+preserving loaded cooked bytes. Do not infer live acceptance from installation.
+
+Preserve existing uncommitted work. Do not commit, push, tag or publish without an
+explicit instruction. Preserve [LICENSE](LICENSE), GPL-3.0-only attribution and
+the README reminder that forks must comply with applicable ModKit terms as well.

@@ -1,0 +1,6 @@
+__pycache__/
+modkit/*/Content/
+modkit/*/Intermediate/
+modkit/*/Saved/
+modkit/*/lua/
+*.log

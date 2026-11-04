@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "plugins": {
+    "SceneZOI_93C44199": [
+      "SceneZOI/Animations/SceneZOI_Standing_idle_F.uasset",
+      "SceneZOI/Animations/SceneZOI_Standing_idle_M.uasset",
+      "SceneZOI/Animations/SceneZOI_Bed_idle_F.uasset",
+      "SceneZOI/Animations/SceneZOI_Bed_idle_M.uasset"
+    ]
+  }
+}

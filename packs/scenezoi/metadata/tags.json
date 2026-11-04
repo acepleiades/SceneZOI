@@ -1,0 +1,417 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.tags",
+  "tags": [
+    {
+      "id": "affectionate",
+      "aliases": [
+        "compassionate",
+        "doting"
+      ],
+      "description": "Affectionate interaction."
+    },
+    {
+      "id": "all_fours",
+      "aliases": [
+        "on_all_fours",
+        "hands_and_knees"
+      ],
+      "description": "Posture supported on hands and knees."
+    },
+    {
+      "id": "arm_around_partner_hips",
+      "aliases": [],
+      "description": "An arm reaches around the primary action partner at hip level."
+    },
+    {
+      "id": "at_surface_edge",
+      "aliases": [],
+      "description": "Participant is positioned at the edge of a supporting surface."
+    },
+    {
+      "id": "behind_partner",
+      "aliases": [
+        "positioned_behind_partner"
+      ],
+      "description": "Positioned behind the primary action partner."
+    },
+    {
+      "id": "bent_over",
+      "aliases": [
+        "bend_over",
+        "bending_over"
+      ],
+      "description": "Bent forward at the waist."
+    },
+    {
+      "id": "between_partner_legs",
+      "aliases": [],
+      "description": "Positioned between the primary action partner's legs."
+    },
+    {
+      "id": "carried_by_partner",
+      "aliases": [],
+      "description": "Primary action partner carries or supports the participant off the ground."
+    },
+    {
+      "id": "carrying",
+      "aliases": [
+        "carry",
+        "carrying_position"
+      ],
+      "description": "One participant carries another."
+    },
+    {
+      "id": "chest_against_partner_back",
+      "aliases": [],
+      "description": "Chest is in contact with the primary action partner's back."
+    },
+    {
+      "id": "chest_against_partner_chest",
+      "aliases": [],
+      "description": "Chest is in contact with the primary action partner's chest."
+    },
+    {
+      "id": "cuddling",
+      "aliases": [
+        "cuddle",
+        "snuggling",
+        "snuggle"
+      ],
+      "description": "Cuddling or snuggling presentation; does not imply romantic intent."
+    },
+    {
+      "id": "devoted",
+      "aliases": [],
+      "description": "Attentive, caring presentation focused on the partner, as described by the animation author."
+    },
+    {
+      "id": "drowsy",
+      "aliases": [
+        "sleepy",
+        "drowsiness"
+      ],
+      "description": "Drowsy or sleepy presentation."
+    },
+    {
+      "id": "eager",
+      "aliases": [
+        "enthusiastic"
+      ],
+      "description": "Eager or enthusiastic presentation, as described by the animation author."
+    },
+    {
+      "id": "energetic",
+      "aliases": [],
+      "description": "Energetic presentation."
+    },
+    {
+      "id": "eye_contact",
+      "aliases": [
+        "mutual_gaze"
+      ],
+      "description": "Participants make eye contact."
+    },
+    {
+      "id": "facing_away",
+      "aliases": [
+        "turned_away"
+      ],
+      "description": "Torso faces away from the primary action partner; independent of head or eye direction."
+    },
+    {
+      "id": "facing_partner",
+      "aliases": [
+        "facing_toward_partner"
+      ],
+      "description": "Torso faces toward the primary action partner; independent of head or eye direction."
+    },
+    {
+      "id": "facing_same_direction",
+      "aliases": [
+        "same_facing_direction"
+      ],
+      "description": "Torso faces in the same direction as the primary action partner."
+    },
+    {
+      "id": "foot_focus",
+      "aliases": [
+        "foot_focused"
+      ],
+      "description": "Scene focuses on feet; does not infer a participant's preferences."
+    },
+    {
+      "id": "gentle",
+      "aliases": [],
+      "description": "Gentle presentation."
+    },
+    {
+      "id": "hand_on_partner_chest",
+      "aliases": [],
+      "description": "A hand rests on the primary action partner's chest; does not imply gripping or groping."
+    },
+    {
+      "id": "head_on_partner_shoulder",
+      "aliases": [],
+      "description": "Head rests on the primary action partner's shoulder."
+    },
+    {
+      "id": "idle",
+      "aliases": [
+        "idle_pose"
+      ],
+      "description": "Resting or idle presentation; does not imply a GENERAL rating or starting hub."
+    },
+    {
+      "id": "in_front_of_partner",
+      "aliases": [
+        "positioned_in_front_of_partner"
+      ],
+      "description": "Positioned in front of the primary action partner."
+    },
+    {
+      "id": "intimate",
+      "aliases": [],
+      "description": "Close, intimate presentation; independent of action content rating."
+    },
+    {
+      "id": "introductory",
+      "aliases": [
+        "introduction"
+      ],
+      "description": "Introductory scene or setup."
+    },
+    {
+      "id": "kneeling",
+      "aliases": [
+        "kneel"
+      ],
+      "description": "Kneeling posture."
+    },
+    {
+      "id": "knees_near_chest",
+      "aliases": [],
+      "description": "Knees are drawn close to the participant's own chest."
+    },
+    {
+      "id": "knees_near_shoulders",
+      "aliases": [],
+      "description": "Knees are drawn close to the participant's own shoulders."
+    },
+    {
+      "id": "lap",
+      "aliases": [
+        "lap_position"
+      ],
+      "description": "One participant is positioned on another participant's lap."
+    },
+    {
+      "id": "leaning_against_partner",
+      "aliases": [],
+      "description": "Participant leans against the primary action partner."
+    },
+    {
+      "id": "leg_over_partner_leg",
+      "aliases": [],
+      "description": "A leg rests over the primary action partner's leg."
+    },
+    {
+      "id": "legs_around_partner",
+      "aliases": [
+        "legs_wrapped_around_partner"
+      ],
+      "description": "Legs are wrapped around the primary action partner."
+    },
+    {
+      "id": "legs_raised",
+      "aliases": [
+        "raised_legs",
+        "legs_lifted"
+      ],
+      "description": "Legs are raised relative to the resting posture."
+    },
+    {
+      "id": "legs_spread",
+      "aliases": [
+        "spread_legs"
+      ],
+      "description": "Posture with the legs spread apart."
+    },
+    {
+      "id": "looking_at_own_hand",
+      "aliases": [],
+      "description": "Gaze is directed at the participant's own hand."
+    },
+    {
+      "id": "looking_up",
+      "aliases": [],
+      "description": "Gaze is directed upward."
+    },
+    {
+      "id": "lying",
+      "aliases": [
+        "lying_down"
+      ],
+      "description": "Reclining posture."
+    },
+    {
+      "id": "lying_on_back",
+      "aliases": [
+        "supine",
+        "lying_back"
+      ],
+      "description": "Lying face upward."
+    },
+    {
+      "id": "lying_on_front",
+      "aliases": [
+        "lying_front",
+        "lying_on_stomach",
+        "prone"
+      ],
+      "description": "Lying face downward."
+    },
+    {
+      "id": "lying_on_side",
+      "aliases": [
+        "side_lying",
+        "lying_side"
+      ],
+      "description": "Lying on one side."
+    },
+    {
+      "id": "on_bottom",
+      "aliases": [
+        "bottom_position"
+      ],
+      "description": "Lower participant position relative to a partner; not a dominance role."
+    },
+    {
+      "id": "on_top",
+      "aliases": [
+        "top_position"
+      ],
+      "description": "Upper participant position relative to a partner; not a dominance role."
+    },
+    {
+      "id": "orgasming",
+      "aliases": [
+        "climaxing",
+        "climax"
+      ],
+      "description": "Participant is depicted reaching orgasm."
+    },
+    {
+      "id": "pelvis_raised",
+      "aliases": [
+        "raised_pelvis",
+        "hips_raised"
+      ],
+      "description": "Pelvis is lifted relative to the resting posture."
+    },
+    {
+      "id": "platonic",
+      "aliases": [
+        "platonic_affection"
+      ],
+      "description": "Platonic interaction, distinct from romantic intent."
+    },
+    {
+      "id": "playful",
+      "aliases": [],
+      "description": "Playful presentation."
+    },
+    {
+      "id": "pleased",
+      "aliases": [],
+      "description": "Presentation conveys pleasure or satisfaction, as described by the animation author."
+    },
+    {
+      "id": "romantic",
+      "aliases": [
+        "romance"
+      ],
+      "description": "Romantic presentation, distinct from general affection."
+    },
+    {
+      "id": "sitting",
+      "aliases": [
+        "sit",
+        "seated"
+      ],
+      "description": "Seated posture."
+    },
+    {
+      "id": "squatting",
+      "aliases": [
+        "squat"
+      ],
+      "description": "Squatting posture."
+    },
+    {
+      "id": "standing",
+      "aliases": [
+        "stand"
+      ],
+      "description": "Upright standing posture."
+    },
+    {
+      "id": "straddling_partner",
+      "aliases": [],
+      "description": "Positioned across the primary action partner with a leg on either side."
+    },
+    {
+      "id": "suspended",
+      "aliases": [
+        "suspended_pose"
+      ],
+      "description": "Participant held off the ground, such as in a carrying pose."
+    },
+    {
+      "id": "thighs_against_torso",
+      "aliases": [],
+      "description": "Thighs are pressed against the participant's own torso."
+    },
+    {
+      "id": "torso_leaning_back",
+      "aliases": [
+        "leaning_back"
+      ],
+      "description": "Torso leans backward from its upright posture."
+    },
+    {
+      "id": "torso_leaning_forward",
+      "aliases": [
+        "leaning_forward"
+      ],
+      "description": "Torso leans forward from its upright posture."
+    },
+    {
+      "id": "torso_supported_by_surface",
+      "aliases": [],
+      "description": "Torso rests on a supporting surface."
+    },
+    {
+      "id": "torso_upright",
+      "aliases": [
+        "upright_torso"
+      ],
+      "description": "Torso is held upright."
+    },
+    {
+      "id": "transition",
+      "aliases": [
+        "transitional"
+      ],
+      "description": "Describes a transition; does not configure the node kind or destination."
+    },
+    {
+      "id": "undressing",
+      "aliases": [
+        "undress",
+        "disrobing"
+      ],
+      "description": "Scene broadly features removing clothing; does not execute outfit changes."
+    }
+  ]
+}

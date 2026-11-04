@@ -1,0 +1,161 @@
+{
+  "date": "2026-11-04",
+  "build": "20261104-guardrails-3",
+  "ui_build": "20261103-guardrails-ui-1",
+  "content_build": "20261103-bed-gaze-68-1",
+  "release_status": "First public release preparation; not published",
+  "source_layout": "Repository root: modkit/, packs/, tools/, tests/, mouths/. Retired prototype removed.",
+  "scope": "Graceful outside-roster controller exit at 35m / 0.5 real seconds; accepted busy-start toast and active-status preservation; live focus context and retained distance/initial/final cleanup diagnostics. No content/assets changed.",
+  "ownership": {
+    "framework_declarations": 6,
+    "framework_scenes": 3,
+    "framework_animation_imports": 4,
+    "framework_asset_packages": 4,
+    "hzoi_declarations": 33,
+    "hzoi_scenes": 4,
+    "hzoi_animation_imports": 13,
+    "hzoi_asset_packages": 725,
+    "hzoi_audio_assets": 702
+  },
+  "current_data": {
+    "normal_bed_support_cm": 68,
+    "futon_support_cm": 20,
+    "authored_bed_support_cm": 0,
+    "female_bed_gaze": "self body hand_l",
+    "male_bed_gaze": "omitted: forward",
+    "controller_max_distance_cm": 3500,
+    "controller_distance_grace_real_seconds": 0.5,
+    "controller_distance_poll_real_seconds": 0.2
+  },
+  "verification": {
+    "framework_python_tests": 27,
+    "hzoi_python_tests": 30,
+    "lua_suites_with_content": 41,
+    "javascript_suites": 5,
+    "source_checks_passed": true,
+    "native_lua": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "native_ui": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "owned_framework_asset_packages": 4,
+    "no_game_or_engine_payloads": true,
+    "companion_pak_registry_only": true,
+    "source_native_prepared_lua_equal": true,
+    "installed_candidate_hashes_match": true,
+    "cooked_payload_hashes_equal_to_loaded_install": true,
+    "native_activation": {
+      "phase": "idle",
+      "result": "controller_too_far",
+      "runtime_marker_matches": true,
+      "ui_marker_matches": true,
+      "host_receiver_generation_matches": true,
+      "launcher_ready": true
+    },
+    "actual_gameplay_acceptance": "Author accepted busy toast, successful park singing-NPC entry, and final 35m walk-away toast/clean closure/participant usability. Native final result is idle/controller_too_far.",
+    "native_lua_scope": "Full workspace guardrails-2 validation passed with zero errors/warnings; final Config-only 35m adjustment also passed with zero errors/warnings.",
+    "native_ui_scope": "UI unchanged from guardrails-ui-1; both apps validated with zero errors/warnings and the author accepted the busy toast."
+  },
+  "installation": {
+    "runtime_build": "20261104-guardrails-3",
+    "ui_build": "20261103-guardrails-ui-1",
+    "changed_files": [
+      "lua/B1/SceneZOI/Config.lua",
+      "mod_manifest.json"
+    ],
+    "cooked_files_changed": 0,
+    "hzoi_files_changed": 0,
+    "installed_candidate_hashes_match": true,
+    "other_static_files_settings_and_preferences_preserved": true,
+    "owned_cooked_asset_hashes_equal": true,
+    "native_reload": "Reloading B1 Lua environment",
+    "ui_remount": "Two existing SceneZOI apps remounted while idle.",
+    "backup_outside_mods": true,
+    "final_revision_scope": "Config-only protected hot install over accepted guardrails-2 runtime and guardrails-ui-1 UI; all other installed payload bytes preserved."
+  },
+  "recorded_native_evidence": [
+    "Blink-1: both participants reached native blink curves above 0.98 in a 20-second bed trial; packaged playback and Exit ended idle/ok.",
+    "Furniture-fix-1: backend trials on standard single, standard queen and double futon preserved sensible upright coordinates, restored participant positions and released reservations.",
+    "Blink-1: current 68/20 support and female self-hand gaze had native declaration readback and packaged playback.",
+    "Guardrails-1: validated packaged Lua/UI hot-installed while idle; new runtime/UI markers, idle/ok, matching host/receiver and ready launcher read back. Loaded cooked bytes, all unrelated installed files/preferences and HZoi preserved. No new scene was started by the agent.",
+    "Guardrails-3 final author-driven walk-away trial measured approximately 37.3m after the 35m threshold plus half-second grace; initial/final reason controller_too_far and idle completion confirm the cleanup barrier completed without restore_timeout."
+  ],
+  "recorded_author_acceptance": [
+    "Package split/framework-only operation, HZoi enable/disable, manual exposure, tested playback/expressions/SFX, Exit and movement accepted at their dated checkpoints.",
+    "Tier 1/2 outfits, continuous gaze handoff and immediate refined female O accepted.",
+    "Temporary transition/task-route tests accepted; their temporary HZoi scenes were removed on request.",
+    "70/20 compensated bed preview was visually accepted before the later 68 cm standard-bed request; this does not accept the latest blink/gaze rendering.",
+    "Busy Start now shows the already-in-progress toast.",
+    "Park singing-NPC scene entry works in the author's latest sessions; no singing-specific runtime change was made.",
+    "35m / half-second walk-away exit accepted with toast, clean controls closure and usable participants; author preferred this distance over the accepted 20m trial."
+  ],
+  "pending_author_acceptance": [
+    "Latest blink/expression appearance and 68/20 bed placement/gaze visual retest.",
+    "Actual third-Zoi bed-slot exclusion, full native menu-route/all-model furniture acceptance and restored ordinary interactions.",
+    "Running-scene Hide/restore, modal input/presentation and restore-tab font/drag acceptance.",
+    "Final audible continuous-tail, slow-motion and completion-response behavior; procedural body shaking appearance and broader head/body compatibility."
+  ],
+  "boundaries": [
+    "Automated checks, native numerical diagnostics and author visual acceptance are separate.",
+    "No purpose-authored group choreography or transition assets are inferred from synthetic/temporary tests.",
+    "Native mod-manager dependency enforcement/load ordering, physical uninstall/independent content update/third-author package behavior retain their recorded unverified boundaries.",
+    "Gameplay progression, relationship requirements and gameplay consequences are outside the unrestricted first-release starter."
+  ],
+  "license": {
+    "status": "selected",
+    "spdx": "GPL-3.0-only",
+    "file": "LICENSE"
+  },
+  "repository_work": "Changes intentionally uncommitted; final Git status is not a runtime acceptance claim.",
+  "developer_tool_cleanup": {
+    "date": "2026-11-03",
+    "removed": [
+      "HZoi Blender exporter and local guide",
+      "HZoi archived import_expression_data.py"
+    ],
+    "reason": "Blender exporter published separately; Unreal DataTable expression transport retired and unreferenced by active build/tests.",
+    "active_expression_path": "SceneZOI expression_data.py validation plus native Text_UI JSON patch staging.",
+    "runtime_ui_declarations_and_assets_changed": false,
+    "verification": "Current HZoi build and all 30 author-data regression tests passed; native declaration patch bytes unchanged."
+  },
+  "guardrails_checkpoint": {
+    "runtime_build": "20261104-guardrails-3",
+    "ui_build": "20261103-guardrails-ui-1",
+    "policy": {
+      "distance_cm": 3500,
+      "grace_real_seconds": 0.5,
+      "poll_real_seconds": 0.2,
+      "condition": "Actual controlled Zoi is outside the fixed participant roster."
+    },
+    "native_accepted_exit": {
+      "phase": "idle",
+      "initial_reason": "controller_too_far",
+      "final_result": "controller_too_far",
+      "measured_distance_cm": 3731.507509384296,
+      "note": "Distance includes continued movement during the grace period."
+    },
+    "accepted": {
+      "walk_away": true,
+      "busy_toast": true,
+      "park_singing_npc_entry": true
+    },
+    "diagnostics": {
+      "controller_range": "Bounded current controller identity, distance/status/error and configured limit.",
+      "last_stop": "Client, sequence, initiating reason and node.",
+      "last_exit": "Client, sequence, final result and initiating reason.",
+      "last_error": "May retain an older failure; correlate with current stop/exit identity and file timestamps."
+    },
+    "regressions": [
+      "Live control swaps within roster and nearby nonparticipants; exact boundary, 3D distance, grace reset, preparation fallback and transient lookup.",
+      "Full runtime distance cleanup/re-entry; stale/busy request isolation and optional toast failure.",
+      "Preparing/playing/exiting launcher rejection, native race guard and normal UI closure/focus acknowledgement."
+    ],
+    "prior_failure": "50m / 1s trial reached restore_timeout. The initial native trigger was not retained; no specific streaming/LOD root cause was independently proved.",
+    "singing_npc": "Latest author test works; the earlier reported failure is not currently reproduced."
+  }
+}

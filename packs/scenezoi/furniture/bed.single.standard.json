@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.bed.single.standard",
+  "kind": "bed.single",
+  "objects": [
+    "Bed02",
+    "Bed02_v01",
+    "Bed02_v02",
+    "Bed02_v03",
+    "Bed02_v04",
+    "E01_Bed02",
+    "E01_Bed02_v01"
+  ],
+  "surface_height_cm": 68,
+  "offset_cm": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  },
+  "yaw_degrees": 0
+}

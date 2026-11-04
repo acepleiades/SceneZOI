@@ -1,0 +1,369 @@
+{
+  "historical": true,
+  "record_type": "portable checkpoint summary",
+  "date": "2026-11-03",
+  "build": "20261103-furniture-fix-1",
+  "ui_build": "20261103-furniture-ui-1",
+  "content_build": "20261103-bed-duvet-1",
+  "scope": "Reimport ground-level bed body and optional anatomy clips; use 70 cm standard-bed and 20 cm futon duvet support planes.",
+  "author_live_acceptance": "Author watched placement, accepted 70 cm standard / 20 cm futon preview and requested finishing without further trials.",
+  "suggested_live_checks": [
+    "Fresh launch loads the new ground-level clips at 70 cm for standard beds and 20 cm for futons. Author accepted equivalent live preview; final installed-clip readback was not repeated at their request.",
+    "Retain existing occupancy, Exit restoration and native furniture interaction acceptance boundaries."
+  ],
+  "outcomes": [
+    {
+      "check": "verification.native_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "verification.native_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "verification.native_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "verification.native_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "packaging.no_game_or_engine_payloads",
+      "result": true
+    },
+    {
+      "check": "installation.live_acceptance",
+      "result": "Pending author testing; game was not launched"
+    },
+    {
+      "check": "author_live_acceptance",
+      "result": "Author watched placement, accepted 70 cm standard / 20 cm futon preview and requested finishing without further trials."
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.modkit_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.verification.uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "task_ui_fix.roster_review.live_boundary",
+      "result": "No authored 3+ scene was played; task mechanics have isolated coverage and source review, not live group choreography acceptance."
+    },
+    {
+      "check": "completion_audio.tests.all_framework_and_content_suites_pass",
+      "result": true
+    },
+    {
+      "check": "completion_audio.tests.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "completion_audio.tests.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "completion_audio.tests.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "completion_audio.tests.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "completion_audio.native_audible_acceptance",
+      "result": "Pending author test after restart. Isolated native-adapter mocks do not establish heard audio or perceived loudness."
+    },
+    {
+      "check": "transitions.verification.all_framework_and_hzoi_suites_pass",
+      "result": true
+    },
+    {
+      "check": "transitions.verification.native_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "transitions.verification.native_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "transitions.verification.native_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "transitions.verification.native_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_completion_routing.tests.all_framework_and_hzoi_suites_pass",
+      "result": true
+    },
+    {
+      "check": "task_completion_routing.tests.native_lua.errors",
+      "result": 0
+    },
+    {
+      "check": "task_completion_routing.tests.native_lua.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_completion_routing.tests.native_ui.errors",
+      "result": 0
+    },
+    {
+      "check": "task_completion_routing.tests.native_ui.warnings",
+      "result": 0
+    },
+    {
+      "check": "task_completion_routing.tests.native_live_acceptance",
+      "result": "Author confirmed task-completion routing works in-game and requested test removal. Prior read-only diagnostics corroborated male route selection, rear-to-transition-to-idle handoffs, one completion sound, zero reported attachment clock error and clean Exit; per-frame task values were not logged."
+    },
+    {
+      "check": "completion_effects.tests.all_framework_and_hzoi_suites_pass",
+      "result": true
+    },
+    {
+      "check": "completion_effects.tests.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "completion_effects.tests.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "completion_effects.tests.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "completion_effects.tests.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "completion_effects.native_live_acceptance",
+      "result": "Pending author testing. Game was closed; no native visual equivalence or foot-lock acceptance claim."
+    },
+    {
+      "check": "hzoi_male_only_slowdown_correction.all_tests_pass",
+      "result": true
+    },
+    {
+      "check": "hzoi_male_only_slowdown_correction.native_live_acceptance",
+      "result": "Pending restart and author retest. No new claim about shaking or slowdown appearance."
+    },
+    {
+      "check": "audio_slowmotion.native_audible_acceptance",
+      "result": "Pending author testing; no live reload or audible test performed."
+    },
+    {
+      "check": "audio_slowmotion.installation.installed_hashes_match",
+      "result": true
+    },
+    {
+      "check": "voice_responses.tests.all_framework_and_hzoi_suites_pass",
+      "result": true
+    },
+    {
+      "check": "voice_responses.tests.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "voice_responses.tests.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "voice_responses.tests.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "voice_responses.tests.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "voice_responses.native_live_acceptance",
+      "result": "Pending author audible testing. No game launch/live audio verification performed in this stage."
+    },
+    {
+      "check": "audio_completion.source_audit.all_source_hashes_match",
+      "result": true
+    },
+    {
+      "check": "audio_completion.installation.installed_hashes_match",
+      "result": true
+    },
+    {
+      "check": "audio_completion.native_audible_acceptance",
+      "result": "Author restarted the game and reports voice sets sound good on 2026-11-03 before this UI update."
+    },
+    {
+      "check": "ui_panel_state_update.verification.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "ui_panel_state_update.verification.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "ui_panel_state_update.verification.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "ui_panel_state_update.verification.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "ui_panel_state_update.verification.package_exit_code",
+      "result": 0
+    },
+    {
+      "check": "ui_panel_state_update.installation.installed_hashes_match",
+      "result": true
+    },
+    {
+      "check": "ui_panel_state_update.in_game_acceptance",
+      "result": "Pending author testing of running-scene Hide/restore and native menu dimming/input. User was preparing house in Build Mode; no scene entry or mode changes performed."
+    },
+    {
+      "check": "ui_restore_drag_update.tests.framework_suite_passed",
+      "result": true
+    },
+    {
+      "check": "ui_restore_drag_update.tests.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "ui_restore_drag_update.tests.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "ui_restore_drag_update.tests.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "ui_restore_drag_update.tests.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "ui_restore_drag_update.tests.uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "ui_restore_drag_update.tests.browser_drag_and_font_check_passed",
+      "result": true
+    },
+    {
+      "check": "ui_restore_drag_update.installation.installed_hashes_match",
+      "result": true
+    },
+    {
+      "check": "ui_restore_drag_update.in_game_acceptance",
+      "result": "Pending author visual and drag/click check; no running scene interrupted."
+    },
+    {
+      "check": "furniture_checkpoint.all_source_checks_pass",
+      "result": true
+    },
+    {
+      "check": "furniture_checkpoint.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "furniture_checkpoint.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "furniture_checkpoint.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "furniture_checkpoint.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "furniture_checkpoint.framework_uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "furniture_checkpoint.hzoi_uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "furniture_checkpoint.installed_hashes_match",
+      "result": true
+    },
+    {
+      "check": "furniture_checkpoint.no_game_or_engine_payloads",
+      "result": true
+    },
+    {
+      "check": "furniture_placement_fix.all_framework_and_hzoi_tests_pass",
+      "result": true
+    },
+    {
+      "check": "furniture_placement_fix.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "furniture_placement_fix.native_lua_warnings",
+      "result": 0
+    },
+    {
+      "check": "furniture_placement_fix.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "furniture_placement_fix.native_ui_warnings",
+      "result": 0
+    },
+    {
+      "check": "furniture_placement_fix.uat_exit_code",
+      "result": 0
+    },
+    {
+      "check": "furniture_placement_fix.installed_hashes_match",
+      "result": true
+    },
+    {
+      "check": "furniture_placement_fix.acceptance_boundary",
+      "result": "Normal single, normal queen and double-futon backend playback, sensible coordinates, visible poses, reservation presence, restoration and release verified. Final user visual assessment, all six models, actual blocked native interaction attempts and full menu-route retest remain separate."
+    },
+    {
+      "check": "furniture_placement_fix.final_packaged_trial_passed",
+      "result": true
+    },
+    {
+      "check": "bed_duvet_checkpoint.all_source_checks_pass",
+      "result": true
+    },
+    {
+      "check": "bed_duvet_checkpoint.native_lua_errors",
+      "result": 0
+    },
+    {
+      "check": "bed_duvet_checkpoint.native_ui_errors",
+      "result": 0
+    },
+    {
+      "check": "bed_duvet_checkpoint.filtered_install.live_acceptance",
+      "result": "Pending author testing; game was not launched"
+    },
+    {
+      "check": "bed_duvet_checkpoint.author_visual_acceptance",
+      "result": "Author watched placement, accepted 70 cm standard / 20 cm futon preview and requested finishing without further trials."
+    }
+  ],
+  "evidence_note": "Original detailed development record backed up outside the repository; this summary is not a new test or current acceptance claim."
+}

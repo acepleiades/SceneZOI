@@ -1,0 +1,907 @@
+{
+  "date": "2026-11-04",
+  "build": "20261104-api-5",
+  "ui_build": "20261104-addons-ui-1",
+  "content_build": "20261104-metadata-4",
+  "release_status": "First public release preparation; not published",
+  "source_layout": "Repository root: modkit/, packs/, tools/, tests/, mouths/. Retired prototype removed.",
+  "scope": "Native acceptance of expanded add-on API/SDK: independent creator/observers, real task/speed/presentation controls, correlated events/results, bed cleanup, paused renewal and host-only reload. Fix muted voice re-entry and false completion-response warnings; SDK same-entity owner refresh. No concurrent sessions, autonomous starts or watch sequences.",
+  "ownership": {
+    "framework_declarations": 8,
+    "framework_scenes": 3,
+    "framework_animation_imports": 4,
+    "framework_asset_packages": 4,
+    "hzoi_declarations": 33,
+    "hzoi_scenes": 4,
+    "hzoi_animation_imports": 13,
+    "hzoi_asset_packages": 725,
+    "hzoi_audio_assets": 702
+  },
+  "current_data": {
+    "normal_bed_support_cm": 68,
+    "futon_support_cm": 20,
+    "authored_bed_support_cm": 0,
+    "female_bed_gaze": "self body hand_l",
+    "male_bed_gaze": "omitted: forward",
+    "controller_max_distance_cm": 3500,
+    "controller_distance_grace_real_seconds": 0.5,
+    "controller_distance_poll_real_seconds": 0.2
+  },
+  "verification": {
+    "framework_python_tests": 47,
+    "hzoi_python_tests": 32,
+    "lua_suites_with_content": 52,
+    "javascript_suites": 7,
+    "source_checks_passed": true,
+    "native_lua": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "native_ui": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "owned_framework_asset_packages": 4,
+    "no_game_or_engine_payloads": true,
+    "companion_pak_registry_only": true,
+    "source_native_prepared_lua_equal": true,
+    "installed_candidate_hashes_match": true,
+    "cooked_payload_hashes_equal_to_loaded_install": true,
+    "native_activation": {
+      "phase": "idle",
+      "runtime_build": "20261104-api-5",
+      "native_api_tests_passed": true,
+      "independent_addon_cold_start_passed": true,
+      "new_author_visual_acceptance_claimed": false
+    },
+    "actual_gameplay_acceptance": "API-5 native tests passed, including actual voiced manual-session observer checks, paused renewal, control switching and SDK host reload. Final clean process launch loaded registered developer Lua/declarations automatically without mounting/patching; its complete post-startup suite passed. All original settings/control/collision/autonomy and bed occupancy restored. Author visual/audible judgement remains separate.",
+    "native_lua_scope": "API-5 voice fix: full workspace zero errors/warnings.",
+    "native_ui_scope": "Both unchanged UI apps zero errors/warnings.",
+    "framework_catalog_python_tests": 27,
+    "metadata_python_tests": 11,
+    "source_lua_files_compared": 96,
+    "documentation": {
+      "documents_checked": 13,
+      "local_links_checked": 94,
+      "utf8_valid": true,
+      "local_links_valid": true,
+      "git_diff_check_passed": true,
+      "metadata_vocabulary_section_updated": true
+    },
+    "addon_annotation_python_tests": 4,
+    "assetless_packaging_python_tests": 5
+  },
+  "installation": {
+    "runtime_build": "20261104-api-5",
+    "changed_files": [
+      "lua/B1/SceneZOI/Config.lua",
+      "lua/B1/SceneZOI/Voices.lua",
+      "lua/B1/SceneZOI/VoiceResponses.lua",
+      "mod_manifest.json"
+    ],
+    "loaded_cooked_bytes_preserved": true,
+    "owned_asset_content_hashes_equal": true,
+    "owned_assets": 4,
+    "hzoi_unchanged": true,
+    "unowned_files_and_preferences_preserved": true,
+    "backup_outside_mods": "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\api-live\\previous-install\\SceneZOI_93C44199",
+    "candidate_files_verified": 124,
+    "installed_hashes_match": true,
+    "uat_exit_code": 0,
+    "native_activation": "Retail build read back as 20261104-api-5; main suite, native voice/outfit/control-switch regression and host-only SDK reload passed. Game left idle.",
+    "reload": "Reloading B1 + B2 Lua environments",
+    "developer_test_addon": {
+      "installed": false,
+      "removed_after_validation": true,
+      "historical_native_checkpoint": "addon_api_expansion_checkpoint.registered_native_example_checkpoint",
+      "runtime_framework_installation_unchanged": true
+    }
+  },
+  "recorded_native_evidence": [
+    "Blink-1: both participants reached native blink curves above 0.98 in a 20-second bed trial; packaged playback and Exit ended idle/ok.",
+    "Furniture-fix-1: backend trials on standard single, standard queen and double futon preserved sensible upright coordinates, restored participant positions and released reservations.",
+    "Blink-1: current 68/20 support and female self-hand gaze had native declaration readback and packaged playback.",
+    "Guardrails-1: validated packaged Lua/UI hot-installed while idle; new runtime/UI markers, idle/ok, matching host/receiver and ready launcher read back. Loaded cooked bytes, all unrelated installed files/preferences and HZoi preserved. No new scene was started by the agent.",
+    "Guardrails-3 final author-driven walk-away trial measured approximately 37.3m after the 35m threshold plus half-second grace; initial/final reason controller_too_far and idle completion confirm the cleanup barrier completed without restore_timeout.",
+    "Queue-1: final full Lua validation passed; isolated PackageUGC exited 0; exact four-asset filter passed; installed protected script hashes matched. Both Lua environments reloaded while idle, followed by idle/ok and matching host/receiver/ready-launcher readback. This is activation evidence, not backlog gameplay acceptance.",
+    "Visuals-1: full Lua validation zero errors/warnings; isolated packaging exit 0; exact four-asset filter and installed hashes passed. B1 reloaded while idle; native idle/ok, matching host/receiver generation, ready launcher and zero held visual leases read back. No new visual gameplay acceptance inferred.",
+    "Visuals-2: full native Lua validation zero errors/warnings, isolated package exit 0, exact four-asset filter and installed hashes passed. Idle/ok, matching host/receiver, ready launcher and zero idle visual leases read back. Visual acceptance remains separate.",
+    "Save-2: 44 Lua suites, 57 Python tests and six JavaScript suites passed; furniture saved-lease retry/deleted-object regression also passed. Full native Lua/UI validation zero errors/warnings, UAT exit 0, exact four-asset filter and installed hashes passed. Both manual Save As and actual autosave ended the active bed scene with saving reason. Loading each completed participant/furniture recovery acknowledgements: all four collision flags true, original false autonomy/inheritance preserved, bed 20785 empty/unlocked. Repeat bed entry after manual reload reached playing. Autosave restored to enabled/15 minutes; HZoi payload and cooked bytes unchanged.",
+    "Autosave-1: original enabled/15-minute setting read back; actual bed session disabled autosave, normal Exit restored it with interval still 15. With autosave disabled beforehand, a second real bed session and manual Save-triggered Exit kept it disabled; original test preference then restored. Existing save SDK/UI and cooked/HZoi payloads unchanged. Package/filter/installation hashes passed.",
+    "World-transition checkpoint: latest queen-bed sequence 2 retained interrupted stop, matching released autosave lease and fresh idle/ok runtime. Last pair collision/autonomy matches journal originals; bed 4794 empty/unlocked; autosave enabled/15. last_exit belongs to sequence 1, so final teardown ordering is not established. Author reports no visible failure and prior checks of the other suggested scenarios.",
+    "Addons-3: independent installed SDK verified native transport, shared metadata queries and all start modes (addons-2), GENERAL filtering/explicit rejection, allowed navigation, busy refusal, copied events/context and repeated Exit. Final addons-3 status/playback/Exit passed after client-isolation regression fix. Full native Lua/UI validation zero errors/warnings; isolated UAT exit 0, exact 4/725 asset filters; final 119 framework and seven HZoi installed payload hashes match. Original autosave enabled/15, participant collision/autonomy and paused game restored. Temporary source-only example quarantined.",
+    "Metadata-2: dictionary built/synchronized; framework checks passed, full native Lua/UI validation zero errors/warnings, isolated UAT exit 0, exact four-owned-asset filter and final installed hashes verified with game closed. Source vocabulary covers 562 OARE/OA3PP files. New dictionary runtime readback pending next startup; prior addons-3 SDK evidence remains recorded separately.",
+    "Metadata-2 native startup: Text tag_dictionary row matches source exactly, all 44 tags and 76 aliases present. Seven-node catalog and 41 native declarations have zero warnings. Runtime/UI markers match; scene idle/ok. No scene started for this data-only validation.",
+    "Dictionary-1 / metadata-3: approved 55-tag/82-action vocabulary, nine descriptive metadata examples and clinical/full-word naming checks passed combined 48 Lua, 68 Python and seven JavaScript checks. Full native Lua/UI validation zero errors/warnings; isolated UAT exit 0, exact four-owned-asset filter and 119 installed candidate hashes verified with game closed. HZoi, preferences and loaded asset definitions preserved. New game activation/visual behavior not claimed.",
+    "Metadata-4: seven scenes annotated from author descriptions; 63 tags/85 actions, removed activity/gesture tags and precise holding actions. Combined 48 Lua, 70 Python and seven JavaScript checks passed. Native Lua/UI validation zero errors/warnings; both isolated UAT exports exited 0 with exact four/725-owned-asset filtering. Installed both packages while game closed; all hashes match and only manifests/declaration patches changed. No fresh visual/gameplay acceptance inferred.",
+    "API-4: full combined source checks passed 52 Lua suites, 74 Python tests and seven UI suites; focused reviewed cleanup/SDK/service regressions also passed. ModKit Lua/UI static validation zero errors/warnings, isolated UAT exit 0, exact four-owned-asset filter and installed hashes verified. HZoi bytes/preferences preserved. Independent source-only developer tests/fixtures installed and dormant; actual new API/SDK/events/effects and furniture acceptance await author launch/authorization.",
+    "API-5 retail: 98 main assertions/checked responses passed through independent native SDK clients; late manual-session observer rights, two actual voice mutes, 14-second paused renewal and stopped task/play time, resume, saved preferences and observer Exit passed. Muted outfit re-entry no longer starts a clip; outsider control/return and loaded expression override passed. Preserved B2 SDK survived B1-only host reload with instance callback, old registration refusal and new subscribe/registration. Owner refresh and muted completion warning/re-entry have source regressions. All four participant flags/settings and tested bed occupancy restored. Loaded cooked bytes/HZoi preserved and installed hashes verified; temporary fixtures were retail diagnostic data_patch rows, not a new cold-start packaging claim. Author visual acceptance not inferred.",
+    "Registered native SDK example SceneZOIAddonExample_6F2CD7DE: ModKit Lua validation zero errors/warnings; isolated UAT/filter succeeded with zero cooked assets and thirteen verified files. Fresh process launch loaded both test declarations and SDK automatically without manual mounting/patching; full creator/observer suite and cleanup passed afterward. Superseded unregistered scaffold quarantined outside both Mods directories. Package filter now supports normal zero-asset exports, verified by five regressions. Final source coverage: 52 Lua suites, 79 Python tests, seven UI suites; focused migrated SDK tests passed. Author visual acceptance not inferred.",
+    "Author-requested post-acceptance cleanup: registered/legacy developer mods, native projects, fixture declarations/controllers and local API test work areas removed while game closed. Framework/HZoi installed files and native framework Lua are byte-identical. Reusable SDK extracted to sdk/lua/SceneZOIAddon; isolated regressions retained. Concise findings preserve failures and successful cold-start/native evidence without shipping the test runner."
+  ],
+  "recorded_author_acceptance": [
+    "Package split/framework-only operation, HZoi enable/disable, manual exposure, tested playback/expressions/SFX, Exit and movement accepted at their dated checkpoints.",
+    "Tier 1/2 outfits, continuous gaze handoff and immediate refined female O accepted.",
+    "Temporary transition/task-route tests accepted; their temporary HZoi scenes were removed on request.",
+    "70/20 compensated bed preview was visually accepted before the later 68 cm standard-bed request; this does not accept the latest blink/gaze rendering.",
+    "Busy Start now shows the already-in-progress toast.",
+    "Park singing-NPC scene entry works in the author's latest sessions; no singing-specific runtime change was made.",
+    "35m / half-second walk-away exit accepted with toast, clean controls closure and usable participants; author preferred this distance over the accepted 20m trial.",
+    "Before queue-1, a single conversation with another Zoi was interrupted successfully; a long object-interaction queue caused participant-preparation failure.",
+    "Queue-1: queued participant interactions were cancelled and entry succeeded. Starting with the target Zoi also succeeded; a nonparticipant with queued interactions kept trying but could not complete them against the scene-owned target.",
+    "Visuals-1: overhead marker becomes hidden. Thought bubbles still appear; screenshot supplied. Bubble suppression was not accepted.",
+    "Visuals-2: author reports working marker/bubble behavior and a large visual improvement. Bubble suppression affects nonparticipants too (tested household); participant-only bubble suppression is preferred but not established through supported exports."
+  ],
+  "pending_author_acceptance": [
+    "Latest blink/expression appearance and 68/20 bed placement/gaze visual retest.",
+    "Actual third-Zoi bed-slot exclusion, full native menu-route/all-model furniture acceptance and restored ordinary interactions.",
+    "Running-scene Hide/restore, modal input/presentation and restore-tab font/drag acceptance.",
+    "Final audible continuous-tail, slow-motion and completion-response behavior; procedural body shaking appearance and broader head/body compatibility.",
+    "Save/load broader manual acceptance: ordinary movement/furniture interactions, different autonomy/inheritance settings, outfit edits, three participants and saving during preparation/navigation. Automated coverage and the two native bed reloads do not establish every combination.",
+    "New add-on API: author visual/gameplay acceptance and additional furniture/group native variants remain separate from recorded source and SDK trials."
+  ],
+  "boundaries": [
+    "Automated checks, native numerical diagnostics and author visual acceptance are separate.",
+    "No purpose-authored group choreography or transition assets are inferred from synthetic/temporary tests.",
+    "Native mod-manager dependency enforcement/load ordering, physical uninstall/independent content update retain their recorded unverified boundaries; separate executable SDK-package communication is now verified.",
+    "Gameplay progression, relationship requirements and gameplay consequences are outside the unrestricted first-release starter."
+  ],
+  "license": {
+    "status": "selected",
+    "spdx": "GPL-3.0-only",
+    "file": "LICENSE"
+  },
+  "repository_work": "Changes intentionally uncommitted; final Git status is not a runtime acceptance claim.",
+  "developer_tool_cleanup": {
+    "date": "2026-11-03",
+    "removed": [
+      "HZoi Blender exporter and local guide",
+      "HZoi archived import_expression_data.py"
+    ],
+    "reason": "Blender exporter published separately; Unreal DataTable expression transport retired and unreferenced by active build/tests.",
+    "active_expression_path": "SceneZOI expression_data.py validation plus native Text_UI JSON patch staging.",
+    "runtime_ui_declarations_and_assets_changed": false,
+    "verification": "Current HZoi build and all 30 author-data regression tests passed; native declaration patch bytes unchanged.",
+    "addon_api_test_cleanup": {
+      "date": "2026-11-04",
+      "game_closed": true,
+      "removed": [
+        "C:\\Users\\jvrui\\Documents\\inZOI\\Mods\\InGame\\SceneZOIAddonExample_6F2CD7DE",
+        "C:\\Users\\jvrui\\Documents\\GitHub\\SceneZOI\\examples\\addon\\SceneZOIAddonExample_6F2CD7DE",
+        "C:\\Users\\jvrui\\Documents\\GitHub\\SceneZOI\\examples\\addon\\API-TESTS.md",
+        "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\api-live",
+        "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\api-expansion",
+        "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\addons"
+      ],
+      "framework_and_hzoi_installations_byte_identical": true,
+      "native_framework_lua_unchanged": true,
+      "sdk_retained": "sdk/lua/SceneZOIAddon/",
+      "regressions_retained": true,
+      "retained_evidence": "docs/validation/addon-api-20261104.json",
+      "no_scene_test_data_installed": true
+    }
+  },
+  "guardrails_checkpoint": {
+    "runtime_build": "20261104-queue-1",
+    "ui_build": "20261103-guardrails-ui-1",
+    "policy": {
+      "distance_cm": 3500,
+      "grace_real_seconds": 0.5,
+      "poll_real_seconds": 0.2,
+      "condition": "Actual controlled Zoi is outside the fixed participant roster."
+    },
+    "native_accepted_exit": {
+      "phase": "idle",
+      "initial_reason": "controller_too_far",
+      "final_result": "controller_too_far",
+      "measured_distance_cm": 3731.507509384296,
+      "note": "Distance includes continued movement during the grace period.",
+      "tested_build": "20261104-guardrails-3"
+    },
+    "accepted": {
+      "walk_away": true,
+      "busy_toast": true,
+      "park_singing_npc_entry": true
+    },
+    "diagnostics": {
+      "controller_range": "Bounded current controller identity, distance/status/error and configured limit.",
+      "last_stop": "Client, sequence, initiating reason and node.",
+      "last_exit": "Client, sequence, final result and initiating reason.",
+      "last_error": "May retain an older failure; correlate with current stop/exit identity and file timestamps."
+    },
+    "regressions": [
+      "Live control swaps within roster and nearby nonparticipants; exact boundary, 3D distance, grace reset, preparation fallback and transient lookup.",
+      "Full runtime distance cleanup/re-entry; stale/busy request isolation and optional toast failure.",
+      "Preparing/playing/exiting launcher rejection, native race guard and normal UI closure/focus acknowledgement.",
+      "Pre-binding anchor fallback resolves the declared role even when it is second in roster order (guardrails-4)."
+    ],
+    "prior_failure": "50m / 1s trial reached restore_timeout. The initial native trigger was not retained; no specific streaming/LOD root cause was independently proved.",
+    "singing_npc": "Latest author test works; the earlier reported failure is not currently reproduced."
+  },
+  "participant_task_checkpoint": {
+    "build": "20261104-queue-1",
+    "native_author_acceptance": "Author accepted queue cancellation when starting with the queued actor and successful entry with the target actor. A nonparticipant continuing to attempt queued interactions could not interrupt the scene.",
+    "observed": "Author reports many queued hydrant interactions fail preparation, while a single talk interaction is interrupted correctly. Retained last_error describes prepare_timeout, but successful later sessions overwrote stop/exit identity.",
+    "reproduced": "Targeted regression failed against the previous participant script: cancelling current work advances the backlog; cancel_pending then suppresses cancellation of the successor until timeout.",
+    "policy": "Clear the native waiting queue before cancelling the current task. Keep cancellation keyed to current queue identity and wait for two idle samples before readiness. Continue checking new queued/current work while the lease is ready. Restore original autonomy value and inheritance independently during cleanup.",
+    "queue_preservation": "No reliable supported queue-pause mechanism established. Author authorized cancelling the waiting queue as fallback; interrupted/queued work is not reconstructed.",
+    "regressions": [
+      "Long backlog and waiting-only queue",
+      "Single conversation and delayed cancellation without repeated cancel spam",
+      "New queued/current task during playback",
+      "Queue-clear/cancel failures, autonomy inheritance restoration and lease expiry"
+    ],
+    "installed_content_or_cooked_changes": false,
+    "accepted_build": "20261104-queue-1"
+  },
+  "overhead_visuals_checkpoint": {
+    "build": "20261104-visuals-2",
+    "author_acceptance": "Visuals-2 marker/control-switch and bubble suppression reported working; nonparticipant bubbles also suppressed. Tested with household Zois.",
+    "native_api_evidence": "AB1Player.PlayerSelectedFxComponent is exported as the selected-avatar Niagara component. UB1SpeechBubbleWidget is the exported overhead bubble widget. SetForceHidePlumbob appears in native behavior docs but is not exported, so it is not called.",
+    "marker_policy": "Hide PlayerSelectedFxComponent only for members of the fixed active scene roster. Outsiders retain their normal marker when controlled; controlling a participant again uses its already-hidden marker. Restore prior hidden flags on Exit or if an owner leaves scope.",
+    "bubble_policy": "Suppress overhead bubble wrappers and exported background/icon/portrait/text/switcher opacity across the local UI while a scene is preparing/playing. This includes nonparticipants, not only the scene roster or household. Preserve original opacity for restoration; author confirmed effective household rendering. No native lifecycle or global-setting changes.",
+    "cleanup": "Exit/error/mod unload attempts independent presentation restoration. Failed restoration retries while idle; positive invalidity retires released objects. Restoration does not overwrite a value another owner changed after our last write. Optional visual failures never abort scene playback/participant cleanup.",
+    "regressions": [
+      "Original hidden/opacity state and repeated sessions",
+      "Engine refreshes, replaced marker component and late nearby bubbles",
+      "Partial marker/widget writes and independent cleanup retry",
+      "Invalid native objects and foreign presentation changes",
+      "Outside-roster marker remains visible; moving an owner out of scope restores it and re-entry hides it again.",
+      "Animated wrapper/content refresh, separate portrait/background opacity suppression and restoration."
+    ],
+    "diagnostic": "overhead_visuals stores bounded current counts/error; overhead_visuals_active retains the last active sample after Exit for diagnosis.",
+    "participant_only_bubble_limit": "Current exported UB1SpeechBubbleWidget members expose no target actor/ID getter; FB1SpeechBubbleObjectData exposes only SpeechBubbleWidget, and the handler exposes ActiveObjects/WidgetPool without an exported owner association. No reliable supported per-Zoi mapping was established. Narrowing scope needs further investigation; recommend retaining the current effective behavior for the first release."
+  },
+  "save_load_checkpoint": {
+    "build": "20261104-save-2",
+    "ui_build": "20261104-save-ui-2",
+    "policy": "SDK SaveState caches immutable originals and gates all participant/furniture mutation on a matching UI acknowledgement. Manual/autosave request normal Exit. SDK load delivery restores originals, exact temporary outfit and exact furniture owner/reason through independent retryable acknowledgements before new entry. No scene resumes.",
+    "failed_approach": "The save-1 pseudo-simulation manager override and Lua save/load callbacks did not dispatch on the author actual Save As route; override removed. A synchronous SDK provider does dispatch, but its Exit is too late to prevent some B2 fields being captured, hence durable journal recovery.",
+    "native_manual_save": {
+      "slot": "SceneZOI save SDK test",
+      "folder": "20261104-051807",
+      "participants": [
+        "20522",
+        "20528"
+      ],
+      "furniture": "20785",
+      "exit_reason": "saving",
+      "load_barrier": "ready/ok",
+      "all_household_collision_restored": true,
+      "original_disabled_autonomy_preserved": true,
+      "bed_reasons_empty": true,
+      "repeat_bed_entry_after_load": "playing"
+    },
+    "native_autosave": {
+      "file": "20261104-051807_AutoSave_2",
+      "exit_reason": "saving",
+      "load_barrier": "ready/ok",
+      "all_household_collision_restored": true,
+      "original_disabled_autonomy_preserved": true,
+      "bed_reasons_empty": true,
+      "original_enabled_15_minute_setting_restored": true
+    },
+    "limits": [
+      "Recovery requires SceneZOI enabled when loading the save. Exit, finish cleanup and save outside scene mode before disabling/removing it.",
+      "Older saves without a journal are not retroactively repaired.",
+      "No save-file corruption was established; these tests address concrete temporary-state ownership.",
+      "Broader visual/ordinary-interaction and participant/outfit combinations remain separately accepted."
+    ],
+    "native_clean_save": {
+      "slot": "SceneZOI save SDK test",
+      "result": "Save made outside scene mode after recovery, then reloaded: no fresh journal replay, all four original collision/autonomy values retained, bed empty, scene idle/ok."
+    }
+  },
+  "autosave_checkpoint": {
+    "build": "20261104-autosave-1",
+    "policy": "Read global enabled flag once when acquiring a session. If enabled, persist a local owned lease before disabling; restore only that owned flag after cleanup or unload, retry failures while idle and recover held leases at next framework boot. Leave originally disabled settings and the interval untouched. Existing SDK save callbacks and load journals remain active for manual/forced saves.",
+    "native_evidence": {
+      "enabled_exit_restored": true,
+      "disabled_save_exit_preserved": true,
+      "interval_unchanged": "15",
+      "test_original_preference_restored": {
+        "language": "en-US",
+        "ui_size": "0",
+        "autonomy": "",
+        "follow_global_autonomy": "1",
+        "auto_save_enabled": "1",
+        "auto_save_interval": "15",
+        "character_name_format": "0",
+        "roman_keyboard_layout": "0"
+      },
+      "forced_save_guard_result": "SZ2|ui.1793780804686.80517|2|idle|saving",
+      "original_enabled_scene": "SZ2|ui.1793780804686.80517|1|playing|ok",
+      "original_disabled_scene": "SZ2|ui.1793780804686.80517|2|playing|ok"
+    },
+    "automated": "45 Lua suites, 57 Python tests and six JavaScript suites pass; full native Lua/UI validation zero errors/warnings. Regressions cover enabled/disabled originals, no recapture, durable-before-disable ordering, failed/partial writes, independent idle retries and fresh-boot recovery. Existing runtime normal/error/repeated/forced-save cleanup cases still pass.",
+    "limits": "Actual process-crash recovery has isolated fresh-environment coverage, not a destructive native crash test. Forced autosaves from another mod were not injected; the unchanged SDK callback was previously verified for native autosaves, and a real manual save during disabled-autosave mode still exited safely."
+  },
+  "world_transition_checkpoint": {
+    "build": "20261104-autosave-1",
+    "author_report": "Author reports no apparent failure in the latest transition test and says the other suggested early-cancellation, furniture, three-participant and framework-only scenarios were already tried without apparent issues. Exact variants/models were not enumerated.",
+    "retained_stop": "SZ2|ui.1793781279092.75594|2|interrupted|scenezoi.bed_queen_idle",
+    "current_runtime_state": "SZ2|none|0|idle|ok",
+    "autosave_lease": "SZ2|autosave|ui.1793781279092.75594.2.2|released",
+    "native_readback": "Autosave enabled, interval 15. Last recorded pair 20522/20524 has collision and autonomy/inheritance matching its journal originals. Queen bed 4794 has no occupancy reasons or locked slots.",
+    "logging_limit": "last_exit still identifies preceding sequence 1; sequence 2 has interrupted stop and released autosave ownership, followed by fresh runtime. No matching final Exit acknowledgement or full ordering trace survives, so do not describe this as a complete normal-Exit log."
+  },
+  "asset_build": "20261103-bed-gaze-68-1",
+  "addon_checkpoint": {
+    "api_version": 1,
+    "maximum_sessions": 1,
+    "native_transport": "Separate B2 SDK native JSON messages to B1 host; no private framework requires or framework request-mailbox writes.",
+    "dictionaries": {
+      "tags": 11,
+      "actions": 88,
+      "non_idle_actions": 87,
+      "additional_neutral_action": "idle",
+      "aliases_normalized": true
+    },
+    "metadata": "Optional registered scene tags, per-role tags and directional actor/target/performer actions. Mutual hugs are two records. Action-definition GENERAL/SUGGESTIVE/EXPLICIT enum; highest action rating derives scene rating; no authored scene content_rating. Unclassified scenes excluded by explicit rating filters.",
+    "annotated_scenes": {
+      "total": 7,
+      "GENERAL": 4,
+      "EXPLICIT": 3
+    },
+    "native_separate_package_evidence": {
+      "runtime_build": "20261104-addons-3",
+      "queries": "GENERAL library returns four nodes; actual male/female roster returns two standing-compatible nodes. Kneeling and directional fellatio/blowjob alias filters select the expected scene. Unavailable anilingus action query returns zero.",
+      "start_modes": [
+        "start_at_hub",
+        "start_scene",
+        "start_random_scene"
+      ],
+      "restricted_navigation": "GENERAL hub omits explicit destinations; explicit direct navigation returns scene_restricted without changing current node. Allowed HZoi idle navigation succeeds. Initial explicit request under GENERAL returns no_matching_scenes.",
+      "busy_refusal": "session_already_running",
+      "events": [
+        "game_clock_changed",
+        "node_entered",
+        "node_leaving",
+        "node_preparing",
+        "session_ended",
+        "session_ending",
+        "session_preparing",
+        "session_started"
+      ],
+      "copied_context_null_and_empty_arrays_preserved": true,
+      "repeat_exit_restoration": true,
+      "final_build_status": {
+        "playing": {
+          "code": "ok",
+          "event": "node_entered",
+          "phase": "playing",
+          "session_id": "ui.1793790792363.446644.1.1"
+        },
+        "ended": {
+          "code": "ok",
+          "event": "session_ended",
+          "phase": "ended",
+          "session_id": "ui.1793790792363.446644.1.1"
+        }
+      },
+      "original_collision_autonomy_and_autosave_settings_restored": true,
+      "final_state": "SZ2|none|0|idle|ok",
+      "developer_example": "Independent example unmounted and quarantined outside game/ModKit Mods directories. Source-only SDK/template retained under examples/addon; no native ModKit validation claim for this standalone developer scaffold."
+    },
+    "automated": "48 Lua suites, 65 Python tests (27 framework catalog + 8 metadata + 30 HZoi) and seven JavaScript suites passed. Includes schema/dictionary conflicts, aliases, directional/mutual actions, ratings, repeated-body role matching, start acknowledgement, owner isolation, same request ID across clients, duplicate/retry/timeout handling, copied JSON types and API/UI/automatic/task/transition restriction enforcement.",
+    "limits": [
+      "Concurrent NPC-owned sessions remain deferred. API starts require the controlled initiator in the roster; one active session.",
+      "Anatomical capability fields are descriptive metadata; existing body/life-stage/furniture eligibility remains enforced independently.",
+      "Ratings classify declared actions, not automatically detected assets, manual outfits, voices or exposed attachments.",
+      "Events are best effort with no durable replay. World teardown may prevent an ended event; inspect cleanup code when delivered.",
+      "Native live tests exercised a two-participant standing roster. Furniture and larger/repeated-body API routes have source coverage, not new live author acceptance.",
+      "Native mod-manager dependency enforcement/load order remains unverified. Native communication with this separate installed developer package is verified."
+    ],
+    "checkpoint_status": "Historical initial API checkpoint; current API-5 evidence and metadata checkpoints supersede initial vocabulary counts."
+  },
+  "metadata_checkpoint": {
+    "tags": 63,
+    "actions": 85,
+    "removed_tags": [
+      "fellatio",
+      "gesture",
+      "spanking"
+    ],
+    "new_tags": [
+      "leaning_against_partner",
+      "hand_on_partner_chest",
+      "arm_around_partner_hips",
+      "leg_over_partner_leg",
+      "head_on_partner_shoulder",
+      "looking_up",
+      "looking_at_own_hand",
+      "intimate",
+      "eager",
+      "devoted",
+      "pleased"
+    ],
+    "new_actions": [
+      "holding_waist",
+      "holding_wrist",
+      "holding_penis_at_base"
+    ],
+    "scene_annotations": {
+      "scenezoi.standing_idle": {
+        "tags": [
+          "affectionate",
+          "standing",
+          "eye_contact"
+        ],
+        "participant_tags": {
+          "male": [
+            "standing"
+          ],
+          "female": [
+            "standing",
+            "leaning_against_partner",
+            "hand_on_partner_chest",
+            "arm_around_partner_hips"
+          ]
+        },
+        "actions": [
+          {
+            "type": "hug",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "hug",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          }
+        ]
+      },
+      "scenezoi.bed_single_idle": {
+        "tags": [
+          "affectionate",
+          "lying"
+        ],
+        "participant_tags": {
+          "male": [
+            "lying_on_back",
+            "looking_up"
+          ],
+          "female": [
+            "lying_on_side",
+            "leg_over_partner_leg",
+            "hand_on_partner_chest",
+            "head_on_partner_shoulder",
+            "looking_at_own_hand"
+          ]
+        },
+        "actions": [
+          {
+            "type": "hug",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "hug",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          },
+          {
+            "type": "holding_waist",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          }
+        ]
+      },
+      "scenezoi.bed_queen_idle": {
+        "tags": [
+          "affectionate",
+          "lying"
+        ],
+        "participant_tags": {
+          "male": [
+            "lying_on_back",
+            "looking_up"
+          ],
+          "female": [
+            "lying_on_side",
+            "leg_over_partner_leg",
+            "hand_on_partner_chest",
+            "head_on_partner_shoulder",
+            "looking_at_own_hand"
+          ]
+        },
+        "actions": [
+          {
+            "type": "hug",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "hug",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          },
+          {
+            "type": "holding_waist",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          }
+        ]
+      },
+      "hzoi.standing_idle": {
+        "tags": [
+          "affectionate",
+          "standing",
+          "eye_contact"
+        ],
+        "participant_tags": {
+          "male": [
+            "standing"
+          ],
+          "female": [
+            "standing",
+            "leaning_against_partner",
+            "hand_on_partner_chest",
+            "arm_around_partner_hips"
+          ]
+        },
+        "actions": [
+          {
+            "type": "hug",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "hug",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          }
+        ]
+      },
+      "hzoi.standing_hand_job": {
+        "tags": [
+          "standing",
+          "eye_contact",
+          "intimate"
+        ],
+        "participant_tags": {
+          "male": [
+            "standing"
+          ],
+          "female": [
+            "standing",
+            "eager",
+            "devoted"
+          ]
+        },
+        "actions": [
+          {
+            "type": "handjob",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          },
+          {
+            "type": "hug",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "hug",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          },
+          {
+            "type": "holding_waist",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          },
+          {
+            "type": "holding_waist",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          }
+        ]
+      },
+      "hzoi.male_standing_female_kneeling_fellatio": {
+        "tags": [
+          "eye_contact"
+        ],
+        "participant_tags": {
+          "male": [
+            "standing",
+            "torso_upright",
+            "pleased"
+          ],
+          "female": [
+            "kneeling",
+            "looking_up"
+          ]
+        },
+        "actions": [
+          {
+            "type": "fellatio",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          },
+          {
+            "type": "holding_penis_at_base",
+            "actor": "female",
+            "target": "male",
+            "performer": "female"
+          }
+        ]
+      },
+      "hzoi.standing_rear": {
+        "tags": [
+          "standing"
+        ],
+        "participant_tags": {
+          "male": [
+            "standing",
+            "behind_partner",
+            "energetic"
+          ],
+          "female": [
+            "standing",
+            "facing_away",
+            "bent_over"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "holding_waist",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          },
+          {
+            "type": "holding_wrist",
+            "actor": "male",
+            "target": "female",
+            "performer": "male"
+          }
+        ]
+      }
+    },
+    "non_metadata_scene_fields_unchanged": true,
+    "runtime_build": "20261104-dictionary-1",
+    "ui_build": "20261104-addons-ui-1",
+    "content_build": "20261104-metadata-4",
+    "hzoi_content_build": "20261104-hzoi-scene-metadata-2",
+    "source_checks": {
+      "lua_suites": 48,
+      "framework_python_tests": 38,
+      "hzoi_python_tests": 32,
+      "javascript_suites": 7
+    },
+    "scene_tag_scope_separate_from_participant_scope": true,
+    "same_dictionary_for_both_tag_scopes": true,
+    "all_seven_scenes_validated": true,
+    "framework_decl_count": 8,
+    "hzoi_decl_count": 33,
+    "derived_ratings": {
+      "GENERAL": 4,
+      "EXPLICIT": 3
+    },
+    "uat_exit_codes": {
+      "SceneZOI": 0,
+      "HZoi": 0
+    },
+    "installed_hashes_verified": true,
+    "native_activation": "Pending next startup"
+  },
+  "addon_api_expansion_checkpoint": {
+    "build": "20261104-api-4",
+    "api_version": 1,
+    "single_session_only": true,
+    "autonomous_starts_added": false,
+    "watch_sequences_added": false,
+    "source_checks": {
+      "lua_suites_with_content": 52,
+      "python_tests_total": 74,
+      "javascript_suites": 7,
+      "focused_after_review": [
+        "addon-api",
+        "addon-controls",
+        "addon-services",
+        "addon-effects",
+        "addon-sdk",
+        "addon-sdk-resync"
+      ]
+    },
+    "native_static": {
+      "lua_errors": 0,
+      "lua_warnings": 0,
+      "ui_errors": 0,
+      "ui_warnings": 0
+    },
+    "uat_exit_code": 0,
+    "owned_assets": 4,
+    "test_addon": {
+      "plugin": "SceneZOIAddonExample_6F2CD7DE",
+      "clients": [
+        "creator",
+        "observer",
+        "abandoned_modifier"
+      ],
+      "temporary": true,
+      "live_tests_run": true,
+      "diagnostic_config": "example/api_tests",
+      "guide": "examples/addon/API-TESTS.md",
+      "native_startup_verified": true,
+      "current_state": "Removed after author-authorized acceptance cleanup; historical evidence retained."
+    },
+    "sdk_and_test_lua_syntax": {
+      "files": 8,
+      "errors": 0
+    },
+    "new_live_gameplay_or_visual_acceptance_claimed": false,
+    "sdk_callback_resynchronization_regression_passed": true,
+    "developer_harness_waits_for_actual_outfit_acknowledgement": true,
+    "native_api_5": {
+      "runtime_build": "20261104-api-5",
+      "main_suite": {
+        "passed": true,
+        "checks_and_checked_responses": 98,
+        "run_id": "acceptance.1793817008477532400",
+        "cleanup": "confirmed_ended"
+      },
+      "manual_session_observer": {
+        "late_subscribe": true,
+        "foreign_creator_commands_rejected": true,
+        "unregistered_writes_rejected": true,
+        "two_native_voice_mutes_independent": true,
+        "native_voice_resumed": true,
+        "paused_real_seconds": 14.468999999999141,
+        "playing_time_and_task_completion_frozen": true,
+        "saved_preferences_unchanged": true,
+        "observer_exit_cleanup_complete": true
+      },
+      "voice_fix": {
+        "muted_outfit_handoff_did_not_restart_native_clip": true,
+        "outsider_possession_did_not_revoke_observer": true,
+        "voice_resumed": true,
+        "expression_asset_override_no_error": true,
+        "initiator_control_restored": true
+      },
+      "sdk_reload": {
+        "preserved_b2_sdk_across_b1_host_reload": true,
+        "old_instance": "host.1793817975.866228977",
+        "new_instance": "host.1793817976.593065558",
+        "first_reply_code": "host_changed",
+        "instance_changed_callback_observed": true,
+        "old_registration_rejected": true,
+        "new_subscription_idle_cursor": 0,
+        "fresh_registration_released": true
+      },
+      "final_state": {
+        "idle": true,
+        "original_controlled_entity": true,
+        "game_time_speed": {
+          "hour": 7,
+          "minute": 47,
+          "day": 1000,
+          "time_scale": 1.0,
+          "paused": false
+        },
+        "settings_and_all_four_collision_autonomy_match_baseline": true,
+        "bed_slots_match_baseline": true,
+        "client_registrations_and_subscriptions_released": true
+      },
+      "installation": {
+        "framework_files_verified": 124,
+        "developer_files_verified": 12,
+        "loaded_cooked_bytes_preserved": true,
+        "no_game_engine_payload_installed": true,
+        "native_and_prepared_source_equal": true,
+        "sdk_test_lua_syntax_files": 8
+      },
+      "limitations": [
+        "Temporary fixture declarations were activated through supported retail Text data_patch for these tests; this is not a new cold-start package-registration claim.",
+        "The developer manifest now explicitly enables the temporary mod; next-process startup was not repeated.",
+        "Native diagnostics establish playback/component/state facts; author visual/audible acceptance is not inferred.",
+        "Temporary scripts/fixtures remain for author acceptance; no autonomous starts or concurrent sessions/sequences added."
+      ]
+    },
+    "temporary_test_addon_retained": false,
+    "registered_native_example_checkpoint": {
+      "runtime_build": "20261104-api-5",
+      "native_plugin": "SceneZOIAddonExample_6F2CD7DE",
+      "startup": {
+        "registered_native_project": true,
+        "lua_started_automatically": true,
+        "both_declaration_rows_loaded_automatically": true,
+        "manual_mount_used": false,
+        "diagnostic_data_patching_used": false
+      },
+      "post_restart_suite": {
+        "passed": true,
+        "assertions_and_checked_responses": 95,
+        "run_id": "acceptance.1793820383640471000",
+        "cleanup": "confirmed_ended"
+      },
+      "source_checks": {
+        "lua_suites_with_content": 52,
+        "python_tests": 79,
+        "javascript_suites": 7,
+        "post_migration_sdk_regressions": "passed"
+      },
+      "native_example_validation": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "package": {
+        "uat_exit_code": 0,
+        "owned_assets": 0,
+        "cooked_containers": 0,
+        "files_verified": 13,
+        "filtered": true
+      },
+      "final_state": {
+        "idle": true,
+        "all_four_collision_autonomy_match_baseline": true,
+        "original_settings_and_controlled_entity_restored": true,
+        "bed_slots_match_baseline": true
+      },
+      "author_visual_acceptance": "not inferred; temporary test scripts retained pending acceptance"
+    },
+    "cleanup": {
+      "date": "2026-11-04",
+      "game_closed": true,
+      "removed": [
+        "C:\\Users\\jvrui\\Documents\\inZOI\\Mods\\InGame\\SceneZOIAddonExample_6F2CD7DE",
+        "C:\\Users\\jvrui\\Documents\\GitHub\\SceneZOI\\examples\\addon\\SceneZOIAddonExample_6F2CD7DE",
+        "C:\\Users\\jvrui\\Documents\\GitHub\\SceneZOI\\examples\\addon\\API-TESTS.md",
+        "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\api-live",
+        "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\api-expansion",
+        "C:\\Users\\jvrui\\Documents\\Codex\\2026-11-03\\scenezoi-hzoi-first-release-preparation-we\\work\\addons"
+      ],
+      "framework_and_hzoi_installations_byte_identical": true,
+      "native_framework_lua_unchanged": true,
+      "sdk_retained": "sdk/lua/SceneZOIAddon/",
+      "regressions_retained": true,
+      "retained_evidence": "docs/validation/addon-api-20261104.json",
+      "no_scene_test_data_installed": true
+    }
+  },
+  "addon_api_release": {
+    "runtime_build": "20261104-api-5",
+    "api_version": 1,
+    "sdk": "sdk/lua/SceneZOIAddon/",
+    "authoring_guide": "docs/addon-authoring.md",
+    "reference": "docs/addons.md",
+    "controls_reference": "docs/addon-controls.md",
+    "native_findings": "docs/validation/addon-api-20261104.md",
+    "native_evidence": "docs/validation/addon-api-20261104.json",
+    "temporary_test_mods_installed": false,
+    "temporary_test_scripts_and_fixtures_removed": true,
+    "runtime_payload_unchanged_by_cleanup": true,
+    "post_cleanup_checks": {
+      "passed": true,
+      "lua_suites": 52,
+      "python_tests": 79,
+      "ui_suites": 7,
+      "sdk_imports_use_independent_location": true,
+      "current_document_links_exist": true
+    }
+  }
+}

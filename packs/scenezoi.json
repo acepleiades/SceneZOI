@@ -1,0 +1,40 @@
+{
+  "schema_version": 3,
+  "id": "scenezoi",
+  "scene_directory": "scenezoi/scenes",
+  "extensions": [],
+  "data_files": [
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/bed.single.standard.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/bed.queen.standard.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/bed.queen.wide.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/bed.single.futon.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/bed.queen.futon.json"
+    },
+    {
+      "kind": "tag_dictionary",
+      "file": "scenezoi/metadata/tags.json"
+    },
+    {
+      "kind": "action_dictionary",
+      "file": "scenezoi/metadata/actions.json"
+    },
+    {
+      "kind": "facial_pose",
+      "file": "scenezoi/facial_poses/open_o.json"
+    }
+  ]
+}

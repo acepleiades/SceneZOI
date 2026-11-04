@@ -1,0 +1,14 @@
+{
+  "apps": [
+    {
+      "name": "scenezoi",
+      "default": true,
+      "enabled": true
+    },
+    {
+      "name": "scenezoi-starter",
+      "default": false,
+      "enabled": true
+    }
+  ]
+}

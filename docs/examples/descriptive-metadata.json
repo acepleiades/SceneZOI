@@ -1,0 +1,266 @@
+{
+  "description": "Illustrative metadata fragments only. Review labels are human explanations, not registered tags or universal position definitions. Add animation/eligibility fields when authoring real scenes.",
+  "examples": [
+    {
+      "review_label": "Mating press — illustrative variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "on_top",
+            "facing_partner"
+          ],
+          "receiving": [
+            "lying_on_back",
+            "legs_raised",
+            "knees_near_shoulders",
+            "thighs_against_torso"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "penetrating"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Reverse cowgirl — kneeling variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "lying_on_back",
+            "on_bottom"
+          ],
+          "receiving": [
+            "kneeling",
+            "on_top",
+            "straddling_partner",
+            "facing_away",
+            "torso_upright"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "receiving"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Cowgirl — illustrative variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "lying_on_back",
+            "on_bottom"
+          ],
+          "receiving": [
+            "on_top",
+            "straddling_partner",
+            "facing_partner"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "receiving"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Rear entry on hands and knees",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "kneeling",
+            "behind_partner"
+          ],
+          "receiving": [
+            "all_fours",
+            "facing_away"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "penetrating"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Missionary — illustrative variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "on_top",
+            "between_partner_legs",
+            "facing_partner"
+          ],
+          "receiving": [
+            "lying_on_back",
+            "on_bottom",
+            "legs_spread",
+            "facing_partner"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "penetrating"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Butterfly — surface-edge variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "standing",
+            "between_partner_legs",
+            "facing_partner"
+          ],
+          "receiving": [
+            "lying_on_back",
+            "legs_raised",
+            "at_surface_edge",
+            "torso_supported_by_surface"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "penetrating"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Anvil — raised-leg variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "kneeling",
+            "between_partner_legs",
+            "facing_partner"
+          ],
+          "receiving": [
+            "lying_on_back",
+            "legs_raised",
+            "knees_near_shoulders"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "penetrating"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Bodyguard — standing rear-contact variant",
+      "metadata": {
+        "participants": {
+          "penetrating": {},
+          "receiving": {}
+        },
+        "participant_tags": {
+          "penetrating": [
+            "standing",
+            "behind_partner",
+            "chest_against_partner_back"
+          ],
+          "receiving": [
+            "standing",
+            "facing_away"
+          ]
+        },
+        "actions": [
+          {
+            "type": "vaginal_sex",
+            "actor": "penetrating",
+            "target": "receiving",
+            "performer": "penetrating"
+          }
+        ]
+      }
+    },
+    {
+      "review_label": "Spooning — affectionate variant",
+      "metadata": {
+        "participants": {
+          "rear": {},
+          "front": {}
+        },
+        "participant_tags": {
+          "rear": [
+            "lying_on_side",
+            "behind_partner",
+            "facing_same_direction",
+            "chest_against_partner_back"
+          ],
+          "front": [
+            "lying_on_side",
+            "in_front_of_partner",
+            "facing_same_direction"
+          ]
+        },
+        "actions": [
+          {
+            "type": "hug",
+            "actor": "rear",
+            "target": "front",
+            "performer": "rear"
+          }
+        ]
+      }
+    }
+  ]
+}

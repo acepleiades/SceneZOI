@@ -1,0 +1,1252 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.actions",
+  "actions": [
+    {
+      "id": "anal_fingering",
+      "aliases": [
+        "finger_anus",
+        "fingering_anus",
+        "anus_fingering"
+      ],
+      "description": "Anal fingering.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "anus"
+      ]
+    },
+    {
+      "id": "anal_fisting",
+      "aliases": [
+        "fist_anus",
+        "fisting_anus",
+        "anus_fisting"
+      ],
+      "description": "Anal fisting.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "anus"
+      ]
+    },
+    {
+      "id": "anal_licking",
+      "aliases": [
+        "lick_anus",
+        "licking_anus",
+        "anus_licking"
+      ],
+      "description": "Anal licking.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "anus"
+      ]
+    },
+    {
+      "id": "anal_sex",
+      "aliases": [],
+      "description": "Anal sex.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with a penis",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "penis"
+      ],
+      "target_requirements": [
+        "anus"
+      ]
+    },
+    {
+      "id": "anal_toying",
+      "aliases": [
+        "anal_toy_stimulation"
+      ],
+      "description": "Anal toying.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one holding the toy",
+      "target_description": "Participant whose anus receives stimulation.",
+      "target_requirements": [
+        "anus"
+      ]
+    },
+    {
+      "id": "anilingus",
+      "aliases": [
+        "anal_eating",
+        "rimjob",
+        "rim_job"
+      ],
+      "description": "Anilingus.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "anus"
+      ]
+    },
+    {
+      "id": "bathe",
+      "aliases": [
+        "bathing"
+      ],
+      "description": "Bathe.",
+      "content_rating": "GENERAL",
+      "actor_description": "the one who is doing the washing",
+      "target_description": "the one who is getting washed",
+      "target_requirements": [
+        "in_water"
+      ]
+    },
+    {
+      "id": "breast_job",
+      "aliases": [
+        "breastjob",
+        "boob_job",
+        "boobjob",
+        "tit_job",
+        "titjob"
+      ],
+      "description": "Breast job.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with breasts",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "breast"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "breast_slapping",
+      "aliases": [
+        "slap_breast",
+        "slap_breasts",
+        "slapping_breast",
+        "slapping_breasts"
+      ],
+      "description": "Breast slapping.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant with breasts",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "breast_sliding",
+      "aliases": [
+        "breast_slide",
+        "sliding_breasts"
+      ],
+      "description": "Breast sliding.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their breasts.",
+      "target_description": "the one who is receiving the massage",
+      "actor_requirements": [
+        "breast"
+      ]
+    },
+    {
+      "id": "breast_smothering",
+      "aliases": [],
+      "description": "Breast smothering.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with breasts",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "breast"
+      ]
+    },
+    {
+      "id": "butt_smothering",
+      "aliases": [
+        "buttocks_smothering"
+      ],
+      "description": "Butt smothering.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with buttocks",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "buttocks"
+      ]
+    },
+    {
+      "id": "buttjob",
+      "aliases": [
+        "butt_job"
+      ],
+      "description": "Buttjob.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with buttocks",
+      "target_description": "Participant with a penis",
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "choking",
+      "aliases": [
+        "choke"
+      ],
+      "description": "Choking.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the neck",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "cuddle",
+      "aliases": [
+        "cuddling"
+      ],
+      "description": "Cuddle.",
+      "content_rating": "GENERAL",
+      "actor_description": "the cuddling one",
+      "target_description": "the cuddled one"
+    },
+    {
+      "id": "cunnilingus",
+      "aliases": [
+        "oral_vulval_stimulation"
+      ],
+      "description": "Cunnilingus.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with a vulva",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "dance",
+      "aliases": [
+        "dancing"
+      ],
+      "description": "Dance.",
+      "content_rating": "GENERAL"
+    },
+    {
+      "id": "deep_throating",
+      "aliases": [
+        "deep_throat"
+      ],
+      "description": "Deep throating.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "ejaculation_on_butt",
+      "aliases": [
+        "cum_on_butt",
+        "finish_on_butt",
+        "ejaculation_on_buttocks",
+        "cum_on_buttocks",
+        "finish_on_buttocks"
+      ],
+      "description": "Ejaculation on butt.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant who ejaculates",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "ejaculation_on_chest",
+      "aliases": [
+        "cum_on_chest",
+        "finish_on_chest"
+      ],
+      "description": "Ejaculation on chest.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant who ejaculates",
+      "target_description": "the one with the chest",
+      "actor_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "ejaculation_on_face",
+      "aliases": [
+        "cum_on_face",
+        "finish_on_face",
+        "facial"
+      ],
+      "description": "Ejaculation on face.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant who ejaculates",
+      "target_description": "the one with the face",
+      "actor_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "ejaculation_on_vulva",
+      "aliases": [
+        "cum_on_vulva",
+        "finish_on_vulva"
+      ],
+      "description": "Ejaculation on vulva.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant who ejaculates",
+      "target_description": "Participant with a vulva",
+      "actor_requirements": [
+        "penis"
+      ],
+      "target_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "fellatio",
+      "aliases": [
+        "blowjob",
+        "blow_job",
+        "suck_penis",
+        "sucking_penis"
+      ],
+      "description": "Fellatio.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "footjob",
+      "aliases": [
+        "foot_job",
+        "feet_job",
+        "feetjob"
+      ],
+      "description": "Footjob.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the feet",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "foot"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "grinding_foot",
+      "aliases": [
+        "grind_foot"
+      ],
+      "description": "Grinding foot.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with a vulva",
+      "target_description": "the one with the foot",
+      "actor_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "grinding_object",
+      "aliases": [
+        "grind_object"
+      ],
+      "description": "Grinding object.",
+      "content_rating": "EXPLICIT",
+      "actor_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "grinding_penis",
+      "aliases": [
+        "grind_penis"
+      ],
+      "description": "Grinding penis.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with a vulva",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "vulva"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "grinding_thigh",
+      "aliases": [
+        "grind_thigh"
+      ],
+      "description": "Grinding thigh.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with a vulva",
+      "target_description": "the one with the thigh",
+      "actor_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "groping_breast",
+      "aliases": [
+        "grope_breast",
+        "grope_breasts",
+        "groping_breasts"
+      ],
+      "description": "Groping breast.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hands",
+      "target_description": "Participant with breasts",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "breast"
+      ]
+    },
+    {
+      "id": "groping_butt",
+      "aliases": [
+        "grope_butt",
+        "grope_buttocks",
+        "groping_buttocks"
+      ],
+      "description": "Groping butt.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hands",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "groping_chest",
+      "aliases": [
+        "grope_chest"
+      ],
+      "description": "Groping chest.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "Participant using their hands",
+      "target_description": "the one with the chest",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "groping_testicles",
+      "aliases": [
+        "grope_testicle",
+        "grope_testicles",
+        "groping_testicle"
+      ],
+      "description": "Groping testicles.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hands",
+      "target_description": "Participant whose testicles are touched.",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "testicles"
+      ]
+    },
+    {
+      "id": "handjob",
+      "aliases": [
+        "hand_job"
+      ],
+      "description": "Handjob.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "holding_arm",
+      "aliases": [
+        "hold_arm",
+        "hold_arms",
+        "holding_arms"
+      ],
+      "description": "Holding arm.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the arm",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_body",
+      "aliases": [
+        "hold_body"
+      ],
+      "description": "Holding body.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the body",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_chin",
+      "aliases": [
+        "hold_chin"
+      ],
+      "description": "Holding chin.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_foot",
+      "aliases": [
+        "hold_foot",
+        "hold_feet",
+        "holding_feet"
+      ],
+      "description": "Holding foot.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the foot",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "foot"
+      ]
+    },
+    {
+      "id": "holding_hand",
+      "aliases": [
+        "hold_hand",
+        "hold_hands",
+        "holding_hands"
+      ],
+      "description": "Holding hand.",
+      "content_rating": "GENERAL",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_head",
+      "aliases": [
+        "hold_head"
+      ],
+      "description": "Holding head.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_hip",
+      "aliases": [
+        "hold_hip",
+        "hold_hips",
+        "holding_hips"
+      ],
+      "description": "Holding hip.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the hip",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_leg",
+      "aliases": [
+        "hold_leg",
+        "hold_legs",
+        "holding_legs"
+      ],
+      "description": "Holding leg.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the leg",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_neck",
+      "aliases": [
+        "hold_neck"
+      ],
+      "description": "Holding neck.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the neck",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_penis_at_base",
+      "aliases": [
+        "hold_penis_at_base"
+      ],
+      "description": "Supporting or positioning a partner's penis by holding its base.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand.",
+      "target_description": "Participant whose penis is held.",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "holding_thigh",
+      "aliases": [
+        "hold_thigh",
+        "hold_thighs",
+        "holding_thighs"
+      ],
+      "description": "Holding thigh.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the thigh",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "holding_waist",
+      "aliases": [
+        "hold_waist"
+      ],
+      "description": "Holding a partner around the waist.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand.",
+      "target_description": "Participant whose waist is held.",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "waist"
+      ]
+    },
+    {
+      "id": "holding_wrist",
+      "aliases": [
+        "hold_wrist",
+        "hold_wrists",
+        "holding_wrists"
+      ],
+      "description": "Holding a partner by the wrist.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand.",
+      "target_description": "Participant whose wrist is held.",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "wrist"
+      ]
+    },
+    {
+      "id": "hug",
+      "aliases": [
+        "hugging",
+        "embrace",
+        "embracing"
+      ],
+      "description": "Hug.",
+      "content_rating": "GENERAL",
+      "actor_description": "the hugging one",
+      "target_description": "the hugged one"
+    },
+    {
+      "id": "idle",
+      "aliases": [
+        "idling"
+      ],
+      "description": "Neutral inactivity without another rated activity.",
+      "content_rating": "GENERAL"
+    },
+    {
+      "id": "kiss",
+      "aliases": [
+        "kissing"
+      ],
+      "description": "Kiss.",
+      "content_rating": "GENERAL",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "kissing_cheek",
+      "aliases": [
+        "kiss_cheek",
+        "kiss_cheeks",
+        "kissing_cheeks"
+      ],
+      "description": "Kissing cheek.",
+      "content_rating": "GENERAL",
+      "actor_description": "the one with the mouth",
+      "target_description": "the one with the cheek",
+      "actor_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "kissing_foot",
+      "aliases": [
+        "kiss_foot",
+        "kiss_feet",
+        "kissing_feet"
+      ],
+      "description": "Kissing foot.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "the one with the mouth",
+      "target_description": "the one with the foot",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "foot"
+      ]
+    },
+    {
+      "id": "kissing_hand",
+      "aliases": [
+        "kiss_hand",
+        "kiss_hands",
+        "kissing_hands"
+      ],
+      "description": "Kissing hand.",
+      "content_rating": "GENERAL",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant using their hand",
+      "actor_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "kissing_neck",
+      "aliases": [
+        "kiss_neck"
+      ],
+      "description": "Kissing neck.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "the one with the mouth",
+      "target_description": "the one with the neck",
+      "actor_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "leg_locking",
+      "aliases": [
+        "leg_lock",
+        "leg_clench",
+        "leg_clenching"
+      ],
+      "description": "Leg locking.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "the one with the legs",
+      "target_description": "the one with the body"
+    },
+    {
+      "id": "licking_nipple",
+      "aliases": [
+        "lick_nipple",
+        "lick_nipples",
+        "licking_nipples"
+      ],
+      "description": "Licking nipple.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "the one with the nipple",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "nipple"
+      ]
+    },
+    {
+      "id": "massaging",
+      "aliases": [
+        "massage"
+      ],
+      "description": "Massaging.",
+      "content_rating": "GENERAL",
+      "actor_description": "the one who is doing massage with hands",
+      "target_description": "the one who is receiving the massage",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "mounting",
+      "aliases": [
+        "mount"
+      ],
+      "description": "Mounting.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "the one who sits on top",
+      "target_description": "the one lies on the floor"
+    },
+    {
+      "id": "oral_fingering",
+      "aliases": [
+        "finger_mouth",
+        "fingering_mouth",
+        "mouth_fingering"
+      ],
+      "description": "Oral fingering.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the mouth",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "oral_toying",
+      "aliases": [
+        "oral_toy_stimulation"
+      ],
+      "description": "Oral toying.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one holding the toy",
+      "target_description": "the one with the mouth",
+      "target_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "patting_head",
+      "aliases": [
+        "pat_head"
+      ],
+      "description": "Patting head.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "penile_licking",
+      "aliases": [
+        "lick_penis",
+        "licking_penis",
+        "penis_licking"
+      ],
+      "description": "Penile licking.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with a penis",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "penile_masturbation",
+      "aliases": [
+        "penis_masturbation",
+        "masturbating_penis"
+      ],
+      "description": "Penile masturbation.",
+      "content_rating": "EXPLICIT",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "pulling_hair",
+      "aliases": [
+        "pull_hair"
+      ],
+      "description": "Pulling hair.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "read",
+      "aliases": [
+        "reading"
+      ],
+      "description": "Read.",
+      "content_rating": "GENERAL",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "rubbing_penis_against_face",
+      "aliases": [
+        "rub_penis_against_face"
+      ],
+      "description": "Rubbing penis against face.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with a penis",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "scrotal_licking",
+      "aliases": [
+        "lick_scrotum",
+        "licking_scrotum"
+      ],
+      "description": "Scrotal licking.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant whose scrotum is being licked.",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "scrotum"
+      ]
+    },
+    {
+      "id": "spanking",
+      "aliases": [
+        "spank",
+        "butt_slapping",
+        "slapping_butt"
+      ],
+      "description": "Spanking.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant with buttocks",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "spectating",
+      "aliases": [
+        "spectate",
+        "watch",
+        "watching"
+      ],
+      "description": "Spectating.",
+      "content_rating": "GENERAL",
+      "actor_description": "the one with the eyes",
+      "target_description": "the one doing stuff"
+    },
+    {
+      "id": "spooning",
+      "aliases": [],
+      "description": "Spooning.",
+      "content_rating": "GENERAL",
+      "actor_description": "the big spoon",
+      "target_description": "the little spoon"
+    },
+    {
+      "id": "stroking_head",
+      "aliases": [
+        "stroke_head"
+      ],
+      "description": "Stroking head.",
+      "content_rating": "GENERAL",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the head",
+      "actor_requirements": [
+        "hand"
+      ]
+    },
+    {
+      "id": "sucking_nipple",
+      "aliases": [
+        "suck_nipple",
+        "suck_nipples",
+        "sucking_nipples"
+      ],
+      "description": "Sucking nipple.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "the one with the nipples",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "nipple"
+      ]
+    },
+    {
+      "id": "thighjob",
+      "aliases": [
+        "thigh_job"
+      ],
+      "description": "Thighjob.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the thighs",
+      "target_description": "Participant with a penis",
+      "target_requirements": [
+        "penis"
+      ]
+    },
+    {
+      "id": "tickling_foot",
+      "aliases": [
+        "tickle_foot",
+        "tickle_feet",
+        "tickling_feet"
+      ],
+      "description": "Tickling foot.",
+      "content_rating": "SUGGESTIVE",
+      "actor_description": "Participant using their hand",
+      "target_description": "the one with the foot",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "foot"
+      ]
+    },
+    {
+      "id": "tongue_kiss",
+      "aliases": [
+        "tongue_kissing",
+        "french_kiss",
+        "french_kissing",
+        "deep_kiss",
+        "deep_kissing"
+      ],
+      "description": "Tongue kiss.",
+      "content_rating": "SUGGESTIVE",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "mouth"
+      ]
+    },
+    {
+      "id": "tribadism",
+      "aliases": [
+        "tribbing",
+        "tribadic_rubbing"
+      ],
+      "description": "Tribadism.",
+      "content_rating": "EXPLICIT",
+      "actor_requirements": [
+        "vulva"
+      ],
+      "target_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "unspecified_action",
+      "aliases": [],
+      "description": "Unspecified action.",
+      "content_rating": "EXPLICIT"
+    },
+    {
+      "id": "vaginal_fingering",
+      "aliases": [
+        "finger_vagina",
+        "fingering_vagina",
+        "vagina_fingering"
+      ],
+      "description": "Vaginal fingering.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant whose vagina receives stimulation.",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "vagina"
+      ]
+    },
+    {
+      "id": "vaginal_fisting",
+      "aliases": [
+        "fist_vagina",
+        "fisting_vagina",
+        "vagina_fisting"
+      ],
+      "description": "Vaginal fisting.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant whose vagina receives stimulation.",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "vagina"
+      ]
+    },
+    {
+      "id": "vaginal_sex",
+      "aliases": [],
+      "description": "Vaginal sex.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant with a penis",
+      "target_description": "Participant whose vagina receives stimulation.",
+      "actor_requirements": [
+        "penis"
+      ],
+      "target_requirements": [
+        "vagina"
+      ]
+    },
+    {
+      "id": "vaginal_toying",
+      "aliases": [
+        "vaginal_toy_stimulation"
+      ],
+      "description": "Vaginal toying.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one holding the toy",
+      "target_description": "Participant whose vagina receives stimulation.",
+      "target_requirements": [
+        "vagina"
+      ]
+    },
+    {
+      "id": "vampire_biting",
+      "aliases": [
+        "vampire_bite",
+        "vampiric_bite",
+        "vampiric_biting"
+      ],
+      "description": "Vampire biting.",
+      "content_rating": "GENERAL",
+      "actor_description": "the vampire",
+      "target_description": "the bitten one",
+      "actor_requirements": [
+        "mouth",
+        "vampire"
+      ]
+    },
+    {
+      "id": "vulval_licking",
+      "aliases": [
+        "lick_vulva",
+        "licking_vulva",
+        "vulva_licking"
+      ],
+      "description": "Vulval licking.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "the one with the mouth",
+      "target_description": "Participant with a vulva",
+      "actor_requirements": [
+        "mouth"
+      ],
+      "target_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "vulval_masturbation",
+      "aliases": [
+        "vulva_masturbation",
+        "masturbating_vulva"
+      ],
+      "description": "Vulval masturbation.",
+      "content_rating": "EXPLICIT",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "vulval_rubbing",
+      "aliases": [
+        "rub_vulva",
+        "rubbing_vulva",
+        "vulva_rubbing"
+      ],
+      "description": "Vulval rubbing.",
+      "content_rating": "EXPLICIT",
+      "actor_description": "Participant using their hand",
+      "target_description": "Participant with a vulva",
+      "actor_requirements": [
+        "hand"
+      ],
+      "target_requirements": [
+        "vulva"
+      ]
+    },
+    {
+      "id": "wash",
+      "aliases": [
+        "washing"
+      ],
+      "description": "Wash.",
+      "content_rating": "GENERAL",
+      "actor_description": "the one who is doing the washing",
+      "target_description": "the one who is getting washed"
+    }
+  ]
+}

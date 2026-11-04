@@ -1,0 +1,126 @@
+{
+	"version": 1,
+	"files":
+	{
+		"B1/Main.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.008Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "75bf34be37f907f7fcb5b832c24fe1d7"
+			}
+		},
+		"B2/Main.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.010Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "1cf844da59c0e10b49b69b8cbcf858f8"
+			}
+		},
+		"B1/SceneZOI/Config.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.010Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "7542aca14f94448ae0ffa2f14e2247a9"
+			}
+		},
+		"B1/SceneZOI/Native.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.010Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "1a5a8094c62453812a8a3bdb1bdea913"
+			}
+		},
+		"B1/SceneZOI/Protocol.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.011Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "a1ab2a4f015a47d47d1cfa0595fbf256"
+			}
+		},
+		"B1/SceneZOI/Runtime.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.011Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "2245cafe7936b60e7981d59e7d98c329"
+			}
+		},
+		"B2/SceneZOI/Config.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.011Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "7542aca14f94448ae0ffa2f14e2247a9"
+			}
+		},
+		"B2/Zoi/SceneZOI.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.011Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "f829376f8badc877495385714d112369"
+			}
+		},
+		"B2/SceneZOI/Protocol.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.012Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "a1ab2a4f015a47d47d1cfa0595fbf256"
+			}
+		},
+		"B1/Zoi/SceneZOI.lua":
+		{
+			"origin": "user",
+			"createdAt": "2026-10-20T06:24:37.012Z",
+			"analysis":
+			{
+				"errorCount": 0,
+				"warningCount": 0,
+				"analyzedAt": "2026-10-20T06:24:38.649Z",
+				"fileHash": "3ddb69db3ccddf3933c5a4ac5eacc623"
+			}
+		}
+	}
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.bed.queen.wide",
+  "kind": "bed.queen",
+  "objects": [
+    "Bed01_v05",
+    "Bed04",
+    "Bed04_v01",
+    "Bed04_v02",
+    "Bed04_v03",
+    "Bed04_v04",
+    "E01_Bed01",
+    "E01_Bed01_v01",
+    "E01_Bed01_v03"
+  ],
+  "surface_height_cm": 68,
+  "offset_cm": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  },
+  "yaw_degrees": 0
+}
