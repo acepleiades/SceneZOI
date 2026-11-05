@@ -125,15 +125,21 @@ The supplied person icon replaces the eye placeholder immediately right of the s
 
 Body compatibility first examines the actual Head/body skeletal mesh asset name. Anonymous generated/merged assets fall back to the session's B2-validated appearance-body binding. Biological gender and controlled/NPC status are not used.
 
-The supported `uimod.cfg_save` API writes preferences under the installed mod folder:
+The supported `uimod.cfg_save` API writes preferences to the game's cfg directory,
+which can be separate from the installed package. On the tested retail build:
 
 ```text
-SceneZOI_93C44199/scenezoi_personality/zoi_<native-entity-id>.cfg
+Documents/inZOI/Mods/InGame/SceneZOI_93C44199/scenezoi_personality/zoi_<native-entity-id>.cfg
 ```
 
 The small versioned record contains the expression-set ID. It is independent of save serialization, participant role, node and roster position. The same native Zoi ID retains its preference across sessions and save loads. Newly created/copied characters with different IDs have different profiles; ID reuse across independent worlds is not distinguished by an additional world key in this first iteration. Invalid/missing/incompatible set IDs fall back to an installed body default, or no selection if none exists.
 
-No preference files are created in Program Files or outside the mod tree. Removing the complete mod directory also removes these preferences. Updates/installers must preserve the personality directory; the development install copies candidate payload files only. Preferences are not included in packages. Voice selection is implemented independently in the same personality panel; see [voices](voices.md). Both preference directories must survive updates.
+Removing a package from `Mods/SceneZOI_93C44199/` does not necessarily remove its
+separate cfg data. Updates/installers must preserve the personality directory;
+preferences are not included in packages. Voice selection is independent in the
+same panel; see [voices](voices.md). Both preference directories must survive
+updates. See [storage locations](settings.md#storage-location) before backing up,
+uninstalling or resetting a development installation.
 
 ## Verification boundary
 

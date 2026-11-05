@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "candidate_version": "1.0.3",
+  "runtime_build": "20261105-registration-3",
+  "ui_build": "20261105-startup-ui-1",
+  "customer_evidence": {
+    "previous_candidate": "1.0.2",
+    "lookup_failure_persists": true,
+    "register_calls": 41,
+    "unregister_calls": 25,
+    "non_owner_unregister_calls": 0,
+    "registered_count": 15,
+    "invalid_id_minus_one_in_registry": true,
+    "requested_id_absent": true,
+    "numeric_equivalent_absent": true
+  },
+  "confirmed_defect": "A one-shot on_begin registration accepts native Invalid (-1). Multiple initially unassigned actors overwrite that entry and are never registered under their later IDs.",
+  "reproduction": "Real B1 Zoi callbacks begin two actors with ID -1, assign distinct valid IDs and tick. The old code fails before retry: Invalid is already present in the registry.",
+  "fix": [
+    "Refuse negative/non-numeric IDs; the bound actor retries on_tick only until registration succeeds.",
+    "Remember each registered actor's ID for ownership-safe teardown after a native ID reset.",
+    "Retain bounded requested-failure diagnostics; include registered versus current native identities and deferred-register call count. No per-frame diagnostic writes."
+  ],
+  "automated": {
+    "passed": true,
+    "python_tests": 85,
+    "lua_suites": 57,
+    "ui_suites": 9,
+    "regressions": [
+      "Several initially unassigned actors recover independently.",
+      "Stable actors do not repeat registration.",
+      "Unloading after native ID reset releases the original registration.",
+      "Late old-object cleanup retains a replacement."
+    ]
+  },
+  "native_validation": {
+    "modkit_validate_lua_script": {
+      "ok": true,
+      "analysis_ran": true,
+      "errors": 0,
+      "warnings": 0,
+      "diagnostics": []
+    },
+    "modkit_validate_uimod": {
+      "plugin": "SceneZOI_93C44199",
+      "apps_checked": 2,
+      "ready_to_package": true,
+      "error_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "summary": "No issues found across 2 app(s).",
+      "next_recommended_action": "Looks good \u2014 preview with modkit_start_uimod_preview."
+    }
+  },
+  "packaging": {
+    "passed": true,
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "owned_assets": 4,
+    "no_game_or_engine_payloads": true,
+    "preparation_gate": "The first build retained stale prepared Lua and was blocked before archiving. A fresh synchronized build passed source/prepared/package byte checks.",
+    "prepared_source_byte_verification": true
+  },
+  "installation": {
+    "passed": true,
+    "version": "1.0.3",
+    "runtime_build": "20261105-registration-3",
+    "installed_from_exact_zip": true,
+    "owned_payload_files_verified": 132,
+    "game_closed": true,
+    "installation_mode": "Update preserving existing state/preferences.",
+    "fresh_install_acceptance": "Not performed for this candidate.",
+    "new_game_acceptance": "Author accepted normal Start/playback/Exit in a fresh process after update; no clean-directory test.",
+    "cooked_files_changed": 0,
+    "local_settings_and_other_files_preserved": true,
+    "hzoi_files_changed": 0,
+    "separate_cfg_files_verified": 35
+  },
+  "native_runtime_acceptance": {
+    "fresh_process": true,
+    "installation_mode": "Update preserving settings; not a clean-directory acceptance test.",
+    "author_report": "Done, works normally after the requested Start/playback/Exit test.",
+    "runtime_build_matches": true,
+    "host_ui_generation_matches": true,
+    "final_phase": "idle",
+    "final_result": "ok",
+    "last_exit": "ok/ok",
+    "retained_error": null,
+    "declarations": 44,
+    "discovery_warnings": 0,
+    "autosave_lease": "released",
+    "live_initially_invalid_identity_deliberately_forced": false,
+    "customer_cause_confirmed": false
+  },
+  "customer_acceptance": "Pending; this is a plausible explanation, not yet a confirmed cause of the customer failure.",
+  "artifacts": {
+    "candidate_zip": "SceneZOI-1.0.3.zip",
+    "candidate_sha256": "77b258f9e48e6e7268feeb048f05615c8400398d5e799e54c1758f8192301998",
+    "source_zip": "SceneZOI-1.0.3-source.zip",
+    "source_sha256": "3efa4d948ee9eaea6a7cee3881615807f66f650ebbedbe562c5ac8dbdb9ab39f",
+    "source_snapshot_note": "Captured at build time; subsequent installation/acceptance documentation may be newer."
+  }
+}

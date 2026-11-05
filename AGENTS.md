@@ -112,6 +112,15 @@ preserve settings/preferences/credits, update only owned payloads and verify
 installed hashes. Use the established idle hot-update path only when appropriate,
 preserving loaded cooked bytes. Do not infer live acceptance from installation.
 
+Locate installed packages and persistent cfg data separately. In the observed
+retail setup, a package installed directly under `Mods/<mod_id>/` writes cfg data
+under `Mods/InGame/<mod_id>/`. A data-only directory without `mod_manifest.json`
+is not a duplicate installation. Back up both locations as applicable; preserve
+settings/recovery data and do not assume removing a package folder resets cfg.
+The supported `uimod.cfg_*` API chooses this output location and exposes no
+base-directory override; SceneZOI supplies only the mod ID, section and key/value.
+Do not mistake that native storage behavior for a hardcoded framework path.
+
 Before declaring a player release tested, install the exact distributable ZIP in
 a fresh mod directory and launch a fresh game process. Back up existing installs,
 settings and recovery data outside Mods first; do not carry development cfg files
@@ -126,6 +135,13 @@ request mailbox. Initialize required mailboxes before readiness; cache completed
 host identity only after acknowledgement succeeds and retry transient failures.
 Retain [entry](tests/entry.lua) and [receiver](tests/demo-entry.cjs) regressions.
 See the [recorded cause and acceptance](docs/validation/fresh-install-startup-20261105.json).
+
+A customer 1.0.2 snapshot contained an invalid `-1` registry entry while the
+controlled ID was absent. Do not assume Zoi `on_begin` guarantees an assigned ID:
+retry each initially unassigned actor until ready, and retain its registered ID
+for teardown after a native reset. Keep the multi-actor/teardown regression in
+[actor registration](tests/actor-registration.lua). This observed weakness is not
+yet established as the complete cause of that customer's failure.
 
 Preserve existing uncommitted work. Do not commit, push, tag or publish without an
 explicit instruction. Preserve [LICENSE](LICENSE), GPL-3.0-only attribution and

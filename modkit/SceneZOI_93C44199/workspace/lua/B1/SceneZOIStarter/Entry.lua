@@ -71,7 +71,10 @@ local function update(dt,actors,busy)
             elseif fields[2]=="open" and not pending then
                 require("SceneZOI.Localization").refresh()
                 local actor=actors[fields[3]]
-                assert(actor,"The controlled Zoi is not loaded")
+                if not actor then
+                    pcall(require('SceneZOI.Runtime').publish_actor_registration_status,fields[3])
+                    error("The controlled Zoi is not loaded")
+                end
                 local furniture=fields[4]~='none'and fields[4]or nil
                 if furniture then assert(require('SceneZOI.Furniture').available(furniture),'The bed is unavailable')end
                 local w=widget();assert(not w:IsVisible(),"A native Zoi picker is already open")

@@ -18,6 +18,12 @@ These contracts describe the current framework. “Tier 1” in the filename is 
 
 SceneZOI stops only its own montages. It never replaces the game's animation instance or toggles Smart Zoi. Membership and named-role assignments remain fixed until Exit. Repeated body types and 2+ participants are supported; the current picker permits two or three total and installed neutral hubs declare adult MF requirements.
 
+The B1 actor registry maps each Zoi ID to its latest registered native actor.
+An ending object removes that entry only if it still owns it; late or repeated
+cleanup cannot erase a replacement object with the same ID. Unloading an actual
+session participant still requests normal cleanup even if the registry now
+contains a replacement. See [actor registration regressions](../tests/actor-registration.lua).
+
 B2 leases disable autonomy before interruption, clear native waiting queues before cancelling current work, and wait for two idle callbacks before preparation. Cancellation is keyed by current queue identity, so a successor/new task is independently interrupted without repeatedly cancelling the same asynchronous exit. Task checks continue after readiness. Exit/failure/expiry restores the original autonomy value and inheritance through the existing retryable cleanup. Waiting tasks are cancelled, not serialized or replayed; there is no established supported queue-pause contract.
 
 ## Save and load ownership
@@ -90,3 +96,12 @@ Busy entry is a native toast and rejection, including stale launcher/native/runt
 ## Overhead presentation
 
 SceneVisuals owns temporary hidden flags only on the fixed scene roster's selected-marker components, plus opacity leases across local overhead bubble wrappers and their exported background/icon/portrait/text/switcher controls while a scene is preparing/playing. Outside-roster markers remain under ordinary game control. Wrapper-only bubble suppression failed visual acceptance; the author accepted child-content suppression on visuals-2, including the observed effect on nonparticipants. An exported bubble-to-Zoi association has not been established, so bubble suppression is not roster-filtered. It does not deactivate native effects, replace assets, change global cheats/settings or stop bubble lifecycle updates. New/replaced objects are covered; initial flags/opacities are preserved. Exit/error/mod unload restore independently, with failed cleanup retried while idle and positive invalidity retiring released objects. Optional presentation errors cannot abort gameplay/participant cleanup. Another owner changing a value after our final write wins over snapshot restoration. Retain `tests/scene-visuals.lua`; native rendered acceptance is separate.
+
+## Actor registration
+
+A bound Zoi can initially have native Invalid ID (`-1`). Do not index that shared
+sentinel: retry its registration until a valid ID is available, then stop retrying.
+Retain the ID that was registered for teardown, since the native actor may have
+already reset it. An ending actor removes only its own entry; actual session
+participant-unload cleanup remains independent. See the
+[callback regressions](../tests/actor-registration.lua).

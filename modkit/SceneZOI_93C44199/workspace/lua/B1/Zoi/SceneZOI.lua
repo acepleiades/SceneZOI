@@ -4,7 +4,15 @@ local M = {}
 ---@param self table
 ---@param owner AB1Character
 function M.on_begin(self, owner)
-    Runtime.register(owner)
+    self.registered_id=Runtime.register(owner)
+end
+
+-- Retry only until the native entity ID is ready; no per-frame registration after that.
+---@param self table
+---@param owner AB1Character
+---@param dt number
+function M.on_tick(self, owner, dt)
+    if not self.registered_id then self.registered_id=Runtime.register(owner)end
 end
 
 ---@param self table
@@ -22,6 +30,7 @@ end
 ---@param owner AB1Character
 function M.on_end(self, owner)
     Runtime.unregister(owner)
+    self.registered_id=nil
 end
 
 return M

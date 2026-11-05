@@ -58,7 +58,17 @@ The role must belong to the fixed roster. Missing role instructions, absent assi
 
 Voice controls appear below expressions in Personality Management. Select an archetype, then a set for each context. Choosing a different archetype atomically replaces all context mappings with the first compatible set in sorted ID order; unavailable contexts remain silent. A context can also be set to None. Every persisted mapping is checked against that one archetype, context and body. Cross-archetype requests never save.
 
-Preferences use the native entity ID under `scenezoi_voice/zoi_<id>.cfg` in the installed framework mod, independently of save serialization and session roles. They retain an explicit silent archetype and silent contexts. Missing pack IDs become silent without overwriting the stored choices; later sessions recover them after re-enabling the pack. Newly introduced contexts appear with no assignment until selected or an archetype reset. As with expression preferences, identical native IDs across independent worlds are not distinguished by a world key. Installers must preserve both preference directories.
+Preferences use the native entity ID under `scenezoi_voice/zoi_<id>.cfg` in the
+game-selected framework cfg directory, independently of save serialization and
+session roles. On the tested build this is beneath
+`Documents/inZOI/Mods/InGame/SceneZOI_93C44199/`, even when the package is installed
+directly under `Mods/`. See [storage locations](settings.md#storage-location).
+Preferences retain an explicit silent archetype and silent contexts. Missing pack
+IDs become silent without overwriting stored choices; later sessions recover them
+after re-enabling the pack. Newly introduced contexts have no assignment until
+selected or an archetype reset. Identical native IDs across independent worlds
+are not distinguished by a world key. Installers must preserve both expression
+and voice preference directories.
 
 Requests have session identity, monotonically increasing counters, expected node revisions and stopping/preparation guards. Saving succeeds before a preference changes in memory. The UI retries absolute requests, rejects stale acknowledgements and incompatible frames, and serializes edits against expressions/outfits/navigation. Voice preferences have their own mailbox and acknowledgement.
 

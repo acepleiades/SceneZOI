@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "date": "2026-11-05",
-  "build": "20261105-startup-1",
+  "build": "20261105-registration-3",
   "ui_build": "20261105-startup-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.0 fresh-install entry failure reproduced and corrected in 1.0.1. Framework regressions, native Lua/UI validation, isolated packaging, exact owned-payload filtering, clean ZIP installation and automatic fresh-process startup passed. The author confirmed it works; final native Exit/cleanup was idle/ok with no retained error. HZoi 1.0 is unchanged.",
+  "release_status": "SceneZOI 1.0.3 corrects invalid-ID registration and teardown after ID reset, retaining earlier startup and ownership fixes. Full checks, native Lua/UI validation, isolated packaging and exact-ZIP update installation pass. The author accepted normal Start/playback/Exit; final native state is idle/ok, Exit/cleanup ok/ok, no retained error and autosave lease released. Customer acceptance and a 1.0.3 clean-directory test remain pending; the customer causal link is not yet confirmed.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -142,6 +142,53 @@
       "initiating_exit_reason": "ok",
       "retained_error": null,
       "furniture_entry_requested_in_second_session": true
+    },
+    "actor_registration_update": {
+      "fresh_process": true,
+      "installation_mode": "Update preserving existing preferences; not a clean-directory acceptance test.",
+      "manual_mount_reload_or_diagnostic_patch": false,
+      "runtime_build_matches": true,
+      "final_phase": "idle",
+      "final_result": "ok",
+      "last_exit": "ok/ok",
+      "retained_error": null,
+      "declarations": 44,
+      "discovery_warnings": 0,
+      "author_report": "Working normally after Start and Exit.",
+      "live_old_actor_race_deliberately_forced": false,
+      "customer_cause_confirmed": false
+    },
+    "deferred_registration": {
+      "checkpoint": "docs/validation/deferred-registration-20261105.json",
+      "automated_passed": true,
+      "native_lua_errors": 0,
+      "native_ui_errors": 0,
+      "packaging": "Passed; four owned assets, no Game/Engine payload. Prepared bytes checked by archive gate.",
+      "runtime_acceptance": {
+        "fresh_process": true,
+        "installation_mode": "Update preserving settings; not a clean-directory acceptance test.",
+        "author_report": "Done, works normally after the requested Start/playback/Exit test.",
+        "runtime_build_matches": true,
+        "host_ui_generation_matches": true,
+        "final_phase": "idle",
+        "final_result": "ok",
+        "last_exit": "ok/ok",
+        "retained_error": null,
+        "declarations": 44,
+        "discovery_warnings": 0,
+        "autosave_lease": "released",
+        "live_initially_invalid_identity_deliberately_forced": false,
+        "customer_cause_confirmed": false
+      },
+      "customer_acceptance": "Pending",
+      "installation": {
+        "passed": true,
+        "exact_zip": true,
+        "payload_files_verified": 132,
+        "settings_preserved": true,
+        "hzoi_unchanged": true,
+        "fresh_directory_test": false
+      }
     }
   },
   "author_acceptance": [
@@ -175,7 +222,8 @@
     "localization": "docs/validation/localization-20261105.json",
     "visual_fixes": "docs/validation/visual-fixes-20261105.json",
     "cjk_fonts": "docs/validation/cjk-fonts-20261105.json",
-    "fresh_install_startup": "docs/validation/fresh-install-startup-20261105.json"
+    "fresh_install_startup": "docs/validation/fresh-install-startup-20261105.json",
+    "actor_registration": "docs/validation/actor-registration-20261105.json"
   },
   "known_limits": [
     "One active, controlled-initiator session with fixed membership; concurrent/NPC-autonomous sessions and predetermined watch-only sequences are outside the first release.",
@@ -206,5 +254,8 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261105-startup-1"
+  "runtime_build": "20261105-registration-3",
+  "checkpoints": {
+    "deferred_registration": "docs/validation/deferred-registration-20261105.json"
+  }
 }

@@ -15,6 +15,10 @@ local Personality = require("SceneZOI.Personality")
 local VoicePersonality = require("SceneZOI.VoicePersonality")
 local Json = require("SceneZOI.Json")
 local M = {actors = {}}
+local registrations, unregistrations, non_owner_unregistrations = 0, 0, 0
+local last_registered_id, last_unregistered_id
+local registered_actor_ids = {}
+local deferred_registrations = 0
 
 local CompletionEffects = require('SceneZOI.CompletionEffects')
 local Tasks = require('SceneZOI.Tasks')
@@ -289,17 +293,57 @@ local function start_playback()
 end
 
 function M.register(actor)
-    M.actors[Protocol.id(actor:GetEntityId())] = actor
+    local id = Protocol.id(actor:GetEntityId())
+    registrations=registrations+1;last_registered_id=id
+    -- A binding can begin before the native actor has its entity ID.
+    local value=tonumber(id)
+    if not value or value<0 then deferred_registrations=deferred_registrations+1;return nil end
+    M.actors[id] = actor
+    registered_actor_ids[actor]=id
+    return id
 end
 
 function M.unregister(actor)
-    local id = Protocol.id(actor:GetEntityId())
+    -- Teardown may already have reset GetEntityId() to Invalid.
+    local id = registered_actor_ids[actor] or Protocol.id(actor:GetEntityId())
+    registered_actor_ids[actor]=nil
+    unregistrations=unregistrations+1;last_unregistered_id=id
+    if M.actors[id] ~= actor then non_owner_unregistrations=non_owner_unregistrations+1 end
     if session then
         for _, participant in ipairs(session.participants) do
             if participant.actor == actor then M.stop("participant_unloaded"); break end
         end
     end
-    M.actors[id] = nil
+    -- A late on_end from an older object must not remove its replacement.
+    if M.actors[id] == actor then M.actors[id] = nil end
+end
+
+-- Capture only when requested, not every tick or lifecycle callback.
+function M.publish_actor_registration_status(requested_id)
+    local ids={}
+    for id in pairs(M.actors) do ids[#ids+1]=id end
+    table.sort(ids)
+    local count=#ids
+    local equivalent
+    for _,id in ipairs(ids) do
+        if id~=requested_id and tonumber(id)==tonumber(requested_id) then equivalent=id;break end
+    end
+    while #ids>64 do table.remove(ids) end
+    local identities={}
+    for _,id in ipairs(ids) do
+        local ok,current_id=pcall(function()return Protocol.id(M.actors[id]:GetEntityId())end)
+        identities[#identities+1]={registered_id=id,current_id=ok and current_id or 'unavailable'}
+    end
+    local value={runtime_build=Config.build,requested_id=requested_id,
+        actor_identities=Json.array(identities),deferred_register_calls=deferred_registrations,
+        requested_registered=M.actors[requested_id]~=nil,registered_count=count,
+        registered_ids=Json.array(ids),equivalent_numeric_id=equivalent,
+        register_calls=registrations,unregister_calls=unregistrations,
+        non_owner_unregister_calls=non_owner_unregistrations,
+        last_registered_id=last_registered_id,last_unregistered_id=last_unregistered_id}
+    local ok,message=inzoi.cli.execute(command('uimod.cfg_save','actor_registration')..' value='..Protocol.encode(Json.encode(value)))
+    assert(ok,message)
+    return value
 end
 
 function M.save_reply(actor,content)

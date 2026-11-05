@@ -66,6 +66,30 @@ mix; boosting already loud audio can cause distortion or limiting. SceneZOI
 changes only its owned components, leaving ordinary game sounds and game-wide
 audio/background preferences untouched.
 
+## Storage location
+
+SceneZOI uses the game's supported `uimod.cfg_load` / `uimod.cfg_save` commands.
+They accept a mod ID, section, key and value; they expose no base-directory
+override. The game chooses the cfg directory. SceneZOI does not construct an
+`InGame` output path or implement a second filesystem backend.
+
+On the tested retail build, the package is installed at
+`Documents/inZOI/Mods/SceneZOI_93C44199/`, while cfg output is under
+`Documents/inZOI/Mods/InGame/SceneZOI_93C44199/`:
+
+| Subdirectory | Purpose |
+| --- | --- |
+| `scenezoi_settings/` | Global audio and task-rate preferences |
+| `scenezoi_personality/` | Per-Zoi expression preferences |
+| `scenezoi_voice/` | Per-Zoi voice preferences |
+| `scenezoi_runtime/` | Runtime transport, status and diagnostics |
+
+This data directory may exist without a `mod_manifest.json`; it is not another
+installed copy. Removing the package alone can leave preferences and diagnostic
+state behind. Updates should preserve the data. A completely fresh test must
+back up and clear both the package and its separate cfg data while the game is
+closed and scene cleanup is complete. See [the developer workflow](development.md#package-location-and-persistent-data).
+
 ## Implementation and verification
 
 `Settings.lua` owns bounded, versioned preference storage and session-scoped

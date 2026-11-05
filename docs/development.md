@@ -109,6 +109,27 @@ reload. A fresh process launch establishes automatic package/declaration loading
 manual mounting and diagnostic patching do not. Released native appearance
 references can require a game restart. Matching build markers alone are insufficient.
 
+### Package location and persistent data
+
+Discover the installation directory and cfg directory independently. On the tested
+retail setup, a manually installed `Mods/<mod_id>/` package writes cfg data under
+`Mods/InGame/<mod_id>/`. The latter may contain only runtime/settings/preferences
+and no `mod_manifest.json`; that is data storage, not another installed package.
+Removing the package alone therefore may retain development configuration. Back
+up both locations before a clean test, and preserve both during ordinary updates.
+
+This location is selected by the game's `uimod.cfg_load` / `uimod.cfg_save` API,
+not a SceneZOI path setting. The commands expose no base-directory override.
+Keep supported persistence rather than replacing it solely to co-locate data
+with the package. See
+[settings storage](settings.md#storage-location) for the actual subdirectories.
+
+For manual removal, Exit the scene, finish cleanup, save and close the game first.
+Remove the installed package folder. Retaining the separate cfg folder preserves
+preferences for reinstallation; removing or moving that data as well resets it.
+For a diagnostic clean install, keep full backups of both outside Mods and start
+without the old cfg data.
+
 ### Clean-install release check
 
 Test the exact ZIP intended for distribution, not only the development install.

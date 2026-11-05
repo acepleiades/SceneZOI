@@ -11,6 +11,35 @@ The exact ZIP then passed automatic startup from a fresh directory, matched the
 host/controls generation and reached playback. The author confirmed it works;
 final native Exit/cleanup was idle/ok with no retained error. HZoi 1.0 is unchanged. See the [checkpoint](fresh-install-startup-20261105.json).
 
+## Actor-registration correction: 1.0.2 candidate
+
+A real-callback regression reproduced old-object cleanup erasing a replacement
+registered under the same Zoi ID. The fix removes only the ending actor's own
+entry and preserves actual participant-unload cleanup. Framework/content checks,
+native Lua/UI validation, packaging and update installation passed. The author
+confirmed normal Start/Exit after a fresh process launch; native final state was
+idle/ok with no retained error. This was an update test preserving preferences;
+a separate 1.0.2 clean-directory test has not been performed.
+
+The customer's 1.0.2 diagnostic still fails and now proves that actor callbacks
+reach the runtime. Its registry contains invalid ID `-1`, with no entry or numeric
+equivalent for the controlled Zoi; non-owner cleanup count is zero. It does not
+prove which actor originally registered as `-1`. See [the 1.0.2 checkpoint](actor-registration-20261105.json).
+
+## Deferred native identity: 1.0.3 candidate
+
+Registration previously accepted an unassigned native ID and never retried.
+The new real-callback regression reproduces multiple actors overwriting `-1`.
+The fix waits for a valid ID, stops retrying after registration and retains that
+ID for cleanup if native teardown resets it. Bounded failure diagnostics now
+include registered/current actor identities. Full framework/content checks and
+native Lua/UI validation, isolated owned-payload packaging and exact-ZIP update
+installation pass. Settings and HZoi are preserved. The author accepted normal
+Start/playback/Exit after a fresh launch; final native state is idle/ok, cleanup
+is ok/ok, no retained error and the autosave lease is released. This was an update
+test; a clean-directory 1.0.3 test remains unperformed. The customer's failure is
+not yet proven to have this cause. See [the checkpoint](deferred-registration-20261105.json).
+
 ## Earlier release evidence
 
 The maintainer declared SceneZOI and HZoi ready for player release on **2026-11-04**.

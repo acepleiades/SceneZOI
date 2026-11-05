@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "candidate_version": "1.0.2",
+  "runtime_build": "20261105-registration-2",
+  "ui_build": "20261105-startup-ui-1",
+  "confirmed_defect": "Runtime.unregister removed actors[id] unconditionally, allowing an old object on_end callback to erase a newer registration for the same entity ID.",
+  "reproduction": "The real Zoi.SceneZOI on_begin/on_end callbacks register old and replacement objects under the same ID; ending the old object fails the replacement-preservation assertion before the fix.",
+  "fix": "Remove the registry entry only if its current actor still equals the actor being unregistered. Session participant-unload cleanup remains before this guard.",
+  "automated": {
+    "passed": true,
+    "python_tests": 85,
+    "lua_suites": 57,
+    "ui_suites": 9,
+    "replacement_late_cleanup_regression": true,
+    "duplicate_and_unregistered_owner_cleanup": true,
+    "normal_current_actor_cleanup": true,
+    "unrelated_actor_independence": true,
+    "existing_participant_unload_integration": "Passed in the optional content session suite."
+  },
+  "native_validation": {
+    "modkit_validate_lua_script": {
+      "ok": true,
+      "analysis_ran": true,
+      "errors": 0,
+      "warnings": 0,
+      "diagnostics": []
+    },
+    "modkit_validate_uimod": {
+      "plugin": "SceneZOI_93C44199",
+      "apps_checked": 2,
+      "ready_to_package": true,
+      "error_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "summary": "No issues found across 2 app(s).",
+      "next_recommended_action": "Looks good \u00e2\u20ac\u201d preview with modkit_start_uimod_preview."
+    }
+  },
+  "packaging": {
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "owned_assets": 4,
+    "no_game_or_engine_payloads": true,
+    "native_generated_protection_preserved": true,
+    "runtime_build": "20261105-registration-2"
+  },
+  "installation": {
+    "passed": true,
+    "version": "1.0.2",
+    "runtime_build": "20261105-registration-2",
+    "installed_from_exact_zip": true,
+    "owned_payload_files_verified": 132,
+    "game_closed": true,
+    "installation_mode": "Update preserving existing state/preferences.",
+    "fresh_install_acceptance": "Not performed for this candidate.",
+    "new_game_acceptance": "Pending",
+    "cooked_files_changed": 0,
+    "local_settings_and_other_files_preserved": true,
+    "hzoi_files_changed": 0
+  },
+  "fresh_process_acceptance": {
+    "fresh_process": true,
+    "installation_mode": "Update preserving existing preferences; not a clean-directory acceptance test.",
+    "manual_mount_reload_or_diagnostic_patch": false,
+    "runtime_build_matches": true,
+    "final_phase": "idle",
+    "final_result": "ok",
+    "last_exit": "ok/ok",
+    "retained_error": null,
+    "declarations": 44,
+    "discovery_warnings": 0,
+    "author_report": "Working normally after Start and Exit.",
+    "live_old_actor_race_deliberately_forced": false,
+    "customer_cause_confirmed": false
+  },
+  "customer_failure_causality": "Still unconfirmed. The 1.0.2 customer snapshot contains a registered invalid ID (-1), while the requested controlled ID is absent. It does not show that invalid actor's eventual identity. The old-object cleanup correction was not triggered (non-owner unregister count zero).",
+  "diagnostics": {
+    "file": "scenezoi_runtime/actor_registration.cfg",
+    "format": "UTF-8 JSON encoded as ASCII hex",
+    "published_on": "Missing controlled-actor lookup, protected so diagnostic failure cannot replace the original selection error.",
+    "fields": [
+      "requested_id",
+      "requested_registered",
+      "registered_count",
+      "registered_ids (at most 64)",
+      "equivalent_numeric_id",
+      "register_calls",
+      "unregister_calls",
+      "non_owner_unregister_calls",
+      "last_registered_id",
+      "last_unregistered_id",
+      "runtime_build"
+    ],
+    "per_frame_io": false
+  },
+  "customer_follow_up": {
+    "binding_manifest_equals_release": true,
+    "host_changed_between_snapshots": true,
+    "latest_error": "The controlled Zoi is not loaded",
+    "host_ui_readiness_matches": true,
+    "customer_reported_other_saves_and_controlled_zois_also_fail": true,
+    "platform_report": "Customer and maintainer both use Steam default public branch; exact numeric build not independently compared.",
+    "implication": "Missing/incorrect binding declarations ruled out for this manifest. Actual callback execution, registry contents and ID formatting remain unknown.",
+    "candidate_1_0_2_result": {
+      "runtime_build": "20261105-registration-2",
+      "error_persists": true,
+      "register_calls": 41,
+      "unregister_calls": 25,
+      "non_owner_unregister_calls": 0,
+      "registered_count": 15,
+      "invalid_id_present": true,
+      "requested_registered": false,
+      "numeric_equivalent_registered": false,
+      "interpretation": "Some callbacks reach the same runtime that handles Start; a total callback-loading failure and simple numeric-string mismatch do not explain this snapshot. Invalid-ID registration is observed; whether it belongs to a missing household Zoi is unproven."
+    }
+  },
+  "diagnostic_regressions": {
+    "passed": true,
+    "requested_present_and_missing_snapshots": true,
+    "lifecycle_counters_and_last_ids": true,
+    "hex_json_readback": true,
+    "empty_registry_snapshot": true,
+    "lookup_diagnostic_does_not_mutate_registry": true
+  },
+  "additional_unverified_hypotheses": [
+    "Per-character callback loading failure.",
+    "Multiple installations with the same native project ID.",
+    "Native ID representation differs from the UI request."
+  ],
+  "artifacts": {
+    "candidate_zip": "SceneZOI-1.0.2.zip",
+    "candidate_label": "Actor ownership correction plus targeted diagnostics; customer cause unconfirmed.",
+    "runtime_build": "20261105-registration-2",
+    "source_snapshot": "Matching source captured at candidate build time; final acceptance documentation may be newer."
+  },
+  "fresh_install_acceptance": "Not performed for 1.0.2; 1.0.1 retains its separate clean-directory acceptance.",
+  "customer_next_step": "See deferred-registration-20261105.json for the invalid-ID correction and next diagnostic candidate.",
+  "observed_storage_layout": {
+    "installed_package": "Mods/SceneZOI_93C44199 with mod_manifest.json",
+    "configuration": "Mods/InGame/SceneZOI_93C44199/scenezoi_runtime without a mod_manifest.json beside it",
+    "lesson": "Locate package and cfg data separately; a data-only directory is not an additional installed mod."
+  }
+}
