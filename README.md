@@ -11,6 +11,11 @@ This repository contains the framework source, SDK, authoring tools and develope
 documentation. Start with [developer setup](docs/installation.md) to work on the
 framework or build a fork in the inZOI ModKit.
 
+**Player downloads:** Ready-to-install SceneZOI packages and player installation
+instructions are available in the [public release post on Patreon](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155).
+The optional adult animation pack **HZoi** is also available there. Both downloads
+are free; no Patreon subscription is required.
+
 ## What you can build
 
 | Your project | SceneZOI provides | Start here |
