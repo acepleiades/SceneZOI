@@ -1,10 +1,9 @@
 local V=require('SceneZOI.DataValidation')
 local M={}
 local function body(v)
- V.fields(v,{'schema_version','id','section','coverage_bit','full_coverage_exception','mesh_name','minimum_materials','material_slot','patch_mesh','patch_material_slot','morph'},{'schema_version','id','section','coverage_bit','mesh_name','minimum_materials','material_slot','patch_mesh','patch_material_slot'})
- assert(v.schema_version==1,'Unsupported body profile version');V.id(v.id)
+ V.fields(v,{'schema_version','id','section','coverage_bit','full_coverage_exception','patch_mesh','patch_material_slot','morph'},{'schema_version','id','section','coverage_bit','patch_mesh','patch_material_slot'})
+ assert(v.schema_version==2,'Unsupported body profile version');V.id(v.id)
  V.number(v.section,0,255,true);V.number(v.coverage_bit,0,31,true)
- V.number(v.minimum_materials,1,256,true);V.name(v.mesh_name);V.name(v.material_slot)
  V.asset(v.patch_mesh);V.name(v.patch_material_slot)
  if v.morph then V.name(v.morph)end
  if v.full_coverage_exception~=nil then V.boolean(v.full_coverage_exception)end

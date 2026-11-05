@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "framework_version": "1.0.4",
+  "content_version": "1.0.1",
+  "runtime_build": "20261105-body-layout-1",
+  "confirmed_cause": "HZoi declared Supponpon's Material_018 at index 17 as its sole body layout. The stock game uses shader_body_shader18 at index 17. Removing Supponpon reproduces the same failure locally.",
+  "ownership": "Framework supplies generic layout matching and safe preparation/cleanup; HZoi declares measured compatible mesh/material layouts.",
+  "native_measurements": {
+    "stock": {
+      "mesh": "SKM_Male_Base",
+      "material_count": 32,
+      "slot": "shader_body_shader18",
+      "index": 17,
+      "bones": 370
+    },
+    "zoibits_asset": {
+      "mesh": "SKM_Male_Base_NS",
+      "material_count": 32,
+      "slot": "shader_body_shader18",
+      "index": 17,
+      "bones": 376,
+      "namespace": "NaturalSkin_B5AE5C0D",
+      "limitation": "Asset measured with a temporary hidden component; actual participant playback and visible fit still require acceptance."
+    },
+    "supponpon": {
+      "mesh": "SKM_Male_Base",
+      "minimum_materials": 32,
+      "slot": "Material_018",
+      "index": 17,
+      "evidence": "The original working profile required Material_018 at 17. Renewed enabled-mod playback/outfit/Exit passed with the new matcher; no separate new static-asset slot inventory was taken."
+    }
+  },
+  "fix": [
+    "Stock-first HZoi body profile with explicit compatible_layouts for measured replacement mesh/name combinations.",
+    "One matching predicate for body preparation, active coverage and clothing masks.",
+    "Unknown/rebuilding layouts wait hidden under normal preparation timeout; status records actual mesh/material count/declared-slot indices.",
+    "No mod-specific mesh names, namespaces or assets hardcoded into framework Lua."
+  ],
+  "automated": {
+    "passed": true,
+    "python_tests": 85,
+    "lua_suites": 57,
+    "ui_suites": 9,
+    "regression_failed_before_fix": true,
+    "covered": [
+      "stock primary layout",
+      "renamed material slot",
+      "declared alternate mesh",
+      "wrong/reordered slot remains hidden and retryable",
+      "clothing and active guards agree with preparation",
+      "malformed/duplicate variants rejected",
+      "independent repeated-session patch cleanup"
+    ]
+  },
+  "native_validation": {
+    "modkit_validate_lua_script": {
+      "ok": true,
+      "analysis_ran": true,
+      "errors": 0,
+      "warnings": 0,
+      "diagnostics": []
+    },
+    "modkit_validate_uimod": {
+      "plugin": "SceneZOI_93C44199",
+      "apps_checked": 2,
+      "ready_to_package": true,
+      "error_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "summary": "No issues found across 2 app(s).",
+      "next_recommended_action": "Looks good \u2014 preview with modkit_start_uimod_preview."
+    }
+  },
+  "packaging": {
+    "passed": true,
+    "uat_exit_code": 0,
+    "isolated_exports": true,
+    "framework_owned_assets": 4,
+    "content_owned_assets": 725,
+    "no_game_or_engine_payloads": true,
+    "content_contains_no_executable_code": true
+  },
+  "installation": {
+    "passed": true,
+    "game_closed": true,
+    "mode": "Update preserving separate cfg data; not a clean-directory test.",
+    "packages": [
+      {
+        "plugin": "SceneZOI_93C44199",
+        "version": "1.0.4",
+        "exact_zip_installed": true,
+        "payload_files_verified": 132,
+        "changed_files": [
+          "INSTALL.txt",
+          "mod_manifest.json",
+          "SceneZOI_93C44199.uplugin",
+          "SOURCE.txt",
+          "lua/B1/SceneZOI/BodyRegion.lua",
+          "lua/B1/SceneZOI/Config.lua",
+          "lua/B1/SceneZOI/ProfileData.lua"
+        ],
+        "cooked_files_changed": 0,
+        "separate_cfg_files_preserved": 40,
+        "other_files_preserved": true
+      },
+      {
+        "plugin": "HZoi_660649D8",
+        "version": "1.0.1",
+        "exact_zip_installed": true,
+        "payload_files_verified": 9,
+        "changed_files": [
+          "HZoi_660649D8.uplugin",
+          "INSTALL.txt",
+          "mod_manifest.json",
+          "non_ufs/JsonPatch/Text_UI_patch.json"
+        ],
+        "cooked_files_changed": 0,
+        "separate_cfg_files_preserved": 0,
+        "other_files_preserved": true
+      }
+    ]
+  },
+  "runtime_acceptance": {
+    "stock": {
+      "author_report": "It works with the stock body after the requested playback/outfit/Exit pass.",
+      "fresh_process": true,
+      "replacers_reported_disabled": true,
+      "final_state": "idle/ok",
+      "exit_cleanup": "ok/ok",
+      "discovery_warnings": 0,
+      "autosave_lease": "released",
+      "retained_last_error": "Unchanged pre-fix error; no new error recorded."
+    },
+    "zoibits": {
+      "author_report": "With ZoiBits enabled, everything is working correctly after the requested playback/outfit/Exit pass.",
+      "installed_from_exact_zips": true,
+      "fresh_process": true,
+      "final_state": "idle/ok",
+      "exit_cleanup": "ok/ok",
+      "discovery_warnings": 0,
+      "autosave_lease": "released",
+      "retained_last_error": "Unchanged pre-fix reproduction error; does not belong to this successful session.",
+      "native_asset_measurement": "Replacement asset measured separately; visual/script behavior accepted in the enabled-mod playback test."
+    },
+    "supponpon": {
+      "author_report": "Yes, it works correctly after restoring both Supponpon parts and repeating the requested playback/outfit/Exit pass.",
+      "fresh_process": true,
+      "zoibits_reported_disabled": true,
+      "final_state": "idle/ok",
+      "exit_cleanup": "ok/ok",
+      "discovery_warnings": 0,
+      "autosave_lease": "released",
+      "retained_last_error": "Pre-fix BodyRegion.lua:181 error remains unchanged; current run ended successfully."
+    }
+  },
+  "diagnostic_hygiene": "Temporary local probes used existing supported component APIs, destroyed their hidden components and restored the original installed Main.lua; probe modules removed. No probe script belongs to either distributable.",
+  "artifacts": {
+    "framework": {
+      "name": "SceneZOI-1.0.4.zip",
+      "sha256": "004b5afe75d6a81ee624ce2e440d27d1cd180b373d0088fe7b3bc973a7aba706"
+    },
+    "content": {
+      "name": "HZoi-1.0.1.zip",
+      "sha256": "477006033af9ffd03065e5757d1dddda40dc84b26aa934f450fe137d8b1d836f"
+    },
+    "framework_source": {
+      "name": "SceneZOI-1.0.4-source.zip",
+      "sha256": "811447dec31a50ae8d496b3f52d4a80bb7694a9effc45e85073aac79308eb52a",
+      "note": "Exact build-time source; later acceptance documentation may be newer."
+    }
+  },
+  "customer_acceptance": "Pending. All three local configurations accepted; this corrects the independently reproduced body-layout failure and does not establish the original registration-conflict cause.",
+  "acceptance_scope": "Fresh-process updates of both exact ZIPs preserving settings, with no diagnostic seeding or hot reload during the accepted tests. No clean-directory 1.0.4/1.0.1 acceptance was performed.",
+  "superseded_by": "generic-body-region-20261105.json: the next development revision removes explicit layout/name lists."
+}

@@ -1,14 +1,11 @@
 {
   "body": {
     "test.region": {
-      "schema_version": 1,
+      "schema_version": 2,
       "id": "test.region",
       "section": 17,
       "coverage_bit": 17,
       "full_coverage_exception": true,
-      "mesh_name": "SKM_Male_Base",
-      "minimum_materials": 32,
-      "material_slot": "Material_018",
       "patch_mesh": "/Test/CoveragePatch.CoveragePatch",
       "patch_material_slot": "shader_body_shader18",
       "morph": "Body_Muscle"

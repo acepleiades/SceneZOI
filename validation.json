@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "date": "2026-11-05",
-  "build": "20261105-registration-3",
+  "build": "20261105-body-layout-2",
   "ui_build": "20261105-startup-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.0.3 corrects invalid-ID registration and teardown after ID reset, retaining earlier startup and ownership fixes. Full checks, native Lua/UI validation, isolated packaging and exact-ZIP update installation pass. The author accepted normal Start/playback/Exit; final native state is idle/ok, Exit/cleanup ok/ok, no retained error and autosave lease released. Customer acceptance and a 1.0.3 clean-directory test remain pending; the customer causal link is not yet confirmed.",
+  "release_status": "Versioned 1.1.0 packaging of the accepted generic body-region runtime. Runtime code/data remain build 20261105-body-layout-2; both packages must update together. Exact player archives and clean-install acceptance are being prepared.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -85,7 +85,7 @@
       "framework_python_tests": 53,
       "optional_private_content_python_tests": 32,
       "total_python_tests": 85,
-      "lua_suites_with_optional_content": 56,
+      "lua_suites_with_optional_content": 57,
       "ui_suites": 9,
       "passed": true,
       "rerun_during_documentation_review": false,
@@ -180,7 +180,7 @@
         "live_initially_invalid_identity_deliberately_forced": false,
         "customer_cause_confirmed": false
       },
-      "customer_acceptance": "Pending",
+      "customer_acceptance": "Failed; see updated checkpoint for the returned 1.0.3 diagnostic.",
       "installation": {
         "passed": true,
         "exact_zip": true,
@@ -189,6 +189,37 @@
         "hzoi_unchanged": true,
         "fresh_directory_test": false
       }
+    },
+    "customer_navigation_follow_up": {
+      "checkpoint": "docs/validation/customer-body-layout-20261105.json",
+      "body_region_slot_failure_identified": true,
+      "specific_mod_or_rebuild_timing_cause": "Unconfirmed",
+      "runtime_changes": false
+    },
+    "body_layout_fix": {
+      "checkpoint": "docs/validation/body-layout-fix-20261105.json",
+      "automated_passed": true,
+      "native_lua_errors": 0,
+      "native_ui_errors": 0,
+      "runtime_acceptance": {
+        "zoibits": "Author accepted; native idle/ok and Exit/cleanup ok/ok.",
+        "stock": "Author accepted; native idle/ok and Exit/cleanup ok/ok.",
+        "supponpon": "Author accepted; native idle/ok and Exit/cleanup ok/ok."
+      },
+      "installation_passed": true,
+      "customer_acceptance": "Pending"
+    },
+    "generic_body_region": {
+      "checkpoint": "docs/validation/generic-body-region-20261105.json",
+      "runtime_acceptance": {
+        "stock": "Author accepted; no separate native snapshot.",
+        "supponpon": "Author accepted, native final idle/ok and Exit/cleanup ok/ok.",
+        "zoibits": "Author accepted, native final idle/ok and Exit/cleanup ok/ok."
+      },
+      "automated_passed": true,
+      "native_validation_passed": true,
+      "packaging_passed": true,
+      "installation_passed": true
     }
   },
   "author_acceptance": [
@@ -199,7 +230,9 @@
     "2026-11-05: author reported volume controls working as expected; retained last Exit/cleanup ok/ok, 42 discovery records with zero warnings, audio setting acknowledgement ok.",
     "2026-11-05 localization: author reported the requested Portuguese (Brazil) and Japanese language-switch, native entry/picker, panel/content-label and glyph/layout checks correct. Latest completed scene used the normal distance guard, a subsequent scene was playing normally at readback, and no new UI error record was present.",
     "2026-11-05 visual fixes: author reported all three bugs appear fixed after the requested mood/blink, small settings hint and third-party covered-body outfit checks. Final matching session Exit and cleanup read back ok/ok; retained historical error was unchanged.",
-    "2026-11-05 CJK font follow-up: author confirmed the requested Japanese, Simplified Chinese and Traditional Chinese navigation/Exit glyph checks are working. Matching final session Exit/cleanup was ok/ok with no new retained error; this supersedes the earlier incomplete Japanese glyph acceptance."
+    "2026-11-05 CJK font follow-up: author confirmed the requested Japanese, Simplified Chinese and Traditional Chinese navigation/Exit glyph checks are working. Matching final session Exit/cleanup was ok/ok with no new retained error; this supersedes the earlier incomplete Japanese glyph acceptance.",
+    "2026-11-05 mood follow-up: author accepts the scoped native blend experiment; normal blinking and remaining expression blending look good. Final production ZIP validation remains separate.",
+    "2026-11-05 final 1.1.0 ZIPs: author confirms all requested clean-install Start, strong-mood facial expressions/blinking, outfit, navigation and Exit checks work normally."
   ],
   "native_observations": [
     "Latest first/final Exit readbacks were idle/ok; final participants matched captured collision, autonomy and inheritance originals; autosave was restored.",
@@ -209,7 +242,8 @@
     "Visual-fix hot candidate: 44 declarations/zero warnings; two expression owners kept zero face replay counters during captured playback. Final state idle/ok and matching Exit/cleanup ok/ok, with no new retained error.",
     "CJK UI-only hot update reached idle/ok with the unchanged visual-fix runtime, new UI build marker and 44 declarations/zero warnings; retained error unchanged.",
     "After the author CJK checks, current state was idle/ok with matching final session Exit/cleanup ok/ok. The retained historical preparation error was unchanged.",
-    "Fresh SceneZOI 1.0 install reproduced an absent request mailbox and unacknowledged controls despite 44 valid declarations. Exact 1.0.1 ZIP clean startup acknowledged the current host automatically, reached scene playback and ended idle/ok, last Exit ok/ok, with no retained error; no remount or diagnostic patching was used."
+    "Fresh SceneZOI 1.0 install reproduced an absent request mailbox and unacknowledged controls despite 44 valid declarations. Exact 1.0.1 ZIP clean startup acknowledged the current host automatically, reached scene playback and ended idle/ok, last Exit ok/ok, with no retained error; no remount or diagnostic patching was used.",
+    "Final 1.1.0 clean test persisted face-mood-2, idle/ok, matching Exit/cleanup ok/ok, released autosave and seven nodes/zero warnings, without retained error. Game then closed; no live actor inspection claimed. Exact installed package hashes still match the distributed ZIPs."
   ],
   "evidence": {
     "overview": "docs/validation/README.md",
@@ -254,8 +288,14 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261105-registration-3",
+  "runtime_build": "20261105-face-mood-2",
   "checkpoints": {
-    "deferred_registration": "docs/validation/deferred-registration-20261105.json"
-  }
+    "deferred_registration": "docs/validation/deferred-registration-20261105.json",
+    "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
+    "body_layout_fix": "docs/validation/body-layout-fix-20261105.json",
+    "generic_body_region": "docs/validation/generic-body-region-20261105.json",
+    "release_1_1_0": "docs/validation/release-1.1.0-20261105.json",
+    "facial_mood": "docs/validation/facial-mood-20261105.json"
+  },
+  "version": "1.1.0"
 }

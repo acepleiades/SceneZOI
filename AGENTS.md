@@ -107,6 +107,11 @@ must never be installed or distributed as candidates.
 When an installed test build is requested or already authorized, finish the
 verified installation; packaging alone does not complete that request. Check the
 game/session state first and avoid interrupting active scenes or house editing.
+Mounting or unmounting even a separate diagnostic Lua mod can unload existing
+Lua sessions. Perform all mount/unmount/reload operations only while idle.
+Verify diagnostic files byte-for-byte: one native write-file route reported
+success after truncating a longer script to 2047 bytes.
+
 Cooked-container replacement requires the game closed. Back up outside Mods,
 preserve settings/preferences/credits, update only owned payloads and verify
 installed hashes. Use the established idle hot-update path only when appropriate,
@@ -142,6 +147,15 @@ retry each initially unassigned actor until ready, and retain its registered ID
 for teardown after a native reset. Keep the multi-actor/teardown regression in
 [actor registration](tests/actor-registration.lua). This observed weakness is not
 yet established as the complete cause of that customer's failure.
+
+HZoi's original body profile mistakenly treated Supponpon's `Material_018` slot
+name as stock. Stock uses `shader_body_shader18` at the same index. Always test
+body-region profiles without replacers as well as with replacements. Body-profile
+schema 2 declares section/coverage mapping and patch resources, without mesh or
+participant-material name lists. Share current-section readiness checks across
+preparation and clothing/active guards. Replacers preserving that mapping work
+without registration; differently partitioned geometry is not automatically mapped. See the
+[generic section checkpoint](docs/validation/generic-body-region-20261105.json).
 
 Preserve existing uncommitted work. Do not commit, push, tag or publish without an
 explicit instruction. Preserve [LICENSE](LICENSE), GPL-3.0-only attribution and

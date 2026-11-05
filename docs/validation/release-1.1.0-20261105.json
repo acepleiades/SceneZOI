@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "release_version": "1.1.0",
+  "packages": {
+    "SceneZOI": "1.1.0",
+    "HZoi": "1.1.0"
+  },
+  "runtime_build": "20261105-face-mood-2",
+  "changes": "Generic automatic support for bodies preserving the declared section/material and coverage convention; no mesh/material-name allowlists. HZoi uses body-profile schema 2 and section 17. Scoped native facial mood blend suppression/restoration preserves authored blinking.",
+  "tested_runtime_basis": "Generic body-region matrix remains accepted. Facial follow-up: full checks/native validation pass; author accepts targeted native blend experiment. See facial-mood-20261105.json. Final production ZIP clean-install author acceptance and matching persisted end diagnostics passed.",
+  "packaging": "Both exact ZIPs assembled and read-back/hash verified. SceneZOI native package contains four owned assets; HZoi retains 725. No referenced Game/Engine payloads. Matching source is nested inside the SceneZOI player ZIP.",
+  "player_zip_acceptance": "Author confirms everything works normally after the requested final clean-install Start, Standing Handjob facial/blink, outfit, navigation and Exit check. Game was then closed; persisted matching final state is idle/ok, Exit/cleanup ok/ok, autosave lease released, seven nodes/zero warnings and no retained error. No live post-Exit actor inspection was performed after closing.",
+  "source_distribution": "Matching framework source snapshot included as an inactive ZIP inside SceneZOI_93C44199/Source/; no private HZoi audio/assets in framework source.",
+  "publishing": "Archive preparation only; no commit, tag, push or external publication.",
+  "rejected_initial_archive": {
+    "SceneZOI_sha256": "6cc6eebd648bcd5aa1e9acf963e6794eac9eccea3bf028332b084497c2238201",
+    "reason": "Facial mood flicker in final author check; do not distribute this candidate."
+  },
+  "final_archives": {
+    "SceneZOI-1.1.0.zip": "12b783318f0c83a5a91f32cc416e5d2960ef089dc264d99a02885044810ca8b6",
+    "HZoi-1.1.0.zip": "9d065b7ad78c82982fcce6e1dc32cf909de6a0e8311d2c5b2955dd43d352c676"
+  },
+  "clean_installation": "Passed exact final distributable ZIPs in fresh package directories and fresh game process, without old cfg, manual mounting, hot reload or diagnostic seeding. Original panel preference restored afterward while game closed; existing defaults otherwise preserved."
+}

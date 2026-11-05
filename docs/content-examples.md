@@ -174,6 +174,13 @@ See [tasks](scene-tasks.md), [voices](voices.md) and [completion effects](comple
 
 ## Trace an attachment through its profiles
 
+The pinned body-profile example uses the older name-based schema. Current body
+profiles use schema version 2 and omit `mesh_name`, `material_slot`,
+`minimum_materials` and `compatible_layouts`. Keep the declared section/coverage
+and patch fields and follow the current
+[body-region contract](package-split.md#presentation-and-compatibility-profiles).
+The framework handles section-preserving bodies without recognizing their mods.
+
 The [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json) declares its mesh, pelvis binding,
 body/material profile IDs and `retain_for_session`. `node_animations` maps scene
 IDs to duration-matched tracks, including the framework's standing and bed hubs.

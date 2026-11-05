@@ -115,10 +115,50 @@ regions and layout IDs are pack-specific compatibility data, not universal maps.
 Test new profiles against the actual target meshes. Region replacement currently
 permits one adapter per participant; ordinary attachments support multiple owners.
 
+Body profiles use `schema_version: 2`. A profile declares `section` (the shared
+render/material index), `coverage_bit`, optional `full_coverage_exception`,
+`patch_mesh`, `patch_material_slot` and optional `morph`, alongside its `id`.
+There is no mesh-name or participant-material-name allowlist. The removed
+`mesh_name`, `material_slot`, `minimum_materials` and `compatible_layouts` fields
+are rejected rather than retained as obsolete matching modes.
+
+After unmerging, SceneZOI checks that the current body mesh is loaded, has the
+declared material index and at least one LOD, then waits for the actual source
+material before creating the replacement patch. Preparation and active/clothing
+masking use the same section checks. The checks run against the current mesh;
+appearance rebuilds are handled without a startup cache or per-mod registration.
+The patch's own material-slot name remains validated because the supplying pack
+owns that asset. Diagnostics show the observed mesh, material/LOD counts and
+whether the declared section's material is ready.
+
+For example, a pack with a replacement patch for its declared region can use:
+
+```json
+{
+  "schema_version": 2,
+  "id": "designer.body_region",
+  "section": 5,
+  "coverage_bit": 5,
+  "patch_mesh": "/Designer/Compatibility/CoveragePatch.CoveragePatch",
+  "patch_material_slot": "ReplacementRegion"
+}
+```
+
+Those indices and the patch slot are author-owned asset requirements, not a
+framework default. No body-replacer names are needed.
+
+This supports unlisted replacement bodies that preserve the declared section,
+coverage mapping and skin/skeleton conventions. It does not infer the anatomical
+meaning of arbitrary geometry or remap a body that moves the region elsewhere.
+HZoi declares section/coverage bit 17; the framework has no hardcoded section 17.
+Attachments awaiting missing/rebuilding resources remain hidden and retry under
+the ordinary preparation timeout. Test stock and actual replacements for fit,
+shading, clothing masks and restoration.
+
 For declared body profiles, resolved garment coverage also guards the matching
 render section when covering clothing prevents attachment activation. Manual
 appearance rebuilds must not expose that section through clothing. The guard
-validates the declared mesh/material layout, covers every LOD and never forces
+validates the declared section resources, covers every LOD and never forces
 an exposed section visible; removing covering clothing can activate the ordinary
 replacement path. This uses profile data rather than a universal section number.
 

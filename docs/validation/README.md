@@ -1,5 +1,17 @@
 # First-release validation
 
+## Versioned update: 1.1.0
+
+SceneZOI and HZoi are versioned together as 1.1.0 for generic automatic handling
+of section-preserving body replacements. The body-region implementation retains the accepted
+`20261105-body-layout-2` tests. The initial versioned clean-install test exposed
+a separate native mood blend competing with facial expressions. The
+`20261105-face-mood-2` follow-up preserves blinking and adds scoped blend
+ownership/restoration; see the [facial checkpoint](facial-mood-20261105.json). Native owned-payload packaging and final
+exact-ZIP acceptance are recorded in [the release checkpoint](release-1.1.0-20261105.json).
+Both player packages must be updated together for body-profile schema 2. The final exact ZIPs passed fresh-directory/fresh-process startup and the author's facial/blink, outfit, navigation and Exit check. Persisted final Exit/cleanup
+was ok/ok, autosave released and no retained error was present.
+
 ## Fresh-install correction: SceneZOI 1.0.1
 
 A clean installation of the published 1.0 ZIP reproduced missing Start entries.
@@ -37,8 +49,46 @@ native Lua/UI validation, isolated owned-payload packaging and exact-ZIP update
 installation pass. Settings and HZoi are preserved. The author accepted normal
 Start/playback/Exit after a fresh launch; final native state is idle/ok, cleanup
 is ok/ok, no retained error and the autosave lease is released. This was an update
-test; a clean-directory 1.0.3 test remains unperformed. The customer's failure is
-not yet proven to have this cause. See [the checkpoint](deferred-registration-20261105.json).
+test; a clean-directory 1.0.3 test remains unperformed. The customer's subsequent
+1.0.3 test still fails: 6,661 invalid-ID attempts, 15 correctly indexed actors and
+no controlled registration. A brief identity-assignment delay is insufficient to
+explain that result. Native character-map comparison is the next investigation. See [the checkpoint](deferred-registration-20261105.json).
+
+## Customer navigation follow-up
+
+The customer reports that reducing enabled mods allows picker/standing idle entry.
+The new session exits during rear-node preparation with `Configured region
+material slot is unavailable`: the declared male body slot does not resolve to
+its required index. This is distinct from the retained earlier registration
+error. No specific mod or persistent-versus-transient layout cause is established;
+repeat with only the current two packages before another runtime candidate.
+See [the body-layout checkpoint](customer-body-layout-20261105.json).
+
+## Stock/replacement body-layout correction
+
+Removing Supponpon reproduces the body-region failure locally. The content profile
+mistook its renamed slot for the stock layout. SceneZOI 1.0.4 adds shared matching
+for explicit compatible layouts; HZoi 1.0.1 uses stock naming by default and declares
+measured replacements. Full regressions, native validation, isolated packaging
+and exact-ZIP update installation pass with settings preserved. Joint
+stock/ZoiBits/Supponpon playback, outfit-mask and Exit checks passed after
+separate fresh launches, with author acceptance and native idle/ok, cleanup
+ok/ok and released autosave leases. Customer retest and clean-directory acceptance
+remain pending. Both packages must be updated for this correction. See [the checkpoint](body-layout-fix-20261105.json).
+
+## Generic section-preserving bodies
+
+The next development revision (`20261105-body-layout-2`) replaces name-based
+layout lists with body-profile schema 2. Current section resources govern
+preparation and both masking guards; unlisted names and different total material
+counts work when the declared region mapping is preserved. HZoi keeps section 17
+in its data. Old profile fields/matching code are removed. Full checks, native validation, both isolated builds and filtered development
+installation pass with settings preserved. The author accepted renewed stock,
+Supponpon and ZoiBits playback/outfit/Exit checks. Native final snapshots confirm
+Supponpon and ZoiBits idle/ok and cleanup ok/ok; stock has author acceptance
+without a separate new native snapshot. No new player ZIP or clean-directory
+acceptance is claimed; the earlier three configuration tests
+above apply to the previous revision. See [the current checkpoint](generic-body-region-20261105.json).
 
 ## Earlier release evidence
 

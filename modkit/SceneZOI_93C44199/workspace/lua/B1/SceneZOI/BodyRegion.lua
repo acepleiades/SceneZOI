@@ -2,6 +2,22 @@
 local M = {}
 local Profiles=require("SceneZOI.Profiles")
 
+-- A profile declares the section convention, not a list of body replacers.
+-- Preparation and both masking guards operate on the actual unmerged body.
+local function section_available(mesh,profile)
+    return mesh and mesh:GetSkeletalMeshAsset()~=nil and
+        mesh:GetNumMaterials()>profile.section and mesh:GetNumLODs()>0
+end
+
+local function section_status(mesh,profile)
+    local asset=mesh and mesh:GetSkeletalMeshAsset()
+    if not asset then return 'unavailable,section='..profile.section end
+    local count=mesh:GetNumMaterials()
+    return string.format('%s,materials=%d,lods=%d,section=%d,material_ready=%s',
+        asset:GetName(),count,mesh:GetNumLODs(),profile.section,
+        tostring(count>profile.section and mesh:GetMaterial(profile.section)~=nil))
+end
+
 local function coverage(flags, profile)
     local SECTION=profile.coverage_bit
     flags = flags & 0xffffffff
@@ -78,11 +94,8 @@ end
 function M.guard(session)
     local body = session.body_region
     if not body or not body.coverage_committed then return end
-    local profile=body.profile;local SECTION=profile.section
     local mesh = body.actor.Mesh
-    local asset = mesh and mesh:GetSkeletalMeshAsset()
-    if not asset or mesh:GetNumMaterials() < profile.minimum_materials or asset:GetName() ~= profile.mesh_name or
-        mesh:GetMaterialIndex(profile.material_slot) ~= SECTION then return end
+    if not section_available(mesh,body.profile)then return end
     hide_section(body, mesh)
     body.guard_ticks = (body.guard_ticks or 0) + 1
 end
@@ -94,9 +107,7 @@ end
 function M.guard_clothing(actor,profile_id)
     if not M.covered(actor,profile_id)then return 0 end
     local profile=Profiles.body(profile_id);local mesh=actor.Mesh
-    local asset=mesh and mesh:GetSkeletalMeshAsset()
-    if not asset or mesh:GetNumMaterials()<profile.minimum_materials or asset:GetName()~=profile.mesh_name or
-        mesh:GetMaterialIndex(profile.material_slot)~=profile.section then return 0 end
+    if not section_available(mesh,profile)then return 0 end
     local repairs=0
     for lod=0,mesh:GetNumLODs()-1 do
         if mesh:IsMaterialSectionShown(profile.section,lod)then
@@ -170,15 +181,16 @@ function M.prepare(session, actor)
         return false
     end
     body.frames = body.frames + 1
-    if body.frames < 3 or actor.Mesh:GetNumMaterials() < profile.minimum_materials then return false end
+    if body.frames < 3 then return false end
+    -- Merging can collapse sections temporarily. Wait for the declared section
+    -- and its resources; mesh and material-slot names are intentionally irrelevant.
+    if not section_available(actor.Mesh,profile)then return false end
     -- A newly rebuilt mesh can expose its slots before the appearance builder installs
     -- its skin MID. Wait for that actual resource instead of treating three ticks as proof.
     local material = actor.Mesh:GetMaterial(SECTION)
     if not material then return false end
     if not body.patch then
         local mesh = actor.Mesh
-        assert(mesh:GetSkeletalMeshAsset():GetName() == profile.mesh_name, "Unexpected mesh for region profile")
-        assert(mesh:GetMaterialIndex(profile.material_slot) == SECTION, "Configured region material slot is unavailable")
         body.mesh, body.asset, body.material = mesh, mesh:GetSkeletalMeshAsset(), material
         body.visibility = visibility_record(body, mesh).visibility
         configure_patch(session, body)
@@ -221,9 +233,9 @@ function M.status(session)
     local SECTION=body.profile.section
     if not body.patch then
         local setting = body.actor.AppearanceComponent.AppearanceSetting
-        return string.format("body=unmerging:frames=%d:materials=%d:base_merge=%s:final_merge=%s",
-            body.frames, body.actor.Mesh:GetNumMaterials(), tostring(setting.Body.bUseMeshMerge),
-            tostring(setting.FinalBody.bUseMeshMerge))
+        return string.format("body=unmerging:frames=%d:materials=%d:base_merge=%s:final_merge=%s:body_section=%s",
+            body.frames, body.actor.Mesh and body.actor.Mesh:GetNumMaterials() or 0, tostring(setting.Body.bUseMeshMerge),
+            tostring(setting.FinalBody.bUseMeshMerge),section_status(body.actor.Mesh,body.profile))
     end
     local mathlib, error_max = UE.UKismetMathLibrary, 0
     for _, name in ipairs({"pelvis", "spine_01", "thigh_l", "thigh_r"}) do
@@ -232,8 +244,8 @@ function M.status(session)
         local b = mathlib.TransformLocation(body.patch:GetSocketTransform(name, 0), point)
         error_max = math.max(error_max, math.sqrt((a.X-b.X)^2 + (a.Y-b.Y)^2 + (a.Z-b.Z)^2))
     end
-    return string.format("patch_frames=%d:patch_pose_error_cm=%.6f:region_shown=%s:merge_resets=%d:guard_ticks=%d", body.patch_frames,
-        error_max, tostring(body.mesh:IsMaterialSectionShown(SECTION, 0)), body.merge_resets or 0, body.guard_ticks or 0)
+    return string.format("patch_frames=%d:patch_pose_error_cm=%.6f:region_shown=%s:merge_resets=%d:guard_ticks=%d:body_section=%s", body.patch_frames,
+        error_max, tostring(body.mesh:IsMaterialSectionShown(SECTION, 0)), body.merge_resets or 0, body.guard_ticks or 0,section_status(body.mesh,body.profile))
 end
 
 function M.restore(session)

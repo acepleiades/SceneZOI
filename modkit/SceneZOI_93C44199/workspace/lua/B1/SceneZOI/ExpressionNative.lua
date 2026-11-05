@@ -42,6 +42,41 @@ function M.bind(owner)
     end
     return true
 end
+-- The native mood layer is independent of montage auto-fading. Keep its
+-- blend out while owning a facial clip; preserve updates for later release.
+local function claim_blend(owner)
+    local ok,value=pcall(function()return owner.instance.BlendAlpha end)
+    if not ok or type(value)~='number' or value~=value or math.abs(value)==math.huge then return end
+    owner.blend_leases=owner.blend_leases or {}
+    local record
+    for _,lease in ipairs(owner.blend_leases)do if lease.instance==owner.instance then record=lease;break end end
+    if not record then
+        record={instance=owner.instance,restore=value};owner.blend_leases[#owner.blend_leases+1]=record
+    end
+    if value~=0 then record.restore=value;owner.instance.BlendAlpha=0 end
+end
+local function release_blends(owner,all)
+    local kept,errors={},{}
+    for _,record in ipairs(owner.blend_leases or {})do
+        local owned=false
+        if not all then
+            for _,lease in ipairs(owner.leases or {})do
+                if not lease.released and lease.instance==record.instance then owned=true;break end
+            end
+        end
+        if owned then kept[#kept+1]=record
+        elseif usable(record.instance)~=false then
+            local ok,err=pcall(function()
+                -- Preserve a later write by the game or another owner.
+                if record.instance.BlendAlpha==0 then record.instance.BlendAlpha=record.restore end
+            end)
+            if not ok then kept[#kept+1]=record;errors[#errors+1]=tostring(err)end
+        end
+    end
+    owner.blend_leases=kept
+    return errors
+end
+
 function M.stop(owner)
     local errors={}
     for _,lease in ipairs(owner.leases or {}) do
@@ -53,6 +88,7 @@ function M.stop(owner)
             end
         end
     end
+    for _,err in ipairs(release_blends(owner,true))do errors[#errors+1]=err end
     if #errors>0 then error(table.concat(errors,"; ")) end
     owner.montage=nil;owner.clip=nil;owner.current_lease=nil
 end
@@ -70,6 +106,7 @@ function M.play(owner,option,transition,now)
     montage.bEnableAutoBlendOut=false
     owner.montage,owner.clip,owner.position=montage,option,option.sample
     owner.animation_time=now
+    claim_blend(owner)
     owner.instance:Montage_SetPlayRate(montage,0)
     owner.instance:Montage_SetPosition(montage,option.sample)
     if old and not old.released then
@@ -108,6 +145,8 @@ function M.hold(owner,now)
         if not lease.released then live[#live+1]=lease end
     end
     owner.leases=live
+    local blend_errors=release_blends(owner,false)
+    owner.blend_cleanup_error=#blend_errors>0 and table.concat(blend_errors,"; ")or nil
     if not owner.clip then return end
     -- Facial sequences contain native blinks. Advance their sampled pose rather
     -- than repeatedly evaluating frame zero. Explicit authored samples stay held.
@@ -119,6 +158,7 @@ function M.hold(owner,now)
         owner.animation_time=now
     end
     if not M.bind(owner) then return end
+    claim_blend(owner)
     local ok,active=pcall(function()return owner.instance:Montage_IsActive(owner.montage) end)
     if not ok then
         if expired(active,"Montage_IsActive",1) then

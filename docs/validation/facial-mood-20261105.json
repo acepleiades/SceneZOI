@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-face-mood-2",
+  "cause": "Disabling montage end fading did not disable the independent native mood-cache blend. Read-only native samples retained BlendAlpha approximately 0.85 while the owned montage remained active.",
+  "fix": "Set the native mood blend weight to zero only while owning a full facial expression clip. Track each actual head instance, retain the latest observed native weight, restore retired instances after their montage leases retire and restore on release. Preserve later nonzero writes. Montage and blend restoration fail/retry independently. Existing instances, blink sampling and explicit transitions are retained.",
+  "automated": {
+    "full_framework_and_optional_content_checks": "passed",
+    "regressions": [
+      "Repeated native mood writes cannot compete with a held expression.",
+      "Animated sampling still advances; explicit sampled poses remain held.",
+      "Latest native weight and independent old/new head values restore.",
+      "Later nonzero native/foreign writes survive release.",
+      "Failed montage stop does not prevent mood restoration; failed property restoration retries without repeating a successful stop."
+    ]
+  },
+  "native_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_ready_to_package": true
+  },
+  "native_experiment": "With the scoped blend guard, both sampled participants retained BlendAlpha zero despite repeated native writes; their owned montages remained active. Raw diagnostics remain private.",
+  "author_acceptance": "Author accepted the targeted live experiment and then confirmed that the final production ZIP clean-install strong-mood facial/blink, outfit, navigation and Exit check works normally.",
+  "packaging": "Production sources synchronized, native package succeeded and exact filter retained four owned assets with no Game/Engine payloads.",
+  "diagnostic_pitfalls": [
+    "Mounting a separate Lua probe unexpectedly unloaded SceneZOI and ended the active session. Only mount/unmount/reload while idle. The probe was removed from Mods.",
+    "The native diagnostic write-file route truncated a longer script to 2047 bytes despite reporting success. Verify saved length/bytes before mounting a diagnostic script."
+  ],
+  "limits": "Timing and appearance of new facial assets/customized heads still require visual review. No claim that every third-party head graph is supported.",
+  "native_experiment_exit": "After the accepted experiment, retained matching state was idle/ok, Exit/cleanup ok/ok and autosave lease released. Final production ZIP test remains separate.",
+  "final_packaged_acceptance": "Author confirms everything works normally after the requested final clean-install Start, Standing Handjob facial/blink, outfit, navigation and Exit check. Game was then closed; persisted matching final state is idle/ok, Exit/cleanup ok/ok, autosave lease released, seven nodes/zero warnings and no retained error. No live post-Exit actor inspection was performed after closing."
+}

@@ -5,7 +5,14 @@ UE={UKismetSystemLibrary={IsValid=function(v)return v~=nil and not v.dead end},
     UGameplayStatics={GetTimeSeconds=function()return now end}}
 package.loaded["SceneZOI.GazeNative"]={head=function()return head end}
 local function instance()
-    local i={montages={},stopped={},other={}}
+    local i=setmetatable({montages={},stopped={},other={},_blend=.85},{
+      __index=function(t,k)if k=='BlendAlpha'then return rawget(t,'_blend')end end,
+      __newindex=function(t,k,v)
+        if k=='BlendAlpha'then
+          if t.fail_blend_restore and v~=0 then t.fail_blend_restore=false;error('Injected blend restoration failure')end
+          rawset(t,'_blend',v)
+        else rawset(t,k,v)end
+      end})
     function i:GetName()return {}end
     function i:PlaySlotAnimationAsDynamicMontage(asset,slot,blend)
         assert(slot=="DefaultSlot");local montage={asset=asset};self.montages[montage]=true;return montage
@@ -109,3 +116,38 @@ for frame=1,900 do N.hold(face,frame/30);assert(current.montages[face.montage],'
 assert(montage_count==1 and not face.montage.bEnableAutoBlendOut,'A looping expression must stay owned through every end window')
 local owned=face.montage;N.stop(face);assert(not current.montages[owned],'Explicit Exit must still stop the owned face')
 print('Facial end-fade regression passed: 10 loops with a competing mood fallback, no automatic fade/replay, and explicit release.')
+
+-- Native mood poses have a separate blend even while the owned montage is active.
+current=instance();local mood_face={actor=owner.actor}
+N.play(mood_face,animated,0,0)
+assert(current.BlendAlpha==0,'An active scene expression must suppress the native mood-pose blend')
+for frame=1,179 do
+ current.BlendAlpha=.65
+ N.hold(mood_face,frame/30)
+ assert(current.BlendAlpha==0 and current.montages[mood_face.montage],
+  'Mood updates must not regain face weight while we own facial playback')
+end
+assert(mood_face.position>0,'Mood suppression must retain animated blink sampling')
+N.stop(mood_face);assert(current.BlendAlpha==.65,'Restore the latest native blend value')
+
+current=instance();local foreign={actor=owner.actor};N.play(foreign,animated,0,0)
+current.BlendAlpha=.3;N.stop(foreign);assert(current.BlendAlpha==.3,'A later native/foreign write wins on release')
+
+now=100;current=instance();local replaced={actor=owner.actor};N.play(replaced,animated,0,0)
+local prior=current;current=instance();current.BlendAlpha=.4
+N.hold(replaced,1);assert(current.BlendAlpha==0 and prior.BlendAlpha==0)
+now=101;N.hold(replaced,2)
+assert(prior.BlendAlpha==.85,'A retired head must release its own mood-blend lease')
+N.stop(replaced);assert(current.BlendAlpha==.4)
+
+current=instance();local stop_failure={actor=owner.actor};N.play(stop_failure,animated,0,0)
+fail_stop=true;assert(not pcall(N.stop,stop_failure))
+assert(current.BlendAlpha==.85,'Montage cleanup failure must not block mood restoration')
+N.stop(stop_failure)
+current=instance();local blend_failure={actor=owner.actor};N.play(blend_failure,animated,0,0)
+local stopped_montage=blend_failure.montage;current.fail_blend_restore=true
+assert(not pcall(N.stop,blend_failure)and current.BlendAlpha==0)
+local stops=current.stopped[stopped_montage]
+N.stop(blend_failure);assert(current.BlendAlpha==.85 and current.stopped[stopped_montage]==stops,
+ 'Blend restoration retry must not repeat completed montage cleanup')
+print('Native mood blend passed: ongoing mood writes suppressed, blink sampling retained, latest/foreign values preserved, retired heads restored and independent cleanup retries.')

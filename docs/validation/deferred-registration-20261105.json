@@ -93,12 +93,31 @@
     "live_initially_invalid_identity_deliberately_forced": false,
     "customer_cause_confirmed": false
   },
-  "customer_acceptance": "Pending; this is a plausible explanation, not yet a confirmed cause of the customer failure.",
+  "customer_acceptance": "Failed: the returned 1.0.3 diagnostic still reports missing controlled registration before the picker opens.",
   "artifacts": {
     "candidate_zip": "SceneZOI-1.0.3.zip",
     "candidate_sha256": "77b258f9e48e6e7268feeb048f05615c8400398d5e799e54c1758f8192301998",
     "source_zip": "SceneZOI-1.0.3-source.zip",
     "source_sha256": "3efa4d948ee9eaea6a7cee3881615807f66f650ebbedbe562c5ac8dbdb9ab39f",
     "source_snapshot_note": "Captured at build time; subsequent installation/acceptance documentation may be newer."
+  },
+  "customer_1_0_3_evidence": {
+    "runtime_build_matches": true,
+    "register_calls": 6692,
+    "deferred_register_calls": 6661,
+    "registered_count": 15,
+    "unregister_calls": 17,
+    "non_owner_unregister_calls": 1,
+    "registered_ids_equal_current_ids": true,
+    "requested_id_absent": true,
+    "host_ui_generation_matches": true,
+    "discovery_warnings": 0,
+    "implication": "Retrying unassigned IDs is insufficient. The snapshot cannot identify which invalid callback owners, if any, correspond to the controlled Zoi. The observed failure is not explained by a short initial identity delay."
+  },
+  "customer_mod_reduction_follow_up": {
+    "report": "Picker and idle navigation work after disabling many other mods; a subset remains enabled.",
+    "new_failure": "The supplied current session exits in BodyRegion.prepare during navigation, not at controlled-actor lookup.",
+    "original_root_cause": "Unconfirmed; retained registration error is from a different request.",
+    "checkpoint": "customer-body-layout-20261105.json"
   }
 }

@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-body-layout-2",
+  "status": "Development revision for the next proper update; no new customer ZIPs requested.",
+  "scope": "Automatic handling of bodies preserving the pack-declared render/material section and coverage convention, regardless of mesh/material names. HZoi declares section 17; framework stays generic.",
+  "changes": [
+    "Remove mesh-name/material-name allowlists and minimum-material-count variants.",
+    "Body-profile schema 2 keeps section/coverage and owned patch resources only; replaced schema/fields rejected.",
+    "Use one current-mesh resource predicate for preparation, active coverage and clothing masks.",
+    "Wait for actual material before patch creation; existing animation/material/skin matching and cleanup remain.",
+    "Readiness diagnostics tolerate a temporarily missing mesh component."
+  ],
+  "automated": {
+    "full_checks": {
+      "passed": true,
+      "python_tests": 85,
+      "lua_suites": 57,
+      "ui_suites": 9,
+      "nil_component_status_regression_failed_before_guard": true
+    },
+    "regression_failed_before_change": true,
+    "cases": [
+      "Arbitrary unlisted mesh names with 18, 32 and 48 materials.",
+      "Participant GetMaterialIndex throws if queried; preparation/active/clothing guards still pass.",
+      "Declared section 5 clothing regression keeps framework independent of HZoi section 17.",
+      "Missing section, LOD, asset, material or mesh component wait safely and report status.",
+      "Independent patch destruction, original merge/visibility restoration and skin/color readiness retained.",
+      "Old name-list profile fields rejected; author data updated to schema 2."
+    ]
+  },
+  "native_validation": {
+    "modkit_validate_lua_script": {
+      "ok": true,
+      "analysis_ran": true,
+      "errors": 0,
+      "warnings": 0,
+      "diagnostics": []
+    },
+    "modkit_validate_uimod": {
+      "plugin": "SceneZOI_93C44199",
+      "apps_checked": 2,
+      "ready_to_package": true,
+      "error_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "summary": "No issues found across 2 app(s).",
+      "next_recommended_action": "Looks good \u2014 preview with modkit_start_uimod_preview."
+    }
+  },
+  "packaging": {
+    "passed": true,
+    "isolated_native_builds": true,
+    "uat_exit_codes": [
+      0,
+      0
+    ],
+    "framework_owned_assets": 4,
+    "hzoi_owned_assets": 725,
+    "no_game_or_engine_payloads": true,
+    "hzoi_code_free": true
+  },
+  "installation": {
+    "passed": true,
+    "game_closed": true,
+    "runtime_build": "20261105-body-layout-2",
+    "source_prepared_and_filtered_payloads_verified": true,
+    "mode": "Filtered native development update; player ZIPs not regenerated. Preferences preserved; not a clean-directory release acceptance.",
+    "packages": [
+      {
+        "plugin": "SceneZOI_93C44199",
+        "payload_files_verified": 132,
+        "changed_files": [
+          "INSTALL.txt",
+          "mod_manifest.json",
+          "SOURCE.txt",
+          "lua/B1/SceneZOI/BodyRegion.lua",
+          "lua/B1/SceneZOI/Config.lua",
+          "lua/B1/SceneZOI/ProfileData.lua"
+        ],
+        "cooked_files_changed": 0,
+        "separate_cfg_files_preserved": 42,
+        "other_files_preserved": true
+      },
+      {
+        "plugin": "HZoi_660649D8",
+        "payload_files_verified": 9,
+        "changed_files": [
+          "INSTALL.txt",
+          "mod_manifest.json",
+          "non_ufs/JsonPatch/Text_UI_patch.json"
+        ],
+        "cooked_files_changed": 0,
+        "separate_cfg_files_preserved": 0,
+        "other_files_preserved": true
+      }
+    ]
+  },
+  "runtime_acceptance": {
+    "stock": {
+      "author_report": "It is all working after the requested stock and ZoiBits scene/outfit/Exit passes.",
+      "fresh_restart_requested": true,
+      "separate_native_capture": false,
+      "note": "Stock result is author acceptance; the final native snapshot was captured after the subsequent ZoiBits test."
+    },
+    "zoibits": {
+      "author_report": "It is all working after the requested stock and ZoiBits scene/outfit/Exit passes.",
+      "fresh_restart_requested": true,
+      "runtime_build_matches": true,
+      "final_state": "idle/ok",
+      "exit_cleanup": "ok/ok",
+      "discovery_warnings": 0,
+      "autosave_lease": "released",
+      "host_ui_generation_matches": true,
+      "last_error": "Historical pre-fix name-check error remains unchanged; current session ended successfully."
+    },
+    "supponpon": {
+      "author_report": "Yes, works normally after the requested scene/outfit/Exit pass.",
+      "fresh_process": true,
+      "runtime_build_matches": true,
+      "final_state": "idle/ok",
+      "exit_cleanup": "ok/ok",
+      "discovery_warnings": 0,
+      "autosave_lease": "released",
+      "last_error": "Pre-fix name-check error retained unchanged; no new error recorded."
+    }
+  },
+  "limits": "Section identity is a declared compatibility convention, not inferred anatomy. Different section assignments, incompatible skeletons, shader parameters or patch fit are not automatically adapted.",
+  "acceptance_scope": "Three author-accepted fresh-process update configurations. Native final snapshots captured for Supponpon and final ZoiBits runs; no separate current stock snapshot. Existing prefs preserved; clean-directory/player-ZIP acceptance not performed.",
+  "customer_retest": "Awaiting the next proper update; no new customer ZIPs requested.",
+  "reference_example": {
+    "updated_locally": true,
+    "body_profile_schema": 2,
+    "build_passed": true,
+    "reference_safety_checks_passed": true,
+    "content_integration_suite_passed": true,
+    "silent_wavs_verified": 702,
+    "unchanged_non_audio_assets_verified": 23,
+    "original_soundwaves_present": false,
+    "committed_or_published": false
+  }
+}

@@ -58,5 +58,6 @@
     "date": "2026-11-05",
     "reported": "The bugs all appear to have been fixed.",
     "scope": "Requested ecstatic/content expression and blink checks, settings hint, covered third-party mesh outfit edits, undressing/re-dressing and Exit. Acceptance is limited to this tested household/mesh combination."
-  }
+  },
+  "follow_up": "The earlier author check did not cover all mood interference. The 1.1.0 clean-install test reproduced a separate native mood-cache blend; see facial-mood-20261105.json. The montage end-fade fix remains necessary and retained."
 }

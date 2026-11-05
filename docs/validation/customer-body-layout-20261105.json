@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-registration-3",
+  "ui_build": "20261105-startup-ui-1",
+  "customer_report": "After disabling many other mods, the customer can open the picker and enter the neutral and content standing idle nodes. Navigation to the rear node exits automatically; approximately 108 other mods reportedly remain enabled.",
+  "latest_failure": {
+    "node": "hzoi.standing_rear",
+    "stop_reason": "runtime_error",
+    "source": "B1/SceneZOI/BodyRegion.lua:181",
+    "message": "Configured region material slot is unavailable",
+    "last_exit": "runtime_error/runtime_error",
+    "navigation_request_matches_session": true,
+    "last_acknowledged_node": "hzoi.standing_idle"
+  },
+  "profile_contract": {
+    "owner": "HZoi",
+    "id": "hzoi.body_layout",
+    "mesh_name": "SKM_Male_Base",
+    "minimum_materials": 32,
+    "material_slot": "Material_018",
+    "required_index": 17
+  },
+  "source_path_inference": "The preceding mesh-name assertion passed; preparation had observed at least 32 materials and a non-nil material at index 17. The named material slot did not resolve to 17. Its actual returned index, material-slot list and asset path are not included in this diagnostic.",
+  "not_established": [
+    "Which enabled mod, if any, changes the relevant body layout.",
+    "Whether the slot mismatch is persistent or an incomplete appearance rebuild.",
+    "Whether reducing the enabled mod list alone resolved the original registration problem."
+  ],
+  "correlation_notes": "The retained actor_registration/selection_error describe a different failed controlled ID. The current selection_state records successful participant selection, and current session error/last_stop identify the body-region failure. Do not use the old selection_error as the cause of this later Exit.",
+  "other_observations": {
+    "controller_range": "Participant at zero scene distance, so this is not the range guard.",
+    "autosave_lease": "released",
+    "save_restore_state": "ready/ok",
+    "cleanup_limit": "These fields do not independently prove every appearance/gameplay property restored."
+  },
+  "next_reproduction": "Restart with only current SceneZOI 1.0.3 and HZoi enabled; try the same navigation with the same pair. If it still fails, compare with a stock male Zoi. If it succeeds, isolate body/skin/anatomy and clothing overrides before issuing another candidate.",
+  "changes": "Documentation/evidence only; no runtime modification or replacement package.",
+  "follow_up": "Locally reproduced without Supponpon; see body-layout-fix-20261105.json for the confirmed cause and generic-body-region-20261105.json for the current implementation."
+}

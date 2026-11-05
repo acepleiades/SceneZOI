@@ -203,3 +203,39 @@ body.restore(s);restored(s)
 assert(created==destroyed,"Skin patch components leaked")
 print("Body checks passed: readiness barrier, section/LOD isolation, pose/material/muscle setup, repeated sessions, early Exit, partial failure, restoration retry, female exclusion.")
 print("Body refresh passed: replace the obsolete stock patch on an outfit mesh rebuild while preserving merge and section restoration.")
+
+-- Unfamiliar mesh/material names must work when the declared section is preserved.
+local profile=require('SceneZOI.Profiles').body('test.region')
+for _,layout in ipairs({{name='ArbitraryBodyA',materials=18},{name='DifferentBodyB',materials=32},{name='ExtraSectionsC',materials=48}})do
+ s=fixture()
+ local native_asset={GetName=function()return layout.name end}
+ mesh.GetSkeletalMeshAsset=function()return native_asset end
+ mesh.GetMaterialIndex=function()error('Participant material names must not be queried')end
+ function actor.AppearanceComponent:RefreshAll()self.refreshes=(self.refreshes or 0)+1;mesh.count=layout.materials end
+ prepared(s);body.ready(s);body.ready(s);assert(body.ready(s))
+ mesh.visibility[0]=true;body.guard(s);assert(not mesh.visibility[0],'Active coverage must support the declared section regardless of mesh/material names')
+ setting.FinalStyle={Outfit={Garments={ToTable=function()return {Bottom={BodyFlags=1<<17}}end}}}
+ mesh.visibility[0]=true;assert(body.guard_clothing(actor,'test.region')==1,'Clothing and preparation must share the same generic section checks')
+ body.restore(s);restored(s)
+end
+-- Missing sections, LODs and skin resources remain retryable without masking.
+for _,missing in ipairs({'section','lod','asset','material','component'})do
+ s=fixture();assert(not body.prepare(s,actor))
+ if missing=='section'then mesh.count=17
+ elseif missing=='lod'then mesh.GetNumLODs=function()return 0 end
+ elseif missing=='asset'then mesh.GetSkeletalMeshAsset=function()return nil end
+ elseif missing=='component'then actor.Mesh=nil
+ else mesh.material_missing=true end
+ for _=1,5 do assert(not body.prepare(s,actor),'Unavailable section resources must remain retryable')end
+ assert(not s.body_region.patch and mesh.visibility[0])
+ assert(body.status(s):find('section=17',1,true),'Diagnostics must identify the required section')
+ body.restore(s);restored(s)
+end
+local Validate=require('SceneZOI.ProfileData')
+assert(pcall(Validate.validate_body,profile))
+local copy=require('SceneZOI.DataValidation').copy
+for _,field in ipairs({'mesh_name','material_slot','minimum_materials','compatible_layouts'})do
+ local p=copy(profile);p[field]='obsolete';assert(not pcall(Validate.validate_body,p),'Removed name-list fields must not be accepted')
+end
+assert(created==destroyed,'Generic section readiness must retain independent patch cleanup')
+print('Generic body section passed: arbitrary names/material counts, exact declared section across all guards, resource waits, independent cleanup and removed-name-list validation.')
