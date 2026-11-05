@@ -10,7 +10,7 @@ These pages describe the active framework at the repository root. Dated investig
 | Runtime architecture | [Design](architecture.md) and [lifecycle contracts](tier1-contracts.md) |
 | Participants and native picker | [Group support](group-support.md) |
 | Furniture | [Furniture](furniture.md) |
-| Animation authoring | [Authoring](authoring.md) |
+| Animation authoring | [Authoring](authoring.md) and [worked content-pack examples](content-examples.md) |
 | Scene tags, actions and ratings | [Metadata](scene-metadata.md) |
 | Independent add-ons | [Authoring guide](addon-authoring.md), [API](addons.md), [controls](addon-controls.md) and [SDK](../sdk/README.md) |
 | Gaze and expressions | [Gaze](gaze.md), [expressions](expressions.md), [facial poses/head attachments](facial-poses.md) |
@@ -28,11 +28,15 @@ public authoring inputs. Current contracts take precedence over dated findings.
 - [Add-on controls, results and SDK extensions](addon-controls.md)
 - [Add-on API validation findings and pitfalls](validation/addon-api-20261104.md)
 
-## Optional private integration evidence
+## Public content-pack examples
 
-HZoi is private because it contains proprietary audio. A separate audio-muted
-reference copy is planned, but is not currently available. Framework setup,
-default checks and public authoring examples do not require that repository.
-Use [the neutral scene sources](../packs/scenezoi/scenes/) and the schema examples
-in these guides. HZoi paths/scene IDs in investigation and validation records
-describe optional maintainer test evidence, not an accessible dependency.
+[HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) is an optional, reference-only adult-content example
+with proprietary audio replaced by silence. The [worked guide](content-examples.md)
+maps features to complete JSON files and traces their declarations, scene
+instructions and referenced libraries. Its lack of a repository-wide license
+does not grant general asset reuse. All-ages examples remain in the
+[neutral scene sources](../packs/scenezoi/scenes/).
+
+The original HZoi production repository stays private. Historical validation used
+that original pack; its audible acceptance is not a claim about silent playback.
+Framework setup and default checks require neither checkout.

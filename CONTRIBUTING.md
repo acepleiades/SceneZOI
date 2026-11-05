@@ -30,6 +30,13 @@ Independent add-ons use the public native-message API and SDK. Preserve native
 animation instances, input restoration, session snapshots, per-owner cleanup and
 technical eligibility checks. Smart Zoi toggling must not be introduced.
 
+Use [the worked content-pack examples](docs/content-examples.md) when a concrete
+declaration helps explain a change. HZoi-Reference is an optional adult-content
+reference with silent audio and separate rights; do not import its assets into
+the framework or make default checks depend on its checkout. Link the exact
+source field/revision and identify excerpts rather than presenting fragments as
+complete playable scenes.
+
 Use the current documented contracts. Remove replaced implementation paths rather
 than introducing obsolete compatibility code for an unreleased feature. API or
 schema changes need matching documentation, examples and appropriate regressions.

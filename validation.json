@@ -5,7 +5,7 @@
   "ui_build": "20261105-cjk-fonts-ui-1",
   "content_build": "20261105-localization-1",
   "release_status": "Three visual runtime fixes and the later Japanese/Chinese control-font correction are installed and author accepted. Automated/source/native activation and final Exit checks passed. Publication is not asserted.",
-  "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi is private and optional.",
+  "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
     "modkit/SceneZOI_93C44199/ui/",

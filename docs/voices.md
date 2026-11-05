@@ -28,6 +28,18 @@ A context requires `id` and `label`. Contexts are data, not runtime enums. The p
 
 A set requires `body`, `archetype`, `context` and 1–512 unique SoundWave paths. `volume` defaults to 1 (range 0–1); `gap` defaults to 0 (range 0–60 native-game seconds). There are no executable callbacks or implicit gender/player indices. Male sets use the same schema and engine.
 
+## Complete content-pack example
+
+HZoi-Reference connects an [archetype](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/voices/archetype_mature.json),
+[context](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/voices/context_fellatio.json) and [voice set](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/voices/set_megu_hiiragi_mature_fellatio.json) through matching IDs.
+The [scene voice instruction](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L85) selects the context;
+[completion bindings](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L207) independently name
+the completing role and speaker, then resolve a named `responses` group from
+the speaker's chosen set. Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L161) registers
+all three declaration kinds. All reference WAVs are silent because the original
+recordings are proprietary, so these files demonstrate structure and timing,
+not audible quality or balance. See [the worked trace](content-examples.md#connect-progress-to-independent-responses).
+
 ## Player volume
 
 [Scene Settings](settings.md) provides separate persistent 0–200% gains for female

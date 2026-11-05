@@ -2,6 +2,17 @@
 
 Scene schema 3 supports generic scene-local visual completion responses. Content packs supply identifiers, timing and bone names as inert JSON; SceneZOI owns execution and cleanup. Task completion still resets progress, emits its normal event and executes definition-level completion sounds. These responses add no gameplay consequences or meaning to a task identifier.
 
+## Complete content-pack example
+
+HZoi-Reference's [movement timing and response block](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L148)
+uses one cycle per second and peak phase 0.5. The male role requests shared
+slowdown plus its own shake; the female role requests only its own shake. Its
+[task rates](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L134) cap female progress at 50%, so that authored
+response does not imply she completes from zero in this node. Compare
+[the rear scene](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/04_standing_rear.json#L147), where both roles can reach 100%.
+These adult-content examples are inert data; the
+[worked guide](content-examples.md) explains their scope and independent ownership.
+
 ## Response priority
 
 For each completion update, commit every participant's completion first. If any valid scene-local `task_completion_routes` entry matches, select the existing deterministic authored route and bypass procedural responses for that update. The destination may be a loop or a transition. If a selected route fails to load, report its failure; do not silently substitute a procedural response.

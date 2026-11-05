@@ -115,7 +115,13 @@ Authors must describe all rating-relevant activities; omitted activities cannot
 affect a derived rating. These labels classify declared actions, not automatically
 detected visuals, voice choices or manual clothing changes.
 
-The examples below include public framework hubs and private HZoi integration-test scenes. The HZoi assets/source are not supplied by this checkout; use the [neutral scene JSON](../packs/scenezoi/scenes/) and the generic schema examples above as accessible authoring references.
+The examples below include the public [neutral scenes](../packs/scenezoi/scenes/)
+and [HZoi-Reference](https://github.com/acepleiades/HZoi-Reference). Read the actual [idle metadata](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L79),
+[mixed-posture metadata](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L222) and
+[rear-scene metadata](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/04_standing_rear.json#L288) alongside the descriptions. These are
+adult-content source examples, not framework assets or a grant to reuse them.
+The [worked guide](content-examples.md#distinguish-scene-facts-from-role-facts)
+traces the two directed hugs and separate scene/role scopes.
 
 | Scenes | Whole-scene tags | Role facts and directed actions |
 | --- | --- | --- |

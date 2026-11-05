@@ -24,6 +24,16 @@ alternate-double, single-futon and double-futon objects/variants. An English cat
 description or object tag does not establish support. Unknown models need tested
 profile data. Profiles are extensible compatibility data, not an author whitelist.
 
+## Content-pack attachment example
+
+HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json#L20) maps the
+same four-second attachment animation to `scenezoi.bed_single_idle` and
+`scenezoi.bed_queen_idle`. The body tracks and furniture profiles still come from
+the [framework bed scenes](../packs/scenezoi/scenes/). This demonstrates an
+optional adult-content pack extending presentation at a furniture hub; it does
+not add a bed scene or establish compatibility with a new furniture model.
+See [the attachment trace](content-examples.md#trace-an-attachment-through-its-profiles).
+
 ## Placement and reservation
 
 Current standard-bed support is **68 cm** and futon support **20 cm** above the

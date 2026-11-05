@@ -61,4 +61,7 @@ Earlier dated statements of "pending" in retained investigation notes apply to
 those checkpoints; current acceptance above supersedes them where it covers the
 same behavior. Exact variant coverage must not be invented. Raw development logs,
 personal paths and detailed old checkpoints are retained privately, rather than
-being contributor inputs. HZoi remains private; framework-only checks are independent.
+being contributor inputs. The original HZoi production checkout remains private;
+its separate public [muted reference](../content-examples.md) now supplies authoring
+examples. Historical audible acceptance concerns the original pack, not silent
+replacement samples. Framework-only checks remain independent.

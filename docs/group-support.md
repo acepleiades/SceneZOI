@@ -4,6 +4,15 @@ Scene schema 3 uses explicit stable roles. Session membership and assignments re
 
 Each node declares participants and one body track per role. Connected destinations preserve role IDs and requirements. Integrations supply distinct Zoi IDs for every role; the framework checks actual appearance compatibility and loaded participants. Navigation retains original outfits, leases, anchor/furniture context, speed and session-owned resources. Both looping and [transition](transitions.md) nodes are supported.
 
+## Example role declarations
+
+HZoi-Reference's [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L30) declares two named
+roles, appearance-body/life-stage requirements, an explicit anchor and one body
+track per role. Its [navigation](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L11) leads to scenes with
+the same role IDs. This is a two-person example, not evidence of authored group
+choreography. See [worked examples](content-examples.md) for its adult-content
+scope; use the neutral framework scenes for an all-ages starting point.
+
 ## Start SceneZOI and the native picker
 
 Choose **Start SceneZOI** on the controlled Zoi or supported available furniture. The picker includes the controlled Zoi and permits one or two partners, two or three total. The full roster is matched to eligible starting_hub declarations; roles are bound explicitly and an eligible start is selected uniformly. Current neutral standing/single/queen hubs declare adult MF roles. Same-body or three-person rosters currently find no eligible hub unless compatible content contributes one; this is data, not an engine pair/body restriction.

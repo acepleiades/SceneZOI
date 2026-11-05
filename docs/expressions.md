@@ -2,7 +2,7 @@
 
 Current runtime and acceptance boundaries are recorded in [validation.json](../validation.json). Expression definitions use schema version 2; fixed facial poses use their separately documented schema.
 
-Enabled independent packages supply expression sets alongside their other native declarations. SceneZOI owns nine declarations/three neutral nodes. Recorded integration checks used five expression sets from the private, optional HZoi pack; those files are not part of this checkout or required for authoring.
+Enabled independent packages supply expression sets alongside their other native declarations. SceneZOI owns ten declarations/three neutral nodes. Recorded integration checks used five expression sets from the private, optional HZoi pack; those files are not part of this checkout or required for authoring.
 
 ## Responsibilities and data
 
@@ -72,11 +72,16 @@ Discovery runs on boot, periodically while no session is active, and immediately
 
 Add expression definitions to your pack manifest's `expression_files`. From the SceneZOI checkout, use `python tools/build_catalog.py --packs <your-pack-manifest> --project <your-native-project>` to validate and stage that owner's declarations. The generic writer preserves unrelated patch entries and records packaging ownership in `workspace/data_files.json`; runtime does not read that inventory. The patch ships through ModKit as `non_ufs/JsonPatch/Text_UI_patch.json` with native manifest membership/checksums. See [package authoring](package-split.md); no private content checkout or executable pack registration is required.
 
-SceneZOI's default build stages its own neutral scene pack and furniture profiles; HZoi builds independently. Disabling HZoi removes its contributions and leaves nine framework declarations/three neutral nodes. Active sessions retain captured libraries. Retired shared cfg and cooked DataTable transports are excluded.
+SceneZOI's default build stages its own neutral scene pack and furniture profiles; HZoi builds independently. Disabling HZoi removes its contributions and leaves ten framework declarations/three neutral nodes. Active sessions retain captured libraries. Retired shared cfg and cooked DataTable transports are excluded.
 
 ## Authoring your own sets
 
-Use the schema example above to author your own set, referencing facial clips available to your project. The framework has no built-in families or family IDs. The [public declaration workflow](package-split.md) and [facial-pose examples](facial-poses.md) demonstrate the authoring boundary. HZoi family names elsewhere on this page describe private test content, not publicly supplied definitions.
+Use the schema example above to author your own set, referencing facial clips available to your project. The framework has no built-in families or family IDs. The [public declaration workflow](package-split.md) and [facial-pose examples](facial-poses.md) demonstrate the authoring boundary. The public [Pleasure face definition](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/expressions/pleasure_face.json) now provides the corresponding
+HZoi-Reference example: `default`, body compatibility, weighted Idle/Pleasure
+clips and a Kiss option with an explicit `sample`. Its
+[scene instruction](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L76) selects the context and adds the
+independent `scenezoi.open_o` pose. The reference is optional; its stock facial
+clip paths still depend on actual game assets. See [worked examples](content-examples.md).
 
 ## Engine and lifecycle
 

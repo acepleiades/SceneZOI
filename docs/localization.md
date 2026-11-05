@@ -89,9 +89,15 @@ restrictions. Labels in developer diagnostics and internal task/event data retai
 their source meanings; IDs always remain stable.
 
 The public [framework catalog](../packs/scenezoi/localization/text.json) supplies
-all 15 cultures. The private optional integration pack supplies its own scene,
-navigation, expression, voice and task labels through the same declaration
-contract. It still ships no executable code.
+all 15 cultures. The public HZoi-Reference
+[content catalog](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/localization/text.json) supplies scene, navigation, expression,
+voice and task labels through the same declaration contract. For example,
+`scene.hzoi.standing_idle` names a scene, while
+`navigation.hzoi.standing_idle.neutral` names its explicit Return edge. Follow
+the [manifest registration](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L161) and
+[English/Japanese excerpt](content-examples.md#translate-labels-without-changing-identity)
+to see the complete relationship. This optional adult-content reference still
+ships no executable content-pack code.
 
 ## Framework messages and safety
 

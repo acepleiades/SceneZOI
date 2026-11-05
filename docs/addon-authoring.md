@@ -85,6 +85,33 @@ Use `request_stop` with interruption rights for an orderly foreign/manual Exit.
 Release your overrides/registration when finished; do not clear another caller's
 hold/mute. Persist gameplay consequences once using your own save data.
 
+## Query real content declarations
+
+The [worked content-pack guide](content-examples.md) links the public
+HZoi-Reference metadata. With a compatible pack's declarations actually enabled,
+these `find_scenes` arguments match its affectionate standing idle as well as
+compatible neutral framework hubs:
+
+```json
+{
+  "search": {
+    "allowed_content_ratings": ["GENERAL"],
+    "required_tags": ["affectionate"],
+    "required_actions": ["hug"]
+  }
+}
+```
+
+This query omits participants, so it searches library metadata rather than
+proving roster compatibility. Add `participants` and explicit `bindings` where
+needed, then preflight a start. Use the same criteria in `session_restrictions`
+to constrain later playback; `search` alone only selects the initial scene.
+The [idle](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L95) explicitly has two directed hugs. Its activity
+neighbors derive EXPLICIT and are excluded by GENERAL restrictions even when
+they also contain hugs. HZoi's idle is not itself a `starting_hub`; the pack
+extends the framework's starting hub. HZoi-Reference supplies content data,
+not an executable API-client example, and cloning it does not install it.
+
 ## Common pitfalls observed in validation
 
 | Failure | Authoring rule |

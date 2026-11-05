@@ -207,7 +207,8 @@ and features before relying on them. Additional optional response fields may be
 added within version 1; unknown response fields should be ignored. Unsupported
 request versions fail explicitly.
 
-See the [authoring guide](addon-authoring.md) for three integration patterns and
+See the [authoring guide](addon-authoring.md) for three integration patterns,
+a [query using real content metadata](addon-authoring.md#query-real-content-declarations), and
 common pitfalls. The temporary installable acceptance mod has been removed;
 the reusable SDK is retained independently. Source regressions cover registry conflicts,
 one-sided/mutual actions, copied JSON types, restricted API/UI/automatic/task routes,

@@ -30,11 +30,16 @@ known subsystem. Do not front-load every historical document.
   distinct from body type and control status; reusable subsystems support 2+
   participants, repeated bodies and independent resource ownership.
 
-HZoi is a private, optional content/integration-test project containing proprietary
-audio. Do not assume its checkout, assets or tools are available to contributors.
-Do not link public instructions to its private repository or copy its audio into
-SceneZOI. A separate audio-muted reference copy is planned, but is not currently
-available. Use public examples and framework sources for authoring guidance.
+HZoi's production checkout is private and contains proprietary audio. Its separate
+public [HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) copy provides adult-content authoring examples
+with silent audio. Start with [worked examples](docs/content-examples.md) for
+feature-to-file mappings and pinned source links. The reference is optional and
+reference-only, with no repository-wide license; it is not an executable add-on.
+Keep SceneZOI's default build/tests independent of it. Never copy original HZoi
+audio or content-pack-specific assets/runtime logic into SceneZOI. When adding
+examples, distinguish complete files from excerpts and measured asset-specific
+values from reusable contracts. Verify source links against the referenced
+revision; do not infer runtime or visual acceptance from the example's existence.
 
 ## Source layout and contracts
 

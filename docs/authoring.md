@@ -6,6 +6,15 @@ framework hubs without editing framework source. Start with the public
 [framework manifest](../packs/scenezoi.json), [neutral scene files](../packs/scenezoi/scenes/)
 and [package/declaration guide](package-split.md).
 
+## Learn from a complete content pack
+
+The [worked HZoi-Reference examples](content-examples.md) connect real manifests,
+scene files, profiles, expression/voice libraries, tasks and translations. The
+reference contains adult animation assets and silent replacements for proprietary
+audio; it is for study and has no repository-wide license. Each subsystem guide
+also links directly to relevant source sections. The neutral examples above
+remain suitable for all-ages content.
+
 ## Files and native project
 
 Create and register your own project through ModKit. Give your pack a namespace,

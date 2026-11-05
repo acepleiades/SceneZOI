@@ -60,11 +60,12 @@ SUGGESTIVE or EXPLICIT ratings, from which scene ratings are derived. Authors ca
 contribute namespaced dictionaries and inert add-on metadata.
 
 SceneZOI is an all-ages framework. Its runtime contains no adult geometry or
-content-pack-specific behavior. HZoi is an optional content pack used in maintainer
-integration tests. Its repository is private because it contains proprietary
-audio. A separate reference copy with that audio muted is planned; it is not yet
-available. SceneZOI works without it. The public [neutral scene sources](packs/scenezoi/scenes/)
-and [authoring guides](docs/README.md) are available for building your own content.
+content-pack-specific behavior. The public [HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) provides a
+separate adult-content authoring example with proprietary audio replaced by
+silence. It is reference-only, has no repository-wide license and is optional.
+See the [worked examples](docs/content-examples.md) for source links and explanations,
+or begin with the all-ages [neutral scene sources](packs/scenezoi/scenes/).
+SceneZOI builds and runs independently of either HZoi repository.
 
 ## First-release scope and limits
 

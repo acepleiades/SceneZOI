@@ -75,6 +75,16 @@ Validation distinguishes isolated checks, native rotation/state checks, and the
 author's final visual acceptance. See `validation.json` for the current build.
 
 
+## Complete source examples
+
+The public [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L53) authors mutual head-eye targets.
+The [rear scene](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/04_standing_rear.json#L73) instead targets another role's body pelvis
+and the observer's own `upperarm_l`. Compare these blocks with their declared
+`participants`; the target role is explicit, not inferred from array order.
+These HZoi-Reference files contain adult scene descriptions; see
+[worked examples](content-examples.md) for context. Authored targets still obey
+the native eye limits described above.
+
 ## Tier3-2 correction
 
 The author's visual test of tier3-1 identified enlarged female eyes and no visible

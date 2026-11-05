@@ -20,6 +20,8 @@ neutral nodes, five furniture profiles, two metadata dictionaries, one facial
 pose and one localization dictionary. The framework inventory owns four animation packages. Default checks are
 framework-only; `--content-root` is an optional test hook for a compatible author
 checkout that is already available. HZoi's private checkout is not required.
+The public [HZoi-Reference guide](content-examples.md) explains its separate
+silent-audio example and optional content checks.
 External packs can use `--packs` and `--project`, with their own `--inventory`
 and `--plugin` arguments for filtering.
 

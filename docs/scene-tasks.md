@@ -6,6 +6,18 @@ Independent add-ons can inspect normalized state, set/modify progress and apply
 caller-scoped rate multipliers/completion holds through [live controls](addon-controls.md#live-controls).
 Completion is still committed by the real task engine on a positive loop-playing tick.
 
+## Complete content-pack example
+
+HZoi-Reference's [excitement definition](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/tasks/excitement.json) registers maximum/decay,
+presentation and a body-filtered completion sound. Its
+[per-role scene rates](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L134) allow one role to reach 100% while
+capping the other at 50%; the idle omits progression and therefore permits decay.
+The [voice bindings](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L207) make a separate role
+react, while [procedural responses](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L148) add scene
+presentation. Read [the worked trace](content-examples.md#connect-progress-to-independent-responses)
+to follow these independent paths. The reference is adult content with silent
+audio; it has no current authored `task_completion_routes` example.
+
 ## Register a definition
 
 Add an entry to a pack manifest's `data_files`:

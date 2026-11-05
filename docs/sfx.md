@@ -122,7 +122,14 @@ sounds avoid immediate repeats where the pool permits. Each emitter owns its
 moving, attenuated world audio components independently. Scene speed selects
 authored variants; native game time governs audio playback.
 
-The following scene IDs record private HZoi integration examples alongside the public framework hub. HZoi is not available as a public checkout; use the schema examples above with your own assets. The recorded content declares:
+These scene declarations are now available in the public, optional
+[HZoi-Reference](https://github.com/acepleiades/HZoi-Reference). Compare the [hand-scene emitter](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L84)
+with its [shared sound sets](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L12): `hzoi.kutyu` supplies
+speed variants, while `hzoi.piston` supplies a default clip group for the
+[rear-scene emitter](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/04_standing_rear.json#L97). Owners, detector endpoints and audio
+source points are explicit. The reference's samples are silent replacements for
+proprietary recordings; it cannot demonstrate audible output. See
+[worked examples](content-examples.md). The declarations specify:
 
 - `scenezoi.standing_idle`: normal Idle expressions and no sound emitters. The
   temporary continuous kiss test was removed in animation-refresh-1 after the

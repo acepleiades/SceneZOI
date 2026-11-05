@@ -13,11 +13,14 @@ and [facial-pose definition](../packs/scenezoi/facial_poses/open_o.json) demonst
 the native declaration workflow. Expression, voice, SFX and task guides provide
 schemas and examples for contributions using your own assets.
 
-HZoi is a private optional pack used in recorded maintainer integration tests. It
-contains proprietary audio and is not available as a public checkout. A separate
-reference copy with that audio muted is planned, but is not yet available. HZoi
-names and paths in historical validation records describe that test environment;
-they are not prerequisites or files supplied by this repository.
+The optional [HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) publishes a reference-only adult-content
+example with proprietary audio replaced by silence. Start with the
+[worked examples](content-examples.md). Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json)
+shows scene collection, shared sound sets, expression files and typed `data_files`;
+its [native patch](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/modkit/HZoi_660649D8/Content/JsonPatch/Text_UI_patch.json)
+shows the generated envelopes. This source copy is separate from the private
+production pack used in historical audible/visual validation. Neither is required
+to build SceneZOI. Consult the reference's rights notices before reuse.
 
 ## Package responsibilities
 
@@ -63,7 +66,7 @@ Every owner needs its own native project. The generic writer preserves unrelated
 patch entries and records owned declarations in `workspace/data_files.json` for
 packaging; runtime does not read that inventory. Native packaging carries the
 patch as `non_ufs/JsonPatch/Text_UI_patch.json` with manifest membership/checksums.
-The framework default stages nine declarations with three neutral scene nodes.
+The framework default stages ten declarations with three neutral scene nodes.
 
 Discovery runs at startup, while idle and before Start. Active sessions retain
 their captured graph/libraries. Malformed contributions are isolated with warnings;
@@ -122,6 +125,15 @@ replacement path. This uses profile data rather than a universal section number.
 Expressions, facial poses, voices, SFX, tasks and completion responses follow the
 same ownership boundary. Missing optional content must not install pack-specific
 runtime defaults. See the [subsystem index](README.md) for authoring contracts.
+
+### Linked profile example
+
+HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json) points to its
+[body profile](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/skin_hair.json). Follow those
+IDs alongside `node_animations` to see how a content pack activates and animates
+an attachment at its own scenes and framework hubs. Section 17 and material
+slots describe those assets, not universal framework defaults. See the
+[worked attachment trace](content-examples.md#trace-an-attachment-through-its-profiles).
 
 ## Packaging and verification
 
