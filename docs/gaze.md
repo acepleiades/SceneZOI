@@ -1,6 +1,6 @@
 # Scene gaze data
 
-Tier 3's first subsystem controls eyes only. Blinking remains game-owned; head,
+The gaze subsystem controls eyes only. Blinking remains game-owned; head,
 neck and spine animation are preserved. The current facial adapter supports the
 tested stock male/female facial rigs. Participant roles and targets are generic;
 the gaze engine has no fixed pair, gender, or controlled/NPC indices. The current starter matches data-defined roles; removed group fixtures remain isolated-test rosters only; see [group support](group-support.md).

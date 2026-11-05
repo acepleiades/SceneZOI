@@ -1,6 +1,6 @@
 # Task completion responses
 
-Runtime `20261103-completion-effects-1`. This is a development schema for generic scene-local visual responses. Content packs supply identifiers, timing and bone names as inert JSON; SceneZOI owns execution and cleanup. Task completion still resets progress, emits its normal event and executes definition-level completion sounds. These responses add no gameplay consequences or meaning to a task identifier.
+Scene schema 3 supports generic scene-local visual completion responses. Content packs supply identifiers, timing and bone names as inert JSON; SceneZOI owns execution and cleanup. Task completion still resets progress, emits its normal event and executes definition-level completion sounds. These responses add no gameplay consequences or meaning to a task identifier.
 
 ## Response priority
 

@@ -1,6 +1,6 @@
 # Transition scenes
 
-Runtime `20261103-transitions-1`, UI `20261103-transitions-ui-1`. Scene schema 3 now accepts `kind: "loop"` or `kind: "transition"`. Animation assets themselves need no special transition flag: the scene node determines playback behavior.
+Scene schema 3 accepts `kind: "loop"` or `kind: "transition"`. Animation assets themselves need no special transition flag: the scene node determines playback behavior.
 
 ## Authoring
 

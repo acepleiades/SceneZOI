@@ -64,7 +64,9 @@ Independent B2 mods use native JSON messages through the versioned SDK. Acceptan
 queues startup; it does not bypass group departure, UI save-journal acknowledgement,
 technical eligibility or preparation. Fixed participant roles, save protection and
 normal cleanup retain the same owners as manual sessions. Only the creating
-add-on/client may navigate or stop an API session; the player retains Exit.
+add-on/client owns navigation and `stop_session`; a registered integration with
+interruption rights may request ordinary Exit through `request_stop`. The player
+retains Exit.
 
 One shared predicate handles metadata queries, random selection and session-owned
 restrictions. The backend enforces restrictions for direct/UI navigation, automatic

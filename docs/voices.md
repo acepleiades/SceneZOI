@@ -1,6 +1,6 @@
 # Voices
 
-Build `20261102-voice-1` adds optional, participant-owned continuous voices. SceneZOI owns discovery, validation, preferences, UI, spatial playback and cleanup. Content packs own archetypes, contexts, sets and Sound Waves. The framework has no built-in voice families, context enum or HZoi identifiers. Task-completion one-shot responses are described below.
+SceneZOI supports optional, participant-owned continuous voices. SceneZOI owns discovery, validation, preferences, UI, spatial playback and cleanup. Content packs own archetypes, contexts, sets and Sound Waves. The framework has no built-in voice families, context enum or HZoi identifiers. Task-completion one-shot responses are described below.
 
 ## Independent declarations
 

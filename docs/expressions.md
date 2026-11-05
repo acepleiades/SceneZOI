@@ -1,6 +1,6 @@
 # Scene expressions and personality
 
-Current runtime and acceptance boundaries are recorded in [validation.json](../validation.json). The expression schema remains a development contract.
+Current runtime and acceptance boundaries are recorded in [validation.json](../validation.json). Expression definitions use schema version 2; fixed facial poses use their separately documented schema.
 
 Enabled independent packages supply expression sets alongside their other native declarations. SceneZOI owns nine declarations/three neutral nodes. Recorded integration checks used five expression sets from the private, optional HZoi pack; those files are not part of this checkout or required for authoring.
 
@@ -8,7 +8,7 @@ Enabled independent packages supply expression sets alongside their other native
 
 SceneZOI owns the engine, persistent per-Zoi preferences and personality panel. Content packs own their expression definitions. SceneZOI contains no built-in expression families. Removing all compatible definitions leaves the participant's face game-owned and produces a warning, without blocking scene entry.
 
-Expression set IDs and contexts are **case-insensitive strings**, trimmed and normalized to lowercase. Internal keys are printable ASCII, 1â€“96 characters; spaces and punctuation are allowed. Display labels may use Unicode and are separate from identity. `Pleasure`, `PLEASURE` and `pleasure` are the same context. Idle, Pleasure and Kiss are HZoi's current authored contexts, not engine enums. Another designer may add `tongue out` or another context without engine changes.
+Expression set IDs and contexts are **case-insensitive strings**, trimmed and normalized to lowercase. Internal keys are printable ASCII, 1–96 characters; spaces and punctuation are allowed. Display labels may use Unicode and are separate from identity. `Pleasure`, `PLEASURE` and `pleasure` are the same context. Idle, Pleasure and Kiss are HZoi's current authored contexts, not engine enums. Another designer may add `tongue out` or another context without engine changes.
 
 A node optionally declares `expressions[role]` with an expression `context`, a
 named `facial_pose`, or both. Contexts select animated clips from that Zoi's chosen
@@ -53,7 +53,7 @@ Optional `aliases` list old IDs for preference migration. HZoi declares aliases 
 
 ### Discovery and authoring workflow
 
-The experimental transport uses native JSON data patches, with declarations owned and installed by each content pack. SceneZOI reads `data.table_get_all alias=Text` and selects only rows whose IDs start with `SceneZOI_Declaration_` (case-insensitively). Each selected row's raw `Text` string contains this inert envelope:
+The native declaration transport uses JSON data patches, with declarations owned and installed by each content pack. SceneZOI reads `data.table_get_all alias=Text` and selects only rows whose IDs start with `SceneZOI_Declaration_` (case-insensitively). Each selected row's raw `Text` string contains this inert envelope:
 
 ```json
 {
@@ -74,17 +74,17 @@ Add expression definitions to your pack manifest's `expression_files`. From the 
 
 SceneZOI's default build stages its own neutral scene pack and furniture profiles; HZoi builds independently. Disabling HZoi removes its contributions and leaves nine framework declarations/three neutral nodes. Active sessions retain captured libraries. Retired shared cfg and cooked DataTable transports are excluded.
 
-## Content-owned candidates
+## Authoring your own sets
 
 Use the schema example above to author your own set, referencing facial clips available to your project. The framework has no built-in families or family IDs. The [public declaration workflow](package-split.md) and [facial-pose examples](facial-poses.md) demonstrate the authoring boundary. HZoi family names elsewhere on this page describe private test content, not publicly supplied definitions.
 
 ## Engine and lifecycle
 
-Each participant has independent loaded options, random selection history, hold timer, selected family, owned head montages and optional jaw overlay. The engine avoids immediately repeating an option when alternatives exist. Idle defaults use 5â€“11 scene seconds with a 0.35-second transition; Pleasure uses 2.4â€“7 and 0.25. Families can author different values.
+Each participant has independent loaded options, random selection history, hold timer, selected family, owned head montages and optional partial-face overlay. The engine avoids immediately repeating an option when alternatives exist. Idle defaults use 5–11 scene seconds with a 0.35-second transition; Pleasure uses 2.4–7 and 0.25. Families can author different values.
 
 Timers use the existing shared session clock, respecting game pause, game speed and the selected scene speed. Native montage blend duration is adjusted by selected scene speed at selection time. A speed change during an already-running native blend is not retroactively retimed. The initial version blends complete facial poses; independently composable facial regions and random strength ranges are not claimed.
 
-The native adapter installs and samples its own head montage on the existing game-owned head animation instance. It never replaces animation instances, changes native eye/blink settings or edits face-customization data. Outgoing facial poses are held during node preparation. Appearance replacement rebinds to the current head and retires playback on its actual previous owner. Outgoing leases remain owned through their native blend deadline, measured with paused/dilated game time; only completed, inactive leases or positively invalid native instances are pruned. A failed native query retains ownership for cleanup retries. Exit retries only remaining owned playback/overlay cleanup. Runtime/native rendered behavior, including blink coexistence, still needs author acceptance.
+The native adapter installs and samples its own head montage on the existing game-owned head animation instance. It never replaces animation instances, changes native eye/blink settings or edits face-customization data. Outgoing facial poses are held during node preparation. Appearance replacement rebinds to the current head and retires playback on its actual previous owner. Outgoing leases remain owned through their native blend deadline, measured with paused/dilated game time; only completed, inactive leases or positively invalid native instances are pruned. A failed native query retains ownership for cleanup retries. Exit retries only remaining owned playback/overlay cleanup. Native and visual results for current content are recorded in [release validation](validation/README.md); new clips and customized heads require their own acceptance.
 
 An unavailable native expression asset, a failed native load or an asset of the wrong type is skipped. If none can load for a selected context, the scene continues, the personality panel reports the problem and the engine retries at bounded intervals. The ModKit's separate inspection commandlet could not load these native game assets, so references alone do not establish playback.
 
@@ -139,4 +139,4 @@ Isolated checks cover three independent roles with repeated bodies, persistent p
 
 The framework hubs use Idle expressions without a mouth override. HZoi enables the female fixed O only in hzoi.male_standing_female_kneeling_fellatio. Kiss remains available as an explicitly sampled pose in content. Ordinary unsampled clips now advance/loop with authored blink motion; this is distinct from a guaranteed visible blink in every explicit pose.
 
-The author accepted the refined female O, reference-free activation, continuous gaze handoff, dropdown interaction and tested family switching/Exit. Other customized heads, male proportions and the latest blink appearance retain separate visual-review limits. Retired curve-map/reference-sampler experiments must not be restored. Ownership/native tombstone and quaternion-round-trip regressions are summarized in the [issue ledger](investigations/runtime-and-ui-issues.md).
+The author accepted the refined female O, reference-free activation, continuous gaze handoff, dropdown interaction and tested family switching/Exit. Other customized heads, new authored poses and male O proportions retain separate visual-review limits. Retired curve-map/reference-sampler experiments must not be restored. Ownership/native tombstone and quaternion-round-trip regressions are summarized in the [issue ledger](investigations/runtime-and-ui-issues.md).

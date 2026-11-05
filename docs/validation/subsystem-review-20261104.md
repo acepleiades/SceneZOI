@@ -1,6 +1,6 @@
 # Core and subsystem review — 2026-11-04
 
-Candidate `20261104-facial-1`. Review focused on current source contracts, ownership,
+First-release implementation `20261104-facial-1`. Review focused on current source contracts, ownership,
 API integration and existing regressions, following API-5 native acceptance.
 
 | Area examined | Finding / action |

@@ -1,22 +1,17 @@
 # Investigation notes
 
-Short records of problems reproduced while building SceneZOI. Each note separates
-observations, tested explanations, authoring guidance, and remaining uncertainty.
-Findings describe the tested game assets and historical experiments; they are not universal
-guarantees for future inZOI versions or replacement bodies.
+Retained implementation findings support future maintenance; current contracts and
+[release validation](../validation/README.md) take precedence over historical
+experiments. Read the note relevant to a reproduced problem rather than treating
+every old hypothesis or pending checkpoint as a current release requirement.
 
-The technical prototype and Maya authoring validation are complete. Treat the
-rigs/exporters as production-ready; reopen accuracy investigations when a concrete
-problem appears. Active work is the [SceneZOI first release](../../README.md), with independent HZoi content. Historical test names and rates do not define
-the new production inventory.
-
-| Note | Main finding |
+| Note | Purpose |
 | --- | --- |
-| [Participant selection options](participant-selection-options.md) | Native and custom approaches that avoid changing gameplay groups; verified API gaps and proof criteria. |
-| [Runtime and UI issue ledger](runtime-and-ui-issues.md) | Concise symptoms, findings, fixes and regression constraints for lifecycle, outfits, attachments, gaze, entry, reloads and packaging. |
-| [Portable anatomy assets and bind pose](portable-anatomy-assets.md) | Moving assets across package roots needs reference remapping; FBX reimport needed the tested mesh's bind transforms restored. |
+| [Runtime and UI issue ledger](runtime-and-ui-issues.md) | Reproducible failures, retained fixes and regression requirements. |
+| [Participant selection options](participant-selection-options.md) | Historical API/approach comparison; the shipped picker is documented in [participant support](../group-support.md). |
+| [Asset references and bind pose](asset-portability.md) | General native package/reference and reimport lessons, without a private asset dependency. |
 
-For future notes, record the date, symptom, isolated comparison, practical result,
-and limits. Prefer measured evidence and relevant source documentation. Keep
-private machine paths, personal save data, proprietary asset dumps, and large
-diagnostic binaries out of these public notes.
+For a new finding, record the trigger, direct observations, smallest fix, retained
+regression and remaining limit. Keep raw probes, personal paths, private save data
+and proprietary dumps outside public documentation. Do not reopen completed
+animation-authoring investigations without a concrete defect.

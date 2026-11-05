@@ -36,7 +36,7 @@ The referenced file contains one definition:
 }
 ```
 
-Identifiers are exact, case-sensitive identifiers: lowercase ASCII letters, digits, underscores, dots and hyphens, starting with a letter, up to 96 characters. Prefix independent authors' IDs where practical. Scene references must match the registered ID exactly. Labels are nonempty text, up to 160 UTF-8 bytes. `maximum` is required, finite and between 0.001 and 1,000,000,000. `initial` defaults to 0 and must be within 0â€“maximum. `decay` defaults to 0 and is a nonnegative units-per-game-second rate, at most 1,000,000. `completion_event` is optional. `metadata` is an optional inert JSON object copied into completion payloads; it cannot contain executable callbacks.
+Identifiers are exact, case-sensitive identifiers: lowercase ASCII letters, digits, underscores, dots and hyphens, starting with a letter, up to 96 characters. Prefix independent authors' IDs where practical. Scene references must match the registered ID exactly. Labels are nonempty text, up to 160 UTF-8 bytes. `maximum` is required, finite and between 0.001 and 1,000,000,000. `initial` defaults to 0 and must be within 0–maximum. `decay` defaults to 0 and is a nonnegative units-per-game-second rate, at most 1,000,000. `completion_event` is optional. `metadata` is an optional inert JSON object copied into completion payloads; it cannot contain executable callbacks.
 
 All display settings are optional. `visible: false` suppresses indicators without disabling progression/events. Colors accept `#RRGGBB` only. `body_colors` optionally overrides the fallback ring color for the framework's existing appearance-body traits; those colors have no gameplay meaning. Without presentation data, the framework uses its neutral palette.
 
@@ -74,7 +74,7 @@ The role names must be declared by that node. Each task reference must use its r
 | Positive rate | Add progress up to its cap. Entering a lower cap preserves progress already above it. |
 | Negative rate | Subtract progress to zero; the positive progression cap does not set a floor. |
 
-Values always stay within 0â€“maximum. Percentage is `100 * value / maximum`; 90/90 and 200/200 both mean 100%. The tray displays whole percentages rounded down.
+Values always stay within 0–maximum. Percentage is `100 * value / maximum`; 90/90 and 200/200 both mean 100%. The tray displays whole percentages rounded down.
 
 Rates use native game time, independent of SceneZOI's animation-speed selector. Game pause pauses progression and decay; game time controls scale them. Preparation, navigation handoff, outfit preparation and stopping do not accrue task time. All task progression and decay also pause throughout a `transition` node; see [transition scenes](transitions.md). No catch-up occurs for those held intervals.
 
@@ -166,11 +166,11 @@ Runtime build `20261103-task-sounds-1` adds optional `on_completion` actions to 
 
 This is inert configuration, not executable expressions or a scripting language. Up to 32 actions are accepted. Currently `play_sound` is the supported action type; other types are rejected with diagnostics. `clip` must reference a SoundWave supplied by the contributing content package or another installed dependency.
 
-The source always belongs to the **participant who completed the task**. `source.component` is `body` or `head`; `bones` contains 1â€“8 unique bone names, following the existing source resolver's position rules. One bone selects its world-space translation. Position is updated during playback, so a source follows the participant rather than remaining at the scene anchor. This does not bind the sound to a particular scene role, control status or actor index.
+The source always belongs to the **participant who completed the task**. `source.component` is `body` or `head`; `bones` contains 1–8 unique bone names, following the existing source resolver's position rules. One bone selects its world-space translation. Position is updated during playback, so a source follows the participant rather than remaining at the scene anchor. This does not bind the sound to a particular scene role, control status or actor index.
 
 The optional `when.body` filter uses the framework's existing appearance-body trait (`male` or `female`). Omit `when` to apply the action to every completing participant. The filter and asset path belong to content data. Matching participants with the same body each own independent audio components.
 
-`volume` defaults to 1, within 0â€“1. `max_voices` defaults to 4, within 1â€“16, and bounds overlapping one-shots **per task/action/participant**. A full pool stops/reuses its oldest voice without affecting another participant's pool. Optional attenuation uses the existing spatial audio adapter: radius defaults to 100 cm, falloff to 900 cm; supplied distances must be within 0â€“100,000 cm.
+`volume` defaults to 1, within 0–1. `max_voices` defaults to 4, within 1–16, and bounds overlapping one-shots **per task/action/participant**. A full pool stops/reuses its oldest voice without affecting another participant's pool. Optional attenuation uses the existing spatial audio adapter: radius defaults to 100 cm, falloff to 900 cm; supplied distances must be within 0–100,000 cm.
 
 Each completion index is attempted once. A missing clip/source or native failure produces an optional-action diagnostic and never cancels the completion event or session. Failed optional plays are not retried on later frames, which could produce delayed cues for old completions; a later completion can try again. The native component remains owned through partial create/play failures and retryable cleanup.
 

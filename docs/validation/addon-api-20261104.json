@@ -11,7 +11,6 @@
   "post_restart_suite": {
     "passed": true,
     "assertions_and_checked_responses": 95,
-    "run_id": "acceptance.1793820383640471000",
     "cleanup": "confirmed_ended"
   },
   "source_checks": {
@@ -37,7 +36,7 @@
     "original_settings_and_controlled_entity_restored": true,
     "bed_slots_match_baseline": true
   },
-  "author_visual_acceptance": "not inferred; temporary test scripts retained pending acceptance",
+  "author_visual_acceptance": "Not inferred from API diagnostics; later ordinary-content visual acceptance is recorded separately. Temporary acceptance tools were subsequently removed.",
   "cleanup": {
     "requested_by_author": true,
     "installed_test_mods_removed": true,

@@ -95,7 +95,7 @@ time stretch.
 The adapter reads native AudioSettings limits without changing global settings.
 The current ModKit reports minimum 0.4 and maximum 2.0. Requested rates outside
 those limits are clamped; scheduling uses the applied rate to avoid cutting off
-continuous clips early. Consequently native game rates above the limit are capped locally. Final audible acceptance across game-time rates remains pending. Diagnostics include actual/requested rate, limit source, clip,
+continuous clips early. Consequently native game rates above the limit are capped locally. Audible results are recorded separately in [release validation](validation/README.md); new clips and rate/asset combinations require their own checks. Diagnostics include actual/requested rate, limit source, clip,
 bucket, play counts, distance and errors.
 
 Game pause freezes owned components and timers. An outfit preparation hold pauses
@@ -142,7 +142,7 @@ check exercised native attenuation/pitch/pause methods and read the native pitch
 limits. Later retail playback exposed the stale-wave failure documented below;
 the corrected trial ran for 97 seconds/40 plays without SFX errors and exited
 cleanly. Final audible timing still belongs to the author.
-See `validation.json` for installation and the pending in-game checkpoint.
+See [release validation](validation/README.md) for current checks and author acceptance.
 
 
 ## First live corrections (sfx-2)

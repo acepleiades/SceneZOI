@@ -1,65 +1,97 @@
-# Production authoring status
+# Authoring content for SceneZOI
 
-Animation rigs and exporters are maintained separately from the framework.
-SceneZOI consumes their imported animation assets and declarative scene data.
+Content packs supply assets and inert JSON. SceneZOI supplies playback, participant
+ownership, presentation and cleanup. A pack can be built independently and extend
+framework hubs without editing framework source. Start with the public
+[framework manifest](../packs/scenezoi.json), [neutral scene files](../packs/scenezoi/scenes/)
+and [package/declaration guide](package-split.md).
 
-The Maya rigs/exporter have passed ModKit and in-game tests through SceneZOI.
-Paired contact, deliberately touching fingers and synchronized anatomy movement
-were visually verified. Measured differences are small; this is not perfect
-numerical equivalence. Treat the pipeline as production-ready. Detailed accuracy
-checking is optional and off by default; investigate again for a concrete defect.
+## Files and native project
 
-The exporter installs **inZOI Export** on the **SceneZOI** shelf, identifies the
-selected character's export skeleton and supports **Other skeletal mesh** by
-selecting an original bone and choosing its skeleton. That mode supports separate
-attachments and other skeletal meshes.
+Create and register your own project through ModKit. Give your pack a namespace,
+author one scene per JSON file, and point the manifest at a child directory:
 
-The linking tool adds another shelf button. It supplies Max-like editable linking:
-a control follows a target bone/control while remaining movable, rotatable and
-keyable relative to it. The link uses an appropriate parent space, rather than
-constraining the animator control's own transform channels. This is useful for
-keeping paired hand contact while breathing or moving.
+```json
+{
+  "schema_version": 3,
+  "id": "designer",
+  "scene_directory": "designer/scenes",
+  "extensions": []
+}
+```
 
-Body motion exports **80 main movement and twist bones**. The additional reference
-bones appear to support body shaping, corrective deformation and procedural systems;
-their individual purposes are not all established. `SK_Base` discards certain
-animated local translations, which explained the earlier thigh-control mismatch.
-Validate the exported joints against the target skeleton's retargeting settings
-when investigating a concrete mismatch.
+Scene files use namespaced IDs independently of filenames. Builds collect the
+directory recursively and validate it before staging a native scene-pack row.
+`expression_files` and `data_files` add other declarative definitions. Use your own
+assets and packaging inventory; no private content checkout is needed.
 
-Anatomy controls allow rotation on all three axes, with no independent pelvis
-animation. The anatomy pelvis follows the male pelvis in the authoring scene; its
-exported pelvis stays fixed. SceneZOI attaches the separate skinned mesh at runtime
-and samples its local animation using the participant clock, avoiding doubled
-pelvis movement. Skin and main-hair color matching were visually acceptable in the
-tested setup, with hair helping conceal the texture seam.
+From the SceneZOI checkout:
 
-The original standing animation source directory was inventoried directly. Its idle
-uses frames 0â€“180 and the three adult sets use 0â€“600, all at 60 fps. The older
-Blender test's frame range and filenames must not be substituted for this inventory.
+```powershell
+python tools/build_catalog.py --packs "C:/MyPack/packs/designer.json" --project "C:/Path/To/DesignerProject"
+```
 
+This stages JSON, not animation imports or a native package. Follow
+[developer setup](installation.md) and [packaging](development.md) for the rest.
 
-# Scene JSON metadata
+## Scenes and participants
 
-Scene schema 3 optionally supports registered `tags`, role-specific
-`participant_tags` and directional `actions`. Each action names actor, target and
-performer roles; a one-sided hug is one record and a mutual hug is two. Scene
-ratings derive from action definitions, so do not author `content_rating` in scene
-JSON. See [dictionaries, aliases, role examples and rating rules](scene-metadata.md).
-The shared [add-on search and session restrictions](addons.md) consume this data.
+A scene declares `id`, `label`, `kind`, `duration`, `fps`, named `participants`,
+`anchor_participant`, one body `track` per role, and `navigation`. Copy a neutral
+scene as a complete structural example and replace its identity/assets with your
+own. Roles describe responsibilities; they are not inferred from body type,
+controlled/NPC status or roster order. Body/life-stage requirements describe actual
+appearance compatibility. Mutual actions are explicitly authored in both directions.
 
-# Scene JSON completion responses
+Declare `starting_hub: true` on a compatible loop to make it eligible for entry.
+The selected roster must match the entire scene. Membership and role assignments
+stay fixed; connected nodes must preserve compatible roles and furniture context.
+A hub extension links your pack into enabled framework navigation. See
+[participants](group-support.md), [furniture](furniture.md) and
+[navigation/package extensions](package-split.md#roles-entry-and-extensions).
 
-Scene schema 3 optionally supports `movement_timing` and `completion_responses[role][task_id]`. Authored task-completion routes take priority, followed by explicitly enabled procedural responses synchronized to uniform frequency/phase or irregular peak markers. Without timing, an enabled slowdown uses its configured general fallback. Generic per-participant bone shaking is separately optional. See [the JSON examples, settings, timing and lifetime contracts](completion-effects.md). Existing scenes need no response metadata. Pack data remains inert; executable behavior belongs to SceneZOI.
+## Animation and attachment requirements
 
+Body tracks must load on the compatible native skeleton and agree with authored
+duration within the runtime tolerance. Paired clips use a shared origin/coordinate
+setup for their intended contact. SceneZOI preserves the game's animation instances
+and samples the tracks from one clock; it does not repair contact, author IK or
+retarget arbitrary facial/body proportions for you.
 
-# Task-triggered voice JSON
+The generic import tools validate source hashes, target skeletons and duration.
+Rigs/exporters and their application-specific authoring workflows are maintained
+separately. Investigate import accuracy for a concrete reproduced mismatch.
 
-A voice set may declare named `responses` containing one-shot clips. Scene `task_completion_voices[completing_role][task_id]` rules independently name the speaking role, saved voice context, response group, fade duration and priority. The default quarter-second fade interrupts continuous voice, plays one response and then restores normal voice. Higher priority can interrupt a lower-priority line. See [voice JSON, silence, priorities and lifecycle](voices.md#task-triggered-one-shot-voice-responses). All behavior belongs to SceneZOI; content supplies inert settings and audio assets.
+Named skeletal attachments specify their owning participant, mesh, socket and
+reference bone, plus an optional duration-matched animation. The mesh uses its own
+skeleton. `component` selects `body` or `head`; inverse-reference binding avoids a
+double authored root offset. Resources have independent ownership and cleanup.
+See [head attachments and fixed facial poses](facial-poses.md) and
+[coverage/material profiles](package-split.md#presentation-and-compatibility-profiles).
 
+## Optional scene data
 
-## Facial overrides and head attachments
+| Behavior | Contract |
+| --- | --- |
+| Scene/participant tags, directed actions, calculated ratings | [Metadata](scene-metadata.md) |
+| Expressions and fixed partial-face poses | [Expressions](expressions.md), [facial poses](facial-poses.md) |
+| Eye targets | [Gaze](gaze.md) |
+| Spatial sounds and voices | [SFX](sfx.md), [voices](voices.md) |
+| Numerical tasks, completion routes and one-shot actions | [Scene tasks](scene-tasks.md) |
+| Authored one-shot transition nodes | [Transitions](transitions.md) |
+| Procedural completion effects and timing | [Completion responses](completion-effects.md) |
 
-Use named `expressions[role].facial_pose` declarations for fixed partial-face
-overrides, with or without an animated expression context. Attachments can choose
-`component: "head"` for facial bone binding. See [the schema and examples](facial-poses.md).
+Scene ratings derive from declared actions; do not write `content_rating` into
+scene JSON. Metadata describes content, while separate gameplay integrations own
+availability decisions and consequences. Use [API/SDK add-ons](addon-authoring.md)
+for executable integration rather than putting code in content declarations.
+
+## Verify your pack
+
+Run source validation, native validation and exact owned-payload filtering. Then
+test fresh startup, matching/no-match entry, navigation, appearance changes,
+pause/speed, Exit/re-entry and independence from optional packs as applicable.
+Check actual asset readiness and retained errors; an accepted command is not
+rendered acceptance. New geometry, facial targets, audio and furniture variants
+need their own fit/presentation checks. Keep those results distinct from source
+tests in your contribution or validation notes.

@@ -1,8 +1,0 @@
-{
-  "historical": true,
-  "build": "20261103-blink-1",
-  "ui_build": "20261103-furniture-ui-1",
-  "content_build": "20261103-bed-gaze-68-1",
-  "scope": "Advance ordinary native facial sequences to retain authored blinks; explicit sample poses remain held. Standard-bed support 68 cm, futons 20 cm, female bed-hub gaze targets own body hand_l; male forward.",
-  "note": "Detailed original retained in the external pre-migration backup. Latest valid acceptance boundaries are explicitly carried into current validation.json."
-}

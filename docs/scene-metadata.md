@@ -109,7 +109,7 @@ use the hardcoded enum `GENERAL`, `SUGGESTIVE`, or `EXPLICIT`. The scene's publi
 rating is the highest of all its actions: GENERAL < SUGGESTIVE < EXPLICIT.
 An affectionate tag cannot lower it. Unknown enum values fail validation.
 
-Scenes without actions remain unclassified, not implicitly GENERAL. Legacy files
+Scenes without actions remain unclassified, not implicitly GENERAL. Scenes omitting optional action metadata
 can still load unrestricted, but rating-restricted searches/sessions exclude them.
 Authors must describe all rating-relevant activities; omitted activities cannot
 affect a derived rating. These labels classify declared actions, not automatically

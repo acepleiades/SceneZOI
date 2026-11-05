@@ -18,9 +18,11 @@ These pages describe the active framework at the repository root. Dated investig
 | Tasks and responses | [Scene tasks](scene-tasks.md), [completion effects](completion-effects.md) |
 | One-shot nodes | [Transitions](transitions.md) |
 | Reproduced issues and limits | [Investigation index](investigations/README.md) and [issue ledger](investigations/runtime-and-ui-issues.md) |
-| Current verification | [Validation report](../validation.json) |
+| Release evidence and limits | [Validation overview](validation/README.md) and [current report](../validation.json) |
 
-Historical validation summaries are under validation/archive/. Original large probes, local-machine paths and private diagnostics are not public authoring inputs. The retired prototype project, its old runtime/tests and anatomy assets have been removed; the separately published Blender exporter is maintained outside these repositories. The obsolete cooked-expression DataTable importer has also been removed; current expression declarations use native JSON patches.
+Curated validation evidence and failure notes are retained here. Raw historical
+checkpoints and machine-specific diagnostics are archived privately; they are not
+public authoring inputs. Current contracts take precedence over dated findings.
 
 - [Add-on controls, results and SDK extensions](addon-controls.md)
 - [Add-on API validation findings and pitfalls](validation/addon-api-20261104.md)

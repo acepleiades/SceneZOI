@@ -1,6 +1,16 @@
+# Local caches and logs
 __pycache__/
+*.py[cod]
+*.log
+
+# Native assets and generated ModKit output stay in the working project.
 modkit/*/Content/
 modkit/*/Intermediate/
 modkit/*/Saved/
+modkit/*/Windows/
 modkit/*/lua/
-*.log
+modkit/*/*.zip
+modkit/*/Meta/*.mod
+modkit/*/Meta/mod_manifest.json
+
+# Authoritative workspace/lua, UI, SDK and project descriptors are source.

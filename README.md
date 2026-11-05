@@ -121,8 +121,9 @@ for bug reports, proposals and pull requests.
 
 ## Release status and licensing
 
-The first-release feature set is described above. Tested builds, known limits and
-acceptance records live in [validation.json](validation.json); source checks alone
+The first-release implementation is ready for player release. Recorded checks,
+known limits and author acceptance are summarized in [validation](docs/validation/README.md)
+and [validation.json](validation.json); source checks alone
 do not establish rendered or audible behavior. The native-message API has a
 documented version-1 contract. Internal modules and UI mailboxes are implementation
 details; scene and declaration schemas have their own documented contracts.
