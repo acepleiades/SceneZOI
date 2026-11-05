@@ -12,6 +12,10 @@ local function update(actors,ready,dt)
     for _,class in ipairs({inzoi.UB1ObjectInteractionListEntry:StaticClass(),inzoi.UB1TalkInteractionListEntry:StaticClass()}) do
         for _,entry in ipairs(UE.UWidgetBlueprintLibrary.GetAllWidgetsOfClass(actor,nil,class,false)) do
             local data=entry.Data
+            if data and(tostring(data.InteractionBagId)==marker or tostring(data.InteractionBagId)==furniture_marker)then
+                local caption=entry.BW_Text_Content or entry.BW_CategoryText
+                if caption then caption:SetText(require('SceneZOI.Localization').text('Start SceneZOI'))end
+            end
             if data and tostring(data.InteractionBagId)==marker then
                 entry:SetVisibility(ready and tostring(data.TargetEntityId.Value)==controlled and 0 or 1)
             elseif data and tostring(data.InteractionBagId)==furniture_marker then

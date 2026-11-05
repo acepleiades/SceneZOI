@@ -9,7 +9,7 @@ local plays,volumes={},{};local fail_play,fail_destroy=false,false
 local N={}
 function N.rate(r)return math.max(1,math.min(2,r))end
 function N.load(path)if path:find('Missing')then error('missing optional clip')end;return {path=path,duration=path:find('Normal')and 1 or 2}end
-function N.create(v,actor,spec)v.component=v.component or {};v.owner=actor.id;v.component.volume=spec.volume;v.destroyed=false end
+function N.create(v,actor,spec,category)v.category=category;v.component=v.component or {};v.owner=actor.id;v.component.volume=spec.volume;v.destroyed=false end
 function N.position(bindings,sources)return bindings[sources[1].participant].actor.point end
 function N.move(v,p)v.point=p end
 function N.volume(v,x)v.component.volume=x;volumes[v.owner]=x end
@@ -50,6 +50,7 @@ assert(response.channels['1'].item.response=='answer'and #response.channels['1']
 R.trigger(response,{payload(1)});assert(#response.channels['1'].queue==0,'Duplicate/lower priority completion must not enqueue again')
 step(.125);assert(math.abs(normal.component.volume-.4)<1e-8 and not normal.stopped,'Normal clip must fade rather than hard-cut')
 step(.125);assert(normal.stopped and response.plays==2 and response.channels['1'].voice.component.volume==.8)
+assert(response.channels['1'].voice.category=='female_voice','One-shot responses must use the speaker set volume channel')
 local shot=response.channels['1'].voice
 session.clock.index=4;people[1].actor.point={X=100};step(.5,.1)
 assert(shot.point.X==100 and shot.rate==1 and math.abs(shot.remaining-1.5)<1e-8,'Spatial response obeys normal-rate slow-motion audio policy, not scene speed')

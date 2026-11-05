@@ -117,10 +117,10 @@ playing readiness; reads may inspect preparation/cleanup.
 | --- | --- |
 | `set_speed` | `speed_index` 1–4 selects 0.5, 1, 1.5, 2. Explicit last command wins with player controls. Requires `speed`. |
 | `set_speed_multiplier` | `multiplier` 0.1–2. Per-caller temporary factor; combined factors clamp to 0.1–2 before existing completion slowdown. Does not overwrite the player's selector. Requires `speed`. |
-| `get_task_state` | Complete copied `definitions` and participant rows, including base rate, combined rate multiplier and completion hold. `get_definitions` also includes task definitions. |
+| `get_task_state` | Complete copied `definitions` and participant rows, including `base_rate`, combined `rate_multiplier`, `player_rate_multiplier`, `addon_rate_multiplier`, `effective_rate` and completion hold. The player factor applies only to positive base rates; see [settings](settings.md#task-progress). `get_definitions` also includes task definitions. |
 | `set_task_progress` | `participant_id`, `task_id`, `value` within 0–maximum. Requires `tasks`. |
 | `modify_task_progress` | `participant_id`, `task_id`, `amount` within ±maximum; resulting progress clamps to 0–maximum. Requires `tasks`. |
-| `set_task_controls` | `participant_id`, `task_id`, optional `rate_multiplier` 0–10 and/or `completion_hold` boolean. Per-caller factors combine and clamp to 0–10. Zero freezes accumulation/decay. Any active hold blocks completion. Requires `tasks`. |
+| `set_task_controls` | `participant_id`, `task_id`, optional `rate_multiplier` 0–10 and/or `completion_hold` boolean. Per-caller factors combine and clamp to 0–10, before the player's separate 0.1–5 positive-progress factor. Zero freezes accumulation/decay. Any active hold blocks completion. Requires `tasks`. |
 
 Setting progress to the maximum schedules ordinary engine completion on the next
 positive playing tick. It never manufactures an event, response, animation or route.

@@ -150,7 +150,7 @@ function M.compile(documents)
   for _,link in ipairs(node.navigation)do
    local target=result.nodes[link.target]
    if not seen[link.id]and target and V.equal(target.participants,node.participants)and V.equal(target.furniture,node.furniture)then
-    local value=V.copy(link);if not value.label or not value.label:match('%S')then value.label=target.label end
+    local value=V.copy(link);if not value.label or not value.label:match('%S')then value.label=target.label;value._label_from_target=true end
     navigation[#navigation+1]=value;seen[link.id]=true
    else result.warnings[#result.warnings+1]='Unavailable or incompatible navigation from '..id..': '..link.id end
   end

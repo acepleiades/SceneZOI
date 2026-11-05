@@ -25,7 +25,7 @@ class MetadataTests(unittest.TestCase):
   with self.assertRaises(ValueError):dictionaries([(owner,kind,p,bad)]+docs[1:])
  def test_real_scenes(self):
   for p in (ROOT/'packs/scenezoi/scenes').glob('*.json'):
-   raw=json.loads(p.read_text());self.assertNotIn('content_rating',raw);v=validate_scene(raw,self.registry);self.assertEqual(v['content_rating'],'GENERAL');self.assertEqual({(a['actor'],a['target']) for a in v['actions'] if a['type']=='hug'},{('male','female'),('female','male')})
+   raw=json.loads(p.read_text(encoding='utf-8'));self.assertNotIn('content_rating',raw);v=validate_scene(raw,self.registry);self.assertEqual(v['content_rating'],'GENERAL');self.assertEqual({(a['actor'],a['target']) for a in v['actions'] if a['type']=='hug'},{('male','female'),('female','male')})
  def test_curated_vocabulary(self):
   self.assertEqual(len(self.registry['actions']),85)
   self.assertFalse(any('tail' in n for n in self.registry['actions']))
@@ -45,7 +45,7 @@ class MetadataTests(unittest.TestCase):
  def test_descriptive_examples_and_removed_position_names(self):
   for key in ['doggy_style','doggystyle','reverse_cowgirl','mating_press','butterfly','spooning']:
    self.assertNotIn(key,self.registry['tag_names'])
-  rows=json.loads((ROOT/'docs/examples/descriptive-metadata.json').read_text())['examples']
+  rows=json.loads((ROOT/'docs/examples/descriptive-metadata.json').read_text(encoding='utf-8'))['examples']
   for row in rows:validate_scene(row['metadata'],self.registry)
 
 if __name__=='__main__':unittest.main()

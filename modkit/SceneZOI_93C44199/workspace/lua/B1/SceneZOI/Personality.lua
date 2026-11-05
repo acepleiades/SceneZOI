@@ -49,7 +49,7 @@ function M.publish(session)
  end
  local ids,available={},{}
  for id in pairs(Library.get().sets)do ids[#ids+1]=id end;table.sort(ids)
- for _,id in ipairs(ids)do local spec=Library.get().sets[id];available[#available+1]=table.concat({Protocol.encode(id),Protocol.encode(spec.label),spec.body},':')end
+ for _,id in ipairs(ids)do local spec=Library.get().sets[id];available[#available+1]=table.concat({Protocol.encode(id),Protocol.encode(require('SceneZOI.Localization').label('expression_set',id,spec.label)),spec.body},':')end
  local packet=Protocol.pack(session.client,session.sequence,session.revision,session.personality_ack or 0,session.preparing and 'busy'or session.personality_code or 'ok',#rows>0 and table.concat(rows,'+')or 'none',#available>0 and table.concat(available,'+')or 'none')
  if packet==session.personality_state then return end
  local ok=inzoi.cli.execute('uimod.cfg_save mod_id='..Config.mod_id..' section='..Config.section..' key=personality_state value='..packet)

@@ -1,3 +1,4 @@
+require('./fixtures/localization.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 let state={client:'test',sequence:1,revision:1,active:true,exiting:false},raw='',changed=0;
 const timers=[],elements={};

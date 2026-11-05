@@ -13,7 +13,7 @@
     }
     window.SceneZOITaskUI={create:function(options){
         var root=options.root, tray=document.createElement('div');tray.id='scene-tasks';
-        tray.setAttribute('aria-label','Scene tasks');tray.style.display='none';root.appendChild(tray);
+        tray.setAttribute('aria-label',window.SceneZOILocalization.text('Scene tasks'));tray.style.display='none';root.appendChild(tray);
         var rows=[],key='',frame=0,reading=false,markup='',visible=false;
         function update(){
             var s=options.state(),next=s.client+':'+s.sequence;
@@ -28,7 +28,7 @@
             tray.style.top=-(root.clientTop||0)+'px';tray.style.height=root.offsetHeight+'px';
         }
         function render(){
-            var html='<div id="scene-tasks-heading">Scene Tasks</div><div id="scene-task-list">';
+            var html='<div id="scene-tasks-heading"><span data-i18n="Scene Tasks">'+window.SceneZOILocalization.html("Scene Tasks")+'</span></div><div id="scene-task-list">';
             rows.forEach(function(r){
                 var percent=Math.max(0,Math.min(100,r.percent));
                 // Fixed SVG viewport matches the overlay; progress uses a real partial path.

@@ -28,6 +28,12 @@ A context requires `id` and `label`. Contexts are data, not runtime enums. The p
 
 A set requires `body`, `archetype`, `context` and 1–512 unique SoundWave paths. `volume` defaults to 1 (range 0–1); `gap` defaults to 0 (range 0–60 native-game seconds). There are no executable callbacks or implicit gender/player indices. Male sets use the same schema and engine.
 
+## Player volume
+
+[Scene Settings](settings.md) provides separate persistent 0–200% gains for female
+and male voice sets. They scale both normal clips and responses after authored
+volume/fades, without changing assignments or clearing add-on mutes.
+
 ## Scene instructions
 
 ```json

@@ -2,6 +2,8 @@
 local V=require('SceneZOI.DataValidation')
 local Protocol=require('SceneZOI.Protocol')
 local Control=require('SceneZOI.AddonControl')
+local Settings=require('SceneZOI.Settings')
+local function appearance_body(p,session)return p.body or p.expression_body or((session.node.participants or {})[p.role]or {}).body end
 local M={}
 local function sorted(t)local ids={};for id in pairs(t)do ids[#ids+1]=id end;table.sort(ids);return ids end
 function M.new(definitions,participants)
@@ -28,6 +30,7 @@ function M.update(state,session,dt,emit)
    local directive=directives[p.role]and directives[p.role][id]
    local rate=directive and directive.rate or -(definition.decay or 0)
    local multiplier,held=Control.task(session,p.id,id)
+   if rate>0 then multiplier=multiplier*Settings.task_multiplier(appearance_body(p,session))end
    rate=rate*multiplier
    local maximum=definition.maximum
    if entry.value<maximum and rate>0 then
@@ -54,9 +57,9 @@ function M.snapshot(state,session)
    local d=state.definitions[id];local e=state.participants[p.id][id];local display=d.display or {}
    local directive=(session.node.tasks or {})[p.role];directive=directive and directive[id]
    if display.visible~=false and(e.value>0 or (directive~=nil and directive.rate>=0))then
-    local body=p.body or p.expression_body or(session.node.participants[p.role]or {}).body
+    local body=p.body or p.expression_body or((session.node.participants or {})[p.role]or {}).body
     rows[#rows+1]={participant_id=p.id,participant_name=(p.outfit_name and Protocol.decode(p.outfit_name)) or p.task_name or p.id,participant_role=p.role,
-     task_id=id,label=d.label,value=e.value,maximum=d.maximum,percent=e.value/d.maximum*100,
+     task_id=id,label=require('SceneZOI.Localization').label('scene_task',id,d.label),value=e.value,maximum=d.maximum,percent=e.value/d.maximum*100,
      completions=e.completions,color=(display.body_colors or {})[body]or display.color or '#3185c3',
      track_color=display.track_color or '#bfbfbf',text_color=display.text_color or '#222222'}
    end
@@ -70,9 +73,12 @@ function M.inspect(state,session)
   local d=state.definitions[id];local e=state.participants[p.id][id]
   local directive=((session.node.tasks or {})[p.role]or {})[id]
   local multiplier,held=Control.task(session,p.id,id)
+  local base_rate=directive and directive.rate or -(d.decay or 0)
+  local player=Settings.task_multiplier(appearance_body(p,session))
+  local combined=multiplier*(base_rate>0 and player or 1)
   rows[#rows+1]={participant_id=p.id,participant_role=p.role,task_id=id,label=d.label,value=e.value,
    maximum=d.maximum,percent=100*e.value/d.maximum,completions=e.completions,
-   base_rate=directive and directive.rate or -(d.decay or 0),rate_multiplier=multiplier,completion_hold=held}
+   base_rate=base_rate,rate_multiplier=combined,player_rate_multiplier=player,addon_rate_multiplier=multiplier,effective_rate=base_rate*combined,completion_hold=held}
  end end
  return rows
 end

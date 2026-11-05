@@ -14,7 +14,8 @@ These pages describe the active framework at the repository root. Dated investig
 | Scene tags, actions and ratings | [Metadata](scene-metadata.md) |
 | Independent add-ons | [Authoring guide](addon-authoring.md), [API](addons.md), [controls](addon-controls.md) and [SDK](../sdk/README.md) |
 | Gaze and expressions | [Gaze](gaze.md), [expressions](expressions.md), [facial poses/head attachments](facial-poses.md) |
-| Audio | [Voices](voices.md), [SFX](sfx.md) |
+| Player-facing translations | [Localization](localization.md) |
+| Audio | [Voices](voices.md), [SFX](sfx.md), [settings and volume](settings.md) |
 | Tasks and responses | [Scene tasks](scene-tasks.md), [completion effects](completion-effects.md) |
 | One-shot nodes | [Transitions](transitions.md) |
 | Reproduced issues and limits | [Investigation index](investigations/README.md) and [issue ledger](investigations/runtime-and-ui-issues.md) |

@@ -1,3 +1,4 @@
+require('./fixtures/localization.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const base='modkit/SceneZOI_93C44199/ui/scenezoi/';
 const listeners={},classes=new Set(),reports=[],hovers=[],timers={};
@@ -60,7 +61,7 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  resolvePoll=true;timers[125]();const count=requests;timers[125]();assert.equal(requests,count,'Only one native modal query may be in flight');
  resolvePoll({success:true,data:state});await flush();
  const css=fs.readFileSync(base+'index.html','utf8');
- assert.match(css,/#scene-navigation button, #scene-exit, #scene-restore \{ font-family: 'Pretendard', 'NotoSans', sans-serif;/);
+ assert.match(css,/#scene-navigation button, #scene-exit, #scene-restore \{ font-family: var\(--inzoi-font-ui\);/);
  assert(css.indexOf('src="window.js"')<css.indexOf('src="panel-state.js"'));
  assert(css.indexOf('src="panel-state.js"')<css.indexOf('src="outfit-ui.js"'));
  for(const id of ['scene-tools','scene-tasks','outfit-panel'])assert(css.includes('#app-root.scene-menu-blocked #'+id+'::after'));

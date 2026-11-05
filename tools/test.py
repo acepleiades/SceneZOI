@@ -52,10 +52,11 @@ print=function(first,...) if not tostring(first):match("^%[SceneZOI%]") then out
         lib.lua_close(state)
         print('PASS', filename.relative_to(repo)if filename.is_relative_to(repo)else filename, flush=True)
 subprocess.run([sys.executable,'tests/catalog.py'],check=True)
+subprocess.run([sys.executable,'tests/localization.py'],check=True)
 subprocess.run([sys.executable,'tests/scene_metadata.py'],check=True)
 subprocess.run([sys.executable,'tests/addon_annotations.py'],check=True)
 subprocess.run([sys.executable,'tests/assetless_package.py'],check=True)
 if args.content_root:subprocess.run([sys.executable,str(args.content_root/'tests/catalog.py')],check=True,env=env)
-for filename in ['tests/controls.cjs', 'tests/demo-entry.cjs', 'tests/voices.cjs', 'tests/tasks.cjs', 'tests/panel-state.cjs','tests/save-guard.cjs','tests/addon-bridge.cjs']:
+for filename in ['tests/controls.cjs', 'tests/demo-entry.cjs', 'tests/voices.cjs', 'tests/settings.cjs', 'tests/localization.cjs', 'tests/tasks.cjs', 'tests/panel-state.cjs','tests/save-guard.cjs','tests/addon-bridge.cjs']:
     subprocess.run(['node', filename], check=True)
 print('All SceneZOI framework checks passed.')

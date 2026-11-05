@@ -35,6 +35,9 @@ effect and release its own changes when finished.
 - **Declarative presentation.** Scenes can select animated expressions, partial
   facial poses, gaze targets, spatial voices and SFX, outfits and animated props.
   Attachments can bind to body or head bones.
+- **Localized controls and content.** Player-facing text supports the game's 15
+  languages. Content packs contribute translated labels as inert JSON, with
+  per-entry English fallback. See [localization](docs/localization.md).
 - **Navigation and progression.** Authored navigation, transition nodes, numerical
   scene tasks, completion routes and optional visual/audio responses work through
   the same session lifetime.

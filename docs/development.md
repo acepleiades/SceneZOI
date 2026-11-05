@@ -15,9 +15,9 @@ python tools/build_catalog.py
 python tools/test.py --modkit-root $modkitRoot
 ```
 
-The default build stages nine framework declarations: one scene pack with three
-neutral nodes, five furniture profiles, two metadata dictionaries and one facial
-pose. The framework inventory owns four animation packages. Default checks are
+The default build stages ten framework declarations: one scene pack with three
+neutral nodes, five furniture profiles, two metadata dictionaries, one facial
+pose and one localization dictionary. The framework inventory owns four animation packages. Default checks are
 framework-only; `--content-root` is an optional test hook for a compatible author
 checkout that is already available. HZoi's private checkout is not required.
 External packs can use `--packs` and `--project`, with their own `--inventory`
@@ -90,7 +90,9 @@ and checksums; do not fabricate them by copying an editable Lua scaffold.
 Test against a disposable save and a known package configuration. Check current
 game/session state before interacting. Preserve local settings, expression/voice
 preferences and attribution when testing an updated package, and keep rollback
-copies outside the game's Mods directory. Verify candidate-to-test-copy hashes.
+copies outside the game's Mods directory. Verify candidate-to-test-copy hashes. Preserve ModKit-generated protection and
+integrity metadata; do not assume its checksum strings are plain MD5 hashes of
+exported bytes. Use explicit byte hashes to compare candidates and installed files.
 Close inZOI before replacing cooked containers.
 
 Reproduce narrowly, start with logs and relevant subsystem tests, and retain a

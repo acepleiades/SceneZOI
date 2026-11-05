@@ -1,3 +1,4 @@
+require('./fixtures/localization.cjs');
 const fs = require('fs');
 const vm = require('vm');
 const assert = require('node:assert/strict');
@@ -5,7 +6,7 @@ const path = require('node:path');
 const source = fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/app.js'), 'utf8');
 function fixture(options = {}) {
   const elements = {};
-  for (const id of ['title-text', 'close-btn', 'scene-status', 'scene-exit', 'scene-navigation', 'speed-down', 'speed-up', 'speed-label', 'speed-dots', 'scene-tools', 'outfit-toggle', 'view-options', 'scene-settings', 'outfit-panel', 'outfit-close', 'outfit-selector', 'outfit-participants', 'outfit-status', 'outfit-pieces', 'outfit-title', 'personality-fields', 'personality-status', 'expression-set', 'expression-choices', 'voice-fields']) {
+  for (const id of ['title-text', 'close-btn', 'scene-status', 'scene-exit', 'scene-navigation', 'speed-down', 'speed-up', 'speed-label', 'speed-dots', 'scene-tools', 'outfit-toggle', 'view-options', 'scene-settings', 'outfit-panel', 'outfit-close', 'outfit-selector', 'outfit-participants', 'outfit-status', 'outfit-pieces', 'outfit-title', 'personality-fields', 'personality-status', 'expression-set', 'expression-choices', 'voice-fields', 'settings-fields', 'outfit-selector-wrap', 'settings-status-audio', 'settings-status-task_rates', 'task-rate-settings', 'audio-volume-settings', ...['sfx','female','male','task-female','task-male'].flatMap(k=>['slider','number','fill','thumb'].map(v=>'volume-'+v+'-'+k))]) {
     elements[id] = {style: {}, listeners: {}, setAttribute(k,v){this[k]=v;}, addEventListener(k, cb) { this.listeners[k] = cb; }};
   }
   const classes=new Set(),documentListeners={};
@@ -47,6 +48,7 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, 'fixtures/catalog.js'), 'utf8'), context);
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/panel-state.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/voice-ui.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/outfit-ui.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/task-ui.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/save-guard.js'),'utf8'),context);
@@ -190,7 +192,17 @@ async function run(){
   assert.match(wardrobe.elements['outfit-pieces'].innerHTML,/Bag: &lt;Canvas> &amp; &quot;mod&quot;/);
   assert.match(wardrobe.elements['outfit-pieces'].innerHTML,/aria-checked="true"/);
   assert.equal(typeof wardrobe.elements['view-options'].listeners.click,'function');
-  assert.equal(wardrobe.elements['scene-settings'].listeners.click,undefined);
+  assert.equal(typeof wardrobe.elements['scene-settings'].listeners.click,'function');
+  wardrobe.elements['scene-settings'].listeners.click();
+  assert.equal(wardrobe.elements['outfit-title'].textContent,'Scene Settings');
+  assert.equal(wardrobe.elements['outfit-selector-wrap'].style.display,'none');
+  assert.equal(wardrobe.elements['settings-fields'].style.display,'block');
+  assert.equal(wardrobe.elements['outfit-pieces'].style.display,'none');
+  assert.equal(wardrobe.elements['scene-settings']['aria-expanded'],'true');
+  wardrobe.elements['view-options'].listeners.click();
+  assert.equal(wardrobe.elements['settings-fields'].style.display,'none');
+  assert.equal(wardrobe.elements['outfit-title'].textContent,'Personality Management');
+  wardrobe.elements['outfit-toggle'].listeners.click();
   // The hit rectangle includes attached controls and follows dragging.
   assert(wardrobe.rects.at(-1)[1]<wardrobe.root.offsetTop && wardrobe.rects.at(-1)[2]>wardrobe.root.offsetWidth);
   wardrobe.root.offsetLeft=700;wardrobe.root.offsetTop=480;

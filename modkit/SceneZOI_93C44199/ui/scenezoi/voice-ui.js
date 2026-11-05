@@ -34,16 +34,16 @@
             var id=o.selected();if(id!==selected){selected=id;choosing=null;}
             var p=data.participants[id],disabled=!p||o.busy()||!!pending;
             if(disabled||!o.visible())choosing=null;
-            var entries=[{id:'',label:'None (silent)'}];
+            var entries=[{id:'',label:window.SceneZOILocalization.text('None (silent)')}];
             Object.keys(data.archetypes).sort().forEach(function(a){if(p&&data.archetypes[a].body===p.body)entries.push({id:a,label:data.archetypes[a].label});});
-            var html=dropdown('Voice archetype','archetype',p&&p.archetype?data.archetypes[p.archetype].label:'None (silent)',entries,disabled);
+            var html=dropdown(window.SceneZOILocalization.text('Voice archetype'),'archetype',p&&p.archetype?data.archetypes[p.archetype].label:window.SceneZOILocalization.text('None (silent)'),entries,disabled);
             if(p&&p.archetype){
                 Object.keys(data.contexts).sort().forEach(function(c){
-                    var ids=options(p.body,p.archetype,c),choices=[{id:'',label:'None (silent)'}].concat(ids.map(function(i){return {id:i,label:data.sets[i].label};}));
-                    html+=dropdown(data.contexts[c].label,hex(c),p.sets[c]?data.sets[p.sets[c]].label:'None (silent)',choices,disabled||!ids.length);
+                    var ids=options(p.body,p.archetype,c),choices=[{id:'',label:window.SceneZOILocalization.text('None (silent)')}].concat(ids.map(function(i){return {id:i,label:data.sets[i].label};}));
+                    html+=dropdown(data.contexts[c].label,hex(c),p.sets[c]?data.sets[p.sets[c]].label:window.SceneZOILocalization.text('None (silent)'),choices,disabled||!ids.length);
                 });
             }
-            html+='<div class="voice-status" role="status">'+text(pending?'Saving voice preferences...':message||(p&&p.error)||(!p?'Loading voices...':(!entries.length?'No voices installed.':'Voice choices are kept for future sessions.')))+'</div>';
+            html+='<div class="voice-status" role="status">'+text(pending?window.SceneZOILocalization.text('Saving voice preferences...'):window.SceneZOILocalization.text(message)||(p&&p.error?window.SceneZOILocalization.text('Voice audio is unavailable. See diagnostics.'):'')||(!p?window.SceneZOILocalization.text('Loading voices...'):(!entries.length?window.SceneZOILocalization.text('No voices installed.'):window.SceneZOILocalization.text('Voice choices are kept for future sessions.'))))+'</div>';
             if(html!==markup){container.innerHTML=html;markup=html;}
         }
         function attribute(target,name){while(target&&target!==container){var v=target.getAttribute&&target.getAttribute(name);if(v!==null&&v!==undefined)return v;target=target.parentNode;}return null;}
@@ -68,7 +68,7 @@
                 var incoming=validate(JSON.parse(unhex(f[6])));
                 if(session!==requested){reset();session=requested;}
                 data=incoming;ack=a;if(pending&&ack>=count)pending=null;count=Math.max(count,ack);
-                message=f[5].indexOf('voice_')===0?'Could not save that voice choice. Try again.':'';render();o.changed();
+                message=f[5].indexOf('voice_')===0?window.SceneZOILocalization.text('Could not save that voice choice. Try again.'):'';render();o.changed();
             }).catch(function(){}).then(function(){reading=false;});
         },475);
         return {update:render,busy:function(){return !!pending;},close:function(){choosing=null;},retry:function(){if(pending&&state().active&&!state().exiting)o.write('voice',pending).catch(function(){});}};

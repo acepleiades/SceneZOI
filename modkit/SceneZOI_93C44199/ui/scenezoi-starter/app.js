@@ -31,7 +31,7 @@
         if(event && event.triggerId==='scenezoi_starter_lifetime'){if(!writing)close();markReady();return;}
         if (!event || event.triggerId !== 'scenezoi_demo' && event.triggerId !== 'scenezoi_furniture' || writing) return;
         writing = true;
-        return inzoi.cli.execute('entity.get_possessed').then(decode).then(function (current) {
+        return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function (current) {
             var controlled = String(current.entity_id);
             if (!/^\d+$/.test(controlled) || event.triggerId==='scenezoi_demo' && String(event.targetEntityId) !== controlled) return;
             var bed=event.triggerId==='scenezoi_furniture'?String(event.targetEntityId):'none';
@@ -40,7 +40,7 @@
                 var raw = data && data.value !== undefined ? data.value : data;
                 var phase = String(raw || '').split('|')[3];
                 if (phase && phase !== 'idle' && phase !== 'error') {
-                    return inzoi.cli.execute('toast.show',{message:'A SceneZOI scene is already in progress. End it before starting another.',lifetime:5,immediate:true});
+                    return inzoi.cli.execute('toast.show',{message:window.SceneZOILocalization.text('A SceneZOI scene is already in progress. End it before starting another.'),lifetime:5,immediate:true});
                 }
                 var token = 'pick.' + Date.now() + '.' + Math.floor(Math.random() * 1000000);
                 return cfg('uimod.cfg_save', 'selection_request', ['SZ2', token, 'open', controlled, bed].join('|'));
@@ -48,5 +48,6 @@
         }).then(close, close);
     });
     // Warm the callback at load, before exposing the menu; never cold-create it on the first click.
+    window.SceneZOILocalization.refresh();
     markReady().then(function(){if(!writing)close();});
 })();

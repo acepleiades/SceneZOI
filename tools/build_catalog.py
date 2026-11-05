@@ -291,6 +291,8 @@ def build(pack_paths, project, expression_paths=None, expression_project=None, p
     sources=expression_sources(pack_paths,expression_paths)
     compile_expression_sets([source for _,source in sources])
     documents=pack_documents(pack_paths,expression_paths,packs=packs)
+    from localization_data import validate_documents
+    validate_documents(documents)
     from voice_data import validate as validate_voice
     voice_ids = {}
     for owner, kind, source, data in documents:

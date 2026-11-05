@@ -29,12 +29,12 @@
     document.getElementById('close-btn').style.display = 'none';
     document.getElementById('title-text').textContent = 'SceneZOI';
     wf.content.innerHTML = '<div id="scene-status" role="status" aria-live="polite"></div>' +
-        '<div id="scene-navigation" aria-label="Scene navigation"></div>' +
-        '<div id="scene-footer"><button id="scene-exit" type="button">Exit</button>' +
-        '<div id="scene-speed" aria-label="Animation playback speed">' +
-        '<button id="speed-down" type="button" aria-label="Slower animation">&lt;</button>' +
+        '<div id="scene-navigation" data-i18n-aria="Scene navigation" aria-label="'+window.SceneZOILocalization.html("Scene navigation")+'"></div>' +
+        '<div id="scene-footer"><button id="scene-exit" type="button"><span data-i18n="Exit">'+window.SceneZOILocalization.html("Exit")+'</span></button>' +
+        '<div id="scene-speed" data-i18n-aria="Animation playback speed" aria-label="'+window.SceneZOILocalization.html("Animation playback speed")+'">' +
+        '<button id="speed-down" type="button" data-i18n-aria="Slower animation" aria-label="'+window.SceneZOILocalization.html("Slower animation")+'">&lt;</button>' +
         '<div id="speed-display"><span id="speed-label">x1.00</span><div id="speed-dots" aria-hidden="true"></div></div>' +
-        '<button id="speed-up" type="button" aria-label="Faster animation">&gt;</button></div></div>';
+        '<button id="speed-up" type="button" data-i18n-aria="Faster animation" aria-label="'+window.SceneZOILocalization.html("Faster animation")+'">&gt;</button></div></div>';
     var status = document.getElementById('scene-status');
     var exit = document.getElementById('scene-exit');
     var navigation = document.getElementById('scene-navigation');
@@ -76,8 +76,8 @@
         outfits.update();
         root.style.visibility = 'visible';
         updateHitRect();
-        status.textContent = message;
-        exit.textContent = active ? 'Exit' : 'Dismiss';
+        status.textContent = window.SceneZOILocalization.text(message);
+        exit.textContent = active ? window.SceneZOILocalization.text('Exit') : window.SceneZOILocalization.text('Dismiss');
         exit.disabled = exiting;
         document.getElementById('title-text').textContent = currentNode ? currentNode.label : 'SceneZOI';
         renderNavigation();
@@ -162,7 +162,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261104-addons-ui-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261105-cjk-fonts-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         root.style.visibility = 'hidden';
@@ -196,6 +196,7 @@
             lastCatalog=raw;window.SceneZOICatalog=parsed;return parsed;
         });
     }
+    window.SceneZOILocalization.refresh().then(function(){outfits.update();renderNavigation();});
     refreshCatalog().catch(function(){});
     setInterval(function(){if(!active&&!checkingStart)refreshCatalog().catch(function(){});},2000);
     window.SceneZOIControls = {
@@ -218,18 +219,18 @@
                 return role+':'+id;
             }).join('+');
             checkingStart = true;
-            return inzoi.cli.execute('entity.get_possessed').then(decode).then(function(data){
+            return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function(data){
                 if (!initiator || entityId(data)!==initiator) {declineStart(initiator);return false;}
                 active=true;exiting=false;noticeInitiator=null;noticeToken=null;sequence++;
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
                 saveGuard.begin(sequence,Object.keys(entry.bindings).map(function(role){return entityId(entry.bindings[role]);}));
-                openPanel();show('Preparing Scene Mode…');
+                openPanel();show(window.SceneZOILocalization.text('Preparing Scene Mode…'));
                 return send('start',initiator,roster,node,entry.furniture,entry.api_token).then(function(){return true;});
             }).catch(function(error){
-                if(pendingCommand){show('Retrying the scene request…');return false;}
-                if(active){active=false;pendingCommand=null;show(error.message || 'Could not request Scene Mode.');}
+                if(pendingCommand){show(window.SceneZOILocalization.text('Retrying the scene request…'));return false;}
+                if(active){active=false;pendingCommand=null;show(window.SceneZOILocalization.text('Could not request Scene Mode.'));}
                 return false;
             }).then(function(started){checkingStart=false;return started;});
         }
@@ -242,29 +243,29 @@
     exit.addEventListener('click', function () {
         if (!active) { closePanel(); return; }
         exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false;
-        show('Exiting and restoring all participants…');
+        show(window.SceneZOILocalization.text('Exiting and restoring all participants…'));
         send('exit').catch(function () {
-            show('Retrying Exit and waiting for all participants…');
+            show(window.SceneZOILocalization.text('Retrying Exit and waiting for all participants…'));
         });
     });
     var errors = {
-        transition_destination_error: 'The transition finished, but its destination could not load. The scene has ended.',
-        busy: 'A participant is already owned by another scene.',
-        binding_error: 'The selected Zois do not match this scene’s roles.',
-        body_type: 'This demo supports the adult body skeletons used by the animation rigs.',
-        eligibility: 'The selected Zois do not meet the participant requirements for this scene.',
-        possession_changed: 'The controlled Zoi changed before the scene could start.',
-        entry_error: 'Scene entry failed. The diagnostic records contain the reason.',
-        prepare_error: 'A participant could not enter Scene Mode.',
-        prepare_timeout: 'The current tasks did not finish or all participants did not acknowledge preparation.',
-        appearance_timeout: 'The participants’ appearance did not finish updating. The blocking clothing slot or animation state was recorded in the diagnostic log.',
-        attachment_timeout: 'The scene attachment did not finish preparing. Details were recorded in the diagnostic log.',
-        playback_error: 'Scene playback failed; cleanup was requested.',
-        ui_disconnected: 'The scene ended because its control panel disconnected.',
-        outfit_timeout: 'The outfit did not finish updating. Cleanup was requested.',
-        restore_error: 'Cleanup reported an error. Check the diagnostic records before continuing.',
-        restore_timeout: 'Scene cleanup did not finish. Check the diagnostic records.',
-        runtime_error: 'The scene stopped after a runtime error. Cleanup was requested.'
+        transition_destination_error: window.SceneZOILocalization.text('The transition finished, but its destination could not load. The scene has ended.'),
+        busy: window.SceneZOILocalization.text('A participant is already owned by another scene.'),
+        binding_error: window.SceneZOILocalization.text('The selected Zois do not match this scene’s roles.'),
+        body_type: window.SceneZOILocalization.text('This scene requires compatible adult body skeletons.'),
+        eligibility: window.SceneZOILocalization.text('The selected Zois do not meet the participant requirements for this scene.'),
+        possession_changed: window.SceneZOILocalization.text('The controlled Zoi changed before the scene could start.'),
+        entry_error: window.SceneZOILocalization.text('Scene entry failed. The diagnostic records contain the reason.'),
+        prepare_error: window.SceneZOILocalization.text('A participant could not enter Scene Mode.'),
+        prepare_timeout: window.SceneZOILocalization.text('The current tasks did not finish or all participants did not acknowledge preparation.'),
+        appearance_timeout: window.SceneZOILocalization.text('The participants’ appearance did not finish updating. The blocking clothing slot or animation state was recorded in the diagnostic log.'),
+        attachment_timeout: window.SceneZOILocalization.text('The scene attachment did not finish preparing. Details were recorded in the diagnostic log.'),
+        playback_error: window.SceneZOILocalization.text('Scene playback failed; cleanup was requested.'),
+        ui_disconnected: window.SceneZOILocalization.text('The scene ended because its control panel disconnected.'),
+        outfit_timeout: window.SceneZOILocalization.text('The outfit did not finish updating. Cleanup was requested.'),
+        restore_error: window.SceneZOILocalization.text('Cleanup reported an error. Check the diagnostic records before continuing.'),
+        restore_timeout: window.SceneZOILocalization.text('Scene cleanup did not finish. Check the diagnostic records.'),
+        runtime_error: window.SceneZOILocalization.text('The scene stopped after a runtime error. Cleanup was requested.')
     };
     setInterval(function () {
         outfits.retry();
@@ -296,14 +297,14 @@
                 if (!exiting) { pendingCommand = null; playing = true; show(playingMessage()); }
             }
             else if (phase === 'preparing') {
-                if (!exiting) { pendingCommand = null; playing = false; show('Preparing all participants…'); }
+                if (!exiting) { pendingCommand = null; playing = false; show(window.SceneZOILocalization.text('Preparing all participants…')); }
             }
-            else if (phase === 'exiting') { exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false; show('Restoring all participants…'); }
+            else if (phase === 'exiting') { exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false; show(window.SceneZOILocalization.text('Restoring all participants…')); }
             else {
                 active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
                 pendingCommand = null;
                 if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving')) {saveGuard.end(true);closePanel();}
-                else {saveGuard.end(false);show(errors[code] || ('Scene ended: ' + code));}
+                else {saveGuard.end(false);show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));}
             }
         }).catch(function () {}).then(function () { reading = false; });
     }, 250);
@@ -330,7 +331,7 @@
         if (!currentNode.navigation.some(function (edge) { return edge.id === option; })) return;
         pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision)].join('|');
         writePacket('navigation', pendingNavigation).catch(function () {});
-        show('Changing scene…');
+        show(window.SceneZOILocalization.text('Changing scene…'));
     });
     var readingNavigation = false;
     setInterval(function () {
@@ -347,16 +348,16 @@
             if (pendingNavigation && acknowledged < navigationCount) return;
             revision = nextRevision; currentNode = window.SceneZOICatalog.nodes[fields[4]];
             if (pendingNavigation && acknowledged === navigationCount) pendingNavigation = null;
-            if (fields[6] === 'task_route_error') show('The automatic scene could not load. The current scene continues.');
-            else if (fields[6] === 'navigation_error') show('That scene could not load. The current scene continues.');
+            if (fields[6] === 'task_route_error') show(window.SceneZOILocalization.text('The automatic scene could not load. The current scene continues.'));
+            else if (fields[6] === 'navigation_error') show(window.SceneZOILocalization.text('That scene could not load. The current scene continues.'));
             else if (fields[6] === 'navigation_locked') show(playingMessage());
-            else if (fields[6] === 'stale_navigation') show('Scene navigation changed. Choose again.');
+            else if (fields[6] === 'stale_navigation') show(window.SceneZOILocalization.text('Scene navigation changed. Choose again.'));
             else if (playing) show(playingMessage());
             renderNavigation();
         }).catch(function () {}).then(function () { readingNavigation = false; });
     }, 300);
     function playingMessage() {
-        return gameScale === 0 ? 'Paused with the game clock' : currentNode && currentNode.kind === 'transition' ? 'Transition in progress' : '';
+        return gameScale === 0 ? window.SceneZOILocalization.text('Paused with the game clock') : currentNode && currentNode.kind === 'transition' ? window.SceneZOILocalization.text('Transition in progress') : '';
     }
     function renderPlayback() {
         speedLabel.textContent = 'x' + speeds[speedIndex - 1].toFixed(2);

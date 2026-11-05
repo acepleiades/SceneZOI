@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-task-settings-2",
+  "ui_build": "20261105-task-settings-ui-2",
+  "changes": [
+    "Female and male task progress controls above audio in the shared scrollable settings panel.",
+    "Persistent whole percentages 10–500, default 100, selected by participant appearance body.",
+    "Positive authored task rates multiply player preference and add-on factors; negative rates, decay, caps, holds, explicit progress and ordinary completion semantics retained.",
+    "Shared grouped preference transport/storage preserves existing audio values without a migration/obsolete runtime module.",
+    "Task inspection exposes player/add-on/combined factors and effective rate.",
+    "Task limits are 10–500%, default 100%; audio remains 0–200%. Stored task values below 10 load at 10 without replacing the other valid preferences."
+  ],
+  "automated": {
+    "passed": true,
+    "framework_python_tests": 49,
+    "optional_private_content_python_tests": 32,
+    "lua_suites_with_optional_content": 54,
+    "ui_suites": 8
+  },
+  "native": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0,
+    "scope": "ModKit source validation; joint retail task-slider and progression acceptance pending. A native local-name shadowing warning was corrected before packaging."
+  },
+  "prior_audio_acceptance": {
+    "author_report": "Working as expected",
+    "retained_last_exit": "ok/ok",
+    "retained_last_stop": "ok",
+    "discovery_records": 42,
+    "discovery_warnings": 0,
+    "audio_settings_ack": 11,
+    "audio_settings_code": "ok",
+    "new_ui_error_record": false,
+    "older_last_error": "Preparation-timeout record predates the test.",
+    "scope": "Retained diagnostics; game closed and retail endpoint unavailable during review."
+  },
+  "packaging_and_installation": {
+    "game_closed": true,
+    "candidate_files_verified": 125,
+    "installed_hashes_match": true,
+    "unowned_files_and_preferences_preserved": true,
+    "owned_assets": 4,
+    "uat_exit_code": 0,
+    "no_game_or_engine_asset_payloads": true,
+    "cooked_files_changed": 0,
+    "preserved_files": 92
+  },
+  "content_packs_changed": false,
+  "pending_author_acceptance": [
+    "Two task sliders appear above audio; settings scroll, panel switching and volume controls still work.",
+    "At 10% one body advances at one tenth speed; 500% advances at five times authored speed, independently of the other body.",
+    "Task values and preferences survive navigation/Exit and later sessions as specified; preference persistence across restart."
+  ]
+}

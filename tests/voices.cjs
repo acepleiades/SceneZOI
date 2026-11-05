@@ -1,3 +1,4 @@
+require('./fixtures/localization.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const file='modkit/SceneZOI_93C44199/ui/scenezoi/voice-ui.js';
 const timers=[],writes=[];let raw='',selected='1',blocked=false;

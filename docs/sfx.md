@@ -64,6 +64,13 @@ one continuous clip at a time. Distance emitters have bounded overlapping voices
 reusing idle components and stopping the oldest owned voice when the budget is
 full. Histories, timers, detectors and components are separate for every emitter.
 
+## Player volume
+
+The [Scene Settings](settings.md) Sound Effects control supplies a persistent
+0–200% gain for these emitters and task-completion sound effects. The authored
+`volume` range remains 0–1; user gain is applied independently at the owned
+audio component. Voices and their responses use separate controls.
+
 ## Timing and lifecycle
 
 Clip choice is uniform among eligible clips and avoids the previous clip when

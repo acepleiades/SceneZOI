@@ -110,6 +110,7 @@ function M.status(context)
  local rows={}
  for id,owner in pairs(context.owners or {})do
   rows[#rows+1]=id..'='..(owner.person.expression_set or 'none')..':'..(owner.clip and owner.clip.label or 'none')
+  rows[#rows+1]=id..'_face_replays='..tostring(owner.replays or 0)
   if owner.load_error then rows[#rows+1]=id..'_warning='..owner.load_error end
   if Pose.status then rows[#rows+1]=id..'_facial_pose='..Pose.status(owner)end
  end

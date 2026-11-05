@@ -87,6 +87,25 @@ function M.guard(session)
     body.guard_ticks = (body.guard_ticks or 0) + 1
 end
 
+-- Clothing owns these hidden regions even when a coverage attachment is skipped.
+-- Appearance rebuilds can reset the render mask after manual edits. Reassert only
+-- declared, layout-validated regions currently covered by the resolved outfit.
+-- Do not force exposed regions visible: replacement/other owners may mask them.
+function M.guard_clothing(actor,profile_id)
+    if not M.covered(actor,profile_id)then return 0 end
+    local profile=Profiles.body(profile_id);local mesh=actor.Mesh
+    local asset=mesh and mesh:GetSkeletalMeshAsset()
+    if not asset or mesh:GetNumMaterials()<profile.minimum_materials or asset:GetName()~=profile.mesh_name or
+        mesh:GetMaterialIndex(profile.material_slot)~=profile.section then return 0 end
+    local repairs=0
+    for lod=0,mesh:GetNumLODs()-1 do
+        if mesh:IsMaterialSectionShown(profile.section,lod)then
+            mesh:ShowMaterialSection(profile.section,profile.section,false,lod);repairs=repairs+1
+        end
+    end
+    return repairs
+end
+
 local function configure_patch(session, body)
     local profile=body.profile;local SECTION=profile.section
     local actor, parent = body.actor, body.mesh

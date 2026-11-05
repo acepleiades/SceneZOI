@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "date": "2026-11-04",
-  "build": "20261104-facial-1",
-  "ui_build": "20261104-addons-ui-1",
-  "content_build": "20261104-facial-poses-1",
-  "release_status": "Ready for first player release by maintainer decision; publication is not asserted by this report.",
+  "date": "2026-11-05",
+  "build": "20261105-visual-fixes-1",
+  "ui_build": "20261105-cjk-fonts-ui-1",
+  "content_build": "20261105-localization-1",
+  "release_status": "Three visual runtime fixes and the later Japanese/Chinese control-font correction are installed and author accepted. Automated/source/native activation and final Exit checks passed. Publication is not asserted.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi is private and optional.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -15,11 +15,11 @@
     "tests/"
   ],
   "ownership": {
-    "framework_declarations": 9,
+    "framework_declarations": 10,
     "framework_scenes": 3,
     "framework_animation_imports": 4,
     "framework_asset_packages": 4,
-    "hzoi_declarations": 33,
+    "hzoi_declarations": 34,
     "hzoi_scenes": 4,
     "hzoi_animation_imports": 13,
     "hzoi_asset_packages": 725,
@@ -35,58 +35,127 @@
     "controller_distance_grace_real_seconds": 0.5,
     "controller_distance_poll_real_seconds": 0.2,
     "facial_pose_preset": "scenezoi.open_o",
-    "facial_pose_declarations": 1
+    "facial_pose_declarations": 1,
+    "player_audio_volume_percent": {
+      "range": [
+        0,
+        200
+      ],
+      "default": 100,
+      "channels": [
+        "sfx",
+        "female_voice",
+        "male_voice"
+      ]
+    },
+    "player_task_progress_percent": {
+      "range": [
+        10,
+        500
+      ],
+      "default": 100,
+      "bodies": [
+        "female",
+        "male"
+      ],
+      "applies_to": "positive authored task progression only"
+    },
+    "localization_cultures": [
+      "ko-KR",
+      "en-US",
+      "zh-CN",
+      "zh-TW",
+      "ja-JP",
+      "ru-RU",
+      "es-ES",
+      "pt-BR",
+      "pt-PT",
+      "de-DE",
+      "fr-FR",
+      "it-IT",
+      "pl-PL",
+      "tr-TR",
+      "nl-NL"
+    ]
   },
   "api_version": 1,
   "verification": {
     "automated": {
-      "recorded_date": "2026-11-04",
-      "framework_python_tests": 49,
+      "recorded_date": "2026-11-05",
+      "framework_python_tests": 53,
       "optional_private_content_python_tests": 32,
-      "total_python_tests": 81,
-      "lua_suites_with_optional_content": 52,
-      "ui_suites": 7,
+      "total_python_tests": 85,
+      "lua_suites_with_optional_content": 56,
+      "ui_suites": 9,
       "passed": true,
-      "rerun_during_documentation_review": false
+      "rerun_during_documentation_review": false,
+      "follow_up_checks": [
+        {
+          "date": "2026-11-05",
+          "change": "CJK control font fallback",
+          "passed": true,
+          "ui_suites": [
+            "localization.cjs",
+            "panel-state.cjs"
+          ],
+          "full_runtime_rerun": false
+        }
+      ]
     },
     "native": {
       "lua_errors": 0,
       "lua_warnings": 0,
       "ui_errors": 0,
       "ui_warnings": 0,
-      "cold_start_declarations_with_private_test_pack": 42,
+      "cold_start_declarations_with_private_test_pack": 44,
       "discovery_warnings": 0,
-      "framework_only_declarations": 9
+      "framework_only_declarations": 10,
+      "source_validation_date": "2026-11-05",
+      "cold_start_evidence_build": "20261105-localization-1"
     },
     "packaging_and_installation": {
-      "game_closed": true,
-      "candidate_files_verified": 123,
+      "game_closed": false,
+      "candidate_files_verified": 129,
       "installed_hashes_match": true,
       "unowned_files_and_preferences_preserved": true,
       "owned_assets": 4,
       "uat_exit_code": 0,
       "no_game_or_engine_asset_payloads": true,
-      "cooked_files_changed": 0
+      "cooked_files_changed": 0,
+      "mode": "Idle UI-only hot update; B1 runtime retained",
+      "preserved_loaded_cooked_bytes": true
     }
   },
   "author_acceptance": [
     "Latest joint pass: unchanged female O; expression-family and outfit edits, speed/pause, navigation, Exit, repeat sessions and bed behavior reported normal.",
     "Earlier accepted cases: 35-metre spectator exit, duplicate-start toast, singing-NPC entry, queued-interaction cancellation and participant-only marker visibility with local-UI-wide bubble suppression.",
     "Maintainer reported no apparent failures in other suggested cancellation, furniture, three-participant, framework-only and world-transition scenarios; exact variants were not all enumerated.",
-    "On 2026-11-04 the maintainer declared SceneZOI and HZoi ready for player release. This is a readiness decision, not evidence that every possible combination was tested."
+    "On 2026-11-04 the maintainer declared SceneZOI and HZoi ready for player release. This is a readiness decision, not evidence that every possible combination was tested.",
+    "2026-11-05: author reported volume controls working as expected; retained last Exit/cleanup ok/ok, 42 discovery records with zero warnings, audio setting acknowledgement ok.",
+    "2026-11-05 localization: author reported the requested Portuguese (Brazil) and Japanese language-switch, native entry/picker, panel/content-label and glyph/layout checks correct. Latest completed scene used the normal distance guard, a subsequent scene was playing normally at readback, and no new UI error record was present.",
+    "2026-11-05 visual fixes: author reported all three bugs appear fixed after the requested mood/blink, small settings hint and third-party covered-body outfit checks. Final matching session Exit and cleanup read back ok/ok; retained historical error was unchanged.",
+    "2026-11-05 CJK font follow-up: author confirmed the requested Japanese, Simplified Chinese and Traditional Chinese navigation/Exit glyph checks are working. Matching final session Exit/cleanup was ok/ok with no new retained error; this supersedes the earlier incomplete Japanese glyph acceptance."
   ],
   "native_observations": [
     "Latest first/final Exit readbacks were idle/ok; final participants matched captured collision, autonomy and inheritance originals; autosave was restored.",
     "Independent API-5 native creator/observer acceptance passed after a clean process launch with automatic Lua and declaration loading. The final suite recorded 95 assertions/checked responses.",
     "Manual and forced-save trials exercised SDK journal recovery and furniture cleanup. Enabled and disabled autosave settings and the interval were preserved.",
-    "Current content attachment diagnostics reported zero shared-clock discrepancy during the final joint pass."
+    "Current content attachment diagnostics reported zero shared-clock discrepancy during the final joint pass.",
+    "Visual-fix hot candidate: 44 declarations/zero warnings; two expression owners kept zero face replay counters during captured playback. Final state idle/ok and matching Exit/cleanup ok/ok, with no new retained error.",
+    "CJK UI-only hot update reached idle/ok with the unchanged visual-fix runtime, new UI build marker and 44 declarations/zero warnings; retained error unchanged.",
+    "After the author CJK checks, current state was idle/ok with matching final session Exit/cleanup ok/ok. The retained historical preparation error was unchanged."
   ],
   "evidence": {
     "overview": "docs/validation/README.md",
     "api": "docs/validation/addon-api-20261104.json",
     "facial_and_latest_playback": "docs/validation/facial-poses-20261104.json",
     "subsystem_review": "docs/validation/subsystem-review-20261104.md",
-    "resolved_issues": "docs/investigations/runtime-and-ui-issues.md"
+    "resolved_issues": "docs/investigations/runtime-and-ui-issues.md",
+    "audio_settings": "docs/validation/audio-settings-20261105.json",
+    "task_settings": "docs/validation/task-settings-20261105.json",
+    "localization": "docs/validation/localization-20261105.json",
+    "visual_fixes": "docs/validation/visual-fixes-20261105.json",
+    "cjk_fonts": "docs/validation/cjk-fonts-20261105.json"
   },
   "known_limits": [
     "One active, controlled-initiator session with fixed membership; concurrent/NPC-autonomous sessions and predetermined watch-only sequences are outside the first release.",
@@ -115,5 +184,6 @@
       "invalid_json_examples": 0,
       "scope": "Both repositories; source/native tests not repeated for non-code edits."
     }
-  }
+  },
+  "pending_author_acceptance": []
 }

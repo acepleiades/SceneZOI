@@ -46,6 +46,9 @@ available. Use public examples and framework sources for authoring guidance.
 - Enabled native packages contribute their own inert `Text_UI` JSON patches;
   retail discovery uses `Text`. No author whitelist, executable content-pack
   registration or discovery limited to SceneZOI's package.
+- Use localization declarations/formatters for player-facing text; consult
+  `docs/localization.md`. Keep identifiers, metadata dictionaries and diagnostics
+  untranslated. English fallback must work without optional packs.
 - Preserve game animation instances, the native picker/input handshake,
   session-owned original snapshots and independent cleanup/retry behavior. Never
   introduce Smart Zoi toggling.

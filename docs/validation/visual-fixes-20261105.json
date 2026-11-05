@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-visual-fixes-1",
+  "ui_build": "20261105-visual-fixes-ui-1",
+  "fixes": {
+    "facial_mood_flicker": "Disable automatic end fading on owned transient facial montages; preserve sampled blinking, deliberate transitions and explicit release.",
+    "settings_hint": "Both shared settings status blocks use the existing 12px hint formatting.",
+    "covered_body_region": "Resolved garment coverage guards data-defined mesh sections/all LODs even when a covering outfit skips attachment activation. Exposed regions are never forced visible."
+  },
+  "automated": {
+    "passed": true,
+    "framework_python_tests": 53,
+    "optional_private_content_python_tests": 32,
+    "lua_suites_with_optional_content": 56,
+    "ui_suites": 9,
+    "focused_regressions": [
+      "Ten sampled facial loops retain their owned montage without auto-fade/replay; explicit Exit still releases it.",
+      "Data-defined section 5 tests all LODs, skipped attachment, unrelated outfit edits, custom slots, undressing, foreign/rebuilding mesh and pre-entry bindings.",
+      "Both actual settings hint IDs match the small shared style."
+    ],
+    "fixture_change": "The optional private session test now explicitly models its absent render asset; actual render masks have independent framework coverage."
+  },
+  "native_source_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0
+  },
+  "installation": {
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "exact_owned_payload_filter": true,
+    "owned_asset_packages": 4,
+    "no_game_or_engine_asset_payloads": true,
+    "mode": "Idle B1/UI hot update",
+    "candidate_files_verified": 129,
+    "changed_payload_files": 7,
+    "cooked_files_changed": 0,
+    "cooked_asset_hashes_equal": true,
+    "hzoi_installed_files_changed": 0,
+    "settings_preferences_and_other_static_files_preserved": true,
+    "backup_outside_mods": true
+  },
+  "native_readback": {
+    "runtime_build_matches": true,
+    "ui_build_matches": true,
+    "discovery_records": 44,
+    "discovery_warnings": 0,
+    "retained_error_unchanged": true,
+    "activation": "Runtime reached idle/ok after hot reload. A subsequent author-started session reached playback with two expression owners and zero face replay counters at the captured observation.",
+    "final_state": "idle/ok",
+    "final_exit_and_cleanup": "ok/ok",
+    "retained_error_unchanged_after_exit": true
+  },
+  "author_acceptance": {
+    "status": "accepted",
+    "date": "2026-11-05",
+    "reported": "The bugs all appear to have been fixed.",
+    "scope": "Requested ecstatic/content expression and blink checks, settings hint, covered third-party mesh outfit edits, undressing/re-dressing and Exit. Acceptance is limited to this tested household/mesh combination."
+  }
+}

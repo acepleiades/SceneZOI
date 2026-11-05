@@ -1,3 +1,4 @@
+require('./fixtures/localization.cjs');
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),path=require('path');
 const base=path.join(__dirname,'../modkit/SceneZOI_93C44199/ui');
 const receiver=fs.readFileSync(path.join(base,'scenezoi/demo-entry.js'),'utf8');

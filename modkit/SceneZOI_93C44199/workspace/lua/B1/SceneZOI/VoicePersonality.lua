@@ -79,9 +79,9 @@ function M.request(session,raw)
 end
 function M.publish(session)
  local data=Library.get();local payload={archetypes={},contexts={},sets={},participants={}}
- for id,a in pairs(data.archetypes)do payload.archetypes[id]={label=a.label,body=a.body}end
- for id,c in pairs(data.contexts)do payload.contexts[id]={label=c.label}end
- for id,s in pairs(data.sets)do payload.sets[id]={label=s.label,body=s.body,archetype=s.archetype,context=s.context}end
+ for id,a in pairs(data.archetypes)do payload.archetypes[id]={label=require('SceneZOI.Localization').label('voice_archetype',id,a.label),body=a.body}end
+ for id,c in pairs(data.contexts)do payload.contexts[id]={label=require('SceneZOI.Localization').label('voice_context',id,c.label)}end
+ for id,s in pairs(data.sets)do payload.sets[id]={label=require('SceneZOI.Localization').label('voice_set',id,s.label),body=s.body,archetype=s.archetype,context=s.context}end
  for _,p in ipairs(session.participants)do if p.voice_loaded then payload.participants[p.id]={body=p.voice_body,archetype=p.voice_profile.archetype,sets=p.voice_profile.sets,error=p.voice_error}end end
  local packet=Protocol.pack(session.client,session.sequence,session.revision,session.voice_ack or 0,session.preparing and 'busy'or session.voice_code or 'ok',Protocol.encode(Json.encode(payload)))
  if packet==session.voice_state then return end

@@ -1,3 +1,4 @@
+require('./fixtures/localization.cjs');
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),path=require('path');
 const src=fs.readFileSync(path.resolve(__dirname,'../modkit/SceneZOI_93C44199/ui/scenezoi/save-guard.js'),'utf8');
 function fixture(supported=true){

@@ -12,7 +12,7 @@ def standing_pack():
 class FrameworkCatalogTests(unittest.TestCase):
  def test_generic_pose_schema(self):
   from facial_pose_data import validate
-  pose=json.loads((ROOT/'packs/scenezoi/facial_poses/open_o.json').read_text())
+  pose=json.loads((ROOT/'packs/scenezoi/facial_poses/open_o.json').read_text(encoding='utf-8'))
   validate(pose,'scenezoi')
   partial={'schema_version':1,'id':'example.brow','poses':{'female':[{'bone':'FACIAL_L_Brow','parent':'FACIAL_C_FacialRoot','position':[0,0,0],'rotation':[0,0,0,1]}]}}
   validate(partial,'example')
@@ -33,8 +33,8 @@ class FrameworkCatalogTests(unittest.TestCase):
   self.assertTrue(result['nodes']['scenezoi.standing_idle']['starting_hub'])
   self.assertFalse(result['nodes']['scenezoi.standing_idle']['navigation'])
   self.assertNotIn('HZoi',json.dumps(result))
-  self.assertEqual(len(json.loads((ROOT/'asset-inventory.json').read_text())['plugins']['SceneZOI_93C44199']),4)
-  self.assertEqual(len(json.loads((ROOT/'imports.json').read_text())),4)
+  self.assertEqual(len(json.loads((ROOT/'asset-inventory.json').read_text(encoding='utf-8'))['plugins']['SceneZOI_93C44199']),4)
+  self.assertEqual(len(json.loads((ROOT/'imports.json').read_text(encoding='utf-8'))),4)
  def test_starting_hub_requires_boolean(self):
   self.pack['nodes'][0]['starting_hub']='true'
   with self.assertRaises(ValueError):compile_packs([self.pack])
@@ -49,8 +49,8 @@ class FrameworkCatalogTests(unittest.TestCase):
    project=Path(directory);(project/'workspace').mkdir()
    (project/'workspace/native_version.json').write_text(json.dumps({'version':'test'}))
    build([ROOT/'packs/scenezoi.json'],project)
-   entries=json.loads((project/'Content/JsonPatch/Text_UI_patch.json').read_text())['PatchList']
-   self.assertEqual(len(entries),9);self.assertEqual(json.loads(entries[0]['Value']['Text'])['owner'],'scenezoi')
+   entries=json.loads((project/'Content/JsonPatch/Text_UI_patch.json').read_text(encoding='utf-8'))['PatchList']
+   self.assertEqual(len(entries),10);self.assertEqual(json.loads(entries[0]['Value']['Text'])['owner'],'scenezoi')
    self.assertFalse((project/'lua').exists());self.assertFalse((project/'ui').exists())
  def test_independent_author_uses_explicit_project(self):
   with tempfile.TemporaryDirectory()as directory:
@@ -59,7 +59,7 @@ class FrameworkCatalogTests(unittest.TestCase):
    project=root/'Example';(project/'workspace').mkdir(parents=True)
    (project/'workspace/native_version.json').write_text(json.dumps({'version':'test'}))
    build([pack],project)
-   rows=json.loads((project/'workspace/data_files.json').read_text())['records']
+   rows=json.loads((project/'workspace/data_files.json').read_text(encoding='utf-8'))['records']
    self.assertEqual(rows[0]['owner'],'example')
 class SceneFileTests(unittest.TestCase):
  def source(self,root):

@@ -70,7 +70,7 @@ local function dispose(channel)
  channel.voice=nil;channel.item=nil;channel.stage=nil;channel.preempt=nil
 end
 local function play(ctx,c,item,scale)
- Native.create(c.voice,c.person.actor,{volume=item.volume})
+ Native.create(c.voice,c.person.actor,{volume=item.volume},item.set.body..'_voice')
  Native.play(c.voice,item.clip,point(c.person),scale)
  c.voice.remaining=item.clip.duration;c.stage='playing';ctx.plays=ctx.plays+1
  print('[SceneZOI] Voice response played: participant='..c.person.id..' set='..item.set.id..' response='..item.response)

@@ -16,12 +16,12 @@ local function load(e)
     if spec.default then e.groups.default=group(spec.default)end
     for _,variant in ipairs(spec.variants or {})do e.groups[variant.scene_speed]=group(variant)end
 end
-function M.load_emitters(specs,sounds)
+function M.load_emitters(specs,sounds,category)
     local emitters={};local ids={}
     for id in pairs(specs or {})do ids[#ids+1]=id end;table.sort(ids)
     for _,id in ipairs(ids)do
         local spec=specs[id]
-        local e={id=id,spec=spec,library=assert(sounds[spec.sound_set]),voices={},plays=0}
+        local e={id=id,spec=spec,audio_category=category,library=assert(sounds[spec.sound_set]),voices={},plays=0}
         load(e);emitters[#emitters+1]=e
     end
     return {emitters=emitters}
@@ -43,7 +43,7 @@ local function choose(e,g)
     return options[math.random(#options)]
 end
 local function acquire(e,actor)
-    for _,v in ipairs(e.voices)do if not v.remaining then Native.create(v,actor,e.spec);return v end end
+    for _,v in ipairs(e.voices)do if not v.remaining then Native.create(v,actor,e.spec,e.audio_category);return v end end
     local v
     if #e.voices<(e.spec.max_voices or 4)then
         v={};e.voices[#e.voices+1]=v
@@ -52,7 +52,7 @@ local function acquire(e,actor)
         for _,candidate in ipairs(e.voices)do if candidate.started<v.started then v=candidate end end
         Native.stop(v)
     end
-    Native.create(v,actor,e.spec);return v
+    Native.create(v,actor,e.spec,e.audio_category);return v
 end
 local function play(ctx,e,g,position,now,game_scale)
     local clip=choose(e,g);local v=acquire(e,assert(ctx.bindings[e.spec.owner]).actor)

@@ -43,7 +43,7 @@ An envelope contains `schema_version`, `kind`, `owner` and inert `data`. Consume
 include `scene_pack`, `expression_set`, `facial_pose`, `body_profile`,
 `material_profile`, `coverage_attachment`, `voice_archetype`, `voice_context`,
 `voice_set`, `scene_task`, `furniture_profile`, `tag_dictionary` and
-`action_dictionary`. Unknown kinds remain inert. Executable add-ons use the
+`action_dictionary` and `localization`. Unknown kinds remain inert. Executable add-ons use the
 [versioned API](addons.md) instead of private runtime modules.
 
 Create one scene JSON object per file. A pack manifest names a child
@@ -111,6 +111,13 @@ appearance colors to declared material parameters. Bone names, coverage bits,
 regions and layout IDs are pack-specific compatibility data, not universal maps.
 Test new profiles against the actual target meshes. Region replacement currently
 permits one adapter per participant; ordinary attachments support multiple owners.
+
+For declared body profiles, resolved garment coverage also guards the matching
+render section when covering clothing prevents attachment activation. Manual
+appearance rebuilds must not expose that section through clothing. The guard
+validates the declared mesh/material layout, covers every LOD and never forces
+an exposed section visible; removing covering clothing can activate the ordinary
+replacement path. This uses profile data rather than a universal section number.
 
 Expressions, facial poses, voices, SFX, tasks and completion responses follow the
 same ownership boundary. Missing optional content must not install pack-specific

@@ -16,7 +16,7 @@ class AssetlessTests(unittest.TestCase):
    write(raw/'mod_manifest.json',manifest);write(base/'inventory.json',{'plugins':{plugin:[]}})
    if mutate:mutate(raw,manifest,write)
    run=subprocess.run([sys.executable,str(ROOT/'tools/filter_package.py'),str(raw),str(out),'--modkit-root',str(base/'kit'),'--plugin',plugin,'--inventory',str(base/'inventory.json')],capture_output=True,text=True)
-   report=json.loads((out.parent/('packaging-audit-'+plugin)/'outputs/compat-package-audit.json').read_text())if run.returncode==0 else None
+   report=json.loads((out.parent/('packaging-audit-'+plugin)/'outputs/compat-package-audit.json').read_text(encoding='utf-8'))if run.returncode==0 else None
    return run,report
  def test_exact_native_lua_and_json(self):
   run,report=self.package();self.assertEqual(run.returncode,0,run.stderr);self.assertTrue(report['assetless_native_package']);self.assertEqual(report['asset_package_count'],0);self.assertEqual(report['dependencies'],['SceneZOI_93C44199'])

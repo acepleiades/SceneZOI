@@ -1,19 +1,42 @@
 # First-release validation
 
 The maintainer declared SceneZOI and HZoi ready for player release on **2026-11-04**.
-This page summarizes recorded evidence; it does not announce publication or claim
-new tests were performed during the final documentation review.
+This page summarizes recorded evidence; it does not announce publication. The
+2026-11-05 visual bug fixes are installed by hot update; the author reported all
+three bugs fixed after the requested joint checks. A later Japanese/Chinese
+button-font correction is installed and the author confirmed the requested
+Japanese and both Chinese glyph checks are working. Earlier visual acceptance
+and accepted volume controls remain recorded separately.
 
 | Area | Last recorded result |
 | --- | --- |
-| Runtime | `20261104-facial-1`; native-message API version 1 |
-| Automated checks | 49 framework Python tests, 32 optional private-content Python tests, 52 Lua suites with that content, seven UI suites; passed |
+| Runtime | `20261105-visual-fixes-1`; native-message API version 1; hot activation/readiness and requested author visual checks passed |
+| Automated checks | 53 framework Python tests, 32 optional private-content Python tests, 56 Lua suites with that content, nine UI suites; passed on 2026-11-05 |
 | ModKit validation | Lua and UI: zero errors and warnings |
-| Native discovery | Nine framework declarations; 42 with the private integration pack, zero discovery warnings on the recorded cold start |
+| Audio controls | Three persistent 0–200% channels; native multiplier readback includes 2.0; author reported controls working as expected |
+| New task controls | Separate persistent female/male 10–500% progress; regression checks passed, joint in-game acceptance pending |
+| Native discovery | Ten framework declarations; 44 with the private integration pack, zero discovery warnings on the recorded cold start |
+| Localization | 15 retail language refreshes and text-entry checks passed. Later Japanese/Chinese screenshots exposed missing button glyphs; the corrected font stack passed the requested author visual checks. |
+| CJK font follow-up | UI `20261105-cjk-fonts-ui-1`; full native font stack restored on navigation/Exit/restore, two focused UI suites and ModKit validation passed; author glyph checks accepted; final Exit/cleanup `ok/ok` |
 | Packaging | Isolated native builds, exact filtering and matching installed hashes; four framework-owned asset packages |
 | Latest joint pass | Author accepted unchanged O, expression/outfit edits, speed/pause, navigation, Exit/re-entry and bed behavior |
-| Final native state | `idle/ok`, captured participant settings restored and autosave restored |
+| Native state | Joint test ended `idle/ok` with matching Exit/cleanup `ok/ok` and no new retained error. Earlier captured participant/autosave restoration evidence remains in its checkpoint. |
 | Independent add-ons | Registered separate native SDK clients and declarations loaded automatically; final API-5 suite passed 95 assertions/checked responses |
+
+The [visual-fix checkpoint](visual-fixes-20261105.json) records the facial end-fade,
+covered body-region and settings-hint regressions, verified hot installation and
+author acceptance and final clean Exit.
+
+The [CJK font checkpoint](cjk-fonts-20261105.json) records the later missing-glyph
+defect, targeted fix, author glyph acceptance and final clean Exit.
+
+The [localization checkpoint](localization-20261105.json) records the
+culture sweep, source/native checks and focused author visual acceptance.
+
+The [task-settings checkpoint](task-settings-20261105.json) records current
+source/native/package evidence and the remaining joint checks. The
+[audio-settings checkpoint](audio-settings-20261105.json) retains the prior
+volume candidate and author acceptance.
 
 Read the [current machine-readable report](../../validation.json) for the limits,
 [API findings](addon-api-20261104.md) for failed approaches and verified integration

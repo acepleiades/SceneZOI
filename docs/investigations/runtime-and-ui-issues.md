@@ -21,6 +21,15 @@ The full development transcript and raw checkpoints are archived privately.
 
 ## Appearance, placement and presentation
 
+Player-facing text now uses inert localization declarations, selected from the
+retail language setting at save-load initialization and session start. Framework
+messages, native entry/picker text and content labels share per-entry English
+fallback. A Windows-default-code-page test reader failed on the multilingual
+native patch; generated JSON inputs are read explicitly as UTF-8. Translation
+placeholders and conflicting documents are validated before writes. See
+[localization](../localization.md) and its [regressions](../../tests/localization.lua).
+
+
 | Failure / boundary | Resolution and regression to retain |
 | --- | --- |
 | Request acknowledgements did not prove the game's resolved outfit/body was ready. | Keep original snapshots, resolved garment acknowledgements, revision/counter checks and held outgoing poses separate. [Appearance](../../tests/appearance.lua) and [outfits](../../tests/outfit.lua). |
@@ -28,6 +37,10 @@ The full development transcript and raw checkpoints are archived privately.
 | A positional reflected transform constructor produced invalid furniture placement. | Construct the transform and assign translation, quaternion and scale explicitly; retain plain-number validation snapshots. [Placement](../../tests/furniture-placement.lua). |
 | Gaze briefly snapped forward during navigation. | Retain the outgoing target through preparation and atomically replace it on entry. [Gaze](../../tests/gaze.lua). |
 | Sampling every expression at frame zero froze its authored blink motion. | Loop unsampled clips on scene time; explicit samples deliberately hold a pose. [Expression native adapter](../../tests/expression-native.lua). |
+| After restoring animated blinks, strong mood expressions flickered through the selected face. | Disable automatic end fading on the owned sampled montage; retain explicit transition/Exit blending. A simulated native end-fade regression loops ten clips without losing ownership. [Expression native adapter](../../tests/expression-native.lua). Author reported the requested ecstatic/content check fixed; final Exit/cleanup was ok/ok. |
+| Manual edits exposed a replacement body's covered region when no coverage attachment was active. | Reassert resolved garment masks for declared, layout-validated body profiles even when attachment creation is skipped; do not force uncovered sections visible. [Clothing masks](../../tests/clothing-mask.lua). Author reported the requested third-party mesh outfit checks fixed. |
+| The settings persistence hint inherited large default text after the panel refactor. | Style both actual settings status IDs with the shared 12px hint rule. [Settings UI](../../tests/settings.cjs). |
+| Japanese/Chinese navigation and Exit showed glyph boxes while the title rendered correctly. | The button font override omitted the game's CJK fallback faces. Use the complete native UI font variable directly on these controls. [Localization UI](../../tests/localization.cjs). The earlier Japanese visual report missed this; the author confirmed the corrected Japanese and both Chinese glyph checks work. Final Exit/cleanup was ok/ok. |
 | Runtime reference calibration delayed O activation; hidden samplers disagreed with the visible head. | Use validated pack-owned fixed facial targets with no reference playback or cache. Accepted O coordinates are preserved; unsupported rigs release/report the optional pose. [Facial poses](../../tests/facial-pose.lua). |
 | Quaternion round trips caused ambiguous ownership/duplicate fixed-pose rows. | Normalize rotations and compare equivalent signs; preserve foreign entries, copied-head adoption and cleanup retries. [Facial poses](../../tests/facial-pose.lua). |
 | A pose-only API override could survive release when no facial clip was owned. | Release pose ownership independently of clip ownership. Switching joint subsets removes the old footprint; fixed eyeballs suspend gaze until released. [Expressions](../../tests/expressions.lua). |
@@ -35,6 +48,18 @@ The full development transcript and raw checkpoints are archived privately.
 | Modal native UI could leave scene controls interactive or incorrectly presented. | Use the existing blocking-state gate, release hover and move native hit bounds while blocked. Ordinary time pause is not modality. [UI lifecycle](../../tests/panel-state.cjs). |
 
 ## Audio, events and independent add-ons
+
+The formerly inactive cog now opens [Scene Settings](../settings.md) in the shared
+configuration panel. Three persistent volume channels scale authored/faded audio
+once, including voice responses and paused components. The author accepted the
+volume controls; retained diagnostics showed normal Exit/cleanup and no discovery
+warnings. Two appearance-body task progress controls now appear above the audio
+section (10–500%, default 100%). They multiply positive progress independently from decay, caps and add-on
+completion holds. Regression coverage: [settings](../../tests/settings.lua),
+[UI](../../tests/settings.cjs), [task rates](../../tests/task-settings.lua),
+[native audio](../../tests/sfx-native.lua) and [voice routing](../../tests/voices.lua).
+In-game acceptance of the new task controls is pending.
+
 
 | Failure / boundary | Resolution and regression to retain |
 | --- | --- |

@@ -61,9 +61,10 @@ local function update(dt,actors,busy)
         if raw~=last_request and fields then
             last_request=raw
             if fields[2]=="open" and busy then
-                pcall(inzoi.cli.execute,'toast.show message="A SceneZOI scene is already in progress. End it before starting another." lifetime=5 immediate=true')
+                pcall(require('SceneZOI.Localization').toast,'A SceneZOI scene is already in progress. End it before starting another.')
                 publish(fields[1],'unavailable','busy')
             elseif fields[2]=="open" and not pending then
+                require("SceneZOI.Localization").refresh()
                 local actor=actors[fields[3]]
                 assert(actor,"The controlled Zoi is not loaded")
                 local furniture=fields[4]~='none'and fields[4]or nil
@@ -87,7 +88,7 @@ local function update(dt,actors,busy)
             restore_cap(p);tell(p,"shown");publish(p.token,"selecting")
         end
         p.widget.BW_WBP_GroupOption:SetVisibility(1)
-        p.widget.BW_Text_MainTitle:SetText("Start SceneZOI")
+        p.widget.BW_Text_MainTitle:SetText(require("SceneZOI.Localization").text("Start SceneZOI"))
         local count=tonumber(tostring(p.widget.BW_Text_TitleNum:GetText()):match("%d+")) or 0
         p.widget.BW_WBP_ButtonOK.BW_Button:SetIsEnabled(p.armed and count>=2 and count<=Config.picker_cap or false)
         p.widget.BW_WBP_ButtonOK.bIsDimmed=not p.armed or count<2 or count>Config.picker_cap
@@ -114,7 +115,7 @@ local function update(dt,actors,busy)
                 local roles={};for role,id in pairs(chosen.bindings)do roles[#roles+1]=role..":"..id end;table.sort(roles)
                 publish(p.token,"selected",p.result[3],chosen.node,table.concat(roles,"+"))
             else
-                pcall(inzoi.cli.execute,'toast.show message="SceneZOI could not find a suitable starting scene for the selected Zois." lifetime=5 immediate=true')
+                pcall(require('SceneZOI.Localization').toast,'SceneZOI could not find a suitable starting scene for the selected Zois.')
                 require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
                 publish(p.token,"unavailable","no_starting_scene")
             end

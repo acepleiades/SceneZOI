@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-audio-settings-1",
+  "ui_build": "20261105-audio-settings-ui-1",
+  "changes": [
+    "Cog opens the shared attached configuration panel.",
+    "Three persistent 0–200% channels, with custom draggable sliders, keyboard control and exact numeric entry.",
+    "Existing and future SFX, voices and responses scale authored/faded levels independently.",
+    "Session/revision acknowledgements, transactional storage and isolated component retries."
+  ],
+  "automated": {
+    "passed": true,
+    "framework_python_tests": 49,
+    "optional_private_content_python_tests": 32,
+    "lua_suites_with_optional_content": 53,
+    "ui_suites": 8,
+    "follow_up_checks": [
+      "Audio settings UI after feedback fix: passed.",
+      "Voice responses after category assertion: passed."
+    ]
+  },
+  "native": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0,
+    "volume_multiplier_readbacks": [
+      0,
+      0.5,
+      1,
+      2
+    ],
+    "volume_probe_scope": "Transient AudioComponent property readback only; no audio played or assets saved. The successful script ran in a commandlet that exited 1 because no writable derived-data cache was available. This is not a successful whole-commandlet verdict or audible acceptance.",
+    "cold_start_and_runtime_audio_acceptance": "Pending author test; ModKit source validation and installation do not establish visual/audible acceptance."
+  },
+  "packaging_and_installation": {
+    "game_closed": true,
+    "candidate_files_verified": 125,
+    "installed_hashes_match": true,
+    "unowned_files_and_preferences_preserved": true,
+    "owned_assets": 4,
+    "uat_exit_code": 0,
+    "no_game_or_engine_asset_payloads": true,
+    "cooked_files_changed": 0,
+    "preserved_files": 89
+  },
+  "content_packs_changed": false,
+  "pending_author_acceptance": [],
+  "author_acceptance": "Author reported the volume/settings controls working as expected on 2026-11-05.",
+  "retained_diagnostics": {
+    "last_exit": "ok/ok",
+    "last_stop": "ok",
+    "data_discovery_records": 42,
+    "data_discovery_warnings": 0,
+    "audio_settings_ack": 11,
+    "audio_settings_code": "ok",
+    "audio_preferences_percent": [
+      100,
+      100,
+      100
+    ],
+    "older_last_error": "Preparation timeout record predates this test; not treated as a current failure.",
+    "scope": "Retained runtime config; the retail MCP endpoint was unavailable and no complete console stream was available."
+  }
+}

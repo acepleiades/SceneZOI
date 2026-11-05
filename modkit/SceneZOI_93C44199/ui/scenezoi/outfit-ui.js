@@ -14,20 +14,20 @@
         var sessionKey = '', participants = [], count = 0, pending = null, reading = false;
         var serverBusy = true, serverRevision = 0, listMarkup = null, selectorMarkup = null;
         root.insertAdjacentHTML('beforeend',
-            '<div id="scene-tools" aria-label="Scene tools">' +
-            '<button id="outfit-toggle" type="button" aria-label="Outfit management" aria-expanded="false"><img src="icons/shirt.png" alt=""></button>' +
-            '<button id="view-options" type="button" aria-label="Personality management" aria-expanded="false"><img src="icons/person.png" alt=""></button>' +
-            '<button id="scene-settings" type="button" aria-label="Scene settings" disabled><img src="icons/cog.png" alt=""></button></div>' +
-            '<div id="outfit-panel" role="region" aria-label="Outfit management">' +
-            '<div id="outfit-heading"><span id="outfit-title">Outfit Management</span><button id="outfit-close" type="button" aria-label="Close outfit management">X</button></div>' +
-            '<div id="outfit-selector-wrap"><button id="outfit-selector" type="button" aria-expanded="false">Choose a Zoi</button>' +
-            '<div id="outfit-participants" role="group" aria-label="Scene participants"></div></div>' +
+            '<div id="scene-tools" data-i18n-aria="Scene tools" aria-label="'+window.SceneZOILocalization.html("Scene tools")+'">' +
+            '<button id="outfit-toggle" type="button" data-i18n-aria="Outfit management" aria-label="'+window.SceneZOILocalization.html("Outfit management")+'" aria-expanded="false"><img src="icons/shirt.png" alt=""></button>' +
+            '<button id="view-options" type="button" data-i18n-aria="Personality management" aria-label="'+window.SceneZOILocalization.html("Personality management")+'" aria-expanded="false"><img src="icons/person.png" alt=""></button>' +
+            '<button id="scene-settings" type="button" data-i18n-aria="Scene settings" aria-label="'+window.SceneZOILocalization.html("Scene settings")+'" aria-expanded="false"><img src="icons/cog.png" alt=""></button></div>' +
+            '<div id="outfit-panel" role="region" data-i18n-aria="Outfit management" aria-label="'+window.SceneZOILocalization.html("Outfit management")+'">' +
+            '<div id="outfit-heading"><span id="outfit-title"><span data-i18n="Outfit Management">'+window.SceneZOILocalization.html("Outfit Management")+'</span></span><button id="outfit-close" type="button" data-i18n-aria="Close outfit management" aria-label="'+window.SceneZOILocalization.html("Close outfit management")+'">X</button></div>' +
+            '<div id="outfit-selector-wrap"><button id="outfit-selector" type="button" aria-expanded="false"><span data-i18n="Choose a Zoi">'+window.SceneZOILocalization.html("Choose a Zoi")+'</span></button>' +
+            '<div id="outfit-participants" role="group" data-i18n-aria="Scene participants" aria-label="'+window.SceneZOILocalization.html("Scene participants")+'"></div></div>' +
             '<div id="outfit-status" role="status" aria-live="polite"></div>' +
-             '<div id="outfit-pieces" aria-label="Starting outfit pieces"></div>' +
-            '<div id="personality-fields"><label for="expression-set">Expression set</label>' +
-            '<button id="expression-set" type="button" aria-label="Expression set" aria-expanded="false">Choose an expression set</button><div id="expression-choices" role="group" aria-label="Expression sets"></div>' +
+             '<div id="outfit-pieces" data-i18n-aria="Starting outfit pieces" aria-label="'+window.SceneZOILocalization.html("Starting outfit pieces")+'"></div>' +
+            '<div id="personality-fields"><label for="expression-set"><span data-i18n="Expression set">'+window.SceneZOILocalization.html("Expression set")+'</span></label>' +
+            '<button id="expression-set" type="button" data-i18n-aria="Expression set" aria-label="'+window.SceneZOILocalization.html("Expression set")+'" aria-expanded="false"><span data-i18n="Choose an expression set">'+window.SceneZOILocalization.html("Choose an expression set")+'</span></button><div id="expression-choices" role="group" data-i18n-aria="Expression sets" aria-label="'+window.SceneZOILocalization.html("Expression sets")+'"></div>' +
             '<div id="personality-status" role="status" aria-live="polite"></div>' +
-            '<div id="voice-fields"></div></div></div>');
+            '<div id="voice-fields"></div></div><div id="settings-fields"></div></div>');
         var tools = document.getElementById('scene-tools'), panel = document.getElementById('outfit-panel');
         var toggle = document.getElementById('outfit-toggle'), close = document.getElementById('outfit-close');
         var selector = document.getElementById('outfit-selector'), choices = document.getElementById('outfit-participants');
@@ -37,6 +37,7 @@
         var personalityFields = document.getElementById('personality-fields');
         var personalityStatus = document.getElementById('personality-status');
         var library = {sets:Object.create(null)};
+        var outfitMessage='',personalityMessage='';
         function hex(value) { return encodeURIComponent(value).replace(/%([0-9a-f]{2})|([^%])/gi, function (_, byte, literal) { return byte || ('0' + literal.charCodeAt(0).toString(16)).slice(-2); }); }
         function validKey(value) { return value.length > 0 && value.length <= 96 && /^[ -~]+$/.test(value) && value === value.trim().toLowerCase(); }
         var expressionMarkup = null, expressionChoosing = false;
@@ -46,12 +47,15 @@
             selected:function(){return selected;}, visible:function(){return opened && mode === 'personality';},
             busy:function(){var s=state();return !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting;},
             closeExpression:function(){expressionChoosing=false;},write:options.write,cfg:options.cfg,changed:changed});
+        var settingsToggle=document.getElementById('scene-settings');
+        var settings=window.SceneZOISettingsUI.create({container:document.getElementById('settings-fields'),state:state,
+            visible:function(){return opened && mode==='settings';},write:options.write,cfg:options.cfg});
         function state() { return options.state(); }
         function busy() { var s = state(); return voices.busy() || !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting; }
         function reset() {
             opened = false; choosing = false; selected = null; participants = []; count = 0; pending = null;
             serverBusy = true; serverRevision = 0; listMarkup = null; selectorMarkup = null;
-            mode = 'outfit'; personality = Object.create(null); library = {sets:Object.create(null)}; personalityCount = 0; personalityAck = 0; personalityPending = null; expressionMarkup = null; expressionChoosing = false;
+            outfitMessage='';personalityMessage='';mode = 'outfit'; personality = Object.create(null); library = {sets:Object.create(null)}; personalityCount = 0; personalityAck = 0; personalityPending = null; expressionMarkup = null; expressionChoosing = false;
         }
         function layout() {
             var vw = window.innerWidth || 1920, vh = window.innerHeight || 1080;
@@ -100,9 +104,15 @@
             personalityToggle.disabled = !s.active || s.exiting;
             personalityToggle.className = opened && mode === 'personality' ? 'selected' : '';
             personalityToggle.setAttribute('aria-expanded', opened && mode === 'personality' ? 'true' : 'false');
-            document.getElementById('outfit-title').textContent = mode === 'personality' ? 'Personality Management' : 'Outfit Management';
-            panel.setAttribute('aria-label', mode === 'personality' ? 'Personality management' : 'Outfit management');
-            close.setAttribute('aria-label', mode === 'personality' ? 'Close personality management' : 'Close outfit management');
+            settingsToggle.disabled=!s.active || s.exiting;
+            settingsToggle.className=opened && mode==='settings'?'selected':'';
+            settingsToggle.setAttribute('aria-expanded',opened && mode==='settings'?'true':'false');
+            document.getElementById('outfit-title').textContent = mode === 'settings' ? window.SceneZOILocalization.text('Scene Settings') : mode === 'personality' ? window.SceneZOILocalization.text('Personality Management') : window.SceneZOILocalization.text('Outfit Management');
+            panel.setAttribute('aria-label', mode === 'settings' ? window.SceneZOILocalization.text('Scene settings') : mode === 'personality' ? window.SceneZOILocalization.text('Personality management') : window.SceneZOILocalization.text('Outfit management'));
+            close.setAttribute('aria-label', mode === 'settings' ? window.SceneZOILocalization.text('Close scene settings') : mode === 'personality' ? window.SceneZOILocalization.text('Close personality management') : window.SceneZOILocalization.text('Close outfit management'));
+            document.getElementById('outfit-selector-wrap').style.display=mode==='settings'?'none':'block';
+            document.getElementById('settings-fields').style.display=mode==='settings'?'block':'none';
+            settings.update();
             pieces.style.display = mode === 'outfit' ? 'block' : 'none';
             status.style.display = mode === 'outfit' ? 'block' : 'none';
             personalityFields.style.display = mode === 'personality' ? 'block' : 'none';
@@ -110,22 +120,22 @@
             var expressions = profile ? Object.keys(library.sets).filter(function (id) { return library.sets[id].body === profile.body; }) : [];
             var expressionHtml = expressions.map(function (id) { return '<button type="button" data-expression="' + text(id) + '">' + text(library.sets[id].label) + '</button>'; }).join('');
             if (expressionMarkup !== expressionHtml) { expressionChoices.innerHTML = expressionHtml; expressionMarkup = expressionHtml; }
-            expressionSelect.textContent = profile && library.sets[profile.set] ? library.sets[profile.set].label : (profile && !expressions.length ? 'No expression sets available' : 'Choose an expression set');
+            expressionSelect.textContent = profile && library.sets[profile.set] ? library.sets[profile.set].label : (profile && !expressions.length ? window.SceneZOILocalization.text('No expression sets available') : window.SceneZOILocalization.text('Choose an expression set'));
             expressionSelect.disabled = !profile || !expressions.length || busy() || !!personalityPending;
             if (expressionSelect.disabled || mode !== 'personality' || !opened) expressionChoosing = false;
             expressionChoices.style.display = expressionChoosing ? 'block' : 'none';
             expressionSelect.setAttribute('aria-expanded', expressionChoosing ? 'true' : 'false');
-            if (!profile) personalityStatus.textContent = 'Loading personality...';
-            else if (personalityPending) personalityStatus.textContent = 'Saving expression set...';
-            else if (profile.error) personalityStatus.textContent = profile.error;
-            else if (!expressions.length) personalityStatus.textContent = 'No expression sets installed for this body.';
-            else if (!/^Could not/.test(personalityStatus.textContent || '')) personalityStatus.textContent = 'Saved for future scene sessions.';
+            if (!profile) personalityStatus.textContent = window.SceneZOILocalization.text('Loading personality...');
+            else if (personalityPending) personalityStatus.textContent = window.SceneZOILocalization.text('Saving expression set...');
+            else if (profile.error) personalityStatus.textContent = window.SceneZOILocalization.text('Expression is unavailable. See diagnostics.');
+            else if (!expressions.length) personalityStatus.textContent = window.SceneZOILocalization.text('No expression sets installed for this body.');
+            else personalityStatus.textContent = window.SceneZOILocalization.text(personalityMessage || 'Saved for future scene sessions.');
 
             voices.update();
             choices.style.display = choosing ? 'block' : 'none';
             selector.setAttribute('aria-expanded', choosing ? 'true' : 'false');
             var person = participants.filter(function (entry) { return entry.id === selected; })[0];
-            selector.textContent = person ? person.name : 'Choose a Zoi';
+            selector.textContent = person ? person.name : window.SceneZOILocalization.text('Choose a Zoi');
             var selection = participants.map(function (entry) {
                 return '<button type="button" data-participant="' + text(entry.id) + '">' + text(entry.name) + '</button>';
             }).join('');
@@ -137,10 +147,10 @@
                     (disabled ? ' disabled' : '') + '><span class="outfit-switch-knob"></span></button></div>';
             }).join('') : '';
             if (html !== listMarkup) { pieces.innerHTML = html; listMarkup = html; }
-            if (!participants.length) status.textContent = 'Loading starting outfits...';
-            else if (pending || serverBusy) status.textContent = 'Updating outfit...';
-            else if (!person || !person.items.length) status.textContent = 'No outfit pieces.';
-            else if (!/^Could not/.test(status.textContent || '')) status.textContent = '';
+            if (!participants.length) status.textContent = window.SceneZOILocalization.text('Loading starting outfits...');
+            else if (pending || serverBusy) status.textContent = window.SceneZOILocalization.text('Updating outfit...');
+            else if (!person || !person.items.length) status.textContent = window.SceneZOILocalization.text('No outfit pieces.');
+            else status.textContent = window.SceneZOILocalization.text(outfitMessage);
             layout();
         }
         function changed() { update(); options.changed(); }
@@ -152,7 +162,11 @@
             var s = state(); if (!s.active || s.exiting) return;
             opened = mode !== 'personality' || !opened; mode = 'personality'; choosing = false; changed();
         });
-        expressionSelect.addEventListener('click', function () {
+        settingsToggle.addEventListener('click',function(){
+            var s=state();if(!s.active || s.exiting)return;
+            opened=mode!=='settings' || !opened;mode='settings';choosing=false;expressionChoosing=false;voices.close();changed();
+        });
+        expressionSelect.addEventListener('click' , function () {
             if (expressionSelect.disabled) return;
             voices.close();expressionChoosing = !expressionChoosing; choosing = false; changed();
         });
@@ -188,7 +202,7 @@
             options.write('outfit', pending).catch(function () {});
             changed();
         });
-        function retry() { voices.retry(); if (personalityPending && state().active && !state().exiting) options.write('personality', personalityPending).catch(function () {}); if (pending && state().active && !state().exiting) options.write('outfit', pending).catch(function () {}); }
+        function retry() { settings.retry(); voices.retry(); if (personalityPending && state().active && !state().exiting) options.write('personality', personalityPending).catch(function () {}); if (pending && state().active && !state().exiting) options.write('outfit', pending).catch(function () {}); }
         setInterval(function () {
             var s = state(); if (!s.active || s.exiting || reading) return;
             var requestedSession = s.client + ':' + s.sequence;
@@ -207,14 +221,14 @@
                     var items = [], rawItems = unhex(columns[2]);
                     if (rawItems !== 'none') rawItems.split('+').forEach(function (item) {
                         var parts = item.split(':'); if (parts.length !== 6 || !/^piece\d+$/.test(parts[0]) || !/^[01]$/.test(parts[4])) throw new Error('Invalid outfit piece');
-                        items.push({id:parts[0],label:unhex(parts[3]),enabled:parts[4] === '1'});
+                        items.push({id:parts[0],label:window.SceneZOILocalization.outfitLabel(parts[1],unhex(parts[2]),unhex(parts[3]),unhex(parts[5])),enabled:parts[4] === '1'});
                     });
                     incoming.push({id:columns[0],name:unhex(columns[1]),items:items});
                 });
                 participants = incoming; serverRevision = rev; serverBusy = fields[5] === 'busy';
                 if (!participants.some(function (entry) { return entry.id === selected; })) selected = participants.length ? participants[0].id : null;
                 if (pending && ack >= count && !serverBusy) pending = null;
-                status.textContent = fields[5] === 'outfit_invalid' || fields[5] === 'outfit_stale' ? 'Could not change that piece. Try again.' : '';
+                outfitMessage = fields[5] === 'outfit_invalid' || fields[5] === 'outfit_stale' ? window.SceneZOILocalization.text('Could not change that piece. Try again.') : '';
                 changed();
             }).catch(function () {}).then(function () { reading = false; });
         }, 400);
@@ -242,7 +256,7 @@
                 });
                 personality = incoming; library.sets = available; personalityAck = ack;
                 if (personalityPending && Number(f[4]) >= personalityCount) personalityPending = null;
-                personalityStatus.textContent = f[5].indexOf('personality_') === 0 ? 'Could not save that expression set. Try again.' : '';
+                personalityMessage = f[5].indexOf('personality_') === 0 ? window.SceneZOILocalization.text('Could not save that expression set. Try again.') : '';
                 changed();
             }).catch(function () {}).then(function () { personalityReading = false; });
         }, 450);

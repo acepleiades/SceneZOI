@@ -76,6 +76,13 @@ The role names must be declared by that node. Each task reference must use its r
 
 Values always stay within 0–maximum. Percentage is `100 * value / maximum`; 90/90 and 200/200 both mean 100%. The tray displays whole percentages rounded down.
 
+The [Scene Settings](settings.md#task-progress) female/male task-rate controls
+multiply positive authored rates by 0.1–5, using each participant's appearance body
+type. The default is 1. They combine with caller-scoped add-on rate modifiers;
+authored negative rates and omitted-task decay are unaffected by the player
+setting. Caps and completion holds remain authoritative. The setting changes
+future accumulation without changing current values or direct API progress edits.
+
 Rates use native game time, independent of SceneZOI's animation-speed selector. Game pause pauses progression and decay; game time controls scale them. Preparation, navigation handoff, outfit preparation and stopping do not accrue task time. All task progression and decay also pause throughout a `transition` node; see [transition scenes](transitions.md). No catch-up occurs for those held intervals.
 
 Participant IDs own progress and completion counts for the session. Navigation keeps that state. Exit discards it, and a new session initializes from the definition. This tier does not write progress into game saves or persistent personality settings.
@@ -136,7 +143,7 @@ The B1 completion payload includes existing session ID (`id`), node ID, revision
 
 The fixed-width 132-pixel Scene Tasks tray sits 10 pixels to the right of the main panel and matches its height. Each row shows participant name, task label, SVG ring and percentage. Its content scrolls independently, preserving scroll position during updates. At zero, an omitted or decreasing task disappears; an explicitly increasing or held task remains visible. Once no visible rows remain, the tray is removed and configuration panels return to their previous arrangement.
 
-With a tray present, outfit/personality panels shift right by 142 pixels. Without it, their existing viewport-placement fallback remains in effect. The tray retains the requested immediate-right priority even near the viewport edge; the user can move/resize the main window to provide room. The combined native hit rectangle includes the tray and configuration panel. Existing drag, resize, input focus and Exit behavior are retained.
+With a tray present, outfit/personality/settings panels shift right by 142 pixels. Without it, their existing viewport-placement fallback remains in effect. The tray retains the requested immediate-right priority even near the viewport edge; the user can move/resize the main window to provide room. The combined native hit rectangle includes the tray and configuration panel. Existing drag, resize, input focus and Exit behavior are retained.
 
 ## Validation boundaries
 

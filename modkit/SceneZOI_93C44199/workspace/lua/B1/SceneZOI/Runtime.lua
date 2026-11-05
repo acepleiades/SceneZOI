@@ -9,6 +9,8 @@ local Events = require("SceneZOI.Events")
 local Catalog = require("SceneZOI.Catalog")
 local Appearance = require("SceneZOI.Appearance")
 local OutfitControl = require("SceneZOI.OutfitControl")
+local Settings = require("SceneZOI.Settings")
+local Localization = require("SceneZOI.Localization")
 local Personality = require("SceneZOI.Personality")
 local VoicePersonality = require("SceneZOI.VoicePersonality")
 local Json = require("SceneZOI.Json")
@@ -122,10 +124,10 @@ local function finish_stop(old, code)
     remember(old.client, old.sequence, (code == "ok" or code == "controller_too_far" or code == "saving" or code == "addon_requested") and "idle" or "error", code, controlled and controlled.actor)
     pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
     if code=='saving'then
-        pcall(inzoi.cli.execute,'toast.show message="SceneZOI ended because the game is saving." lifetime=5 immediate=true')
+        pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
     end
     if code=='controller_too_far'then
-        pcall(inzoi.cli.execute,'toast.show message="SceneZOI ended because the controlled Zoi moved too far from the scene." lifetime=5 immediate=true')
+        pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the controlled Zoi moved too far from the scene.')
     end
     M.diagnostic("Ended " .. old.token .. ": " .. code)
 end
@@ -201,6 +203,7 @@ local function begin(fields)
     require("SceneZOI.ExpressionLibrary").refresh()
     require("SceneZOI.FacialPoseLibrary").refresh()
     require("SceneZOI.VoiceLibrary").refresh()
+    Localization.refresh()
     Catalog.refresh()
     local client, sequence, _, initiator, node_id, roster = table.unpack(fields)
     assert(initiator and roster, "Scene entry needs an initiator and explicit role assignments")
@@ -521,7 +524,7 @@ local function poll()
         if client ~= session.client or sequence ~= session.sequence then
             if action == "start" then
                 remember(client,sequence,"error","busy",nil,true)
-                pcall(inzoi.cli.execute,'toast.show message="A SceneZOI scene is already in progress. End it before starting another." lifetime=5 immediate=true')
+                pcall(require('SceneZOI.Localization').toast,'A SceneZOI scene is already in progress. End it before starting another.')
             end
             return
         end
@@ -529,6 +532,8 @@ local function poll()
         else
             playback_request(read("playback"))
             outfit_request(read("outfit"))
+            Settings.request(session,"task_rates",read("settings_task_rates"))
+            Settings.request(session,"audio",read("settings_audio"))
             Personality.request(session,read("personality"))
             VoicePersonality.request(session,read("voice"))
             navigate(read("navigation"))
@@ -551,6 +556,8 @@ local function poll()
 end
 
 function M.boot()
+    Localization.refresh()
+    Settings.boot()
     Addons.boot()
     Autosave.boot()
     Save.boot()
@@ -564,6 +571,7 @@ end
 
 local function update(dt)
     dt = Clock.delta(dt)
+    if not session then Localization.tick(dt)end
     poll_elapsed = poll_elapsed + dt
     if poll_elapsed >= Config.poll_interval then
         poll_elapsed=0;Autosave.tick(session~=nil);Save.tick(M.actors,session~=nil);poll()
@@ -699,6 +707,7 @@ local function update(dt)
     end
     publish_playback(current)
     OutfitControl.publish(current)
+    Settings.publish(current)
     Personality.publish(current)
     VoicePersonality.publish(current)
     if current.tasks then

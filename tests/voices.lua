@@ -54,7 +54,7 @@ local plays,created,destroyed={},0,0;local fail_destroy=false;local unavailable=
 local N={}
 function N.load(path)if unavailable then error('asset missing')end;return {path=path,duration=1}end
 function N.position()return {X=1,Y=2,Z=3}end
-function N.create(v,actor)if not v.component then v.component={};created=created+1;v.owner=actor.id end end
+function N.create(v,actor,spec,category)v.category=category;if not v.component then v.component={};created=created+1;v.owner=actor.id end end
 function N.move()end
 function N.pause(v,p)v.paused=p end
 function N.tune(v,r,p)v.rate=math.max(1,math.min(2,r));v.requested=r;v.paused=p end
@@ -68,6 +68,7 @@ for _,p in ipairs({a,b,c})do p.actor={id=p.id}end
 local Voice=require('SceneZOI.Voices')
 local ctx=Voice.load();ctx.node={voices={lead={context='breath'},other={context='breath'},helper={context='breath'}}}
 Voice.prepare(ctx,session);Voice.enter(ctx);assert(#plays==3 and created==3,'Repeated bodies and male content must own independent sources')
+assert(ctx.owners['1'].audio.emitters[1].voices[1].category=='female_voice'and ctx.owners['3'].audio.emitters[1].voices[1].category=='male_voice','Route by the selected set body, independent of role/control')
 local function tick(delta)session.clock.game_elapsed=session.clock.game_elapsed+delta;Voice.sample(ctx)end
 local initial=#plays;session.clock.index=4;Voice.sample(ctx);assert(#plays==initial and ctx.owners['1'].audio.emitters[1].voices[1].rate==1,'Scene speed must not retime or restart voices')
 session.clock.scale=0;Voice.sample(ctx);assert(ctx.owners['1'].audio.emitters[1].voices[1].paused)

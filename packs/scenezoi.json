@@ -35,6 +35,10 @@
     {
       "kind": "facial_pose",
       "file": "scenezoi/facial_poses/open_o.json"
+    },
+    {
+      "kind": "localization",
+      "file": "scenezoi/localization/text.json"
     }
   ]
 }

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-visual-fixes-1",
+  "ui_build": "20261105-cjk-fonts-ui-1",
+  "failure": "Japanese/Chinese navigation and Exit buttons displayed missing-glyph boxes while the title rendered correctly.",
+  "cause": "The control-specific font override used only Pretendard/NotoSans and omitted the CJK fallback faces present in the native UI font stack.",
+  "fix": "Use var(--inzoi-font-ui) directly on navigation, Exit and restore controls. No font assets or translated data changed.",
+  "checks": {
+    "focused_ui_suites": [
+      "localization.cjs",
+      "panel-state.cjs"
+    ],
+    "passed": true,
+    "native_ui_errors": 0,
+    "native_ui_warnings": 0,
+    "runtime_retested": false,
+    "scope": "UI-only patch; the previous full runtime suite remains the recorded runtime baseline. Font-stack checks do not establish native glyph rendering."
+  },
+  "installation": {
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "exact_owned_payload_filter": true,
+    "no_game_or_engine_asset_payloads": true,
+    "owned_asset_packages": 4,
+    "mode": "Idle UI-only hot update",
+    "changed_payload_files": 2,
+    "candidate_files_verified": 129,
+    "installed_hashes_match": true,
+    "settings_preferences_preserved": true,
+    "cooked_files_changed": 0,
+    "cooked_asset_hashes_equal": true,
+    "hzoi_installed_files_changed": 0,
+    "runtime_reload_required": false,
+    "backup_outside_mods": true
+  },
+  "native_activation": {
+    "state": "idle/ok",
+    "runtime_build_matches": true,
+    "ui_build_matches": true,
+    "discovery_records": 44,
+    "discovery_warnings": 0,
+    "new_retained_error": false,
+    "final_state": "idle/ok",
+    "final_exit_and_cleanup": "ok/ok",
+    "retained_historical_error_unchanged_after_exit": true
+  },
+  "author_acceptance": {
+    "status": "accepted",
+    "date": "2026-11-05",
+    "reported": "It's working now",
+    "scope": "Author confirmation of the requested Japanese, Simplified Chinese and Traditional Chinese navigation/Exit glyph checks; not a native-speaker review of the translations."
+  }
+}

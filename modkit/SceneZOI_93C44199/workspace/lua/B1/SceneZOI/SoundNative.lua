@@ -1,6 +1,28 @@
 -- Scene-owned world audio only. No global mixes, game sounds or UI audio are changed.
 local Head=require('SceneZOI.GazeNative')
 local M={}
+local gains={sfx=1,female_voice=1,male_voice=1}
+local owned=setmetatable({},{__mode='k'})
+local function apply_volume(v)
+    local volume=(v.base_volume or 1)*(gains[v.audio_category or 'sfx']or 1)
+    if v.component and not v.destroyed and v.applied_volume~=volume then
+        v.component:SetVolumeMultiplier(volume);v.applied_volume=volume
+    end
+end
+function M.set_gains(next_gains)
+    for key in pairs(gains)do
+        local value=next_gains[key]
+        assert(type(value)=='number'and value==value and value>=0 and value<=2,'Invalid audio gain')
+    end
+    for key in pairs(gains)do gains[key]=next_gains[key]end
+    for v in pairs(owned)do
+        -- One departed actor must not prevent unrelated channels updating.
+        -- Failed components retry through their ordinary tune/cleanup path.
+        local ok,err=pcall(apply_volume,v)
+        if not ok and v.volume_error~=tostring(err)then print('[SceneZOI] Audio volume: '..tostring(err))end
+        v.volume_error=not ok and tostring(err)or nil
+    end
+end
 local function valid(object)
     local ok,value=pcall(function()return UE.UKismetSystemLibrary.IsValid(object)end)
     return not ok or value~=false
@@ -49,10 +71,12 @@ local function configure(v,spec)
     a.FalloffDistance=(spec.attenuation or {}).falloff_cm or 900
     a.StereoSpread=0;a.bApplyNormalizationToStereoSounds=true
     c:AdjustAttenuation(a)
-    c:SetVolumeMultiplier(spec.volume or 1)
+    v.base_volume=spec.volume or 1;v.applied_volume=nil
+    apply_volume(v)
     v.configured=true
 end
-function M.create(v,actor,spec)
+function M.create(v,actor,spec,category)
+    v.audio_category=category or 'sfx'
     if v.component and not valid(v.component)then v.component=nil;v.configured=false end
     if not v.component then
         -- Record ownership before configuring; even partially created components
@@ -60,10 +84,11 @@ function M.create(v,actor,spec)
         v.component=assert(actor:AddComponentByClass(UE.UAudioComponent:StaticClass(),true,UE.FTransform(),false),'Could not create scene audio')
         v.owner=actor;v.destroyed=false;v.configured=false;v.rate=nil;v.paused=nil;v.stopped=true
     end
-    if not v.configured then configure(v,spec)end
+    owned[v]=true
+    if not v.configured then configure(v,spec)else apply_volume(v)end
 end
 function M.volume(v,volume)
-    if v.component and not v.destroyed then v.component:SetVolumeMultiplier(volume)end
+    v.base_volume=volume;apply_volume(v)
 end
 function M.move(v,position)
     if v.component and not v.destroyed then
@@ -78,6 +103,7 @@ end
 function M.tune(v,requested,pause)
     local rate,source=M.rate(requested)
     if v.component and not v.destroyed then
+        apply_volume(v)
         if v.rate~=rate then v.component:SetPitchMultiplier(rate)end
         M.pause(v,pause)
     end
@@ -131,6 +157,6 @@ function M.destroy(v)
     if v.destroyed then return end
     M.stop(v)
     if v.component and valid(v.component)then v.component:K2_DestroyComponent(v.owner)end
-    v.destroyed=true;v.component=nil
+    v.destroyed=true;v.component=nil;owned[v]=nil
 end
 return M

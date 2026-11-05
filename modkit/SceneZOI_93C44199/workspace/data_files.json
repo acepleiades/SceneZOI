@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "Content/JsonPatch/Text_UI_patch.json",
-      "sha256": "8dee73b07e28ab6c3a990a0c9a52c56b4bc74a6b10b7b07395960d5c7113fe0c"
+      "sha256": "e3b0c9093e6ba4dd271654353de541cde2b8560500727b2de3e39bdd2a7b8cf0"
     }
   ],
   "records": [
@@ -49,6 +49,12 @@
       "owner": "scenezoi",
       "kind": "furniture_profile",
       "source": "bed.single.standard.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__localization__text",
+      "owner": "scenezoi",
+      "kind": "localization",
+      "source": "text.json"
     },
     {
       "id": "SceneZOI_Declaration_scenezoi__scene_pack__scenezoi",

@@ -8,6 +8,7 @@ local Json=require('SceneZOI.Json')
 local Protocol=require('SceneZOI.Protocol')
 local Config=require('SceneZOI.Config')
 local M = {}
+local Localization=require('SceneZOI.Localization')
 local Meta=require('SceneZOI.Metadata')
 local Search=require('SceneZOI.SceneSearch')
 function M.refresh()
@@ -57,9 +58,11 @@ end
 function M.public_node(node,current)
  local navigation={}
  for _,edge in ipairs(node.navigation)do
-  if not current or Search.allowed(M.get_snapshot().nodes,M.get_snapshot().nodes[edge.target],current.session_restrictions)then navigation[#navigation+1]=V.copy(edge)end
+  if not current or Search.allowed(M.get_snapshot().nodes,M.get_snapshot().nodes[edge.target],current.session_restrictions)then local view=V.copy(edge)
+   view.label=edge._label_from_target and Localization.label('scene',edge.target,edge.label)or Localization.label('navigation',node.id..'.'..edge.id,edge.label)
+   view._label_from_target=nil;navigation[#navigation+1]=view end
  end
- return {id=node.id,label=node.label,kind=node.kind,destination=node.destination,starting_hub=node.starting_hub==true,
+ return {id=node.id,label=Localization.label('scene',node.id,node.label),kind=node.kind,destination=node.destination,starting_hub=node.starting_hub==true,
   addon_data=V.copy(node.addon_data or {}),participant_addon_data=V.copy(node.participant_addon_data or {}),
   navigation=Json.array(navigation),participants=V.copy(node.participants),furniture=V.copy(node.furniture),
   tags=Json.array(V.copy(node.tags or {})),participant_tags=V.copy(node.participant_tags or {}),actions=Json.array(V.copy(node.actions or {})),content_rating=node.content_rating}

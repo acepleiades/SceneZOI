@@ -91,3 +91,21 @@ N.stop(moving)
 N.play(moving,{asset={},sample=2,duration=3,animated=false},0,0);N.hold(moving,5);assert(moving.position==2,'Explicit sample must remain held')
 N.stop(moving)
 print('Facial motion passed: advancing/looping native clips, pause, held guards, replacement recovery and explicit fixed poses.')
+
+-- Reproduce native automatic fade near the end while sampled time loops.
+-- A strong mood is visible whenever that fade drops our owned face weight.
+current=instance();local montage_count=0
+local play=current.PlaySlotAnimationAsDynamicMontage
+function current:PlaySlotAnimationAsDynamicMontage(asset,slot,blend)
+ montage_count=montage_count+1;local m=play(self,asset,slot,blend);m.bEnableAutoBlendOut=true;return m
+end
+local set_position=current.Montage_SetPosition
+function current:Montage_SetPosition(m,position)
+ set_position(self,m,position)
+ if m.bEnableAutoBlendOut and position>=2.65 then self.montages[m]=nil end
+end
+local face={actor=owner.actor};N.play(face,{asset={},sample=0,duration=3,animated=true},.35,0)
+for frame=1,900 do N.hold(face,frame/30);assert(current.montages[face.montage],'Automatic blend exposed the native mood pose')end
+assert(montage_count==1 and not face.montage.bEnableAutoBlendOut,'A looping expression must stay owned through every end window')
+local owned=face.montage;N.stop(face);assert(not current.montages[owned],'Explicit Exit must still stop the owned face')
+print('Facial end-fade regression passed: 10 loops with a competing mood fallback, no automatic fade/replay, and explicit release.')

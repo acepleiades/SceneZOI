@@ -64,7 +64,7 @@ local function update(ctx,p)
  if not old then
   local source={participant=p.role,component='head',bones={'FACIAL_C_Jaw'}}
   local spec={mode='continuous',owner=p.role,sound_set=set.id,source={source},volume=set.volume,gap=set.gap,max_voices=1,recent_limit=3}
-  local audio=Sfx.load_emitters({[p.id]=spec},{[set.id]={default={clips=set.clips}}})
+  local audio=Sfx.load_emitters({[p.id]=spec},{[set.id]={default={clips=set.clips}}},set.body..'_voice')
   old={id=set.id,audio=audio};ctx.owners[p.id]=old
   Sfx.prepare(audio,ctx.session);Sfx.enter(audio)
  else Sfx.sample(old.audio)end

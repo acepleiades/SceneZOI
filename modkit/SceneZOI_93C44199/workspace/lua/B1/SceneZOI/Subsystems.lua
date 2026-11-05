@@ -151,7 +151,7 @@ end
 
 function M.new(session, loaded)
     session.retained_subsystems = session.retained_subsystems or {}
-    local host = setmetatable({items = {}, retained = session.retained_subsystems}, M)
+    local host = setmetatable({items = {}, retained = session.retained_subsystems, session=session}, M)
     for _, loaded_item in ipairs(loaded) do add(host, session, loaded_item) end
     return host
 end
@@ -198,6 +198,20 @@ function M:keep_body_unmerged(participant, node, bindings)
 end
 
 function M:guard()
+    -- A covering outfit deliberately prevents attachment creation. Its native
+    -- body mask still needs protection throughout/after appearance handoffs.
+    local session=self.session;local seen={};local bindings=session.bindings
+    for _,spec in pairs(session.node.attachments or {})do
+        bindings=bindings or Binding.resolve(session.participants,session.node)
+        local owner=bindings[spec.participant]
+        if owner and spec.body_profile and compatible(spec,owner)then
+            local key=owner.id..'|'..spec.body_profile
+            if not seen[key]then
+                seen[key]=true
+                owner.clothing_mask_repairs=(owner.clothing_mask_repairs or 0)+Body.guard_clothing(owner.actor,spec.body_profile)
+            end
+        end
+    end
     for _, item in ipairs(self.items) do if item.engine.guard then item.engine.guard(item.context) end end
 end
 

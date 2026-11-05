@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "runtime_build": "20261105-localization-1",
+  "ui_build": "20261105-localization-ui-1",
+  "cultures": [
+    "ko-KR",
+    "en-US",
+    "zh-CN",
+    "zh-TW",
+    "ja-JP",
+    "ru-RU",
+    "es-ES",
+    "pt-BR",
+    "pt-PT",
+    "de-DE",
+    "fr-FR",
+    "it-IT",
+    "pl-PL",
+    "tr-TR",
+    "nl-NL"
+  ],
+  "coverage": {
+    "framework_messages_per_culture": 113,
+    "framework_scene_labels_per_culture": 3,
+    "private_content_labels_per_culture": 37,
+    "core_declarations": 10,
+    "private_content_declarations": 34,
+    "clinical_metadata_translated": false,
+    "code_free_content_pack": true
+  },
+  "automated": {
+    "passed": true,
+    "framework_python_tests": 53,
+    "optional_private_content_python_tests": 32,
+    "total_python_tests": 85,
+    "lua_suites_with_optional_content": 55,
+    "ui_suites": 9
+  },
+  "native_source_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0
+  },
+  "cold_start": {
+    "phase": "in_game",
+    "runtime_build": "20261105-localization-1",
+    "ui_build": "20261105-localization-ui-1",
+    "state": "SZ2|none|0|idle|ok",
+    "data_discovery": "native_rows:44+records:44+warnings:0+kinds:action_dictionary:1+body_profile:1+coverage_attachment:1+expression_set:5+facial_pose:1+furniture_profile:5+localization:2+material_profile:1+scene_pack:2+scene_task:1+tag_dictionary:1+voice_archetype:3+voice_context:4+voice_set:16",
+    "catalog_discovery": "nodes:7+warnings:0",
+    "culture": "en-US",
+    "message_cultures": 15,
+    "label_cultures": 15
+  },
+  "language_sweep": {
+    "cultures_checked": 15,
+    "all_native_refreshes_and_framework_content_text_entries_passed": true,
+    "original_language_restored": true,
+    "scope": "Idle retail setting changes and published current culture/message/scene-label presence; not visual rendering or native-speaker acceptance."
+  },
+  "packaging_and_installation": {
+    "SceneZOI_93C44199": {
+      "game_closed": true,
+      "candidate_files_verified": 129,
+      "installed_hashes_match": true,
+      "unowned_files_and_preferences_preserved": true,
+      "owned_assets": 4,
+      "uat_exit_code": 0,
+      "no_game_or_engine_asset_payloads": true,
+      "cooked_files_changed": 0,
+      "preserved_files": 96
+    },
+    "HZoi_660649D8": {
+      "game_closed": true,
+      "candidate_files_verified": 8,
+      "installed_hashes_match": true,
+      "unowned_files_and_preferences_preserved": true,
+      "owned_assets": 725,
+      "uat_exit_code": 0,
+      "no_game_or_engine_asset_payloads": true,
+      "cooked_files_changed": 0,
+      "preserved_files": 0
+    }
+  },
+  "pending_author_acceptance": [],
+  "boundaries": [
+    "No native-speaker review is claimed for all 15 translations.",
+    "Internal IDs, dictionary tags/actions, assets/audio, diagnostic messages and machine failure codes retain source text.",
+    "Already-running sessions need not translate immediately; view/save-load and new-session refresh are the supported boundaries."
+  ],
+  "author_acceptance": {
+    "date": "2026-11-05",
+    "author_report": "Both language checks look correct.",
+    "languages": [
+      "pt-BR",
+      "ja-JP"
+    ],
+    "requested_scenarios": [
+      "Game language changed within the same loaded save, then a new scene started.",
+      "Native Start/picker, scene/navigation names, outfit/personality/settings panels and task labels.",
+      "Japanese characters and translated label layout.",
+      "Exit and return to an idle session."
+    ],
+    "scope": "Author reported both requested language checks correct; not an individual native-speaker review of all 15 cultures.",
+    "retained_state": "SZ2|ui.1793854623613.919717|2|idle|ok",
+    "retained_last_exit": "SZ2|ui.1793854623613.919717|2|ok|ok",
+    "retained_last_stop": "SZ2|ui.1793854623613.919717|2|ok|scenezoi.standing_idle",
+    "new_ui_error_record": false,
+    "current_culture": "en-US"
+  },
+  "follow_up_defect": {
+    "date": "2026-11-05",
+    "observed": "Subsequent Japanese/Chinese screenshots showed missing button glyphs despite the earlier positive Japanese report.",
+    "scope": "Initial culture/text-presence tests and author report did not establish correct glyphs on all control types.",
+    "correction_checkpoint": "cjk-fonts-20261105.json"
+  }
+}

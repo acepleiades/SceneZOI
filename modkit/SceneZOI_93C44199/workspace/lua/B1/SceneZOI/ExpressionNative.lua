@@ -64,6 +64,10 @@ function M.play(owner,option,transition,now)
     -- Record ownership before any subsequent native call can fail.
     local lease={instance=owner.instance,montage=montage}
     owner.leases=owner.leases or {};owner.leases[#owner.leases+1]=lease;owner.current_lease=lease
+    -- Sampling/looping the pose ourselves must not enter the native end fade.
+    -- Otherwise the mood pose becomes visible near each facial clip's end.
+    -- Only this transient owned montage changes; explicit transitions/Stop still blend normally.
+    montage.bEnableAutoBlendOut=false
     owner.montage,owner.clip,owner.position=montage,option,option.sample
     owner.animation_time=now
     owner.instance:Montage_SetPlayRate(montage,0)
@@ -85,6 +89,7 @@ function M.play(owner,option,transition,now)
     return true
 end
 function M.replay(owner,now)
+    owner.replays=(owner.replays or 0)+1
     local position=owner.position
     local result=M.play(owner,owner.clip,0,now)
     if result then owner.position=position;owner.instance:Montage_SetPosition(owner.montage,position)end

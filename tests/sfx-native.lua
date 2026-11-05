@@ -66,4 +66,23 @@ local stale=wave;wave.alive=false;wave={alive=true,Duration=1.7,IsA=function()re
 UE.UKismetSystemLibrary.IsValid=function(obj)if obj==stale then error('unknown tombstone validity')end;return obj~=nil and obj.alive end
 N.play(v,clip,pos,1);assert(count.load==5 and clip.asset==wave,'Collected asset was not reloaded')
 N.destroy(v);assert(count.destroy==2 and count.create==3)
+-- User gain applies once to each category, including held/faded voices and newly created components.
+local effect,female,male={},{},{}
+N.create(effect,actor,spec);N.create(female,actor,spec,'female_voice');N.create(male,actor,spec,'male_voice')
+N.volume(female,.15);N.pause(male,true)
+N.set_gains({sfx=0,female_voice=2,male_voice=.5})
+assert(effect.component.volume==0 and female.component.volume==.3 and male.component.volume==.3 and male.component.paused)
+N.set_gains({sfx=2,female_voice=2,male_voice=.5})
+assert(effect.component.volume==1.2 and female.component.volume==.3,'Gain must not compound or discard a fade')
+N.volume(female,0);N.set_gains({sfx=1,female_voice=1,male_voice=2});assert(female.component.volume==0,'A faded-out voice must stay silent')
+N.volume(female,.6);assert(female.component.volume==.6)
+assert(not pcall(N.set_gains,{sfx=3,female_voice=1,male_voice=1}),'Reject out-of-range gain atomically')
+local late={};N.create(late,actor,spec,'male_voice');assert(late.component.volume==1.2,'New voices must inherit the current gain')
+local original=effect.component.SetVolumeMultiplier;local attempts=0
+effect.component.SetVolumeMultiplier=function(self,value)attempts=attempts+1;if attempts==1 then error('departed component')end;return original(self,value)end
+N.set_gains({sfx=.5,female_voice=.5,male_voice=.5});assert(female.component.volume==.3 and male.component.volume==.3,'One failure must not prevent independent updates')
+N.tune(effect,1,false);assert(effect.component.volume==.3 and attempts==2,'Failed update must retry during normal playback')
+local component=late.component;N.destroy(late);component.SetVolumeMultiplier=function()error('Destroyed component was retained')end
+N.set_gains({sfx=1,female_voice=1,male_voice=1})
+for _,voice in ipairs({effect,female,male})do N.destroy(voice)end
 print('Native SFX passed: moving world midpoint, owned spatial components, attenuation, pause/native pitch bounds, partial setup, stale component/asset recovery and retryable owned cleanup.')

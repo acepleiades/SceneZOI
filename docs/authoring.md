@@ -95,3 +95,10 @@ Check actual asset readiness and retained errors; an accepted command is not
 rendered acceptance. New geometry, facial targets, audio and furniture variants
 need their own fit/presentation checks. Keep those results distinct from source
 tests in your contribution or validation notes.
+
+## Translated display text
+
+Keep IDs and source labels stable. Content packs can contribute inert
+[localization declarations](localization.md) for scene titles, explicit navigation
+captions, expression/voice choices and task captions. Missing entries fall back
+to English. Tags and actions are authoring metadata and are not translated.

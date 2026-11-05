@@ -7,9 +7,10 @@
     var restore = document.createElement('button');
     restore.id = 'scene-restore';
     restore.type = 'button';
-    restore.textContent = 'Show SceneZOI';
-    restore.setAttribute('aria-label', 'Show SceneZOI controls');
+    restore.textContent = window.SceneZOILocalization.text('Show SceneZOI');
+    restore.setAttribute('aria-label', window.SceneZOILocalization.text('Show SceneZOI controls'));
     root.appendChild(restore);
+    window.SceneZOILocalization.onChange(function(){restore.textContent=window.SceneZOILocalization.text('Show SceneZOI');restore.setAttribute('aria-label',window.SceneZOILocalization.text('Show SceneZOI controls'));});
 
     // Both the generated manager and the attached-panel controller report bounds.
     // Gate their final reports so an invisible/blocked view cannot swallow menu clicks.
