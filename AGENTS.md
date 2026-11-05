@@ -112,6 +112,21 @@ preserve settings/preferences/credits, update only owned payloads and verify
 installed hashes. Use the established idle hot-update path only when appropriate,
 preserving loaded cooked bytes. Do not infer live acceptance from installation.
 
+Before declaring a player release tested, install the exact distributable ZIP in
+a fresh mod directory and launch a fresh game process. Back up existing installs,
+settings and recovery data outside Mods first; do not carry development cfg files
+into this clean test. Verify automatic startup, Start entries, playback and Exit
+without diagnostic seeding, manual mounting or hot reload. Also retain separate
+update tests with existing preferences. A restart with old cfg is not a first
+installation test.
+
+SceneZOI 1.0 missed this distinction: native `cfg_load` rejects absent keys, while
+the UI fixture returned empty success and development cfg masked the missing
+request mailbox. Initialize required mailboxes before readiness; cache completed
+host identity only after acknowledgement succeeds and retry transient failures.
+Retain [entry](tests/entry.lua) and [receiver](tests/demo-entry.cjs) regressions.
+See the [recorded cause and acceptance](docs/validation/fresh-install-startup-20261105.json).
+
 Preserve existing uncommitted work. Do not commit, push, tag or publish without an
 explicit instruction. Preserve [LICENSE](LICENSE), GPL-3.0-only attribution and
 the README reminder that forks must comply with applicable ModKit terms as well.

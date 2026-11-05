@@ -109,6 +109,24 @@ reload. A fresh process launch establishes automatic package/declaration loading
 manual mounting and diagnostic patching do not. Released native appearance
 references can require a game restart. Matching build markers alone are insufficient.
 
+### Clean-install release check
+
+Test the exact ZIP intended for distribution, not only the development install.
+Close inZOI, back up existing mod folders and all settings/recovery files outside
+Mods, then install into a fresh directory without carrying old runtime cfg into
+the test. Launch a fresh game process and verify automatic loading, Start entries
+on the controlled Zoi and supported furniture, playback, Exit and re-entry.
+Do not seed configuration, manually mount scripts or hot reload to make this
+acceptance pass. Preserve a separate update test with existing preferences.
+
+SceneZOI 1.0 passed against retained developer configuration but failed on a fresh
+install. A missing `selection_request` made native `cfg_load` fail, and the UI
+cached host identity too early to retry its readiness acknowledgement. The test
+fixture had incorrectly returned empty success for missing keys. Version 1.0.1
+initializes the mailbox and retries incomplete handshakes. Keep native-style
+missing-key failures in fixtures; see the [checkpoint](validation/fresh-install-startup-20261105.json)
+and [issue ledger](investigations/runtime-and-ui-issues.md).
+
 ### Saves and cleanup
 
 During scene ownership, scheduled autosaves are suspended if enabled and restored

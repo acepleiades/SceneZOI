@@ -116,6 +116,7 @@ not an executable API-client example, and cloning it does not install it.
 
 | Failure | Authoring rule |
 | --- | --- |
+| An existing development configuration hid a fresh-install handshake failure. | Initialize required cfg mailboxes before publishing readiness. Native `cfg_load` fails for absent keys; model that in tests. Cache a completed host generation only after acknowledgement succeeds, and retry transient read/write failures. Test from a fresh mod directory, not just a restart with retained cfg files. |
 | Manually mounted scaffold worked, but fresh startup skipped Lua and JSON. | Create/register the native project through ModKit and test the packaged installation from a fresh process. |
 | Package filtering expected an asset response/container that a Lua/data-only export did not have. | Use the zero-asset path with an exact manifest allowlist; unexpected and cooked/native payloads still fail. |
 | An asset catalog entry existed but its mesh was unavailable in retail. | Check actual native loading/readiness. A catalog listing does not establish installed content. |

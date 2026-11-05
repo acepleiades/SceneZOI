@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "date": "2026-11-05",
-  "build": "20261105-visual-fixes-1",
-  "ui_build": "20261105-cjk-fonts-ui-1",
+  "build": "20261105-startup-1",
+  "ui_build": "20261105-startup-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "Three visual runtime fixes and the later Japanese/Chinese control-font correction are installed and author accepted. Automated/source/native activation and final Exit checks passed. Publication is not asserted.",
+  "release_status": "SceneZOI 1.0 fresh-install entry failure reproduced and corrected in 1.0.1. Framework regressions, native Lua/UI validation, isolated packaging, exact owned-payload filtering, clean ZIP installation and automatic fresh-process startup passed. The author confirmed it works; final native Exit/cleanup was idle/ok with no retained error. HZoi 1.0 is unchanged.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -114,16 +114,34 @@
       "cold_start_evidence_build": "20261105-localization-1"
     },
     "packaging_and_installation": {
-      "game_closed": false,
-      "candidate_files_verified": 129,
-      "installed_hashes_match": true,
-      "unowned_files_and_preferences_preserved": true,
-      "owned_assets": 4,
+      "game_closed": true,
       "uat_exit_code": 0,
+      "isolated_export": true,
+      "exact_owned_payload_filter": true,
+      "candidate_files_verified": 132,
+      "installed_hashes_match": true,
+      "owned_asset_packages": 4,
       "no_game_or_engine_asset_payloads": true,
-      "cooked_files_changed": 0,
-      "mode": "Idle UI-only hot update; B1 runtime retained",
-      "preserved_loaded_cooked_bytes": true
+      "mode": "Exact SceneZOI 1.0.1 ZIP into a fresh folder, with full rollback backups outside Mods.",
+      "hzoi_files_changed": 0,
+      "old_preferences_and_state": "Backed up outside Mods and not merged into the clean reproduction.",
+      "native_generated_protection_preserved": true
+    },
+    "fresh_install_startup": {
+      "passed": true,
+      "fresh_process": true,
+      "original_development_cfg_carried_over": false,
+      "manual_mount_reload_or_diagnostic_patching": false,
+      "runtime_and_ui_builds_match": true,
+      "host_controls_generation_matches": true,
+      "native_declarations": 44,
+      "discovery_warnings": 0,
+      "scene_playback_observed": true,
+      "final_phase": "idle",
+      "final_result": "ok",
+      "initiating_exit_reason": "ok",
+      "retained_error": null,
+      "furniture_entry_requested_in_second_session": true
     }
   },
   "author_acceptance": [
@@ -143,7 +161,8 @@
     "Current content attachment diagnostics reported zero shared-clock discrepancy during the final joint pass.",
     "Visual-fix hot candidate: 44 declarations/zero warnings; two expression owners kept zero face replay counters during captured playback. Final state idle/ok and matching Exit/cleanup ok/ok, with no new retained error.",
     "CJK UI-only hot update reached idle/ok with the unchanged visual-fix runtime, new UI build marker and 44 declarations/zero warnings; retained error unchanged.",
-    "After the author CJK checks, current state was idle/ok with matching final session Exit/cleanup ok/ok. The retained historical preparation error was unchanged."
+    "After the author CJK checks, current state was idle/ok with matching final session Exit/cleanup ok/ok. The retained historical preparation error was unchanged.",
+    "Fresh SceneZOI 1.0 install reproduced an absent request mailbox and unacknowledged controls despite 44 valid declarations. Exact 1.0.1 ZIP clean startup acknowledged the current host automatically, reached scene playback and ended idle/ok, last Exit ok/ok, with no retained error; no remount or diagnostic patching was used."
   ],
   "evidence": {
     "overview": "docs/validation/README.md",
@@ -155,7 +174,8 @@
     "task_settings": "docs/validation/task-settings-20261105.json",
     "localization": "docs/validation/localization-20261105.json",
     "visual_fixes": "docs/validation/visual-fixes-20261105.json",
-    "cjk_fonts": "docs/validation/cjk-fonts-20261105.json"
+    "cjk_fonts": "docs/validation/cjk-fonts-20261105.json",
+    "fresh_install_startup": "docs/validation/fresh-install-startup-20261105.json"
   },
   "known_limits": [
     "One active, controlled-initiator session with fixed membership; concurrent/NPC-autonomous sessions and predetermined watch-only sequences are outside the first release.",
@@ -185,5 +205,6 @@
       "scope": "Both repositories; source/native tests not repeated for non-code edits."
     }
   },
-  "pending_author_acceptance": []
+  "pending_author_acceptance": [],
+  "runtime_build": "20261105-startup-1"
 }

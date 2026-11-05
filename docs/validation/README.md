@@ -1,5 +1,18 @@
 # First-release validation
 
+## Fresh-install correction: SceneZOI 1.0.1
+
+A clean installation of the published 1.0 ZIP reproduced missing Start entries.
+An absent request mailbox rejected the controls handshake, and prematurely cached
+host identity prevented retry. Existing developer configuration masked it. The
+1.0.1 initialization/retry fix passes source checks and native Lua/UI validation;
+isolated packaging, exact owned-payload filtering and clean ZIP installation passed.
+The exact ZIP then passed automatic startup from a fresh directory, matched the
+host/controls generation and reached playback. The author confirmed it works;
+final native Exit/cleanup was idle/ok with no retained error. HZoi 1.0 is unchanged. See the [checkpoint](fresh-install-startup-20261105.json).
+
+## Earlier release evidence
+
 The maintainer declared SceneZOI and HZoi ready for player release on **2026-11-04**.
 This page summarizes recorded evidence; it does not announce publication. The
 2026-11-05 visual bug fixes are installed by hot update; the author reported all
@@ -10,7 +23,7 @@ and accepted volume controls remain recorded separately.
 
 | Area | Last recorded result |
 | --- | --- |
-| Runtime | `20261105-visual-fixes-1`; native-message API version 1; hot activation/readiness and requested author visual checks passed |
+| Runtime | `20261105-startup-1`, UI `20261105-startup-ui-1`; 1.0.1 clean installation/automatic startup and final Exit passed, with author confirmation |
 | Automated checks | 53 framework Python tests, 32 optional private-content Python tests, 56 Lua suites with that content, nine UI suites; passed on 2026-11-05 |
 | ModKit validation | Lua and UI: zero errors and warnings |
 | Audio controls | Three persistent 0–200% channels; native multiplier readback includes 2.0; author reported controls working as expected |

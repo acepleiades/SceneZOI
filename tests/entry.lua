@@ -21,6 +21,7 @@ inzoi={EB1ManagerType={UI=1},EB1ZoiGroupType={Default=1},UB1ZoiGroupEditUIHandle
   return true,""
  end}}
 local E=require("SceneZOIStarter.Entry");E.boot()
+assert(cfg.selection_request=="none","A fresh install must create the optional request mailbox before publishing host readiness")
 cfg.selection_request=P.pack("timeout","open","1");E.tick(.2,{["1"]=actor},false);assert(cap==3)
 visible=true;E.tick(.2,{["1"]=actor},false);assert(cap==4)
 E.reply(actor,P.pack("timeout","error",P.encode("Heartbeat expired")))

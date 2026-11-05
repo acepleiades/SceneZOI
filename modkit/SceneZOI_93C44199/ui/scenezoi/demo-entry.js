@@ -31,18 +31,22 @@
             if(f[2]==='cancelled' || f[2]==='error' || f[2]==='unavailable')stop(p);
         }).catch(function(){}).then(function(){p.reading=false;});
     }
-    var lastRequest, hostToken;
+    var lastRequest, hostToken, watching=false;
     function value(data){return String(data && data.value!==undefined?data.value:data || '');}
     function watch(){
+        if(watching)return Promise.resolve();
+        watching=true;
         return cfg('uimod.cfg_load','selection_host_ready').then(function(data){
             var host=value(data).split('|');
             if(host[0]!=='SZ2' || host[2]!=='ready')return;
             if(hostToken!==host[1]){
                 if(pending)stop(pending);
-                hostToken=host[1];
                 return cfg('uimod.cfg_load','selection_request').then(function(raw){
-                    lastRequest=value(raw);
-                    return cfg('uimod.cfg_save','selection_ui_ready',['SZ2',hostToken,'ready','none'].join('|'));
+                    return cfg('uimod.cfg_save','selection_ui_ready',['SZ2',host[1],'ready','none'].join('|')).then(function(){
+                        // Commit only after acknowledgement succeeds, so a failed
+                        // read/write retries rather than hiding Start forever.
+                        lastRequest=value(raw);hostToken=host[1];
+                    });
                 });
             }
             if(pending)return poll();
@@ -52,7 +56,7 @@
                 if(f[0]!=='SZ2' || f[2]!=='open' || !/^\d+$/.test(f[3]) || !window.SceneZOIControls.available())return;
                 pending={token:f[1],initiator:f[3]};return poll();
             });
-        }).catch(function(){});
+        }).catch(function(){}).then(function(){watching=false;});
     }
     watch();
     setInterval(watch,200);

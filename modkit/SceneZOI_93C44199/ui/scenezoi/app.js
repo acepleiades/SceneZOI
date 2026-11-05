@@ -162,7 +162,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261105-cjk-fonts-ui-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261105-startup-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         root.style.visibility = 'hidden';

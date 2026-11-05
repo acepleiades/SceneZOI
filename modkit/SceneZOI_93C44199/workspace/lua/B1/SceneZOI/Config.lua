@@ -5,5 +5,5 @@ return {
     controller_max_distance_cm = 3500, controller_distance_grace = 0.5,
     heartbeat_interval = 1.0, slot = "DefaultSlot", max_duration_difference = 0.0001,
     playback_speeds = {0.50, 1.00, 1.50, 2.00},
-    build = "20261105-visual-fixes-1",
+    build = "20261105-startup-1",
 }

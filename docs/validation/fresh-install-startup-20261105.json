@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "release": "1.0.1",
+  "runtime_build": "20261105-startup-1",
+  "ui_build": "20261105-startup-ui-1",
+  "failure": "Fresh installation hides Start SceneZOI on controlled characters and supported furniture.",
+  "cause": "Native cfg_load rejects an absent selection_request key. The receiver cached host identity before reading the request and acknowledging readiness, so initial failure permanently skipped the handshake.",
+  "masked_by": "Existing development configuration already contained the request key. The former UI fixture returned an empty successful value for absent keys.",
+  "fixes": [
+    "Initialize the absent request mailbox before publishing native host readiness.",
+    "Commit receiver host identity and the ignored boot request only after the readiness acknowledgement succeeds.",
+    "Serialize receiver polling and retry the same host after read/write failures."
+  ],
+  "automated": {
+    "passed": true,
+    "python_tests": 53,
+    "lua_suites": 52,
+    "ui_suites": 9,
+    "regressions": [
+      "Empty runtime configuration creates the request mailbox before host readiness.",
+      "Native-style missing-key responses are modeled as failures.",
+      "One failed request read or readiness write retries and still ignores the stale boot request.",
+      "Subsequent selection starts exactly once."
+    ]
+  },
+  "native_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_apps_checked": 2,
+    "ui_errors": 0,
+    "ui_warnings": 0
+  },
+  "packaging": {
+    "uat_exit_code": 0,
+    "isolated_export": true,
+    "exact_owned_assets": 4,
+    "no_game_or_engine_payloads": true,
+    "companion_pak_registry_only": true
+  },
+  "installation": {
+    "installed_release": "1.0.1",
+    "exact_zip_files_verified": 132,
+    "fresh_runtime_configuration": true,
+    "game_closed": true,
+    "hzoi_files_unchanged": true,
+    "previous_installation_and_preferences_backed_up": true
+  },
+  "fresh_process_validation": {
+    "passed": true,
+    "fresh_process": true,
+    "original_development_cfg_carried_over": false,
+    "manual_mount_reload_or_diagnostic_patching": false,
+    "runtime_and_ui_builds_match": true,
+    "host_controls_generation_matches": true,
+    "native_declarations": 44,
+    "discovery_warnings": 0,
+    "scene_playback_observed": true,
+    "final_phase": "idle",
+    "final_result": "ok",
+    "initiating_exit_reason": "ok",
+    "retained_error": null,
+    "furniture_entry_requested_in_second_session": true
+  },
+  "author_acceptance": {
+    "status": "passed",
+    "report": "It is working after the exact 1.0.1 ZIP was installed into a fresh directory and the game restarted."
+  },
+  "artifacts": {
+    "player_archive": "SceneZOI-1.0.1.zip",
+    "corresponding_source": "SceneZOI-1.0.1-source.zip",
+    "source_snapshot_note": "Corresponding source was captured at package build time, before this final acceptance update. Runtime/UI source bytes are unchanged.",
+    "hzoi": "Existing HZoi 1.0 remains unchanged and compatible."
+  }
+}

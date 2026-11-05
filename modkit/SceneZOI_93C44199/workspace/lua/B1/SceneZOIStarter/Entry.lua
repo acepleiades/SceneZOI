@@ -32,6 +32,11 @@ local function release(p,close)
 end
 function M.boot()
     last_request=cfg("uimod.cfg_load","selection_request");elapsed=0
+    -- Native cfg_load rejects missing keys; a new install has no request yet.
+    if last_request==nil then
+        last_request="none"
+        cfg("uimod.cfg_save","selection_request",last_request)
+    end
     host_token="host."..os.time().."."..math.random(1,1073741823);ui_ready=false
     cfg("uimod.cfg_save","selection_ui_ready","none")
     cfg("uimod.cfg_save","selection_launcher_ready","none")

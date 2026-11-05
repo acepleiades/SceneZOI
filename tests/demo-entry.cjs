@@ -4,15 +4,22 @@ const base=path.join(__dirname,'../modkit/SceneZOI_93C44199/ui');
 const receiver=fs.readFileSync(path.join(base,'scenezoi/demo-entry.js'),'utf8');
 const launcher=fs.readFileSync(path.join(base,'scenezoi-starter/app.js'),'utf8');
 async function flush(){for(let i=0;i<45;i++)await Promise.resolve();}
-function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'}){
+function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},fault={}){
  const values={state:'SZ2|none|0|idle|ok',selection_request:'SZ2|old|open|1',selection_host_ready:'SZ2|host|ready|none'};
  const starts=[],declines=[],declineTokens=[],notices=[],toasts=[];let available=true,activate,timer,visible=false,hides=0,tick=0;const retries=[];
  function cli(command,p){
   if(command==='toast.show'){toasts.push(p);return Promise.resolve({data:{}});}
   if(command==='entity.get_possessed')return Promise.resolve({data:{entity_id:controlled}});
   if(command==='entity.get_character_info')return Promise.resolve({data:{gender:body[p.entity_id],growth_step:'Youth'}});
-  if(command==='uimod.cfg_save'){values[p.key]=p.value;return Promise.resolve({data:{}});}
-  if(command==='uimod.cfg_load')return Promise.resolve({data:{value:values[p.key] || ''}});
+  if(command==='uimod.cfg_save'){
+   if(p.key==='selection_ui_ready'&&fault.readyWrites>0){fault.readyWrites--;return Promise.resolve({success:false,message:'Temporary write failure'});}
+   values[p.key]=p.value;return Promise.resolve({data:{}});
+  }
+  if(command==='uimod.cfg_load'){
+   if(p.key==='selection_request'&&fault.requestReads>0){fault.requestReads--;return Promise.resolve({success:false,message:'Temporary read failure'});}
+   if(!(p.key in values))return Promise.resolve({success:false,message:'Key not found: '+p.key});
+   return Promise.resolve({data:{value:values[p.key]}});
+  }
   throw Error(command);
  }
  const common={Promise,Math,JSON,String,Number,Set,Error,Date:{now:()=>++tick}};
@@ -24,9 +31,15 @@ function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'}){
  vm.runInNewContext(launcher,l);
  return {activate:(id=controlled,kind='scenezoi_demo')=>{if(visible){visible=false;return Promise.resolve();}visible=true;return activate({triggerId:kind,targetEntityId:id});},
   poll:()=>timer(),set:(kind,ids,node='scenezoi.standing_idle',roles='female:3+male:1',bed='none')=>values.selection_state=['SZ2',values.selection_request.split('|')[1],kind,ids,node,roles,bed].join('|'),
-  starts,declines,declineTokens,notices,toasts,restartHost:()=>{values.selection_host_ready='SZ2|nextHost|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
+  starts,declines,declineTokens,notices,toasts,restartHost:()=>{values.selection_host_ready='SZ2|nextHost|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get ready(){return values.selection_ui_ready;},get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
 }
 async function run(){
+ for(const fault of [{requestReads:1},{readyWrites:1}]){
+  const f=fixture('1',undefined,fault);await flush();assert.equal(f.ready,undefined);
+  await f.poll();await flush();assert.equal(f.ready,'SZ2|host|ready|none','Failed readiness work must retry for the same host');
+  await f.poll();await flush();assert.equal(f.starts.length,0,'A retried handshake must still discard the stale boot request');
+  await f.activate();await f.poll();f.set('selected','1+3');await f.poll();await flush();assert.equal(f.starts.length,1);
+ }
  for(const [name,control,ids,node,roles] of [
   ['MF','1','1+3','scenezoi.standing_idle',{male:'1',female:'3'}],
   ['FM','3','3+1','scenezoi.standing_idle',{female:'3',male:'1'}]]){
