@@ -32,6 +32,7 @@ local Search=require('SceneZOI.SceneSearch')
 local SceneVisuals=require('SceneZOI.SceneVisuals')
 local Control=require('SceneZOI.AddonControl')
 local Effects=require('SceneZOI.AddonEffects')
+local ModeGuard=require('SceneZOI.ModeGuard')
 local session
 local serial = 0
 local poll_elapsed = 0
@@ -125,7 +126,7 @@ local function finish_stop(old, code)
     notify(old, "session_ended", code)
     Control.ended(old,Session.snapshot(old))
     local controlled = Session.controlled(old)
-    remember(old.client, old.sequence, (code == "ok" or code == "controller_too_far" or code == "saving" or code == "addon_requested") and "idle" or "error", code, controlled and controlled.actor)
+    remember(old.client, old.sequence, (code == "ok" or code == "controller_too_far" or code == "saving" or code == "character_editor" or code == "addon_requested") and "idle" or "error", code, controlled and controlled.actor)
     pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
     if code=='saving'then
         pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
@@ -544,7 +545,7 @@ local function poll()
             local candidate = key and rejected_focus[key]
             if candidate and Protocol.id(candidate:GetEntityId()) == focus[4] then actor = candidate; rejected_focus[key] = nil end
         end
-        if actor then pending_focus, last_focus = {actor = actor, age = 0}, focus_raw end
+        if actor then pending_focus, last_focus = {actor = actor, age = 0,client=focus[1],sequence=focus[2]}, focus_raw end
     end
     -- A heartbeat can never replace Start or Exit: it has its own mailbox.
     local heartbeat = Protocol.unpack(read("heartbeat"))
@@ -620,16 +621,29 @@ local function update(dt)
     if poll_elapsed >= Config.poll_interval then
         poll_elapsed=0;Autosave.tick(session~=nil);Save.tick(M.actors,session~=nil);poll()
     end
+    local mode=ModeGuard.update(dt,session~=nil or pending_focus~=nil)
+    if session and not session.stopping and mode.editor then M.stop('character_editor')end
     if pending_focus then
         pending_focus.age = pending_focus.age + dt
         -- Let the UI click dispatch settle; never steal focus from a newly opened scene.
         if session then pending_focus = nil
-        elseif pending_focus.age >= 0.1 then
-            local actor = ControllerRange.focus_actor(M.actors,pending_focus.actor)
-            pending_focus = nil
-            local ok, err = true,nil
-            if actor then ok,err=pcall(Native.release_input,actor)end
-            if not ok then M.diagnostic("Input restore failed: " .. tostring(err)) end
+        elseif pending_focus.age >= 0.1 and (not pending_focus.checked_at or pending_focus.age-pending_focus.checked_at>=Config.poll_interval) then
+            pending_focus.checked_at=pending_focus.age
+            local allowed,context=ModeGuard.can_restore_input()
+            local reason=not context.known and 'lookup_pending' or context.editor and 'character_editor' or context.blocked and 'modal_ui' or 'gameplay'
+            if not allowed and pending_focus.deferred_reason~=reason then
+                pending_focus.deferred_reason=reason
+                pcall(inzoi.cli.execute,command('uimod.cfg_save','input_restore')..' value='..Protocol.pack(pending_focus.client,pending_focus.sequence,'deferred',reason))
+            end
+            if allowed then
+                local actor = ControllerRange.focus_actor(M.actors,pending_focus.actor)
+                local finished=pending_focus
+                pending_focus = nil
+                local ok, err = true,nil
+                if actor then ok,err=pcall(Native.release_input,actor)end
+                pcall(inzoi.cli.execute,command('uimod.cfg_save','input_restore')..' value='..Protocol.pack(finished.client,finished.sequence,not ok and 'failed' or actor and 'restored' or 'no_actor',reason))
+                if not ok then M.diagnostic("Input restore failed: " .. tostring(err)) end
+            end
         end
     end
     Effects.idle()

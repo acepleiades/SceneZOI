@@ -2,14 +2,14 @@ require('./fixtures/localization.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const base='modkit/SceneZOI_93C44199/ui/scenezoi/';
 const listeners={},classes=new Set(),reports=[],hovers=[],timers={};
-let state={blocked:false,pause_reasons:[]},blurred=0,requests=0,resolvePoll=null,saved=0;
+let state={blocked:false,pause_reasons:[]},blurred=0,requests=0,resolvePoll=null,saved=0,now=0;
 const root={id:'app-root',style:{},offsetLeft:100,offsetTop:200,offsetWidth:320,offsetHeight:410,
  classList:{toggle(name,on){on?classes.add(name):classes.delete(name);}},_saveWindowState(){saved++;},setAttribute(k,v){this[k]=v;},appendChild(el){el.parentNode=this;}};
 const document={getElementById:id=>id==='app-root'?root:null,createElement:()=>({classList:{add(){},remove(){}},setAttribute(k,v){this[k]=v;}}),activeElement:{blur(){blurred++;}},
  addEventListener(name,fn){(listeners[name]??=[]).push(fn);},dispatchEvent(e){emit(e.type,e.target||document);}};
 const ctx={document,window:{},inzoi:{view:{setContentRect(...args){reports.push(args);},hover(v){hovers.push(v);}},
  cli:{execute(command){assert.equal(command,'ui.get_blocking');requests++;if(resolvePoll===true)return new Promise(r=>resolvePoll=r);return Promise.resolve({success:true,data:state});}}},
- setInterval(fn,ms){timers[ms]=fn;},MouseEvent:function(type){this.type=type;},JSON,Promise};
+ setInterval(fn,ms){timers[ms]=fn;},MouseEvent:function(type){this.type=type;},JSON,Promise,Date:{now(){return now;}}};
 function emit(type,target,fields={}){let stopped=false;const event={type,target,...fields,preventDefault(){},stopImmediatePropagation(){stopped=true;}};
  for(const fn of listeners[type]||[]){fn(event);if(stopped)break;}return stopped;}
 async function flush(){for(let i=0;i<15;i++)await Promise.resolve();}
@@ -58,8 +58,23 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  emit('mouseup',document);assert.equal(root.style.left,'0px');assert.equal(root.style.top,'1044px','Drag clamps restore tab into viewport');
  ctx.window.SceneZOIPanel.reset();
  root.style.visibility='hidden';ctx.inzoi.view.setContentRect(100,200,320,410);assert.deepEqual(reports.at(-1),[-10000,-10000,1,1]);
- resolvePoll=true;timers[125]();const count=requests;timers[125]();assert.equal(requests,count,'Only one native modal query may be in flight');
+ resolvePoll=true;timers[125]();await flush();const count=requests;timers[125]();await flush();assert.equal(requests,count,'Only one native modal query may be in flight');
  resolvePoll({success:true,data:state});await flush();
+ // A lost bridge reply while blocked must not leave the dark/input-blocked panel permanent.
+ root.style.visibility='visible';state={blocked:true,primary_kind:'modal_ui',input_block_ui_type:'GameMenu'};
+ timers[125]();await flush();assert(classes.has('scene-menu-blocked'));
+ resolvePoll=true;timers[125]();await flush();const delayed=resolvePoll;
+ now=1999;timers[125]();await flush();assert(classes.has('scene-menu-blocked'),'Keep the real blocker while waiting');
+ now=2001;resolvePoll=null;state={blocked:false,pause_reasons:[]};timers[125]();await flush();
+ assert(!classes.has('scene-menu-blocked'),'An unanswered read must expire so a fresh native response can unlock controls');
+ delayed({success:true,data:{blocked:true,primary_kind:'modal_ui'}});await flush();
+ assert(!classes.has('scene-menu-blocked'),'A late expired response cannot reapply an old blocker');
+ // Reset for a later session also retires an unfinished read and immediately polls again.
+ resolvePoll=true;timers[125]();await flush();const previousSession=resolvePoll;
+ resolvePoll=null;ctx.window.SceneZOIPanel.reset();await flush();
+ previousSession({success:true,data:{blocked:true}});await flush();
+ assert(!classes.has('scene-menu-blocked'),'An old-session modal response cannot wedge the next session');
+ assert.equal(ctx.window.SceneZOIPanel.snapshot().native.blocked,false);
  const css=fs.readFileSync(base+'index.html','utf8');
  assert.match(css,/#scene-navigation button, #scene-exit, #scene-restore \{ font-family: var\(--inzoi-font-ui\);/);
  assert(css.indexOf('src="window.js"')<css.indexOf('src="panel-state.js"'));

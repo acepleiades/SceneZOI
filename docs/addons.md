@@ -185,6 +185,10 @@ ordinary cleanup barrier or its bounded timeout; inspect its `code` (for example
 `restore_timeout`) and `result_facts.cleanup_complete` before assuming the
 participant/furniture/owned-engine barrier succeeded. Ending records intent. World teardown/process exit may
 prevent a final notification. Delivery is best effort with no durable event replay.
+Opening Create a Zoi can end a session through the existing `saving` guard or the
+`character_editor` fallback. Both use ordinary cleanup; integrations should treat
+them as interruptions and allow a new session after returning to gameplay.
+Opening Esc or pausing time alone does not end a session.
 Re-register subscriptions after a runtime/host-instance change. Context IDs identify
 the caller and prevent accidental control conflicts; they are not a security
 boundary against other executable mods. The player's Exit always remains available.

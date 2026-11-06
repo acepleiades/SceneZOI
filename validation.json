@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "date": "2026-11-06",
-  "build": "20261106-group-bindings-1",
-  "ui_build": "20261105-startup-ui-1",
+  "build": "20261106-ui-lifecycle-1",
+  "ui_build": "20261106-ui-lifecycle-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.1.1 exact ZIP passed native packaging/filtering/hash checks and author clean-directory/fresh-process picker/playback/Exit acceptance with installed script mods. HZoi 1.1.0 is unchanged; customer retest pending.",
+  "release_status": "SceneZOI 1.1.2 exact ZIP passed native packaging/filtering/hash checks and author clean-directory/fresh-process startup, navigation, Esc recovery and Exit acceptance. HZoi 1.1.0 unchanged; original customer retest pending.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -234,7 +234,8 @@
     "2026-11-05 mood follow-up: author accepts the scoped native blend experiment; normal blinking and remaining expression blending look good. Final production ZIP validation remains separate.",
     "2026-11-05 final 1.1.0 ZIPs: author confirms all requested clean-install Start, strong-mood facial expressions/blinking, outfit, navigation and Exit checks work normally.",
     "2026-11-06: targeted household fix and protected full-group update both passed picker/start/playback/navigation/Exit with installed ZoiWorks - OnlyZois and Active Vehicle enabled; author confirms the latter after restarting inZOI.",
-    "2026-11-06: exact SceneZOI 1.1.1 ZIP clean installation and fresh launch with the same script mods enabled passed picker/playback/navigation/Exit."
+    "2026-11-06: exact SceneZOI 1.1.1 ZIP clean installation and fresh launch with the same script mods enabled passed picker/playback/navigation/Exit.",
+    "2026-11-06: exact SceneZOI 1.1.2 player ZIP clean installation/fresh launch passed Start/picker/playback/navigation/Esc recovery/Exit; no inactive source archive included."
   ],
   "native_observations": [
     "Latest first/final Exit readbacks were idle/ok; final participants matched captured collision, autonomy and inheritance originals; autosave was restored.",
@@ -301,7 +302,17 @@
     "release_1_1_0": "docs/validation/release-1.1.0-20261105.json",
     "facial_mood": "docs/validation/facial-mood-20261105.json",
     "script_mod_bindings": "docs/validation/script-mod-bindings-20261106.json",
-    "release_1_1_1": "docs/validation/release-1.1.1-20261106.json"
+    "release_1_1_1": "docs/validation/release-1.1.1-20261106.json",
+    "release_1_1_2": "docs/validation/release-1.1.2-20261106.json"
   },
-  "version": "1.1.1"
+  "version": "1.1.2",
+  "ui_lifecycle_hardening": {
+    "checkpoint": "docs/validation/ui-lifecycle-20261106.json",
+    "automated_checks": "passed",
+    "native_validation": "passed",
+    "native_packaging": "passed",
+    "installation": "verified hot update with cooked bytes/settings preserved",
+    "author_acceptance": "passed: Esc, repeated entry, CAZ return and subsequent navigation/Exit; final idle/ok, cleanup ok/ok and input restored",
+    "customer_acceptance": "pending"
+  }
 }

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-06",
+  "release_version": "1.1.2",
+  "runtime_build": "20261106-ui-lifecycle-1",
+  "ui_build": "20261106-ui-lifecycle-1",
+  "changes": [
+    "Recover blocked UI after an unanswered native modal-state read; reject expired/old-session replies.",
+    "Preserve genuine native modal gating; add panel_state diagnostics.",
+    "Defer gameplay input restoration during customization/modal UI and retain input_restore diagnostics.",
+    "Explicit character-editor interruption fallback alongside existing save protection."
+  ],
+  "runtime_basis": "ui-lifecycle-20261106.json: full checks/native validation and author Esc/repeated-session/CAZ return acceptance passed. Only descriptor versioning differs from the accepted candidate.",
+  "hzoi": "Unchanged; use HZoi 1.1.0.",
+  "source_distribution": "No inactive source archive at author request. GPL license and source-repository notice retained.",
+  "packaging": "Passed isolated native PackageUGC, exact four-owned-asset filter, ZIP CRC and full byte readback; no referenced Game/Engine payloads.",
+  "exact_zip_clean_acceptance": "Author confirms the exact 1.1.2 ZIP clean-directory/fresh-process Start/picker, playback/navigation, Esc recovery and Exit work normally. Persisted matching final state is idle/ok, cleanup ok/ok, input restored/gameplay and autosave released, with seven nodes/zero warnings and no selection/UI/runtime error. No manual mounting, hot reload or diagnostic seeding was used for the fresh-launch check.",
+  "customer_retest": "Pending; exact original dark-panel trigger and position jump are not established as fixed.",
+  "publishing": "Local archive preparation; no commit, push, tag or publication.",
+  "archive_sha256": "18994efda74ceaea013dd5606b61f24148b487017fdebdf69317d689230c96c5",
+  "archive_files": 133,
+  "preferences": "All original non-runtime preferences restored byte-for-byte after the test while game closed; test diagnostics retained."
+}

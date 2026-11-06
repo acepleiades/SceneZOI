@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-06",
+  "status": "Installed candidate passed author-assisted in-game acceptance; customer retest pending",
+  "runtime_build": "20261106-ui-lifecycle-1",
+  "ui_build": "20261106-ui-lifecycle-1",
+  "release_version": "Packaged as SceneZOI 1.1.2; see release-1.1.2-20261106.json for exact archive acceptance.",
+  "reported_symptoms": [
+    "Customer reports a dark, noninteractive panel; Create a Zoi is used to escape.",
+    "A later report describes a controlled character moving high above the scene and snapping back on a click. The assistant has not received the video itself."
+  ],
+  "baseline_native_evidence": {
+    "create_a_zoi_detected_by": "ui.get_blocking pause_reasons contains CharacterCustomization while phase remains in_game and blocked is false",
+    "first_session_exit": "idle/saving, cleanup saving/saving, autosave released",
+    "after_editor_return": "Second session starts and exits normally; final idle/ok, cleanup ok/ok",
+    "interpretation": "CAZ is not established as the original cause; existing save protection worked on the tested route."
+  },
+  "changes": [
+    "Two-real-second blocking-read timeout, serialized current requests, late-response rejection and session reset recheck; genuine native blocking remains enforced.",
+    "Current-session panel_state captures native blocker, pending query status/age and last received input.",
+    "Input restoration observes native UI ownership, defers during customization/modal UI and records input_restore status.",
+    "CharacterCustomization explicitly requests ordinary cleanup if the existing save guard has not already ended the session."
+  ],
+  "automated": {
+    "full_framework_checks": "pass",
+    "pre_fix_panel_regression": "fails as expected: unanswered read leaves panel blocked",
+    "pre_fix_runtime_regression": "fails as expected: input focus restored during CAZ",
+    "new_regressions": [
+      "tests/panel-state.cjs",
+      "tests/input-focus-lifecycle.lua",
+      "tests/mode-guard.lua",
+      "tests/controls.cjs"
+    ]
+  },
+  "native_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0
+  },
+  "packaging": {
+    "automation_exit_code": 0,
+    "build_successful": true,
+    "exact_owned_asset_packages": 4,
+    "no_referenced_game_engine_payloads": true
+  },
+  "installation": {
+    "hot_installed": true,
+    "loaded_cooked_bytes_preserved": true,
+    "settings_preserved": true,
+    "hzoi_unchanged": true,
+    "other_mod_files_unchanged": true
+  },
+  "acceptance": {
+    "author": {
+      "result": "passed",
+      "checks": [
+        "Start/navigation, Esc open/close and Exit",
+        "Repeated session/navigation",
+        "CAZ entry during a session, return without edits, fresh session/navigation/Exit"
+      ],
+      "visual_report": "Controls recovered each time; no stuck dark panel or position jump reported."
+    },
+    "customer": "Pending; request new diagnostic folder after the reported failure",
+    "position_jump": "No reproduced cause or fix established",
+    "native_final": {
+      "matching_runtime_and_ui_builds": true,
+      "session_sequence": 3,
+      "scene": "hzoi.standing_hand_job",
+      "state": "idle/ok",
+      "cleanup": "ok/ok",
+      "input_restore": "restored/gameplay",
+      "autosave": "released",
+      "native_blocked": false,
+      "native_pause_reasons": [],
+      "effective_game_time_scale": 1.0,
+      "discovery": "7 nodes, 0 warnings",
+      "retained_ui_error": false,
+      "retained_runtime_error": false
+    }
+  }
+}

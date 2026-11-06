@@ -1,5 +1,21 @@
 # First-release validation
 
+## Versioned update: SceneZOI 1.1.2
+
+Version 1.1.2 bounds native modal-state reads, rejects expired/old-session
+replies and records panel/input diagnostics. It also defers gameplay focus while
+Create a Zoi or a modal UI owns input and adds an explicit editor-exit fallback.
+Pre-fix regressions reproduce permanent modal gating after a lost reply and
+unsafe focus restoration during customization. Full source checks, native Lua/UI
+validation, isolated packaging and the owned-payload filter pass. The accepted candidate was hot-installed with loaded cooked bytes and settings
+preserved; see its [runtime checkpoint](ui-lifecycle-20261106.json). Exact ZIP
+acceptance is recorded in the [release checkpoint](release-1.1.2-20261106.json).
+
+The local baseline already exited through the save guard on CAZ entry and
+allowed a second session. The customer's exact dark-panel/position-jump trigger
+has not been reproduced, so these changes are hardening rather than proof of
+that report's complete cause. The published 1.1.1 archives are unchanged.
+
 ## Versioned update: SceneZOI 1.1.1
 
 Version 1.1.1 packages the accepted script-mod group-binding fix below. HZoi

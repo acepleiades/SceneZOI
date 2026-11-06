@@ -77,6 +77,12 @@ async function run(){
   const savingFields=writes(savingExit,'request').at(-1).split('|');
   savingExit.setState(`SZ2|${savingFields[1]}|1|idle|saving`);savingExit.timers[250]();await flush();
   assert.equal(savingExit.root.style.visibility,'hidden','Saving exits close controls through the normal idle path');
+  const editorExit=fixture();await editorExit.start();await flush();
+  const editorClient=writes(editorExit,'request').at(-1).split('|')[1];
+  editorExit.setState(`SZ2|${editorClient}|1|idle|character_editor`);editorExit.timers[250]();await flush();
+  assert.equal(editorExit.root.style.visibility,'hidden','Create a Zoi interruption must close the panel cleanly');
+  await editorExit.start();await flush();
+  assert.match(writes(editorExit,'request').at(-1),/\|2\|start\|/,'Returning from the editor must allow a fresh session');
   const discovery=fixture();
   const encode=value=>Buffer.from(JSON.stringify(value),'utf8').toString('hex');
   discovery.setCatalog(encode({nodes:{'designer.hub':{id:'designer.hub',label:'Neutral 日本語',navigation:[]}}}));

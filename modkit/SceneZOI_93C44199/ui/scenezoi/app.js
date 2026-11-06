@@ -162,7 +162,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261105-startup-ui-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261106-ui-lifecycle-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         root.style.visibility = 'hidden';
@@ -275,6 +275,12 @@
         if (pendingPlayback && !exiting) writePacket('playback', pendingPlayback).catch(function () {});
         if (active && !exiting) {
             writePacket('heartbeat', ['SZ2', client, String(sequence), 'heartbeat', String(++heartbeat)].join('|')).catch(function () {});
+            if (window.SceneZOIPanel && window.SceneZOIPanel.snapshot) {
+                var panel = window.SceneZOIPanel.snapshot();
+                panel.client=client;panel.sequence=sequence;panel.playing=playing;panel.exiting=exiting;
+                panel.node=currentNode && currentNode.id || null;panel.visibility=root.style.visibility;
+                writePacket('panel_state', JSON.stringify(panel)).catch(function () {});
+            }
         }
     }, 1000);
     setInterval(function () {
@@ -303,7 +309,7 @@
             else {
                 active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
                 pendingCommand = null;
-                if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving')) {saveGuard.end(true);closePanel();}
+                if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving' || code === 'character_editor')) {saveGuard.end(true);closePanel();}
                 else {saveGuard.end(false);show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));}
             }
         }).catch(function () {}).then(function () { reading = false; });

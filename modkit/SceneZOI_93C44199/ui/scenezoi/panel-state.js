@@ -2,7 +2,9 @@
 (function () {
     'use strict';
     var root = document.getElementById('app-root');
-    var compact = false, blocked = false, reading = false, pressed = null, expandedPosition = null;
+    var compact = false, blocked = false, reading = null, pressed = null, expandedPosition = null;
+    var readCount = 0, readStatus = 'none', nativeState = null, lastInput = null;
+    var readTimeout = 2000;
     var drag = null, suppressRestoreClick = false;
     var restore = document.createElement('button');
     restore.id = 'scene-restore';
@@ -122,18 +124,27 @@
     }, true);
     ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'wheel', 'keydown', 'keyup'].forEach(function (name) {
         document.addEventListener(name, function (event) {
+            if (name === 'mousedown' || name === 'click') lastInput = {type:name,target:event.target && event.target.id || '',blocked:blocked};
             if (blocked) consume(event);
         }, true);
     });
     function poll() {
         refresh();
-        if (reading) return;
-        reading = true;
-        inzoi.cli.execute('ui.get_blocking').then(function (response) {
-            if (response && response.success === false) return;
+        var now = Date.now();
+        if (reading && now - reading.started < readTimeout) return;
+        if (reading) readStatus = 'timeout';
+        var request = {id:++readCount,started:now};
+        reading = request;
+        Promise.resolve().then(function () { if (reading === request) return inzoi.cli.execute('ui.get_blocking'); }).then(function (response) {
+            // A timed-out reply or a reply from an earlier session cannot relock this panel.
+            if (reading !== request) return;
+            if (response && response.success === false) { readStatus = 'error'; return; }
             var state = response && response.data !== undefined ? response.data : response;
             if (typeof state === 'string') state = JSON.parse(state);
-            if (!state || typeof state.blocked !== 'boolean') return;
+            if (!state || typeof state.blocked !== 'boolean') { readStatus = 'invalid'; return; }
+            readStatus = 'ok';
+            nativeState = {blocked:state.blocked,primary_kind:state.primary_kind || '',primary_detail:state.primary_detail || '',
+                input_block_ui_type:state.input_block_ui_type || '',esc_stack_remains:!!state.esc_stack_remains,pause_reasons:state.pause_reasons || []};
             // Native modal state, never simulation speed or pause_reasons alone.
             var next = state.blocked;
             if (next !== blocked) {
@@ -149,9 +160,13 @@
                 if (blocked) release();
                 refresh();
             }
-        }).catch(function () {}).then(function () { reading = false; });
+        }).catch(function () { if (reading === request) readStatus = 'error'; }).then(function () { if (reading === request) reading = null; });
     }
-    window.SceneZOIPanel = {reset: function () { collapse(false); }};
+    window.SceneZOIPanel = {
+        reset: function () { reading = null; readStatus = 'reset'; collapse(false); poll(); },
+        snapshot: function () { return {blocked:blocked,compact:compact,read_status:readStatus,
+            request_id:readCount,request_age_ms:reading ? Math.max(0,Date.now()-reading.started) : 0,native:nativeState,last_input:lastInput}; }
+    };
     setInterval(poll, 125);
     poll();
 })();

@@ -84,6 +84,12 @@ On the tested retail build, the package is installed at
 | `scenezoi_voice/` | Per-Zoi voice preferences |
 | `scenezoi_runtime/` | Runtime transport, status and diagnostics |
 
+For an unresponsive or dark scene panel, retain the entire runtime directory
+after reproducing it. `panel_state.cfg` records the native input blocker, pending
+read age/status and last received click for the current UI session.
+`input_restore.cfg` distinguishes deferred editor/modal focus from completed or
+failed restoration. A retained diagnostic snapshot is not a complete event log.
+
 This data directory may exist without a `mod_manifest.json`; it is not another
 installed copy. Removing the package alone can leave preferences and diagnostic
 state behind. Updates should preserve the data. A completely fresh test must
