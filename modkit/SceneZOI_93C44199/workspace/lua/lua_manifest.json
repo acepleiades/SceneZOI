@@ -10,6 +10,86 @@
         "type": "Zoi",
         "key": "*",
         "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "CompanyRoleNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "CompanyRoleNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "Crowd",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "Crowd",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "EventCrowd",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "EventCrowd",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "ResidenceFamily",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "ResidenceFamily",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "ServiceNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "ServiceNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "ShopNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "ShopNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "SiteRoleNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "SiteRoleNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "StaticNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "StaticNpc",
+        "script": "Zoi.SceneZOIStarter"
       }
     ],
     "B1": [
@@ -21,6 +101,86 @@
       {
         "type": "Zoi",
         "key": "*",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "CompanyRoleNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "CompanyRoleNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "Crowd",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "Crowd",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "EventCrowd",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "EventCrowd",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "ResidenceFamily",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "ResidenceFamily",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "ServiceNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "ServiceNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "ShopNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "ShopNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "SiteRoleNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "SiteRoleNpc",
+        "script": "Zoi.SceneZOIStarter"
+      },
+      {
+        "type": "Zoi",
+        "key": "StaticNpc",
+        "script": "Zoi.SceneZOI"
+      },
+      {
+        "type": "Zoi",
+        "key": "StaticNpc",
         "script": "Zoi.SceneZOIStarter"
       }
     ]

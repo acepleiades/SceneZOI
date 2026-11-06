@@ -26,6 +26,26 @@ sessions, autonomous NPC starts or predetermined watch-only sequences.
    automatically, then call `get_version` through the independent SDK. Manual
    mounting or diagnostic table patching is a separate development shortcut.
 
+## Character bindings alongside other script mods
+
+On the tested retail build, exact `Zoi` character-group bindings take precedence
+over wildcard bindings; the wildcard list is a fallback, not an additional list.
+A mod using only `key: "*"` can therefore lose household callbacks when another
+enabled mod declares `ResidenceFamily`, even though its Main script and UI run.
+
+SceneZOI binds both runtime and picker receivers explicitly in B1/B2 for all eight
+current `EB1CharacterGroupType` keys: `CompanyRoleNpc`, `Crowd`, `EventCrowd`,
+`ResidenceFamily`, `ServiceNpc`, `ShopNpc`, `SiteRoleNpc` and `StaticNpc`. Wildcard
+bindings remain for groups not explicitly listed. These are native group keys,
+not body types, participant roles or a list of supported third-party mods.
+
+Use ModKit's `modkit_list_lua_binding_keys` for the target environment/type when
+authoring your manifest. Test callbacks with an independent exact-group binding
+installed; checking Main startup or JSON discovery alone does not establish
+per-character callback/message delivery. Exact bindings for the same group can
+coexist; do not remove other mods' entries. See the
+[native conflict checkpoint](validation/script-mod-bindings-20261106.json).
+
 ## Wire the SDK
 
 ```lua

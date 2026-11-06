@@ -157,6 +157,14 @@ preparation and clothing/active guards. Replacers preserving that mapping work
 without registration; differently partitioned geometry is not automatically mapped. See the
 [generic section checkpoint](docs/validation/generic-body-region-20261105.json).
 
+Native `Zoi` exact-group bindings can shadow wildcard-only callbacks across mods.
+Keep runtime and picker receivers bound to every supported native character group
+in both B1/B2, plus wildcard fallback. Query current native keys through ModKit;
+do not introduce third-party mod allowlists. Retain [dispatch coverage](tests/manifest-bindings.lua)
+and test coexistence with an independent exact-group binding. Main/UI startup and
+valid discovery do not prove per-character callbacks loaded. See the
+[binding checkpoint](docs/validation/script-mod-bindings-20261106.json).
+
 Preserve existing uncommitted work. Do not commit, push, tag or publish without an
 explicit instruction. Preserve [LICENSE](LICENSE), GPL-3.0-only attribution and
 the README reminder that forks must comply with applicable ModKit terms as well.

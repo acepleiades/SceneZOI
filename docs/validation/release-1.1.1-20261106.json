@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-06",
+  "release_version": "1.1.1",
+  "runtime_build": "20261106-group-bindings-1",
+  "changes": "Fix missing participant picker when native exact-group script bindings shadow wildcard bindings. Both runtime and picker receivers explicitly bind all eight native groups in B1/B2, plus wildcard fallback.",
+  "runtime_basis": "script-mod-bindings-20261106.json: source regressions, native validation and author fresh-launch mod-coexistence acceptance passed. Versioning changes no runtime/UI/manifest code.",
+  "hzoi": "Unchanged; use HZoi 1.1.0.",
+  "packaging": "Passed native PackageUGC, exact four-owned-asset filter and archive CRC/full byte read-back; no referenced Game/Engine payloads.",
+  "source_distribution": "Matching source snapshot included as an inactive ZIP inside the SceneZOI package.",
+  "exact_zip_clean_acceptance": "Author confirms the requested clean-directory exact 1.1.1 ZIP fresh-launch picker, scene playback/navigation and Exit work with the same script mods enabled. Persisted matching state is idle/ok, Exit/cleanup ok/ok, autosave released and seven nodes/zero warnings; no selection_error or last_error record exists. No manual mounting, hot reload or diagnostic seeding was used for the fresh-launch check.",
+  "publishing": "Local archive preparation; no commit, push, tag or publication.",
+  "archive_sha256": "6dac98fd0dd6229778db4394c58ad5aa6184a35475c35035c6f4d965653889bd",
+  "source_sha256": "fc48b366894fb042ad8ecf6366b3ff16cea9d575e3ca9c3bc21671d3381672c0",
+  "preferences": "Original panel position restored afterward while game closed. No old runtime journals/mailboxes carried into the clean test."
+}

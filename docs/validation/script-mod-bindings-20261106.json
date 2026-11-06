@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-06",
+  "runtime_build": "20261106-group-bindings-1",
+  "failure": "Start entry/UI handshakes and 44 declarations succeed, but the controlled actor is absent from the per-character registry, so the picker fails before opening.",
+  "customer_evidence": {
+    "runtime_build": "20261105-face-mood-2",
+    "native_manifest_correct": true,
+    "requested_registered": false,
+    "registered_count": 8,
+    "deferred_register_calls": 2453
+  },
+  "local_reproduction": {
+    "installed_script_mods": [
+      "ZoiWorks - OnlyZois",
+      "Active Vehicle"
+    ],
+    "requested_registered": false,
+    "native_household_actors_loaded": 2,
+    "post_reload_wildcard_registry_count": 0,
+    "explicit_household_registry_count": 2,
+    "reported_dynamic_weather": "Not installed in the inspected package set. OnlyZois was the actual ZoiWorks package. Dynamic Weather and project-del not independently tested."
+  },
+  "cause": "On this retail runtime an exact Zoi character-group binding list takes precedence over the wildcard fallback across enabled mods. SceneZOI only declared wildcard bindings; other mods declared ResidenceFamily. Callback owner identity retries cannot recover callbacks never delivered for the actual actor.",
+  "fix": "Explicit runtime and picker bindings for all eight exported EB1CharacterGroupType keys in both B1/B2, retaining wildcard fallback. No other mod files or settings changed; no runtime/content/HZoi logic changes.",
+  "native_key_source": "ModKit modkit_list_lua_binding_keys, B1/Zoi and B2/Zoi: eight identical enum-backed keys; supports_wildcard true, free_form false.",
+  "automated": {
+    "full_framework_and_optional_content_checks": "passed",
+    "dispatch_regression_failed_before_fix": true,
+    "coverage": "Both environments, all eight groups, exact-over-wildcard dispatch, no other binding displacement, single script delivery and unlisted-group wildcard fallback. Existing actor/entry/selection regressions remain passing."
+  },
+  "native_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_ready_to_package": true,
+    "bindings": 36,
+    "chunk_scripts": 2
+  },
+  "author_acceptance": "Author confirms the requested fresh game launch with the same script mods enabled passes Start, native picker selection, playback/navigation and Exit. Persisted matching state is idle/ok, Exit/cleanup ok/ok, autosave released and seven nodes/zero warnings. The historical selection_error record is byte-identical to the pre-production backup; no new selection error was recorded. The game endpoint was unavailable at final inspection, so final evidence is persisted cfg plus author acceptance, not a live process/actor inspection.",
+  "targeted_exit": {
+    "phase": "idle",
+    "result": "ok",
+    "exit": "ok",
+    "cleanup": "ok",
+    "autosave_lease": "released"
+  },
+  "limits": [
+    "Dynamic Weather/project-del not independently tested.",
+    "All group keys have dispatch coverage; current live visual check uses the household pair.",
+    "Original customer retest remains pending; local fresh-launch test passed."
+  ],
+  "packaging": "Passed isolated PackageUGC, exit 0/BUILD SUCCESSFUL and exact four-asset filter; no Game/Engine payloads.",
+  "installation": {
+    "runtime_build": "20261106-group-bindings-1",
+    "changed_files": [
+      "lua/lua_manifest.json",
+      "lua/B1/SceneZOI/Config.lua",
+      "lua/B1/Main.lua",
+      "mod_manifest.json"
+    ],
+    "cooked_assets_content_unchanged": true,
+    "loaded_cooked_bytes_preserved": true,
+    "native_generated_checksums_for_changed_files_preserved": true,
+    "probe_removed": true,
+    "hzoi_unchanged": true,
+    "other_mod_files_unchanged": true,
+    "settings_and_other_installed_files_preserved": true,
+    "native_reload": "Supported Lua remount while idle; final author-reported fresh-process acceptance is recorded separately.",
+    "fresh_process_acceptance": "Passed by author report and persisted final state; see final-acceptance.json."
+  },
+  "final_acceptance": {
+    "author_reported_fresh_process": true,
+    "persisted_phase": "idle",
+    "result": "ok",
+    "exit_cleanup": "ok/ok",
+    "autosave_lease": "released",
+    "nodes": 7,
+    "discovery_warnings": 0,
+    "historical_selection_error_unchanged": true,
+    "installed_hashes_match": true,
+    "temporary_probe_removed": true,
+    "live_post_restart_inspection": false
+  }
+}

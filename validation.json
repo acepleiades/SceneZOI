@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "date": "2026-11-05",
-  "build": "20261105-body-layout-2",
+  "date": "2026-11-06",
+  "build": "20261106-group-bindings-1",
   "ui_build": "20261105-startup-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "Versioned 1.1.0 packaging of the accepted generic body-region runtime. Runtime code/data remain build 20261105-body-layout-2; both packages must update together. Exact player archives and clean-install acceptance are being prepared.",
+  "release_status": "SceneZOI 1.1.1 exact ZIP passed native packaging/filtering/hash checks and author clean-directory/fresh-process picker/playback/Exit acceptance with installed script mods. HZoi 1.1.0 is unchanged; customer retest pending.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -232,7 +232,9 @@
     "2026-11-05 visual fixes: author reported all three bugs appear fixed after the requested mood/blink, small settings hint and third-party covered-body outfit checks. Final matching session Exit and cleanup read back ok/ok; retained historical error was unchanged.",
     "2026-11-05 CJK font follow-up: author confirmed the requested Japanese, Simplified Chinese and Traditional Chinese navigation/Exit glyph checks are working. Matching final session Exit/cleanup was ok/ok with no new retained error; this supersedes the earlier incomplete Japanese glyph acceptance.",
     "2026-11-05 mood follow-up: author accepts the scoped native blend experiment; normal blinking and remaining expression blending look good. Final production ZIP validation remains separate.",
-    "2026-11-05 final 1.1.0 ZIPs: author confirms all requested clean-install Start, strong-mood facial expressions/blinking, outfit, navigation and Exit checks work normally."
+    "2026-11-05 final 1.1.0 ZIPs: author confirms all requested clean-install Start, strong-mood facial expressions/blinking, outfit, navigation and Exit checks work normally.",
+    "2026-11-06: targeted household fix and protected full-group update both passed picker/start/playback/navigation/Exit with installed ZoiWorks - OnlyZois and Active Vehicle enabled; author confirms the latter after restarting inZOI.",
+    "2026-11-06: exact SceneZOI 1.1.1 ZIP clean installation and fresh launch with the same script mods enabled passed picker/playback/navigation/Exit."
   ],
   "native_observations": [
     "Latest first/final Exit readbacks were idle/ok; final participants matched captured collision, autonomy and inheritance originals; autosave was restored.",
@@ -243,7 +245,9 @@
     "CJK UI-only hot update reached idle/ok with the unchanged visual-fix runtime, new UI build marker and 44 declarations/zero warnings; retained error unchanged.",
     "After the author CJK checks, current state was idle/ok with matching final session Exit/cleanup ok/ok. The retained historical preparation error was unchanged.",
     "Fresh SceneZOI 1.0 install reproduced an absent request mailbox and unacknowledged controls despite 44 valid declarations. Exact 1.0.1 ZIP clean startup acknowledged the current host automatically, reached scene playback and ended idle/ok, last Exit ok/ok, with no retained error; no remount or diagnostic patching was used.",
-    "Final 1.1.0 clean test persisted face-mood-2, idle/ok, matching Exit/cleanup ok/ok, released autosave and seven nodes/zero warnings, without retained error. Game then closed; no live actor inspection claimed. Exact installed package hashes still match the distributed ZIPs."
+    "Final 1.1.0 clean test persisted face-mood-2, idle/ok, matching Exit/cleanup ok/ok, released autosave and seven nodes/zero warnings, without retained error. Game then closed; no live actor inspection claimed. Exact installed package hashes still match the distributed ZIPs.",
+    "Group-binding follow-up: persisted group-bindings-1 final state idle/ok, matching Exit/cleanup ok/ok, autosave released, seven nodes/zero warnings, unchanged historical selection_error. Installed hashes match; temporary probe removed. Final game endpoint unavailable, so no live post-restart actor/process inspection is claimed.",
+    "SceneZOI 1.1.1 clean test persisted group-bindings-1, matching idle/ok and Exit/cleanup ok/ok, autosave released, seven nodes/zero warnings, no selection_error/last_error. Exact installed hashes match the final archive; original panel preference restored while closed."
   ],
   "evidence": {
     "overview": "docs/validation/README.md",
@@ -288,14 +292,16 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261105-face-mood-2",
+  "runtime_build": "20261106-group-bindings-1",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
     "body_layout_fix": "docs/validation/body-layout-fix-20261105.json",
     "generic_body_region": "docs/validation/generic-body-region-20261105.json",
     "release_1_1_0": "docs/validation/release-1.1.0-20261105.json",
-    "facial_mood": "docs/validation/facial-mood-20261105.json"
+    "facial_mood": "docs/validation/facial-mood-20261105.json",
+    "script_mod_bindings": "docs/validation/script-mod-bindings-20261106.json",
+    "release_1_1_1": "docs/validation/release-1.1.1-20261106.json"
   },
-  "version": "1.1.0"
+  "version": "1.1.1"
 }

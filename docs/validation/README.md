@@ -1,5 +1,26 @@
 # First-release validation
 
+## Versioned update: SceneZOI 1.1.1
+
+Version 1.1.1 packages the accepted script-mod group-binding fix below. HZoi
+remains at 1.1.0. Runtime, UI and declarations retain the tested implementation;
+only the release descriptor changes. See the
+[release checkpoint](release-1.1.1-20261106.json) for exact archive acceptance.
+The exact ZIP passed clean-directory/fresh-process picker/playback/Exit with
+the installed script mods enabled; final persisted cleanup is ok/ok and autosave
+is released. No selection error was retained.
+
+## Script-mod coexistence follow-up
+
+A locally reproduced missing-picker failure comes from native exact-group
+bindings shadowing SceneZOI's wildcard-only character callbacks. The full-group
+manifest fix passes regressions and native validation; the targeted household
+change passed an author playback check with the installed script mods enabled.
+The protected full-group update also passed the author's fresh-launch check;
+persisted final Exit/cleanup is ok/ok and autosave is released.
+See the [binding checkpoint](script-mod-bindings-20261106.json) for installation
+and fresh-process acceptance status. Published 1.1.0 archives are unchanged.
+
 ## Versioned update: 1.1.0
 
 SceneZOI and HZoi are versioned together as 1.1.0 for generic automatic handling
