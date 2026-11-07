@@ -6,6 +6,33 @@ framework hubs without editing framework source. Start with the public
 [framework manifest](../packs/scenezoi.json), [neutral scene files](../packs/scenezoi/scenes/)
 and [package/declaration guide](package-split.md).
 
+## Hand an animation pack to an AI agent
+
+Give the agent this repository and the following inputs.
+
+- **Animation files.** Provide one exported FBX per participant and any animated
+  attachments. Include the role for each file, the shared frame range and frame
+  rate, and the intended starting pose and placement (standing or furniture).
+  If you only have an editable rig file, provide the rig and exporter too.
+- **Project and access.** Give the path to your registered ModKit project and
+  its authoring files, or ask the agent to help create a project. Give it access
+  to ModKit for import and packaging. For a local playback test, provide a
+  working SceneZOI installation and a test save with a compatible roster.
+- **How to enter the scene.** Say whether it should appear in a compatible hub
+  or be selectable directly from Start SceneZOI. Mention any required
+  attachments, clothing behavior or other content dependencies.
+
+For a first standing pair, point the agent to the
+[neutral standing scene](../packs/scenezoi/scenes/standing_idle.json) and the
+[hub extension example](package-split.md#roles-entry-and-extensions).
+Ask it to import your tracks, adapt the JSON in your own pack, and build and
+[filter a test package](development.md#isolated-packaging) to its owned assets.
+
+A successful first test means the scene appears at the intended entry, all
+tracks play together, and Exit restores gameplay. Test with SceneZOI and your
+pack enabled, plus any dependencies you actually declared. Have the agent report
+which checks it ran. Review contact, clipping and the loop seam in-game yourself.
+
 ## Learn from a complete content pack
 
 The [worked HZoi-Reference examples](content-examples.md) connect real manifests,

@@ -102,6 +102,11 @@ describe ownership and lifecycle guarantees in more detail.
 
 ## Content and development
 
+If you're making an animation pack, I recommend using an AI agent to speed up
+ModKit imports, scene setup and packaging. I still review how the animation
+looks in-game myself. Start with the
+[agent handoff](docs/authoring.md#hand-an-animation-pack-to-an-ai-agent).
+
 From the repository root, validate and stage the framework declarations, then run
 the source checks using your ModKit installation:
 
