@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "status": "Unreleased menu-row fix",
+  "runtime_build": "20261107-menu-row-lifecycle-1",
+  "previous_release": "SceneZOI 1.1.2",
+  "native_reproduction": {
+    "objects": [
+      "bed",
+      "door",
+      "hydrant"
+    ],
+    "comparison": "Native action IDs identical with SceneZOI mounted, Lua unmounted, and Lua/UI unmounted; same possessed actor and paused game state, original time state restored.",
+    "row_reuse": "Two native widget instances changed from hidden SceneZOI furniture entry to Object_Select_MyBed02 with visibility still Collapsed.",
+    "scope": "Confirmed Assign Bed presentation defect. Customer sofa/sink/apartment-guest scenario and floor-menu variations were not independently reproduced."
+  },
+  "fix": "Track visibility changes owned by SceneZOI; restore exact prior visibility when a row is recycled, detached, becomes eligible, loses context or unloads. Preserve unrelated/native visibility changes.",
+  "automated": {
+    "pre_fix_regression": "fails when recycled Assign Bed row remains collapsed",
+    "post_fix_regression": "passes, including exact saved values, unrelated hidden rows, native overrides, detach and unload",
+    "full_framework_checks": "passed"
+  },
+  "native_validation": {
+    "lua_errors": 0,
+    "lua_warnings": 0,
+    "ui_errors": 0,
+    "ui_warnings": 0
+  },
+  "acceptance": {
+    "author": "Passed after fresh launch: repeated object/bed menus and bed scene Start/Exit.",
+    "native_final": "Matching idle/ok, cleanup ok/ok, gameplay input restored and autosave released. Installed hashes match; probe absent.",
+    "customer": "Independent retest pending."
+  },
+  "packaging": {
+    "native_exit_code": 0,
+    "owned_assets": 4,
+    "filtered_no_game_engine_payloads": true
+  },
+  "installation": {
+    "verified_protected_lua_update": true,
+    "loaded_cooked_bytes_preserved": true,
+    "settings_and_hzoi_unchanged": true,
+    "temporary_probe_removed": true
+  }
+}

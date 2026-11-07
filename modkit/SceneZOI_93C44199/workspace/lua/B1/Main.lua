@@ -36,6 +36,7 @@ function M.on_tick(dt, module_dt)
 end
 
 function M.on_end()
+    require("SceneZOIStarter.Menu").stop()
     Entry.stop()
     Runtime.stop("mod_unloaded")
     Runtime.flush_notifications()

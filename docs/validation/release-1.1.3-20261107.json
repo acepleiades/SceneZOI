@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "release_version": "1.1.3",
+  "runtime_build": "20261107-menu-row-lifecycle-1",
+  "ui_build": "20261106-ui-lifecycle-1",
+  "changes": [
+    "Restore SceneZOI-owned visibility when a pooled furniture launcher row is reused, detached, eligible again, or unloaded."
+  ],
+  "runtime_basis": "menu-row-lifecycle-20261107.json records the reproduced Assign Bed failure, automated checks, native validation and author acceptance.",
+  "hzoi": "Unchanged. HZoi 1.1.0 remains compatible.",
+  "source_distribution": "Player ZIP includes the GPL license and source repository notice. Source is distributed separately.",
+  "packaging": "Passed isolated native PackageUGC, exact four-owned-asset filter, ZIP CRC and full byte readback. No referenced Game or Engine payloads.",
+  "exact_zip_clean_acceptance": "Author confirms regular interaction menus stay normal when alternating between the affected bed and door or floor, and bed Start and Exit work with the exact 1.1.3 ZIP in a clean installation after a fresh launch. Retained diagnostics show matching idle/ok and cleanup ok/ok, gameplay input restored, and autosave released.",
+  "customer_retest": "Pending. The reported apartment scenario was not independently reproduced.",
+  "archive_sha256": "535b637b02e172bcc0b993debea0491a5bb7213fc67b189b6c1f7ba74b0c492d",
+  "archive_files": 133,
+  "preferences": "Original non-runtime preferences restored byte-for-byte while the game was closed."
+}
