@@ -15,9 +15,10 @@ packs/add-ons, exact steps, expected behavior and actual behavior. Add focused
 diagnostics or a minimal JSON/Lua example where available. State whether evidence
 comes from an isolated test, native readback or something seen/heard in game.
 
-Larger proposals should be discussed before implementation. The first release
-supports one controlled-initiator session with fixed participants; concurrent
-sessions, autonomous NPC starts and predetermined watch-only sequences are deferred.
+Larger proposals should be discussed before implementation. SceneZOI
+currently supports one controlled-initiator session with fixed participants.
+Concurrent sessions, autonomous NPC starts and predetermined watch-only
+sequences are deferred.
 
 ## Keep ownership clear
 
@@ -37,9 +38,9 @@ the framework or make default checks depend on its checkout. Link the exact
 source field/revision and identify excerpts rather than presenting fragments as
 complete playable scenes.
 
-Use the current documented contracts. Remove replaced implementation paths rather
-than introducing obsolete compatibility code for an unreleased feature. API or
-schema changes need matching documentation, examples and appropriate regressions.
+Preserve released API and schema contracts unless a breaking change is agreed.
+Document migration for any agreed break. Remove obsolete internal paths that no
+longer serve a supported contract. Update the relevant docs, examples and checks.
 
 ## Validate the change
 

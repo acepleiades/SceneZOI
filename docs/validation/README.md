@@ -1,4 +1,16 @@
-# First-release validation
+# Release validation
+
+SceneZOI and HZoi are publicly available. See the [player downloads](../../README.md#player-downloads)
+for the installable packages and the [validation report](../../validation.json) for
+current checks and known limits.
+
+## Versioned update (SceneZOI 1.1.3)
+
+Version 1.1.3 fixes a recycled furniture menu row that could hide regular
+interactions such as Assign Bed. The exact player ZIP passed a clean install,
+fresh launch, object-menu checks, and bed scene Start and Exit. HZoi 1.1.0
+remains compatible. The reported apartment scenario still awaits independent
+retest. See the [release checkpoint](release-1.1.3-20261107.json).
 
 ## Versioned update: SceneZOI 1.1.2
 
@@ -184,7 +196,7 @@ readback and author acceptance separate.
 The female O is accepted. New facial poses and an actual head-attached tongue mesh
 still need their own fit tests. Head-parent replacement and generic eye-pose handoff
 have isolated regression coverage. Local-UI-wide bubble suppression, fixed session
-membership and the one-session limit are intentional first-release boundaries.
+membership and the one-session limit remain current boundaries.
 
 Earlier dated statements of "pending" in retained investigation notes apply to
 those checkpoints; current acceptance above supersedes them where it covers the

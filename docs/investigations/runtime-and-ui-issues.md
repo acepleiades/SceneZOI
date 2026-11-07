@@ -1,7 +1,7 @@
 # Runtime and UI issue ledger
 
-Concise retained failures and regression requirements for the first-release
-implementation. Current readiness and verification limits are in
+Recorded runtime and UI failures and their regression requirements. Current
+release checks and verification limits are in
 [validation](../validation/README.md). Source regressions, native readbacks and
 author acceptance are distinct; these findings do not imply universal coverage.
 The full development transcript and raw checkpoints are archived privately.

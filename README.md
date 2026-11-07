@@ -11,7 +11,9 @@ This repository contains the framework source, SDK, authoring tools and develope
 documentation. Start with [developer setup](docs/installation.md) to work on the
 framework or build a fork in the inZOI ModKit.
 
-**Player downloads:** Ready-to-install SceneZOI packages and player installation
+## Player downloads
+
+Ready-to-install SceneZOI packages and player installation
 instructions are available in the [public release post on Patreon](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155).
 The optional adult animation pack **HZoi** is also available there. Both downloads
 are free; no Patreon subscription is required.
@@ -72,7 +74,7 @@ See the [worked examples](docs/content-examples.md) for source links and explana
 or begin with the all-ages [neutral scene sources](packs/scenezoi/scenes/).
 SceneZOI builds and runs independently of either HZoi repository.
 
-## First-release scope and limits
+## Current scope and limits
 
 - **One active session.** The initiating controlled Zoi participates in it.
   Concurrent sessions and autonomous NPC initiation are deferred.
@@ -89,7 +91,7 @@ SceneZOI builds and runs independently of either HZoi repository.
   interactions and temporarily disables autonomy. Exit restores original autonomy;
   cancelled interactions and departed gameplay groups are not reconstructed.
 - **Navigation-based sessions.** Predetermined watch-only animation sequences are
-  outside this release. Ordinary authored transition nodes are supported.
+  deferred. Ordinary authored transition nodes are supported.
 - **Presentation boundaries.** Speech/thought bubbles are suppressed across the
   local UI during a session. Custom facial poses, meshes and furniture models need
   their own visual fit checks.
@@ -130,10 +132,11 @@ for bug reports, proposals and pull requests.
 
 ## Release status and licensing
 
-The first-release implementation is ready for player release. Recorded checks,
-known limits and author acceptance are summarized in [validation](docs/validation/README.md)
-and [validation.json](validation.json); source checks alone
-do not establish rendered or audible behavior. The native-message API has a
+SceneZOI is publicly available. The player packages for SceneZOI and HZoi are
+linked under [Player downloads](#player-downloads). Recorded checks, known limits
+and author acceptance are summarized in [validation](docs/validation/README.md)
+and [validation.json](validation.json). Source checks alone do not establish
+rendered or audible behavior. The native-message API has a
 documented version-1 contract. Internal modules and UI mailboxes are implementation
 details; scene and declaration schemas have their own documented contracts.
 

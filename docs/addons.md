@@ -1,6 +1,6 @@
 # SceneZOI add-on API, version 1
 
-First-release runtime: `20261104-facial-1`. Independent add-on acceptance was recorded on API-5; the final facial/runtime pass is recorded separately in [release validation](validation/README.md). Start with the [authoring guide](addon-authoring.md), use the [SDK](../sdk/README.md), and consult [live controls/results](addon-controls.md) for the extended contract. [Validation findings](validation/addon-api-20261104.md) record measured coverage and pitfalls.
+Independent add-on acceptance was recorded on API-5. See [release validation](validation/README.md) for later runtime checks. Start with the [authoring guide](addon-authoring.md), use the [SDK](../sdk/README.md), and consult [live controls/results](addon-controls.md) for the extended contract. [Validation findings](validation/addon-api-20261104.md) record measured coverage and pitfalls.
 
 SceneZOI supports one active session. Concurrent NPC-owned sessions remain deferred.
 The unrestricted manual starter remains available. Add-ons supply gameplay decisions;

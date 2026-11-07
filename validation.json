@@ -266,7 +266,7 @@
     "actor_registration": "docs/validation/actor-registration-20261105.json"
   },
   "known_limits": [
-    "One active, controlled-initiator session with fixed membership; concurrent/NPC-autonomous sessions and predetermined watch-only sequences are outside the first release.",
+    "One active, controlled-initiator session with fixed membership; concurrent/NPC-autonomous sessions and predetermined watch-only sequences are deferred.",
     "The manual picker accepts two or three Zois; bundled hubs require adult-compatible male/female appearance roles. Other rosters require compatible authored content.",
     "Overhead bubbles are suppressed across the local UI, including nonparticipants; marker suppression is participant-scoped.",
     "New facial poses, customized heads, meshes and furniture require their own fit tests. The female O was visually accepted; no new tongue asset was created or visually tested.",
