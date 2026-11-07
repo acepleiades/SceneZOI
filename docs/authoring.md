@@ -15,6 +15,16 @@ audio; it is for study and has no repository-wide license. Each subsystem guide
 also links directly to relevant source sections. The neutral examples above
 remain suitable for all-ages content.
 
+## Use the HZoi anatomy mesh in your own pack
+
+Get the optional adult [male anatomy authoring kit](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014)
+from the Blender rigs post. Move its editable assets into your own registered
+ModKit project, export your own synchronized tracks and adapt the kit's
+scene-local attachment example. The mesh and clips ship under your own mod's
+asset paths. Players need SceneZOI and your pack. Follow the
+[independent pack walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md)
+for setup, coverage profiles and testing with HZoi disabled.
+
 ## Files and native project
 
 Create and register your own project through ModKit. Give your pack a namespace,

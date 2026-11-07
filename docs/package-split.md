@@ -168,6 +168,10 @@ runtime defaults. See the [subsystem index](README.md) for authoring contracts.
 
 ### Linked profile example
 
+For an independently packaged copy of this attachment, see
+[the authoring workflow](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack).
+Use your own object paths and keep SceneZOI as the only mod dependency.
+
 HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json) points to its
 [body profile](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/skin_hair.json). Follow those
 IDs alongside `node_animations` to see how a content pack activates and animates

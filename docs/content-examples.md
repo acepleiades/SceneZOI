@@ -174,6 +174,11 @@ See [tasks](scene-tasks.md), [voices](voices.md) and [completion effects](comple
 
 ## Trace an attachment through its profiles
 
+To use the same mesh in a pack that depends only on SceneZOI, start with the
+[standalone anatomy walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md).
+It uses the separate authoring ZIP and your own ModKit assets, IDs and tracks.
+The trace below explains how the HZoi pack itself wires the attachment.
+
 The pinned body-profile example uses the older name-based schema. Current body
 profiles use schema version 2 and omit `mesh_name`, `material_slot`,
 `minimum_materials` and `compatible_layouts`. Keep the declared section/coverage
