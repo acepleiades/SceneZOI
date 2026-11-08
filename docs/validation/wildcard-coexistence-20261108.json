@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "status": "Included in the SceneZOI 1.1.5 player ZIP. Normal picker, standing playback, repeat entry, save reload and independent receiver delivery passed.",
+  "scope": "Retail B1, a controlled ResidenceFamily Zoi in an idle Bliss Bay test household. Organized Crime and other scripted mods disabled for the binding tests.",
+  "synthetic_reproduction": {
+    "wildcard_only": "Global Main and Zoi callback received.",
+    "with_independent_exact_ResidenceFamily": "Both Main modules loaded. Only the exact binding received the Zoi callback.",
+    "after_exact_removed": "Wildcard callback received again on the same Zoi.",
+    "control_detail": "The decisive probes used distinct module names. An earlier pair reusing one script path both received callbacks, so it did not isolate independent module dispatch."
+  },
+  "scenezoi_1_1_3_comparison": {
+    "with_scenezoi_lua": "Probe Main loaded. Wildcard lifecycle and unique targeted message were absent, including after a full B1 Lua reload.",
+    "with_only_scenezoi_lua_unmounted": "Same actor and wildcard probe received both lifecycle and targeted message.",
+    "after_scenezoi_lua_restored": "Probe Main loaded, lifecycle and message absent again.",
+    "exact_control": "An exact ResidenceFamily control in the probe package received both callbacks in the same test environment."
+  },
+  "alternative": "B1 Actors bindings with the tested B1Character and B1Player class keys did not deliver the lifecycle callback or targeted message. They are not a validated replacement for Zoi bindings.",
+  "cleanup": "SceneZOI Lua remounted from its installed package. Temporary probes unmounted and moved outside Mods. No player package or save files were changed by the probes.",
+  "limits": [
+    "The original callback suppression was measured in B1. The candidate was tested for independent callback delivery in both B1 and B2.",
+    "Organized Crime dialogue and mission symptoms are unverified. Gang NPC absence was separately observed on a fresh world created with SceneZOI disabled.",
+    "Removing SceneZOI exact bindings alone reopens the previously reproduced picker regression.",
+    "Standing entry was visually tested with the candidate. Bed entry, active-scene saves and the reported Organized Crime mission path were not retested with this build."
+  ],
+  "candidate": {
+    "runtime_build": "20261108-component-bindings-2",
+    "change": "Replace SceneZOI Zoi bindings with appearance-component receivers in B1 and B2. Forward messages and lifecycle callbacks to the existing character modules with the owning Zoi. Keep separate B2 runtime and starter state.",
+    "native_probe": "Appearance-component bindings received lifecycle callbacks and targeted messages in both environments. A separate full reload with only wildcard Zoi bindings verified owner lookup and message coexistence.",
+    "framework_checks": "Full framework checks and native Lua analysis passed for build 2. Regression covers an early invalid owner replaced by a valid wrapper, forwarded lifecycle and separate B2 state.",
+    "packaging": "Isolated native package and exact four-asset filtering passed. Prepared-manifest mismatch caught before install and corrected. Only verified Lua and integrity metadata were installed. Cooked bytes and preferences were preserved.",
+    "installed_candidate_coexistence": "Independent wildcard Zoi probe received targeted messages in both environments on both builds. Temporary probes removed.",
+    "playback_acceptance": "Build 2 passed B1 registration, then timed out waiting for native selection on save reload and fresh game launch. A full Lua reload of both environments let the picker open with all probes removed. The reload result does not establish a release fix.",
+    "release_status": "Candidate retained outside the release checkout. Restored installed 1.1.3, reopened the picker and cancelled it. User preferences and cooked assets preserved.",
+    "first_playback_attempt": "Build 1 failed before the picker opened. Its B1 registry held no valid actor IDs and recorded repeated invalid ID reads from an early cached component owner.",
+    "retry_fix": "Build 2 resolves the native component owner again until runtime registration returns a valid ID. A native probe independently matched the controlled Zoi from a fresh lookup during tick and targeted message delivery.",
+    "bootstrap_probe": "Mounting a B2 wildcard Zoi bootstrap with an empty begin callback did not make the picker open on the affected cold-start instance."
+  },
+  "cold_start_follow_up": {
+    "verified": "On a fresh process, B2 Main and both appearance and interaction component callbacks were active. The picker message reached B2, resolved a character and entered Selection.open. It timed out before RequestOpenZoiGroupCreateWidget. The same diagnostic reached the widget request after hot loading.",
+    "limitation": "A save reload timed out but retained the older B2 trace. A fresh process is required to verify the refined instrumentation.",
+    "root_cause": "The refined trace reached Selection.open on a fresh process, then reported FB2Entity expected, got released userdata. The appearance adapter had kept a B2 character userdata from a previous callback. The same released handle also prevented the B2 error reply."
+  },
+  "owner_resolution_candidate": {
+    "runtime_build": "20261108-component-bindings-3",
+    "change": "Keep the numeric entity ID and separate runtime and starter Lua state. Resolve the B2 character within each callback that uses it. Skip the lookup on idle ticks after initialization.",
+    "automated_checks": "Full framework checks passed. The binding test supplies a fresh B2 owner on each callback and verifies forwarding uses that owner.",
+    "native_packaging": "ModKit Lua analysis reported zero errors and warnings. Isolated native packaging and exact four-asset filtering passed. Installed verified Lua with the native integrity records, preserved loaded cooked bytes and preferences, and removed the temporary Lua diagnostics.",
+    "hot_picker": "The picker opened after the Lua reload.",
+    "save_reload_after_hot_load": "The picker timed out after an in-process save reload following the hot install and full Lua reload.",
+    "cold_picker": "The picker opened in a new game process on the same save with no diagnostic bindings or Lua reload.",
+    "manual_entry": "On the fresh process, normal Start opened the picker and returned the selected pair. Cancelling an earlier injected test request had left the controls waiting on its old token. Remounting only the UI cleared that test state. The maintainer then completed two normal standing sessions and exited both without a Lua reload.",
+    "save_reload": "Reloaded the same save without a Lua or UI remount and without injecting any picker request. The maintainer started and exited through the normal controls. Readback showed idle/ok, Exit cleanup ok/ok and autosave lease released.",
+    "coexistence": "Separately mounted independent wildcard and exact ResidenceFamily Zoi receivers. Each received a targeted message in both B1 and B2 with SceneZOI enabled. Both probes were unmounted and moved outside Mods.",
+    "cleanup": "Archived stale trace configuration outside Mods. No release archive was changed.",
+    "release_archive": "release-1.1.5-20261108.json records the clean-start test of the exact player ZIP."
+  }
+}

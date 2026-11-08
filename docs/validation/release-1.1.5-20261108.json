@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "release_version": "1.1.5",
+  "runtime_build": "20261108-component-bindings-3",
+  "ui_build": "20261106-ui-lifecycle-1",
+  "changes": [
+    "Route character callbacks through appearance components to preserve other mods’ character-group callbacks."
+  ],
+  "runtime_basis": "wildcard-coexistence-20261108.json records callback suppression, the component binding change and the verification results.",
+  "hzoi": "Unchanged. HZoi 1.1.0 remains compatible.",
+  "source_distribution": "Player ZIP includes the GPL license and source repository notice. Source is distributed separately.",
+  "packaging": "Passed isolated native PackageUGC, exact four-owned-asset filter, ZIP CRC and full byte readback. No referenced Game or Engine payloads.",
+  "exact_zip_clean_acceptance": "Author confirmed two standing sessions started, played and exited from a clean installation of the exact 1.1.5 ZIP after a fresh launch. Native diagnostics confirm sequence 2, idle/ok, Exit cleanup ok/ok, gameplay input restored and autosave released.",
+  "customer_retest": "The Organized Crime mission and NPC reports were not tied to the callback issue.",
+  "archive_sha256": "e225de70f21e5969cfa4539670e1631648987917104069d17840bdfbe4dd4d96",
+  "archive_files": 135,
+  "preferences": "Original non-runtime preferences restored byte-for-byte while the game was closed."
+}

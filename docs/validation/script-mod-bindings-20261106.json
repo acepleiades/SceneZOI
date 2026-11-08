@@ -27,7 +27,7 @@
   "automated": {
     "full_framework_and_optional_content_checks": "passed",
     "dispatch_regression_failed_before_fix": true,
-    "coverage": "Both environments, all eight groups, exact-over-wildcard dispatch, no other binding displacement, single script delivery and unlisted-group wildcard fallback. Existing actor/entry/selection regressions remain passing."
+    "coverage": "Both environments, all eight groups, exact-over-wildcard dispatch, coexistence with other exact-group bindings, single script delivery and unlisted-group wildcard fallback. Existing actor/entry/selection regressions remain passing."
   },
   "native_validation": {
     "lua_errors": 0,
