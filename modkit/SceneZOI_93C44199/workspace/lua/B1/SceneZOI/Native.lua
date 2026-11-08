@@ -73,7 +73,12 @@ function M.sample(record, position)
     if not record.instance:Montage_IsActive(record.montage)then error(
         'Scene montage stopped unexpectedly: participant='..tostring(record.id)..' role='..tostring(record.role)..
         ' sample='..tostring(position)..' previous='..tostring(record.position)..' clip='..tostring(record.asset))end
-    record.actor:K2_SetActorTransform(record.desired, false, nil, true)
+    -- Keep the shared anchor without repeatedly teleporting an already aligned
+    -- mesh. A teleport can disturb dynamics in the native post-process graph.
+    if not UE.UKismetMathLibrary.NearlyEqual_TransformTransform(record.actor:GetTransform(), record.desired,
+        0.01, 0.0001, 0.0001) then
+        record.actor:K2_SetActorTransform(record.desired, false, nil, true)
+    end
     record.instance:Montage_SetPosition(record.montage, position)
     record.position = position
 end

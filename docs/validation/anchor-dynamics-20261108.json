@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "runtime_build": "20261108-anchor-dynamics-1",
+  "reported_symptom": "Jiggle was difficult to see during scene loops and visible on scene transitions and abrupt speed changes.",
+  "installed_mod": "The inspected third-party package replaces the native body post-process blueprint. Its cooked name table identifies AnimDynamics nodes and the sampled pectoral and front stomach bones.",
+  "change": "Skip redundant actor teleports while retaining initial placement and drift correction. Use the same shared clock and montage sampling.",
+  "automated": "Full framework and native Lua checks passed. The native adapter regression covers aligned samples and drift correction.",
+  "native_install": "Isolated ModKit packaging and four-asset filtering passed. Only the two Lua files and their checksums changed; loaded cooked bytes and preferences were preserved.",
+  "measurement": "Read parent-relative bone positions from the female participant during the same loop at 2x and 0.5x. Values are the maximum distance between two sampled positions within each window, not mesh displacement.",
+  "bone_measurements": {
+    "steady_2x": {
+      "samples": 85,
+      "post_process_present": true,
+      "clavicle_pec_l_max_span_cm": 4.2,
+      "clavicle_pec_r_max_span_cm": 4.22,
+      "stomach_fwd_max_span_cm": 2.94
+    },
+    "slowdown": {
+      "samples": 19,
+      "post_process_present": true,
+      "clavicle_pec_l_max_span_cm": 3.24,
+      "clavicle_pec_r_max_span_cm": 3.23,
+      "stomach_fwd_max_span_cm": 0.71
+    },
+    "steady_0_5x": {
+      "samples": 69,
+      "post_process_present": true,
+      "clavicle_pec_l_max_span_cm": 0.57,
+      "clavicle_pec_r_max_span_cm": 0.56,
+      "stomach_fwd_max_span_cm": 0.4
+    }
+  },
+  "speed_change": "The speed request changes the clock multiplier. It does not change nodes or toggle physics.",
+  "visual_acceptance": "Maintainer confirmed alignment and ordinary input guards. Jiggle was hard to see during the loop and clearly visible after abruptly lowering speed. The maintainer also confirmed the available bed scene and clothing changes worked normally.",
+  "cleanup": "Native Exit and gameplay input restoration passed, autosave lease released and temporary sampler removed.",
+  "limits": "Bone motion was measured in one standing scene with one pair and one physics mod. These measurements do not quantify mesh deformation or frame-time impact.",
+  "controlled_comparison": {
+    "method": "Switched only protected B1 Lua and its manifest checksums while the game was idle. Verified full installed package hashes against the exact 1.1.5 ZIP and the patched install. Kept the same save, participants, scene loop, physics mod and sampling procedure for both runs.",
+    "samples_per_build": 216,
+    "measurements": {
+      "release": {
+        "steady_2x": {
+          "samples": 80,
+          "post_process_present": true,
+          "median_sample_interval_s": 0.0507,
+          "clavicle_pec_l_max_span_cm": 4.56,
+          "clavicle_pec_r_max_span_cm": 4.55,
+          "stomach_fwd_max_span_cm": 2.93,
+          "spine_04_max_span_cm": 4.95
+        },
+        "steady_0_5x": {
+          "samples": 64,
+          "post_process_present": true,
+          "median_sample_interval_s": 0.0505,
+          "clavicle_pec_l_max_span_cm": 0.49,
+          "clavicle_pec_r_max_span_cm": 0.48,
+          "stomach_fwd_max_span_cm": 0.44,
+          "spine_04_max_span_cm": 4.93
+        }
+      },
+      "patched": {
+        "steady_2x": {
+          "samples": 84,
+          "post_process_present": true,
+          "median_sample_interval_s": 0.0498,
+          "clavicle_pec_l_max_span_cm": 4.86,
+          "clavicle_pec_r_max_span_cm": 4.87,
+          "stomach_fwd_max_span_cm": 3.19,
+          "spine_04_max_span_cm": 4.95
+        },
+        "steady_0_5x": {
+          "samples": 62,
+          "post_process_present": true,
+          "median_sample_interval_s": 0.0505,
+          "clavicle_pec_l_max_span_cm": 0.54,
+          "clavicle_pec_r_max_span_cm": 0.54,
+          "stomach_fwd_max_span_cm": 0.35,
+          "spine_04_max_span_cm": 4.94
+        }
+      }
+    },
+    "result": "The mod-driven bones moved throughout steady loops in both builds. The comparison rules out total suppression in the tested release and does not establish a consistent change in motion amplitude.",
+    "cleanup": "The patched build was restored and hash-verified. The sampler was unmounted and moved outside Mods. The final session released autosave and restored gameplay input."
+  }
+}

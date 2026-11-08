@@ -33,12 +33,17 @@ local actor={Mesh=mesh,CharacterMovement=movement,collision=true,transform={}}
 function actor:GetTransform() return self.transform end
 function actor:GetActorEnableCollision() return self.collision end
 function actor:SetActorEnableCollision(value) self.collision=value end
-function actor:K2_SetActorTransform(value) self.transform=value end
+local placements = 0
+function actor:K2_SetActorTransform(value)
+    placements = placements + 1
+    self.transform = value
+end
 local focused=false
 local controller={ChangeUIInputMode=function(self,mode,force) assert(mode==1 and force);focused=true end}
 UE={UGameplayStatics={GetPlayerController=function() return controller end},
     UWidgetBlueprintLibrary={SetFocusToGameViewport=function() assert(focused) end},
-    UKismetMathLibrary={InvertTransform=function(t) return t end,ComposeTransforms=function(_,anchor) return anchor end}}
+    UKismetMathLibrary={InvertTransform=function(t) return t end,ComposeTransforms=function(_,anchor) return anchor end,
+        NearlyEqual_TransformTransform=function(a,b) return a == b end}}
 inzoi={EB1UIInputMode={CursorMode=1}}
 local Native=require("SceneZOI.Native")
 for _=1,20 do
@@ -47,7 +52,12 @@ for _=1,20 do
     assert(mesh:GetAnimInstance()==instance and mesh:GetAnimationMode()==0)
     assert(movement.MovementMode==0 and not actor.collision)
     assert(rates[record.montage]==0)
-    Native.sample(record,1.5);assert(positions[record.montage]==1.5)
+    local placements_at_entry = placements
+    Native.sample(record,1.5);assert(positions[record.montage]==1.5 and placements==placements_at_entry)
+    actor.transform = {} -- Native gameplay or another mod moved the actor.
+    Native.sample(record,1.6)
+    assert(placements==placements_at_entry+1 and actor.transform==record.desired and positions[record.montage]==1.6)
+    Native.sample(record,1.7);assert(placements==placements_at_entry+1)
     local original_transform = record.transform
     local first_montage = record.montage
     Native.stop_track(record)
