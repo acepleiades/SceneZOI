@@ -33,7 +33,7 @@ local SceneVisuals=require('SceneZOI.SceneVisuals')
 local Control=require('SceneZOI.AddonControl')
 local Effects=require('SceneZOI.AddonEffects')
 local ModeGuard=require('SceneZOI.ModeGuard')
-local session
+local Sessions=require('SceneZOI.Sessions')
 local serial = 0
 local poll_elapsed = 0
 local state_value
@@ -88,7 +88,11 @@ local function notify(current, name, code)
     Events.emit(name, snapshot, code)
 end
 
+-- Only the session the controls are bound to writes the controls' mailboxes.
+local function has_panel(current) return Sessions.focused() == current end
+
 local function publish_playback(current)
+    if not has_panel(current) then return end
     local clock = current.clock
     local packet = Protocol.pack(current.client, current.sequence, current.last_speed_command, clock.index,
         string.format("%.4f", clock.scale), string.format("%.4f", clock.effective))
@@ -99,7 +103,7 @@ local function publish_playback(current)
 end
 
 local function playback_request(raw)
-    local current = session
+    local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
     if not current or current.stopping or not fields or fields[1] ~= current.client or
         fields[2] ~= current.sequence or fields[3] ~= "speed" then return end
@@ -114,8 +118,8 @@ local function playback_request(raw)
 end
 
 local function finish_stop(old, code)
-    if session ~= old then return end
-    session = nil
+    if not Sessions.has(old) then return end
+    Sessions.remove(old)
     if Catalog.publish then pcall(Catalog.publish)end
     Autosave.restore() -- Independent retries continue while idle if the setting write fails.
     code = code or "ok"
@@ -165,15 +169,12 @@ local function request_release(old)
             if not ok then M.diagnostic("Release delivery failed: " .. tostring(err)) end
         end
     end
-    if session == old and Session.cleanup_complete(old)then
+    if Sessions.has(old) and Session.cleanup_complete(old)then
         finish_stop(old, old.stop_code)
     end
 end
 
-function M.stop(code)
-    if code=='mod_unloaded'then Autosave.restore()end
-    local old = session
-    if not old then SceneVisuals.restore(); return end
+local function stop_session(old, code)
     if old.stopping then request_release(old); return end
     -- Initialize all cleanup state before callbacks can acknowledge a release.
     old.stop_reason=code or 'ok'
@@ -186,7 +187,21 @@ function M.stop(code)
     request_release(old)
 end
 
+-- With a token: that session. Without one: the session the controls show.
+function M.stop(code, token)
+    if token then
+        local target = Sessions.get(token)
+        if target then stop_session(target, code) end
+        return
+    end
+    if code=='mod_unloaded'then Autosave.restore()end
+    local old = Sessions.focused()
+    if not old then SceneVisuals.restore(); return end
+    stop_session(old, code)
+end
+
 local function publish_node(current, code)
+    if not has_panel(current) then return end
     local packet = Protocol.pack(current.client, current.sequence, current.revision,
         current.node.id, current.last_navigation, code or "ok")
     if current.node_state == packet then return end
@@ -254,7 +269,8 @@ local function begin(fields)
         current.addon_context=require('SceneZOI.DataValidation').copy(addon.context)
         current.session_restrictions=require('SceneZOI.DataValidation').copy(addon.restrictions)
     end
-    session = current
+    Sessions.add(current)
+    Sessions.focus(current)
     Addons.created(addon,current)
     if Catalog.publish then Catalog.publish(current)end
     Autosave.acquire(current.token)
@@ -264,18 +280,17 @@ local function begin(fields)
     for _,participant in ipairs(participants)do tell(participant,'SceneZOI.Prepare',prepare_packet(current,participant))end
 end
 function M.furniture_reply(actor,fields)
-    local c=session
-    if not c or not c.furniture or fields[1]~=c.token or fields[2]~=c.furniture.id or actor~=c.furniture_owner.actor then return end
+    local c=Sessions.get(fields[1])
+    if not c or not c.furniture or fields[2]~=c.furniture.id or actor~=c.furniture_owner.actor then return end
     if c.stopping then if fields[3]=='released'then c.furniture_released=true end;return end
-    if fields[3]~='held'then M.stop('furniture_unavailable');return end
+    if fields[3]~='held'then stop_session(c,'furniture_unavailable');return end
     if not c.furniture_ready then
         c.furniture_ready=true
         for _,p in ipairs(c.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(c.token))end
     end
 end
 
-local function start_playback()
-    local current = session
+local function start_playback(current)
     Playback.enter(current)
     current.preparing = false
     for _, participant in ipairs(current.participants) do
@@ -310,9 +325,9 @@ function M.unregister(actor)
     registered_actor_ids[actor]=nil
     unregistrations=unregistrations+1;last_unregistered_id=id
     if M.actors[id] ~= actor then non_owner_unregistrations=non_owner_unregistrations+1 end
-    if session then
-        for _, participant in ipairs(session.participants) do
-            if participant.actor == actor then M.stop("participant_unloaded"); break end
+    for _, current in ipairs(Sessions.list()) do
+        for _, participant in ipairs(current.participants) do
+            if participant.actor == actor then stop_session(current, "participant_unloaded"); break end
         end
     end
     -- A late on_end from an older object must not remove its replacement.
@@ -349,13 +364,13 @@ end
 
 function M.save_reply(actor,content)
     local fields=Protocol.unpack(content)
-    if fields then Save.offer(session,actor,fields)end
+    if fields then Save.offer(Sessions.get(fields[1]),actor,fields)end
 end
 
 function M.reply(actor, content)
     local fields = Protocol.unpack(content)
-    local current = session
-    if not current or not fields or fields[1] ~= current.token then return end
+    local current = fields and Sessions.get(fields[1])
+    if not current then return end
     local kind, detail = fields[2], fields[3]
     if fields[5] and kind ~= "outfit" then M.diagnostic("Participant preparation failed: " .. fields[5]) end
     if current.stopping then
@@ -371,8 +386,8 @@ function M.reply(actor, content)
     end
     if kind == "outfit" then OutfitControl.receive(current, actor, fields); return end
     if current.outfit_change and kind == "ready" then return end
-    if kind == "rejected" then M.stop(detail or "prepare_error"); return end
-    if kind == "released" then M.stop(detail == "ok" and "interrupted" or detail); return end
+    if kind == "rejected" then stop_session(current, detail or "prepare_error"); return end
+    if kind == "released" then stop_session(current, detail == "ok" and "interrupted" or detail); return end
     if kind ~= "ready" or not current.preparing or tonumber(fields[4]) ~= current.revision then return end
     for _, participant in ipairs(current.participants) do
         if participant.actor == actor then
@@ -383,7 +398,7 @@ function M.reply(actor, content)
     end
     if Session.all(current, "node_ready") then
         local ok = pcall(Session.bind, current)
-        if not ok then M.stop("binding_error"); return end
+        if not ok then stop_session(current, "binding_error"); return end
         -- B2 readiness does not mean that B1 has finished loading/attaching the object.
         -- Keep the scene in Preparing; the B1 tick opens playback only after that barrier.
         current.participants_ready = true
@@ -444,7 +459,7 @@ local function finish_transition(current)
     end)
     if not ok then
         M.diagnostic("Transition destination failed: " .. tostring(node))
-        M.stop("transition_destination_error")
+        stop_session(current, "transition_destination_error")
         return false
     end
     change_node(current, node, assets, duration, loaded)
@@ -452,7 +467,7 @@ local function finish_transition(current)
 end
 
 local function navigate(raw)
-    local current = session
+    local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
     if not current or current.stopping or not fields or fields[1] ~= current.client or
         fields[2] ~= current.sequence or fields[3] ~= "navigate" then return end
@@ -506,7 +521,7 @@ local function begin_outfit(current,change)
     tell(change.participant, "SceneZOI.Outfit", outfit_packet(current))
 end
 local function outfit_request(raw)
-    local current = session
+    local current = Sessions.focused()
     if not current or current.stopping then return end
     local change = OutfitControl.request(current, raw)
     if not change then return end
@@ -533,9 +548,10 @@ end
 
 local function poll()
     -- Cleanup finishing is too early for input focus: wait for the DOM close acknowledgement.
+    local focused = Sessions.focused()
     local focus_raw = read("focus")
     local focus = Protocol.unpack(focus_raw)
-    if not session and focus_raw ~= last_focus and focus then
+    if not focused and focus_raw ~= last_focus and focus then
         local actor
         if focus[3] == "closed" then
             local ended = completed[focus[1] .. "|" .. focus[2]]
@@ -549,10 +565,10 @@ local function poll()
     end
     -- A heartbeat can never replace Start or Exit: it has its own mailbox.
     local heartbeat = Protocol.unpack(read("heartbeat"))
-    if session and heartbeat and heartbeat[1] == session.client and heartbeat[2] == session.sequence then
+    if focused and heartbeat and heartbeat[1] == focused.client and heartbeat[2] == focused.sequence then
         -- Config persists: an unchanged old heartbeat must not keep a disconnected UI alive.
-        if heartbeat[4] ~= session.last_heartbeat then
-            session.last_heartbeat, session.ui_age = heartbeat[4], 0
+        if heartbeat[4] ~= focused.last_heartbeat then
+            focused.last_heartbeat, focused.ui_age = heartbeat[4], 0
         end
     end
     local raw = read("request")
@@ -562,11 +578,11 @@ local function poll()
     local client, sequence, action = fields[1], fields[2], fields[3]
     local previous = completed[client .. "|" .. sequence]
     if previous then
-        if not session or client==session.client and sequence==session.sequence then publish(client,sequence,previous.phase,previous.code)end
+        if not focused or client==focused.client and sequence==focused.sequence then publish(client,sequence,previous.phase,previous.code)end
         return
     end
-    if session then
-        if client ~= session.client or sequence ~= session.sequence then
+    if focused then
+        if client ~= focused.client or sequence ~= focused.sequence then
             if action == "start" then
                 remember(client,sequence,"error","busy",nil,true)
                 pcall(require('SceneZOI.Localization').toast,'A SceneZOI scene is already in progress. End it before starting another.')
@@ -577,10 +593,10 @@ local function poll()
         else
             playback_request(read("playback"))
             outfit_request(read("outfit"))
-            Settings.request(session,"task_rates",read("settings_task_rates"))
-            Settings.request(session,"audio",read("settings_audio"))
-            Personality.request(session,read("personality"))
-            VoicePersonality.request(session,read("voice"))
+            Settings.request(focused,"task_rates",read("settings_task_rates"))
+            Settings.request(focused,"audio",read("settings_audio"))
+            Personality.request(focused,read("personality"))
+            VoicePersonality.request(focused,read("voice"))
             navigate(read("navigation"))
         end
         return
@@ -591,7 +607,7 @@ local function poll()
         if not ok then
             Addons.fail_start(fields[8],err)
             M.diagnostic("Entry failed: " .. tostring(err))
-            if session then M.stop("entry_error")
+            if Sessions.focused() then M.stop("entry_error")
             else remember(client, sequence, "error", "entry_error") end
         end
     elseif action == "exit" or action == "save" then
@@ -616,17 +632,20 @@ end
 
 local function update(dt)
     dt = Clock.delta(dt)
-    if not session then Localization.tick(dt)end
+    local focused = Sessions.focused()
+    if not focused then Localization.tick(dt)end
     poll_elapsed = poll_elapsed + dt
     if poll_elapsed >= Config.poll_interval then
-        poll_elapsed=0;Autosave.tick(session~=nil);Save.tick(M.actors,session~=nil);poll()
+        poll_elapsed=0;Autosave.tick(focused~=nil);Save.tick(M.actors,focused~=nil);poll()
     end
-    local mode=ModeGuard.update(dt,session~=nil or pending_focus~=nil)
-    if session and not session.stopping and mode.editor then M.stop('character_editor')end
+    local mode=ModeGuard.update(dt,Sessions.count()>0 or pending_focus~=nil)
+    if mode.editor then
+        for _,current in ipairs(Sessions.list())do if not current.stopping then stop_session(current,'character_editor')end end
+    end
     if pending_focus then
         pending_focus.age = pending_focus.age + dt
         -- Let the UI click dispatch settle; never steal focus from a newly opened scene.
-        if session then pending_focus = nil
+        if Sessions.focused() then pending_focus = nil
         elseif pending_focus.age >= 0.1 and (not pending_focus.checked_at or pending_focus.age-pending_focus.checked_at>=Config.poll_interval) then
             pending_focus.checked_at=pending_focus.age
             local allowed,context=ModeGuard.can_restore_input()
@@ -647,9 +666,12 @@ local function update(dt)
         end
     end
     Effects.idle()
-    Control.tick(dt,session,function(key)if session then Effects.release(session,key)end end)
-    local current = session
-    if not current then return end
+    Control.tick(dt,Sessions.focused(),function(key)
+        for _,current in ipairs(Sessions.list())do Effects.release(current,key)end
+    end)
+end
+
+local function advance(current, dt)
     current.age, current.heartbeat = current.age + dt, current.heartbeat + dt
     if current.stopping then
         if current.age > Config.prepare_timeout then finish_stop(current, "restore_timeout")
@@ -665,24 +687,24 @@ local function update(dt)
             tell(current.furniture_owner,'SceneZOI.Furniture',Protocol.pack(current.token,current.furniture.id,'acquire',Protocol.encode(Json.encode(current.furniture.profile))))
         else for _,p in ipairs(current.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(current.token))end end
     end
-    if session~=current or current.stopping then return end
+    if not Sessions.has(current) or current.stopping then return end
     local too_far,distance,controlled_id=ControllerRange.update(current,M.actors,dt)
     current.controller_range_diagnostic_age=(current.controller_range_diagnostic_age or 0)+dt
-    if current.controller_range_status and (not current.controller_range_reported or current.controller_range_diagnostic_age>=1 or too_far)then
+    if has_panel(current) and current.controller_range_status and (not current.controller_range_reported or current.controller_range_diagnostic_age>=1 or too_far)then
         pcall(inzoi.cli.execute,command('uimod.cfg_save','controller_range')..' value='..Protocol.encode(Json.encode(current.controller_range_status)))
         current.controller_range_reported=true;current.controller_range_diagnostic_age=0
     end
     if too_far then
         M.diagnostic('Automatic exit: controlled='..controlled_id..' distance_cm='..string.format('%.1f',distance))
-        M.stop('controller_too_far');return
+        stop_session(current,'controller_too_far');return
     end
     if current.furniture then
         local valid,detail=Furniture.valid(current.furniture)
-        if not valid then M.diagnostic('Furniture changed: '..tostring(detail));M.stop('furniture_changed');return end
+        if not valid then M.diagnostic('Furniture changed: '..tostring(detail));stop_session(current,'furniture_changed');return end
     end
     current.subsystems:guard()
     current.ui_age = current.ui_age + dt
-    if current.ui_age > Config.lease_timeout then M.stop("ui_disconnected"); return end
+    if current.ui_age > Config.lease_timeout then stop_session(current, "ui_disconnected"); return end
     if current.preparing and current.age > Config.prepare_timeout then
         local code = current.outfit_change and "outfit_timeout" or not current.participants_ready and "prepare_timeout"
             or current.preparation_stage == "attachment" and "attachment_timeout" or "appearance_timeout"
@@ -690,7 +712,7 @@ local function update(dt)
         local operation = change and (" outfit=" .. change.participant.id .. ":" .. change.item .. ":enabled=" .. change.enabled ..
             ":count=" .. change.counter .. ":ack=" .. tostring(change.acknowledged)) or ""
         M.diagnostic("Preparation failed: node=" .. current.node.id .. " stage=" .. code .. operation .. " " .. Appearance.status(current))
-        M.stop(code)
+        stop_session(current, code)
         return
     end
     if current.heartbeat >= Config.heartbeat_interval then
@@ -729,7 +751,7 @@ local function update(dt)
             -- held pose after that mutation, and wait if no instance exists yet.
             if current.started then pose_ready = Playback.hold(current) end
             if resources_ready and pose_ready then
-                if current.outfit_change then finish_outfit(current) else start_playback() end
+                if current.outfit_change then finish_outfit(current) else start_playback(current) end
             end
         else current.preparation_stage = "appearance" end
     end
@@ -786,19 +808,25 @@ end
 
 ---@param dt number
 function M.tick(dt)
-    local ok, err = pcall(update, dt)
-    if not ok then
-        M.diagnostic("Runtime update failed: " .. tostring(err))
-        local old = session
-        local restored, restore_err = pcall(M.stop, "runtime_error")
-        if not restored then
-            M.diagnostic("Emergency cleanup failed: " .. tostring(restore_err))
-            if old then finish_stop(old, "restore_error") end
+    -- A failure in the shared poll must not end a scene, and one scene must not end another.
+    local polled, poll_err = pcall(update, dt)
+    if not polled then M.diagnostic("Runtime poll failed: " .. tostring(poll_err)) end
+    local step = Clock.delta(dt)
+    for _, current in ipairs(Sessions.list()) do
+        local ok, err = pcall(advance, current, step)
+        if not ok then
+            M.diagnostic("Runtime update failed: " .. tostring(err))
+            local restored, restore_err = pcall(stop_session, current, "runtime_error")
+            if not restored then
+                M.diagnostic("Emergency cleanup failed: " .. tostring(restore_err))
+                finish_stop(current, "restore_error")
+            end
         end
     end
+    local focused = Sessions.focused()
     local visual_members={}
-    if session then for _,person in ipairs(session.participants)do visual_members[person.id]=true end end
-    local visual_active=session~=nil and not session.stopping
+    if focused then for _,person in ipairs(focused.participants)do visual_members[person.id]=true end end
+    local visual_active=focused~=nil and not focused.stopping
     local visual_ok, visual_status=pcall(SceneVisuals.tick,M.actors,visual_active,visual_members)
     if visual_ok then
         local packet=Protocol.encode(Json.encode(visual_status))
@@ -819,10 +847,11 @@ end
 function M.flush_notifications() Events.flush() end
 
 function M.is_addon_owner(addon_id,client_id,id)
-    return session and session.token==id and session.addon_id==addon_id and session.addon_client_id==client_id or false
+    local current=Sessions.get(id)
+    return current and current.addon_id==addon_id and current.addon_client_id==client_id or false
 end
 function M.navigate_to(id,scene_id)
-    local current=assert(session and session.token==id and session,'session_not_found')
+    local current=assert(Sessions.get(id),'session_not_found')
     assert(not current.stopping and not current.preparing,'session_not_ready')
     assert(current.node.kind~='transition','navigation_locked')
     local target=Catalog.get(scene_id,current)
@@ -835,18 +864,19 @@ function M.navigate_to(id,scene_id)
 end
 
 function M.api_control_event(req)
-    if not session then return end
-    session.event_index=(session.event_index or 0)+1
-    local snapshot=Session.snapshot(session)
+    local focused=Sessions.focused()
+    if not focused then return end
+    focused.event_index=(focused.event_index or 0)+1
+    local snapshot=Session.snapshot(focused)
     snapshot.integration={addon_id=req.addon_id,client_id=req.client_id,operation=req.operation}
     Events.emit('addon_control_changed',snapshot)
 end
 function M.api_session(id)
-    return assert(type(id)=='string'and session and session.token==id and session,'session_not_found')
+    return assert(type(id)=='string'and Sessions.get(id),'session_not_found')
 end
 function M.release_integration(key)
-    if session then Effects.release(session,key)end
-    Control.release(session,key)
+    Control.release(Sessions.focused(),key)
+    for _,current in ipairs(Sessions.list())do Effects.release(current,key);Control.release(current,key)end
 end
 function M.api_speed(current,index)
     if current.clock:select(index)then notify(current,'playback_speed_changed')end
@@ -861,10 +891,20 @@ function M.api_navigation(current)
     end
     return {navigation=rows,locked=current.preparing or current.stopping}
 end
-function M.is_active()return session~=nil end
+function M.is_active()return Sessions.focused()~=nil end
+function M.any_active()return Sessions.count()>0 end
 
-function M.snapshot()
-    return session and Session.snapshot(session) or nil
+-- Without an ID: the session the controls show.
+function M.snapshot(id)
+    local current=Sessions.focused()
+    if id then current=Sessions.get(id) end
+    return current and Session.snapshot(current) or nil
+end
+
+function M.snapshots()
+    local rows=Json.array({})
+    for _,current in ipairs(Sessions.list())do rows[#rows+1]=Session.snapshot(current)end
+    return rows
 end
 
 return M

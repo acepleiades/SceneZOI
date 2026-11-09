@@ -24,9 +24,17 @@ local function deliver(actor,kind,data)
  return ok
 end
 local function event_to(sub,event)
+ if not M.in_scope(sub,event)then return end
  if sub.names['*']or sub.names[event.name]then
   deliver(sub.actor,'SceneZOI.API.Event',{api_version=1,instance_id=instance,addon_id=sub.addon_id,client_id=sub.client_id,event=V.copy(event)})
  end
+end
+-- An add-on always hears its own sessions. Others see the focused scene unless they opted in.
+function M.in_scope(sub,event)
+ if event.addon_id==sub.addon_id and event.addon_client_id==sub.client_id then return true end
+ if sub.scope=='all'then return true end
+ if sub.scope=='owned'then return false end
+ return event.focused~=false
 end
 local function key(req,actor)return req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())..'|'..req.request_id end
 local function emit_failure(row,code,message)
@@ -58,7 +66,7 @@ function M.departure_reply(actor,content)
  if f[2]=='ok'then pending.departures[id]=true else M.fail_start(pending.token,'Could not leave a gameplay group')end
 end
 local function owned(req)
- local r=runtime();local s=r.snapshot()
+ local r=runtime();local s=r.snapshot(req.arguments.session_id)
  assert(s and s.id==req.arguments.session_id,'session_not_found')
  assert(r.is_addon_owner(req.addon_id,req.client_id,s.id),'session_not_owned')
  return s
@@ -128,20 +136,22 @@ local function execute(actor,req,row)
   if runtime().api_control_event and not op:match('^get_')and op~='renew_integration'and op~='register_integration'then runtime().api_control_event(req)end
   return result
  end
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,features={scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,features={session_registry=1,event_scopes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
-  V.fields(args,{'events'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
+  V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
   V.array(args.events or {'*'},32);local names={};for _,n in ipairs(args.events or {'*'})do if n~='*'then V.id(n)end;names[n]=true end
-  subscribers[sk]={addon_id=req.addon_id,client_id=req.client_id,actor=actor,names=names};return {subscribed=true,event_cursor=cursor,session=runtime().snapshot()or J.null}
+  local scope=args.scope or 'focused';assert(scope=='focused'or scope=='owned'or scope=='all','Invalid subscription scope')
+  subscribers[sk]={addon_id=req.addon_id,client_id=req.client_id,actor=actor,names=names,scope=scope};return {subscribed=true,scope=scope,event_cursor=cursor,session=runtime().snapshot()or J.null}
  end
  if op=='get_session'then
-  V.fields(args,{'session_id'});local s=runtime().snapshot();if args.session_id then assert(s and s.id==args.session_id,'session_not_found')end;return {session=s or J.null,event_cursor=cursor}
+  V.fields(args,{'session_id'});local s=runtime().snapshot(args.session_id);if args.session_id then assert(s and s.id==args.session_id,'session_not_found')end;return {session=s or J.null,event_cursor=cursor}
  end
+ if op=='list_sessions'then V.fields(args,{});return {sessions=runtime().snapshots(),event_cursor=cursor}end
  if op=='get_request_status'then
   V.fields(args,{'request_id'},{'request_id'});local k=V.copy(req);k.request_id=args.request_id;local r=assert(cache[key(k,actor)],'request_not_found');return V.copy(r.status or {phase='completed',response=r.response})
  end
- if op=='stop_session'then V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().api_session(args.session_id).stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason='creator_stop'};runtime().stop('ok');return {accepted=true}end
+ if op=='stop_session'then V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().api_session(args.session_id).stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason='creator_stop'};runtime().stop('ok',args.session_id);return {accepted=true}end
  if op=='navigate_to_scene'then
   V.fields(args,{'session_id','scene_id'},{'session_id','scene_id'});owned(req);V.id(args.scene_id)
   return runtime().navigate_to(args.session_id,args.scene_id)
