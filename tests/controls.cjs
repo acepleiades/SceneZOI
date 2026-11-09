@@ -16,7 +16,7 @@ function fixture(options = {}) {
   const genders = {20522:'Male',20524:'Female',...(options.genders || {})};
   let characterFailure = options.characterFailure || false;
   let activated, navigationState = '', playbackState = '', wardrobeState = '', state = '', hidden = 0, blurred = 0, failWrite = false;
-  let personalityState = '';let catalogState='';let taskState='';
+  let personalityState = '';let catalogState='';let taskState='';let focusState='';
   let deferNavigation = false, resolveNavigation;
   const context = {
     wf: {root, state:{}, content:{}, MOD_ID:'SceneZOI_93C44199'},
@@ -34,6 +34,7 @@ function fixture(options = {}) {
           if (characterFailure) return Promise.reject(Error('Injected character lookup failure'));
           return Promise.resolve({success:true,data:{entity_id:params.entity_id,gender:genders[params.entity_id],bio_gender:genders[params.entity_id]==='Male'?'Female':'Male',growth_step:options.growth || 'Youth'}});
         }
+        if (command==='uimod.cfg_load' && params?.key==='focus_session') return Promise.resolve({success:true,data:{value:focusState}});
         if (command==='uimod.cfg_load' && params?.key==='navigation_state' && deferNavigation) {
           deferNavigation=false;return new Promise(resolve=>{resolveNavigation=resolve;});
         }
@@ -41,7 +42,7 @@ function fixture(options = {}) {
         return Promise.resolve({success:true,data:command==='entity.get_possessed'?{entity_id:20524}:{value:params?.key==='navigation_state'?navigationState:params?.key==='playback_state'?playbackState:params?.key==='outfit_state'?wardrobeState:params?.key==='personality_state'?personalityState:params?.key==='catalog_state'?catalogState:params?.key==='task_state'?taskState:state}});
       }}
     },
-    setInterval(cb,time){timers[time]=cb;},setTimeout(cb){deferred.push(cb);},Promise,Date,Math,String,Number,Error,JSON
+    setInterval(cb,time){const earlier=timers[time];timers[time]=earlier?()=>{earlier();cb();}:cb;},setTimeout(cb){deferred.push(cb);},Promise,Date,Math,String,Number,Error,JSON
   };
   context.window = context;
   context.addEventListener = function() {};
@@ -55,7 +56,7 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/addon-bridge.js'),'utf8'),context);
   vm.runInNewContext(source,context);
 
-  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setState:s=>{state=s;},setNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
+  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setState:s=>{state=s;},setNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
     deferNavigation:()=>{deferNavigation=true;},resolveNavigation:value=>resolveNavigation({success:true,data:{value}}),
     setControlled:value=>{controlled=value;},setGender:(entity,value)=>{genders[entity]=value;},setCharacterFailure:value=>{characterFailure=value;},
     catalog:context.SceneZOICatalog,setCatalog:value=>{catalogState=value;},readCatalog:()=>context.SceneZOICatalog,refreshCatalog:()=>context.SceneZOIControls.refreshCatalog(),decline:(...args)=>context.SceneZOIControls.decline(...args),content:context.wf.content,hidden:()=>hidden,blurred:()=>blurred,failWrite:()=>{failWrite=true;},runDeferred:()=>deferred.splice(0).forEach(cb=>cb())};
@@ -68,15 +69,25 @@ async function run(){
   for(let i=0;i<12;i++){hiddenPanel.timers[1000]();await flush();}
   assert.equal(writes(hiddenPanel,'heartbeat').length,12,'Hidden presentation must keep session heartbeats running beyond the lease timeout');
   assert.equal(hiddenPanel.hidden(),0,'The native view must never be suspended');
-  const rangeExit=fixture();await rangeExit.start();await flush();
-  const rangeFields=writes(rangeExit,'request').at(-1).split('|');
-  rangeExit.setState(`SZ2|${rangeFields[1]}|1|idle|controller_too_far`);rangeExit.timers[250]();await flush();
-  assert.equal(rangeExit.root.style.visibility,'hidden','Graceful range exit closes controls instead of displaying an error panel');
-  rangeExit.runDeferred();await flush();assert.match(writes(rangeExit,'focus').at(-1),/\|closed$/);
   const savingExit=fixture();await savingExit.start();await flush();
   const savingFields=writes(savingExit,'request').at(-1).split('|');
   savingExit.setState(`SZ2|${savingFields[1]}|1|idle|saving`);savingExit.timers[250]();await flush();
   assert.equal(savingExit.root.style.visibility,'hidden','Saving exits close controls through the normal idle path');
+  savingExit.runDeferred();await flush();assert.match(writes(savingExit,'focus').at(-1),/\|closed$/);
+  // The panel follows the controlled Zoi's scene, whoever started it, and a new start keeps this panel's own identity.
+  const follower=fixture();await flush();
+  assert.notEqual(follower.root.style.visibility,'visible');
+  follower.setFocus('SZ2|1|host.5.6|host|6|3|scenezoi.standing_idle|playing');follower.timers[250]();await flush();
+  assert.equal(follower.root.style.visibility,'visible','Controlling a participant shows that scene');
+  follower.timers[1000]();await flush();
+  assert.match(writes(follower,'heartbeat').at(-1),/^SZ2\|host\|6\|/,'The panel speaks for the scene it shows');
+  follower.setFocus('SZ2|2|none');follower.timers[250]();await flush();
+  assert.equal(follower.root.style.visibility,'hidden','A Zoi outside every scene shows no panel');
+  follower.runDeferred();await flush();
+  await follower.start();await flush();
+  const ownStart=writes(follower,'request').at(-1).split('|');
+  assert.notEqual(ownStart[1],'host','A start after following another scene keeps this panel identity');
+  assert.equal(ownStart[2],'1','This panel sequence is untouched by the scene it followed');
   const editorExit=fixture();await editorExit.start();await flush();
   const editorClient=writes(editorExit,'request').at(-1).split('|')[1];
   editorExit.setState(`SZ2|${editorClient}|1|idle|character_editor`);editorExit.timers[250]();await flush();

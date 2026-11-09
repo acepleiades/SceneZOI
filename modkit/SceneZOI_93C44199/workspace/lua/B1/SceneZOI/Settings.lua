@@ -53,6 +53,10 @@ function M.request(session,group,raw)
  if not ok then s.code='settings_storage';return end
  apply(group,values);s.code='ok'
 end
+-- The controls were rebound to this session: everything has to be sent again.
+function M.forget(session)
+ for _,group in ipairs(order)do state(session,group).published=nil end
+end
 function M.publish(session)
  for _,group in ipairs(order)do
   local s=state(session,group)

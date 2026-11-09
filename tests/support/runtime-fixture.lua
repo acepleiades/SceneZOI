@@ -29,7 +29,7 @@ function M.new()
         return out
     end}
     package.loaded["SceneZOI.Localization"] = {refresh = noop, tick = noop, toast = noop}
-    package.loaded["SceneZOI.Settings"] = {boot = noop, publish = noop, request = noop}
+    package.loaded["SceneZOI.Settings"] = {boot = noop, publish = noop, request = noop, forget = noop}
     package.loaded["SceneZOI.Personality"] = {publish = noop, request = noop}
     package.loaded["SceneZOI.VoicePersonality"] = {publish = noop, request = noop}
     package.loaded["SceneZOI.OutfitControl"] = {publish = noop, request = noop, receive = noop}

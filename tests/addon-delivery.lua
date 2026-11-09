@@ -30,4 +30,18 @@ local reads=0
 gone.GetEntityId=function()reads=reads+1;error('released')end
 E.emit('session_ended',{id='scene.1',phase='ended'});E.flush()
 assert(received[1]==3 and received[3]==3 and reads==0,'A confirmed-dead subscriber is retired')
+-- An add-on whose only endpoint unloads keeps hearing its scenes through the controlled Zoi, once.
+local controlled=actor(4)
+package.loaded['SceneZOI.Runtime'].actors={['4']=controlled}
+UE={UGameplayStatics={GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=4}end}end}}
+later.GetEntityId=function()error('released')end
+E.emit('session_ended',{id='scene.2',phase='ended'});E.flush()
+assert(received[4]==1,'The event moves to a loaded endpoint')
+E.emit('session_ended',{id='scene.3',phase='ended'});E.flush()
+assert(received[4]==2,'And stays there, without duplicates')
+-- With another live subscription the add-on needs no second one.
+local first,second=actor(5),actor(6);subscribe(first,'pair.addon');subscribe(second,'pair.addon')
+local before=received[4];first.GetEntityId=function()error('released')end
+E.emit('session_ended',{id='scene.4',phase='ended'});E.flush()
+assert(received[6]==1 and received[4]==before+1,'A covered add-on is not moved to a second endpoint')
 print('Add-on delivery passed: released subscribers are isolated and retired, live subscribers still receive every event.')

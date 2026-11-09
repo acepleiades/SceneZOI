@@ -8,6 +8,7 @@ for id=1,4 do F.add_actor(id)end
 R.boot()
 local J=require('SceneZOI.Json')
 local function start(sequence,a,b)
+ F.controlled=a -- A manual start's initiator is the Zoi the player controls.
  cfg.request=P.pack('ui',sequence,'start',tostring(a),'test.node','first:'..a..'+second:'..b,'none')
  cfg.heartbeat=P.pack('ui',sequence,'heartbeat','beat'..sequence)
  R.tick(.25)

@@ -21,7 +21,7 @@
         var container=o.container, choosing=null, markup=null, session='', pending=null, count=0, ack=0, reading=false, selected=null;
         var data={archetypes:{},contexts:{},sets:{},participants:{}}, message='';
         function state(){return o.state();}
-        function reset(){choosing=null;markup=null;pending=null;count=0;ack=0;data={archetypes:{},contexts:{},sets:{},participants:{}};message='';}
+        function reset(){choosing=null;markup=null;pending=null;count=o.state().counterBase||0;ack=0;data={archetypes:{},contexts:{},sets:{},participants:{}};message='';}
         function options(body,a,c){return Object.keys(data.sets).filter(function(id){var s=data.sets[id];return s.body===body&&s.archetype===a&&s.context===c;}).sort();}
         function dropdown(title,id,current,entries,disabled){
             return '<label>'+text(title)+'</label><button type="button" class="voice-select" data-voice-open="'+text(id)+'" aria-expanded="'+(choosing===id)+'"'+(disabled?' disabled':'')+'>'+text(current)+'</button>'+

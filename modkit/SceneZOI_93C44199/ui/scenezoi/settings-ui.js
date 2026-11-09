@@ -16,7 +16,7 @@
         function available(){var s=state();return ready && !serverBusy && s.active && !s.exiting && !s.pendingNavigation;}
         function update(){
             var s=state(),key=s.client+':'+s.sequence;
-            if(key!==session){session=key;values=keys.map(function(){return 100;});count=0;ack=0;pending=null;ready=false;serverBusy=true;dragging=null;message='';}
+            if(key!==session){session=key;values=keys.map(function(){return 100;});count=s.counterBase||0;ack=0;pending=null;ready=false;serverBusy=true;dragging=null;message='';}
             if(!s.active || s.exiting){pending=null;dragging=null;}
             if(!options.visible())dragging=null;
             var enabled=available();

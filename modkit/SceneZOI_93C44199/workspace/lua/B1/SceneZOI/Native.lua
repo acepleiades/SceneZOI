@@ -150,7 +150,9 @@ function M.restore(record)
         assert(record.mesh:GetAnimationMode() == ANIMATION_BLUEPRINT and record.mesh:GetAnimInstance() == record.instance,
             "The original game animation instance is no longer attached")
     end)
-    attempt("position", function() record.actor:K2_SetActorTransform(record.transform, false, nil, true) end)
+    attempt("position", function()
+        if not record.keep_position then record.actor:K2_SetActorTransform(record.transform, false, nil, true) end
+    end)
     attempt("movement", function() record.movement:SetMovementMode(record.movement_mode, record.custom_movement_mode) end)
     attempt("collision", function() record.actor:SetActorEnableCollision(record.collision) end)
     if #failures > 0 then error(table.concat(failures, "; ")) end

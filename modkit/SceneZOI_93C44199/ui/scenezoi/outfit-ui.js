@@ -53,9 +53,9 @@
         function state() { return options.state(); }
         function busy() { var s = state(); return voices.busy() || !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting; }
         function reset() {
-            opened = false; choosing = false; selected = null; participants = []; count = 0; pending = null;
+            opened = false; choosing = false; selected = null; participants = []; count = state().counterBase || 0; pending = null;
             serverBusy = true; serverRevision = 0; listMarkup = null; selectorMarkup = null;
-            outfitMessage='';personalityMessage='';mode = 'outfit'; personality = Object.create(null); library = {sets:Object.create(null)}; personalityCount = 0; personalityAck = 0; personalityPending = null; expressionMarkup = null; expressionChoosing = false;
+            outfitMessage='';personalityMessage='';mode = 'outfit'; personality = Object.create(null); library = {sets:Object.create(null)}; personalityCount = state().counterBase || 0; personalityAck = 0; personalityPending = null; expressionMarkup = null; expressionChoosing = false;
         }
         function layout() {
             var vw = window.innerWidth || 1920, vh = window.innerHeight || 1080;

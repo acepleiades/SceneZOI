@@ -24,7 +24,7 @@ local CompletionEffects = require('SceneZOI.CompletionEffects')
 local Tasks = require('SceneZOI.Tasks')
 local TaskRoutes = require('SceneZOI.TaskRoutes')
 local Furniture=require('SceneZOI.Furniture')
-local ControllerRange=require('SceneZOI.ControllerRange')
+local Controller=require('SceneZOI.Controller')
 local Save=require('SceneZOI.SaveBridge')
 local Autosave=require('SceneZOI.Autosave')
 local Addons=require('SceneZOI.AddonAPI')
@@ -38,6 +38,7 @@ local serial = 0
 local poll_elapsed = 0
 local state_value
 local boot_request, last_save_request
+local direct_serial, focus_serial = 0, 0
 local completed, completion_order = {}, {}
 local pending_focus, last_focus
 local rejected_focus = {}
@@ -91,6 +92,23 @@ end
 -- Only the session the controls are bound to writes the controls' mailboxes.
 local function has_panel(current) return Sessions.focused() == current end
 
+local function publish_phase(current, phase, code)
+    if has_panel(current) then publish(current.client, current.sequence, phase, code) end
+end
+
+local function phase_of(current)
+    return current.stopping and "exiting" or current.preparing and "preparing" or "playing"
+end
+
+-- Tells the controls which session they now show; the panel follows the controlled Zoi.
+local function publish_focus()
+    focus_serial = focus_serial + 1
+    local current = Sessions.focused()
+    local value = current and Protocol.pack(focus_serial, current.token, current.client, current.sequence,
+        current.revision, current.node.id, phase_of(current)) or Protocol.pack(focus_serial, "none")
+    pcall(inzoi.cli.execute, command("uimod.cfg_save", "focus_session") .. " value=" .. value)
+end
+
 local function publish_playback(current)
     if not has_panel(current) then return end
     local clock = current.clock
@@ -143,8 +161,9 @@ end
 
 local function finish_stop(old, code)
     if not Sessions.has(old) then return end
+    local had_panel = has_panel(old)
     Sessions.remove(old)
-    if Catalog.publish then pcall(Catalog.publish)end
+    if had_panel and Catalog.publish then pcall(Catalog.publish)end
     reconcile_autosave()
     code = code or "ok"
     old.ended = true
@@ -155,15 +174,22 @@ local function finish_stop(old, code)
     notify(old, "session_ended", code)
     Control.ended(old,Session.snapshot(old))
     local controlled = Session.controlled(old)
-    remember(old.client, old.sequence, (code == "ok" or code == "controller_too_far" or code == "saving" or code == "character_editor" or code == "addon_requested") and "idle" or "error", code, controlled and controlled.actor)
-    pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
-    if code=='saving'then
-        pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
-    end
-    if code=='controller_too_far'then
-        pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the controlled Zoi moved too far from the scene.')
+    local normal = {ok = true, saving = true, character_editor = true, addon_requested = true, lifetime_expired = true, owner_expired = true}
+    -- A scene with no panel still retires its request ID, silently.
+    remember(old.client, old.sequence, normal[code] and "idle" or "error", code, controlled and controlled.actor, not had_panel)
+    if had_panel then
+        pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
+        publish_focus()
+        if code=='saving'then
+            pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
+        end
     end
     M.diagnostic("Ended " .. old.token .. ": " .. code)
+end
+
+-- Only an ordinary end may leave Zois where the scene put them; anything else uses the original snapshot.
+local function stays_in_place(old)
+    return old.exit_policy == "stay" and (old.stop_code == "ok" or old.stop_code == "addon_requested" or old.stop_code == "lifetime_expired")
 end
 
 local function request_release(old)
@@ -180,7 +206,9 @@ local function request_release(old)
         old.subsystems_restored = ok
         if not ok then M.diagnostic("Attachment cleanup failed: " .. tostring(err)) end
     end
+    local stay = stays_in_place(old)
     for _, participant in ipairs(old.participants) do
+        participant.keep_position = stay
         if not participant.client_restored then
             local ok, err = pcall(Native.restore, participant)
             participant.client_restored = ok
@@ -190,7 +218,7 @@ local function request_release(old)
             end
         end
         if not participant.released then
-            local ok, err = pcall(tell, participant, "SceneZOI.Release", Protocol.pack(old.token))
+            local ok, err = pcall(tell, participant, "SceneZOI.Release", Protocol.pack(old.token, stay and "stay" or "restore"))
             if not ok then M.diagnostic("Release delivery failed: " .. tostring(err)) end
         end
     end
@@ -206,10 +234,11 @@ local function stop_session(old, code)
     old.stop_origin=old.stop_origin or {source='framework',reason=old.stop_reason}
     old.stopping, old.stop_code, old.age, old.heartbeat = true, code or "ok", 0, 0
     reconcile_autosave()
-    SceneVisuals.restore() -- Presentation restoration retries independently while idle.
-    pcall(inzoi.cli.execute,command('uimod.cfg_save','last_stop')..' value='..Protocol.pack(old.client,old.sequence,old.stop_code,old.node.id))
+    if has_panel(old) then
+        pcall(inzoi.cli.execute,command('uimod.cfg_save','last_stop')..' value='..Protocol.pack(old.client,old.sequence,old.stop_code,old.node.id))
+    end
     notify(old, "session_ending", old.stop_code)
-    publish(old.client, old.sequence, "exiting", old.stop_code)
+    publish_phase(old, "exiting", old.stop_code)
     request_release(old)
 end
 
@@ -221,9 +250,13 @@ function M.stop(code, token)
         return
     end
     if code=='mod_unloaded'then Autosave.restore()end
+    if code=='mod_unloaded'or code=='saving'then
+        for _,current in ipairs(Sessions.list())do stop_session(current,code)end
+        if code=='mod_unloaded'then SceneVisuals.restore()end
+        return
+    end
     local old = Sessions.focused()
-    if not old then SceneVisuals.restore(); return end
-    stop_session(old, code)
+    if old then stop_session(old, code) end
 end
 
 local function publish_node(current, code)
@@ -242,22 +275,21 @@ local function prepare_packet(current, participant)
         Protocol.encode(Json.encode(Catalog.simulation(current.node,participant))))
 end
 
-local function begin(fields)
+local function refresh_libraries()
     -- Native data packs can finish mounting after this Lua mod's boot callback.
-    -- Refresh before capturing a session; its library remains stable until Exit.
+    -- Refresh before capturing a session; a library stays stable while any session runs.
+    if Sessions.count() > 0 then return end
     require("SceneZOI.DataFiles").refresh()
     require("SceneZOI.ExpressionLibrary").refresh()
     require("SceneZOI.FacialPoseLibrary").refresh()
     require("SceneZOI.VoiceLibrary").refresh()
     Localization.refresh()
     Catalog.refresh()
-    local client, sequence, _, initiator, node_id, roster = table.unpack(fields)
-    assert(initiator and roster, "Scene entry needs an initiator and explicit role assignments")
-    local addon=Addons.context(fields[8],fields)
-    assert(addon or not Addons.has_pending(),'Another scene start is pending')
+end
+
+local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
     local node = Catalog.get(node_id)
     if addon then assert(Search.allowed(Catalog.get_snapshot().nodes,node,addon.restrictions),'Scene is restricted for this session')end
-    local furniture_id=fields[7]~='none'and fields[7]or nil
     assert((node.furniture~=nil)==(furniture_id~=nil),'Scene requires the matching furniture context')
     local furniture=furniture_id and Furniture.prepare(furniture_id,node)or nil
     local participants, participant_ids, seen, roles = {}, {}, {}, {}
@@ -299,15 +331,112 @@ local function begin(fields)
     end
     assert(not Save.overlaps(participant_ids, furniture_id), "restore_pending")
     if not addon then assert(Sessions.reserve(current.token, participant_ids, furniture_id)) end
+    return current
+end
+
+-- A standing scene that would crowd another one moves to the nearest safe floor. Beds are simply busy.
+local function plan_placement(current, must_fit)
+    if current.furniture then return end
+    local owner = current.participants[1]
+    for _, participant in ipairs(current.participants) do
+        if participant.role == current.node.anchor_participant then owner = participant end
+    end
+    local point = owner.actor:K2_GetActorLocation()
+    if Sessions.spot_free(current.token, point, Config.standing_spacing_cm) then
+        Sessions.claim_spot(current.token, point)
+        return
+    end
+    current.placement_pending, current.placement_must_fit = true, must_fit
+    local taken = {}
+    for _, spot in ipairs(Sessions.spots(current.token)) do
+        taken[#taken + 1] = string.format("%.1f,%.1f", spot.X, spot.Y)
+    end
+    tell(owner, "SceneZOI.Placement", Protocol.pack(current.token, Config.standing_spacing_cm,
+        Protocol.encode(table.concat(taken, ";"))))
+end
+
+local function begin(fields)
+    refresh_libraries()
+    local client, sequence, _, initiator, node_id, roster = table.unpack(fields)
+    assert(initiator and roster, "Scene entry needs an initiator and explicit role assignments")
+    local addon=Addons.context(fields[8],fields)
+    assert(addon or not Addons.has_pending(),'Another scene start is pending')
+    local furniture_id=fields[7]~='none'and fields[7]or nil
+    local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
     Sessions.add(current)
     Sessions.focus(current)
     Addons.created(addon,current)
     if Catalog.publish then Catalog.publish(current)end
     Autosave.transfer(current.token)
     publish(client, sequence, "preparing", "ok")
+    publish_focus()
+    plan_placement(current, false)
     notify(current, "session_preparing")
     M.diagnostic("Preparing " .. current.token)
-    for _,participant in ipairs(participants)do tell(participant,'SceneZOI.Prepare',prepare_packet(current,participant))end
+    for _,participant in ipairs(current.participants)do tell(participant,'SceneZOI.Prepare',prepare_packet(current,participant))end
+end
+
+-- Every start limit in one place: NPC-only scenes are capped, a player's own never are.
+function M.npc_only_count()
+    local count = 0
+    for _, current in ipairs(Sessions.list()) do if current.npc_only then count = count + 1 end end
+    return count
+end
+
+local function start_distance_ok(anchor, others, limit)
+    local origin = anchor:K2_GetActorLocation()
+    for _, actor in ipairs(others) do
+        local point = actor:K2_GetActorLocation()
+        local dx, dy, dz = point.X - origin.X, point.Y - origin.Y, point.Z - origin.Z
+        if dx * dx + dy * dy + dz * dz > limit * limit then return false end
+    end
+    return true
+end
+
+-- Checked again just before playback: they may have drifted since the start was accepted.
+local function participants_close(current)
+    if not current.max_start_distance_cm then return true end
+    local anchor, actors = current.participants[1].actor, {}
+    for _, person in ipairs(current.participants) do
+        actors[#actors + 1] = person.actor
+        if person.role == current.node.anchor_participant then anchor = person.actor end
+    end
+    return start_distance_ok(anchor, actors, current.max_start_distance_cm)
+end
+
+function M.check_start_distance(node, bindings, limit)
+    local anchor = assert(M.actors[bindings[node.anchor_participant]], "Participant is not loaded")
+    local others = {}
+    for _, id in pairs(bindings) do others[#others + 1] = assert(M.actors[id], "Participant is not loaded") end
+    assert(start_distance_ok(anchor, others, limit), "participant_too_far")
+end
+
+-- A scene that does not need the panel: no UI round trip, and it can run beside the player's own.
+function M.start_background(row)
+    local npc_only = not row.has_household
+    assert(not npc_only or M.npc_only_count() < Config.max_npc_sessions, "session_limit")
+    refresh_libraries()
+    local entry = row.entry
+    local assignments = {}
+    for role, id in pairs(entry.bindings) do assignments[#assignments + 1] = role .. ":" .. id end
+    table.sort(assignments)
+    direct_serial = direct_serial + 1
+    local current = create_session("host", tostring(direct_serial), entry.initiator, entry.node,
+        table.concat(assignments, "+"), entry.furniture, row)
+    current.npc_only, current.lifetime, current.exit_policy = npc_only, row.lifetime, row.placement.exit
+    current.max_start_distance_cm = row.placement.max_start_distance_cm
+    Sessions.add(current)
+    Addons.created(row, current)
+    plan_placement(current, true)
+    notify(current, "session_preparing")
+    M.diagnostic("Preparing background " .. current.token)
+    for _,participant in ipairs(current.participants)do tell(participant,'SceneZOI.Prepare',prepare_packet(current,participant))end
+    return current.token
+end
+
+function M.renew_session(id)
+    local current = assert(Sessions.get(id), "session_not_found")
+    current.lease_age = 0
 end
 function M.furniture_reply(actor,fields)
     local c=Sessions.get(fields[1])
@@ -334,7 +463,7 @@ local function start_playback(current)
     Control.enter(current)
     notify(current, "node_entered")
     publish_node(current)
-    publish(current.client, current.sequence, "playing", "ok")
+    publish_phase(current, "playing", "ok")
     M.diagnostic("Playing " .. current.token .. " node=" .. current.node.id .. " revision=" .. current.revision)
 end
 
@@ -422,6 +551,18 @@ function M.reply(actor, content)
     local current = fields and Sessions.get(fields[1])
     if not current then return end
     local kind, detail = fields[2], fields[3]
+    if kind == "placement" then
+        if current.stopping or not current.placement_pending then return end
+        current.placement_pending = nil
+        local x, y, z = tonumber(fields[3]), tonumber(fields[4]), tonumber(fields[5])
+        if x and y and z then
+            current.spot = {X = x, Y = y, Z = z}
+            Sessions.claim_spot(current.token, current.spot)
+        elseif current.placement_must_fit then
+            stop_session(current, "placement_unavailable")
+        end
+        return
+    end
     if fields[5] and kind ~= "outfit" then M.diagnostic("Participant preparation failed: " .. fields[5]) end
     if current.stopping then
         if kind ~= "released" then return end
@@ -462,7 +603,7 @@ local function change_node(current, node, assets, duration, loaded_subsystems)
     local subsystems = Subsystems.new(current, loaded_subsystems)
     Session.change_node(current, node, assets, duration, subsystems)
     notify(current, "node_preparing")
-    publish(current.client, current.sequence, "preparing", "ok")
+    publish_phase(current, "preparing", "ok")
     for _, participant in ipairs(current.participants) do tell(participant, "SceneZOI.Prepare", prepare_packet(current, participant)) end
 end
 
@@ -567,7 +708,7 @@ local function begin_outfit(current,change)
     for _, participant in ipairs(current.participants) do participant.between_nodes = true end
     current.subsystems:begin_outfit(change)
     notify(current, "outfit_changing")
-    publish(current.client, current.sequence, "preparing", "ok")
+    publish_phase(current, "preparing", "ok")
     tell(change.participant, "SceneZOI.Outfit", outfit_packet(current))
 end
 local function outfit_request(raw)
@@ -593,7 +734,7 @@ local function finish_outfit(current)
     -- The same node resumes at its held time; no new node, anchor or snapshot.
     for _, participant in ipairs(current.participants) do participant.between_nodes = false end
     notify(current, "outfit_changed")
-    publish(current.client, current.sequence, "playing", "ok")
+    publish_phase(current, "playing", "ok")
 end
 
 local function poll()
@@ -666,7 +807,7 @@ local function poll()
             Addons.fail_start(fields[8],err)
             M.diagnostic("Entry failed: " .. tostring(err))
             if Sessions.focused() then M.stop("entry_error")
-            else remember(client, sequence, "error", "entry_error") end
+            else remember(client, sequence, "error", tostring(err):find("already in a scene", 1, true) and "busy" or "entry_error") end
         end
     elseif action == "exit" or action == "save" then
         -- An Exit arriving before Start also retires this request ID.
@@ -689,13 +830,54 @@ function M.boot()
     M.diagnostic("Runtime ready")
 end
 
+-- The controls follow the Zoi the player controls.
+local function bind_panel(current)
+    current.ui_age, current.unfocused_age = 0, 0
+    state_value = nil
+    current.playback_state, current.node_state, current.outfit_state = nil, nil, nil
+    current.last_task_payload, current.personality_state, current.voice_state = nil, nil, nil
+    Settings.forget(current)
+    publish(current.client, current.sequence, phase_of(current), "ok")
+    publish_node(current)
+    publish_playback(current)
+    if Catalog.publish then pcall(Catalog.publish, current) end
+end
+
+local function update_focus()
+    local known, id = pcall(Controller.controlled_id, M.actors)
+    if not known or not id then return end -- An unknown lookup is not evidence of a switch.
+    local target = Sessions.get(Sessions.holder(id))
+    local old = Sessions.focused()
+    if target == old then return end
+    Sessions.focus(target)
+    if old then old.unfocused_age = 0 end
+    publish_focus()
+    if target then bind_panel(target) elseif Catalog.publish then pcall(Catalog.publish) end
+    reconcile_autosave()
+end
+
+-- Every scene that can run without a panel has a finite life.
+local function background_limit_reached(current, dt)
+    current.unfocused_age = (current.unfocused_age or 0) + dt
+    if current.unfocused_age >= Config.background_max_seconds then return "lifetime_expired" end
+    local lifetime = current.lifetime
+    if not lifetime then
+        return current.unfocused_age >= Config.manual_background_seconds and "lifetime_expired" or nil
+    end
+    if lifetime.deadline_seconds and current.unfocused_age >= lifetime.deadline_seconds then return "lifetime_expired" end
+    if lifetime.lease_seconds then
+        current.lease_age = (current.lease_age or 0) + dt
+        if current.lease_age >= lifetime.lease_seconds then return "owner_expired" end
+    end
+end
+
 local function update(dt)
     dt = Clock.delta(dt)
     local focused = Sessions.focused()
     if not focused then Localization.tick(dt)end
     poll_elapsed = poll_elapsed + dt
     if poll_elapsed >= Config.poll_interval then
-        poll_elapsed=0;Autosave.tick(focused~=nil);Save.tick(M.actors);poll()
+        poll_elapsed=0;Autosave.tick(focused~=nil);Save.tick(M.actors);poll();update_focus()
     end
     local mode=ModeGuard.update(dt,Sessions.count()>0 or pending_focus~=nil)
     if mode.editor then
@@ -714,7 +896,7 @@ local function update(dt)
                 pcall(inzoi.cli.execute,command('uimod.cfg_save','input_restore')..' value='..Protocol.pack(pending_focus.client,pending_focus.sequence,'deferred',reason))
             end
             if allowed then
-                local actor = ControllerRange.focus_actor(M.actors,pending_focus.actor)
+                local actor = Controller.focus_actor(M.actors,pending_focus.actor)
                 local finished=pending_focus
                 pending_focus = nil
                 local ok, err = true,nil
@@ -747,23 +929,19 @@ local function advance(current, dt)
         else for _,p in ipairs(current.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(current.token))end end
     end
     if not Sessions.has(current) or current.stopping then return end
-    local too_far,distance,controlled_id=ControllerRange.update(current,M.actors,dt)
-    current.controller_range_diagnostic_age=(current.controller_range_diagnostic_age or 0)+dt
-    if has_panel(current) and current.controller_range_status and (not current.controller_range_reported or current.controller_range_diagnostic_age>=1 or too_far)then
-        pcall(inzoi.cli.execute,command('uimod.cfg_save','controller_range')..' value='..Protocol.encode(Json.encode(current.controller_range_status)))
-        current.controller_range_reported=true;current.controller_range_diagnostic_age=0
-    end
-    if too_far then
-        M.diagnostic('Automatic exit: controlled='..controlled_id..' distance_cm='..string.format('%.1f',distance))
-        stop_session(current,'controller_too_far');return
+    if not has_panel(current) then
+        local expired = background_limit_reached(current, dt)
+        if expired then stop_session(current, expired); return end
     end
     if current.furniture then
         local valid,detail=Furniture.valid(current.furniture)
         if not valid then M.diagnostic('Furniture changed: '..tostring(detail));stop_session(current,'furniture_changed');return end
     end
     current.subsystems:guard()
-    current.ui_age = current.ui_age + dt
-    if current.ui_age > Config.lease_timeout then stop_session(current, "ui_disconnected"); return end
+    if has_panel(current) then
+        current.ui_age = current.ui_age + dt
+        if current.ui_age > Config.lease_timeout then stop_session(current, "ui_disconnected"); return end
+    end
     if current.preparing and current.age > Config.prepare_timeout then
         local code = current.outfit_change and "outfit_timeout" or not current.participants_ready and "prepare_timeout"
             or current.preparation_stage == "attachment" and "attachment_timeout" or "appearance_timeout"
@@ -778,7 +956,7 @@ local function advance(current, dt)
         current.heartbeat = 0
         if current.preparing then
             M.diagnostic("Preparing " .. current.token .. " node=" .. current.node.id .. " " .. Appearance.status(current) .. " " .. current.subsystems:status())
-        else
+        elseif has_panel(current) then
             M.diagnostic("Playing " .. current.token .. " " .. current.subsystems:status())
         end
         if current.furniture and current.save_ready then
@@ -809,8 +987,12 @@ local function advance(current, dt)
             -- Body-region preparation can itself rebuild appearance. Reapply the
             -- held pose after that mutation, and wait if no instance exists yet.
             if current.started then pose_ready = Playback.hold(current) end
-            if resources_ready and pose_ready then
-                if current.outfit_change then finish_outfit(current) else start_playback(current) end
+            if resources_ready and pose_ready and not current.placement_pending then
+                if current.outfit_change then finish_outfit(current)
+                elseif not current.started and not participants_close(current) then
+                    stop_session(current, "participant_too_far")
+                    return
+                else start_playback(current) end
             end
         else current.preparation_stage = "appearance" end
     end
@@ -844,6 +1026,7 @@ local function advance(current, dt)
             if not finish_transition(current) then return end
         end
     end
+    if not has_panel(current) then return end
     publish_playback(current)
     OutfitControl.publish(current)
     Settings.publish(current)
@@ -882,10 +1065,13 @@ function M.tick(dt)
             end
         end
     end
-    local focused = Sessions.focused()
-    local visual_members={}
-    if focused then for _,person in ipairs(focused.participants)do visual_members[person.id]=true end end
-    local visual_active=focused~=nil and not focused.stopping
+    local visual_members,visual_active={},false
+    for _,current in ipairs(Sessions.list())do
+        if not current.stopping then
+            visual_active=true
+            for _,person in ipairs(current.participants)do visual_members[person.id]=true end
+        end
+    end
     local visual_ok, visual_status=pcall(SceneVisuals.tick,M.actors,visual_active,visual_members)
     if visual_ok then
         local packet=Protocol.encode(Json.encode(visual_status))

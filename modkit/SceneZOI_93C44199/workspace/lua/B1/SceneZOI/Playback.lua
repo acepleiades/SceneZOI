@@ -14,7 +14,13 @@ end
 function M.enter(current)
     for _, participant in ipairs(current.participants) do Native.rebind(participant) end
     local anchor_owner = assert(current.bindings[current.node.anchor_participant])
-    current.anchor = current.anchor or anchor_owner.mesh:K2_GetComponentToWorld()
+    if not current.anchor then
+        current.anchor = anchor_owner.mesh:K2_GetComponentToWorld()
+        if current.spot then
+            local height = current.anchor.Translation.Z
+            current.anchor.Translation = UE.FVector(current.spot.X, current.spot.Y, height)
+        end
+    end
     current.tracks = {}
     for _, participant in ipairs(current.participants) do
         local asset = assert(current.assets[participant.role], "Participant has no animation track")

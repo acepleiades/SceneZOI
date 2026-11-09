@@ -46,6 +46,7 @@ local function release(self, owner, silent)
     restore("furniture", function() if lease.saved_furniture then require('SceneZOI.FurnitureLease').restore_saved(owner,lease.saved_furniture)end end)
     restore("outfit", function() Outfit.restore(owner, lease) end)
     restore("position", function()
+        if lease.stay then return end
         owner:SetLocationAndRotationOnlySimul(lease.entry_location, lease.entry_rotation, false)
     end)
     restore("collision", function() owner:SetCollisionEnabled(lease.collision) end)
@@ -250,8 +251,14 @@ local function receive(self, owner, kind, content)
             lease.outfit_counter = count
         end
         inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
+    elseif kind == "SceneZOI.Placement" then
+        local ok, x, y, z = pcall(require("SceneZOI.Placement").find, owner, tonumber(fields[2]), Protocol.decode(fields[3]))
+        reply(owner, token, "placement", ok and x or "none", ok and y or 0, ok and z and tostring(z) or nil)
     elseif kind == "SceneZOI.Release" then
-        if self.lease and self.lease.token == token then release(self, owner)
+        if self.lease and self.lease.token == token then
+            -- Only stay if the game agrees this floor is walkable; otherwise go back as usual.
+            self.lease.stay = fields[2] == "stay" and require("SceneZOI.Placement").walkable(owner)
+            release(self, owner)
         else
             -- Retire even an unseen token: a delayed Prepare must not reacquire it.
             self.retired[token] = true

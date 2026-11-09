@@ -3,6 +3,8 @@
     var section = 'scenezoi_runtime';
     var client = 'ui.' + Date.now() + '.' + Math.floor(Math.random() * 1000000);
     var sequence = 0;
+    // The panel may show a session it did not start: these keep this panel's own identity for new starts.
+    var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null;
     var heartbeat = 0;
     var pendingCommand = null;
     var active = false;
@@ -48,7 +50,7 @@
         changed:function(){updateHitRect();}}) : null;
     var outfits = window.SceneZOIOutfitUI.create({root:root, cfg:cfg, write:writePacket, tasks:tasks,
         state:function () { return {active:active, playing:playing, exiting:exiting, client:client, sequence:sequence,
-            revision:revision, pendingNavigation:pendingNavigation}; },
+            revision:revision, pendingNavigation:pendingNavigation, counterBase:counterBase}; },
         changed:function () { renderNavigation(); renderPlayback(); }});
 
     function decode(response) {
@@ -225,7 +227,8 @@
             checkingStart = true;
             return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function(data){
                 if (!initiator || entityId(data)!==initiator) {declineStart(initiator);return false;}
-                active=true;exiting=false;noticeInitiator=null;noticeToken=null;sequence++;
+                client=ownClient;sequence=++ownSequence;counterBase=0;
+                active=true;exiting=false;noticeInitiator=null;noticeToken=null;
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
@@ -312,10 +315,52 @@
             else {
                 active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
                 pendingCommand = null;
-                if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving' || code === 'character_editor')) closePanel();
+                if (phase === 'idle' && (code === 'ok' || code === 'saving' || code === 'character_editor')) closePanel();
                 else show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));
             }
         }).catch(function () {}).then(function () { reading = false; });
+    }, 250);
+    // The panel follows the controlled Zoi: it shows that Zoi's scene, or nothing.
+    function detachPanel() {
+        if (!active) return;
+        active = false; exiting = false; playing = false; currentNode = null;
+        pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
+        client = ownClient; sequence = ownSequence; counterBase = 0;
+        closePanel();
+    }
+    function attachPanel(f) {
+        client = f[3]; sequence = Number(f[4]) || 0;
+        active = true; exiting = f[7] === 'exiting'; playing = f[7] === 'playing'; heartbeat = 0;
+        pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
+        noticeInitiator = null; noticeToken = null; lastState = ''; gameScale = 1;
+        // Counters must beat anything this session has already acknowledged from an earlier binding.
+        counterBase = Math.floor(Date.now() / 1000);
+        navigationCount = counterBase; playbackCounter = counterBase; acknowledgedPlayback = 0;
+        revision = Number(f[5]) || 0;
+        currentNode = window.SceneZOICatalog.nodes[f[6]] || null;
+        refreshCatalog().then(function () {
+            currentNode = window.SceneZOICatalog.nodes[f[6]] || currentNode;
+            if (active) show(playing ? playingMessage() : window.SceneZOILocalization.text('Preparing all participants…'));
+        }).catch(function () {});
+        openPanel();
+        show(playing ? playingMessage() : window.SceneZOILocalization.text('Preparing all participants…'));
+    }
+    function applyFocus(f) {
+        if (f[0] !== 'SZ2') return;
+        if (f[2] === 'none') { detachPanel(); return; }
+        if (active && client === f[3] && String(sequence) === f[4]) return; // Already showing this scene.
+        attachPanel(f);
+    }
+    var readingFocus = false;
+    setInterval(function () {
+        if (readingFocus) return;
+        readingFocus = true;
+        cfg('uimod.cfg_load', 'focus_session').then(function (data) {
+            var value = data && data.value !== undefined ? data.value : data;
+            if (typeof value !== 'string' || value === lastFocus) return;
+            lastFocus = value;
+            applyFocus(value.split('|'));
+        }).catch(function () {}).then(function () { readingFocus = false; });
     }, 250);
     function escapeText(value) {
         return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
