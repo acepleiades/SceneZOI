@@ -3,6 +3,7 @@ local V=require('SceneZOI.DataValidation')
 local Protocol=require('SceneZOI.Protocol')
 local Control=require('SceneZOI.AddonControl')
 local Settings=require('SceneZOI.Settings')
+local Plan=require('SceneZOI.Plan')
 local function appearance_body(p,session)return p.body or p.expression_body or((session.node.participants or {})[p.role]or {}).body end
 local M={}
 local function sorted(t)local ids={};for id in pairs(t)do ids[#ids+1]=id end;table.sort(ids);return ids end
@@ -30,7 +31,8 @@ function M.update(state,session,dt,emit)
    local directive=directives[p.role]and directives[p.role][id]
    local rate=directive and directive.rate or -(definition.decay or 0)
    local multiplier,held=Control.task(session,p.id,id)
-   if rate>0 then multiplier=multiplier*Settings.task_multiplier(appearance_body(p,session))end
+   if rate>0 then multiplier=multiplier*Settings.task_multiplier(appearance_body(p,session))*Plan.rate_factor(session)end
+   if rate>0 and Plan.frozen(session,p.id,id)then multiplier=0 end
    rate=rate*multiplier
    local maximum=definition.maximum
    if entry.value<maximum and rate>0 then
@@ -75,10 +77,12 @@ function M.inspect(state,session)
   local multiplier,held=Control.task(session,p.id,id)
   local base_rate=directive and directive.rate or -(d.decay or 0)
   local player=Settings.task_multiplier(appearance_body(p,session))
-  local combined=multiplier*(base_rate>0 and player or 1)
+  local plan_factor=base_rate>0 and Plan.rate_factor(session)or 1
+  if base_rate>0 and Plan.frozen(session,p.id,id)then plan_factor=0 end
+  local combined=multiplier*(base_rate>0 and player or 1)*plan_factor
   rows[#rows+1]={participant_id=p.id,participant_role=p.role,task_id=id,label=d.label,value=e.value,
    maximum=d.maximum,percent=100*e.value/d.maximum,completions=e.completions,
-   base_rate=base_rate,rate_multiplier=combined,player_rate_multiplier=player,addon_rate_multiplier=multiplier,effective_rate=base_rate*combined,completion_hold=held}
+   base_rate=base_rate,rate_multiplier=combined,player_rate_multiplier=player,addon_rate_multiplier=multiplier,plan_rate_multiplier=plan_factor,effective_rate=base_rate*combined,completion_hold=held}
  end end
  return rows
 end

@@ -34,6 +34,7 @@ local Control=require('SceneZOI.AddonControl')
 local Effects=require('SceneZOI.AddonEffects')
 local ModeGuard=require('SceneZOI.ModeGuard')
 local Sessions=require('SceneZOI.Sessions')
+local Plan = require("SceneZOI.Plan")
 local serial = 0
 local poll_elapsed = 0
 local state_value
@@ -424,6 +425,7 @@ function M.start_background(row)
     local current = create_session("host", tostring(direct_serial), entry.initiator, entry.node,
         table.concat(assignments, "+"), entry.furniture, row)
     current.npc_only, current.lifetime, current.exit_policy = npc_only, row.lifetime, row.placement.exit
+    if row.plan then current.plan = Plan.new(row.plan) end
     current.max_start_distance_cm = row.placement.max_start_distance_cm
     Sessions.add(current)
     Addons.created(row, current)
@@ -673,7 +675,7 @@ local function navigate(raw)
         publish_node(current, current.navigation_code)
         return
     end
-    if current.node.kind == "transition" then
+    if current.node.kind == "transition" or Plan.locked(current) then
         current.navigation_code = "navigation_locked"
         publish_node(current, current.navigation_code)
         return
@@ -916,6 +918,26 @@ local function update(dt)
     end)
 end
 
+-- Carries out what a plan asked for. Every automatic move goes through the same validated handoff.
+local function apply_plan(current, action)
+    if action.event then notify(current, action.event) end
+    if action.stop then stop_session(current, action.stop); return end
+    if not action.navigate then return end
+    local ok, node, assets, duration, loaded = pcall(function()
+        local target = Catalog.destination(current.node, action.navigate, current)
+        require("SceneZOI.Binding").resolve(current.participants, target)
+        local clips, length = Catalog.load(target)
+        return target, clips, length, Subsystems.load(target, length, current)
+    end)
+    if not ok then
+        M.diagnostic("Automatic navigation failed: " .. tostring(node))
+        current.plan.state, current.plan.outcome = "finished", "goal_unreachable"
+        stop_session(current, "goal_unreachable")
+        return
+    end
+    change_node(current, node, assets, duration, loaded)
+end
+
 local function advance(current, dt)
     current.age, current.heartbeat = current.age + dt, current.heartbeat + dt
     if current.stopping then
@@ -1029,6 +1051,8 @@ local function advance(current, dt)
         if current.clock:finished(current.duration, current.node.kind) then
             if not finish_transition(current) then return end
         end
+        local action = Plan.tick(current, dt, game_scale)
+        if action then apply_plan(current, action) end
     end
     if not has_panel(current) then return end
     publish_playback(current)
@@ -1102,7 +1126,7 @@ end
 function M.navigate_to(id,scene_id)
     local current=assert(Sessions.get(id),'session_not_found')
     assert(not current.stopping and not current.preparing,'session_not_ready')
-    assert(current.node.kind~='transition','navigation_locked')
+    assert(current.node.kind~='transition'and not Plan.locked(current),'navigation_locked')
     local target=Catalog.get(scene_id,current)
     assert(require('SceneZOI.DataValidation').equal(target.furniture,current.node.furniture),'incompatible_furniture')
     require('SceneZOI.Binding').resolve(current.participants,target)
@@ -1133,7 +1157,7 @@ function M.api_speed(current,index)
 end
 function M.api_navigation(current)
     local rows=Json.array({})
-    if current.node.kind=='transition'then return {navigation=rows,locked=true}end
+    if current.node.kind=='transition'or Plan.locked(current)then return {navigation=rows,locked=true}end
     for _,edge in ipairs(current.node.navigation)do
         local ok,target=pcall(Catalog.get,edge.target,current)
         if ok and require('SceneZOI.DataValidation').equal(target.furniture,current.node.furniture)and pcall(require('SceneZOI.Binding').resolve,current.participants,target)then rows[#rows+1]=require('SceneZOI.DataValidation').copy(edge)end

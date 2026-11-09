@@ -8,6 +8,7 @@ local Search=require('SceneZOI.SceneSearch')
 local Events=require('SceneZOI.Events')
 local Services=require('SceneZOI.AddonServices')
 local Control=require('SceneZOI.AddonControl')
+local Plan=require('SceneZOI.Plan')
 local M={version=1}
 local cursor=0
 local cache,order,subscribers,pending,serial,handle,instance={},{},{},nil,0,nil,nil
@@ -134,32 +135,39 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime','goals','restrictions','end_policy','task_progress_multiplier'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
- local background=args.background==true
+ local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
+ if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
+ local background=args.background==true or autonomous
  if not background then
   assert(not runtime().snapshot()and not pending,'session_already_running')
   assert(not require('SceneZOI.Autosave').restoring(),'restore_pending')
   local controller=UE.UGameplayStatics.GetPlayerController(actor,0)
   assert(controller and P.id(controller:GetCharacterEntityId())==args.initiator,'initiator_not_controlled')
  end
- local placement,lifetime=M.placement(args.placement),M.lifetime(args.lifetime)
+ local placement=M.placement(args.placement)
  local people=assert(roster(args));local member=false;for _,person in ipairs(people)do if person.id==args.initiator then member=true end end;assert(member,'Initiator must participate')
  local ids={};for _,person in ipairs(people)do ids[#ids+1]=person.id end
  assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id),'restore_pending')
  local Sessions=require('SceneZOI.Sessions')
  for _,id in ipairs(ids)do assert(not Sessions.holder(id),'participant_busy')end
- local restrictions=Search.criteria(data.metadata,args.session_restrictions)
+ local restrictions=Search.criteria(data.metadata,args.restrictions or args.session_restrictions)
  local search=Search.criteria(data.metadata,args.search)
+ local spec=autonomous and Plan.parse(args,(data.tasks or {}).definitions or {},ids)or nil
+ local lifetime=M.lifetime(args.lifetime,spec)
  local mode=preflight and(args.start_mode or(args.scene_id and 'start_scene'or 'start_at_hub'))or req.operation
- assert(mode=='start_at_hub'or mode=='start_scene'or mode=='start_random_scene','Invalid start mode')
+ assert(mode=='start_at_hub'or mode=='start_scene'or mode=='start_random_scene'or mode=='start_autonomous_scene','Invalid start mode')
  if mode=='start_at_hub'then search.starting_hub_only=true end
  local rows=Search.find(data,search,people,profile(args),args.bindings);local allowed={}
  for _,candidate in ipairs(rows)do
-  if Search.allowed(data.nodes,data.nodes[candidate.scene_id],restrictions)and(mode~='start_scene'or candidate.scene_id==args.scene_id)then allowed[#allowed+1]=candidate end
+  local named=mode=='start_scene'or autonomous and args.scene_id~=nil
+  if Search.allowed(data.nodes,data.nodes[candidate.scene_id],restrictions)and(not named or candidate.scene_id==args.scene_id)then allowed[#allowed+1]=candidate end
  end
- if mode=='start_scene'then V.id(args.scene_id)end
- local chosen=assert(Search.random(allowed),'no_matching_scenes')
+ if mode=='start_scene'or autonomous and args.scene_id~=nil then V.id(args.scene_id)end
+ local chosen
+ if autonomous then chosen=Plan.pick_entry(data,spec,allowed,people,restrictions)
+ else chosen=assert(Search.random(allowed),'no_matching_scenes')end
  if args.context then assert(V.object(args.context)and #J.encode(args.context)<=4096,'Invalid/oversized add-on context')end
  if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id])end
  if background then runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm)end
@@ -169,12 +177,13 @@ local function start(actor,req,row,data,preflight)
  for _,p in ipairs(people)do row.departures[p.id]=false end
  row.entry={initiator=args.initiator,node=chosen.scene_id,bindings=chosen.bindings,furniture=args.furniture_id,api_token=row.token}
  row.restrictions=restrictions;row.context=V.copy(args.context);row.status={phase='accepted',scene_id=chosen.scene_id}
- row.placement,row.lifetime=placement,lifetime
+ row.placement,row.lifetime,row.plan=placement,lifetime,spec
  if background then background_starts[row.token]=row else pending=row end
  -- Ensure the caller receives start failures/end events even without a subscription.
  local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
  if not subscribers[sk]then subscribers[sk]={addon_id=req.addon_id,client_id=req.client_id,actor=actor,names={['*']=true}}end
- return {accepted=true,scene_id=chosen.scene_id,start_request_id=req.request_id}
+ return {accepted=true,scene_id=chosen.scene_id,start_request_id=req.request_id,autonomous=autonomous or nil,
+  stages=spec and 1 or nil,route_uncertain=spec and spec.route_uncertain or nil}
 end
 local function execute(actor,req,row)
  local args=req.arguments;local op=req.operation
@@ -183,7 +192,7 @@ local function execute(actor,req,row)
   if runtime().api_control_event and not op:match('^get_')and op~='renew_integration'and op~='register_integration'then runtime().api_control_event(req)end
   return result
  end
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
@@ -224,7 +233,7 @@ local function execute(actor,req,row)
   local ok,value=pcall(start,actor,req,row,data,true)
   if ok then return value end
   local message=tostring(value);local code=message:match('([a-z_]+)$')or 'invalid_request'
-  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true}
+  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true,goal_unreachable=true,participant_not_found=true,task_not_found=true}
   return {valid=false,code=known[code]and code or 'invalid_request',message=message,reservation=false}
  end
  if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy((data.tasks or {}).definitions or {}),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
@@ -234,7 +243,7 @@ local function execute(actor,req,row)
   if op=='find_scenes'then return {scenes=rows,count=#rows}end
   return {scene=Search.random(rows)or J.null,count=#rows}
  end
- if op=='start_scene'or op=='start_random_scene'or op=='start_at_hub'then return start(actor,req,row,data)end
+ if op=='start_scene'or op=='start_random_scene'or op=='start_at_hub'or op=='start_autonomous_scene'then return start(actor,req,row,data)end
  error('unknown_operation')
 end
 function M.receive(actor,content)
@@ -255,7 +264,7 @@ function M.receive(actor,content)
  if success then response.result=value;response.code='ok'
  else
   local message=tostring(value);response.message=message
-  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,
+  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,
    no_matching_scenes=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
    unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')
@@ -275,8 +284,13 @@ function M.placement(value)
  if value.exit~=nil then assert(value.exit=='restore'or value.exit=='stay','Invalid exit position policy');out.exit=value.exit end
  return out
 end
-function M.lifetime(value)
- if value==nil then return {deadline_seconds=C.background_default_seconds} end
+function M.lifetime(value,spec)
+ if value==nil then
+  local seconds=C.background_default_seconds
+  -- A plan asked to run longer than the default must not be cut short by it. Pauses count against this.
+  if spec and spec.end_policy.type=='duration'then seconds=math.max(seconds,math.min(C.background_max_seconds,spec.end_policy.seconds*1.5+60))end
+  return {deadline_seconds=seconds}
+ end
  V.fields(value,{'deadline_seconds','lease_seconds'})
  assert((value.deadline_seconds==nil)~=(value.lease_seconds==nil),'Choose a deadline or an owner lease')
  if value.deadline_seconds then V.number(value.deadline_seconds,1,C.background_max_seconds);return {deadline_seconds=value.deadline_seconds}end

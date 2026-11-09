@@ -66,6 +66,7 @@ function M.snapshot(current)
         tracks[#tracks + 1] = {id = track.id, kind = track.kind, participant_id = track.participant_id}
     end
     return {event_index=current.event_index or 0,addon_client_id=current.addon_client_id,
+        plan=require('SceneZOI.Plan').snapshot(current),
         focused=require('SceneZOI.Sessions').focused()==current,
         result_facts=require('SceneZOI.AddonControl').facts(current),
         task_state=current.tasks and require('SceneZOI.Tasks').inspect(current.tasks,current)or {},

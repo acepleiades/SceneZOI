@@ -127,4 +127,25 @@ r=request('renew_session',{session_id='background.1'},'other.addon');assert(not 
 r=request('renew_session',{session_id='background.1'});assert(r.ok and renewed[1]=='background.1')
 r=request('stop_session',{session_id='background.1'},'other.addon');assert(not r.ok and r.code=='session_not_owned')
 r=request('stop_session',{session_id='background.1'});assert(r.ok and stopped[#stopped].token=='background.1')
+-- Autonomous plans use the same start path, and plan fields need the new operation.
+local goal={{participant_id='5',task_id='charge'}}
+data.tasks={definitions={charge={maximum=100}}};node.tasks={first={charge={rate=1}}}
+r=request('start_at_hub',{initiator='5',participants={'5','6'},background=true,goals=goal});assert(not r.ok and r.code=='invalid_request'and Sessions.holder('5')==nil)
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'}});assert(not r.ok and r.code=='invalid_request','A plan needs goals or an end policy')
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='6',task_id='charge'}}});assert(not r.ok and r.code=='goal_unreachable','The data shows no scene can finish it')
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='5',task_id='nope'}}});assert(not r.ok and r.code=='task_not_found')
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='9',task_id='charge'}}});assert(not r.ok and r.code=='participant_not_found')
+assert(Sessions.holder('5')==nil,'A refused plan holds nothing')
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals=goal,restrictions={allowed_content_ratings={'GENERAL'}},context={purpose='test'}})
+assert(r.ok and r.result.autonomous==true and r.result.stages==1 and r.result.scene_id=='test.hub')
+API.tick(.5);depart();API.tick(.05)
+local planned=started['background.'..count];assert(planned.plan.goals[1].task_id=='charge'and planned.plan.end_policy.type=='goals'and planned.context.purpose=='test')
+assert(planned.restrictions.allowed_content_ratings[1]=='GENERAL','Named restrictions become the session restrictions')
+Sessions.release('background.'..count);started['background.'..count]=nil
+-- A timed plan is not cut short by the default deadline, and the deadline still has a ceiling.
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},end_policy={type='duration',seconds=1200}});assert(r.ok);API.tick(.5);depart();API.tick(.05)
+assert(started['background.'..count].lifetime.deadline_seconds==1800)
+Sessions.release('background.'..count);started['background.'..count]=nil
+r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal});assert(r.ok and r.result.valid and Sessions.holder('5')==nil)
+r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals={{participant_id='6',task_id='charge'}}});assert(r.ok and r.result.valid==false and r.result.code=='goal_unreachable')
 print('Background API passed: opt-in flag, old contract unchanged, reservations, departures, household detection, placement and lifetime validation, distance, cap, timeouts and addressing by id.')
