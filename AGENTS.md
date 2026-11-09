@@ -66,6 +66,9 @@ Synchronize owned sources, prepare Lua, verify source bytes and validate in ModK
   native-written diagnostic files before use. Close the game before replacing
   cooked containers. Back up package and cfg data separately outside Mods,
   preserve preferences, settings and attribution, and verify installed hashes.
+- After any Lua reload or temporary Lua mod mount/unmount, verify the manual
+  launcher before testing Start. Follow the [hot-update readiness checks](docs/development.md#hot-update-readiness)
+  to recover stale UI acknowledgements or a missing Zoi registry.
 - For a player release test, install the exact ZIP in a clean directory without
   old cfg. Verify automatic loading, Start, playback, Exit and re-entry after
   a fresh launch without diagnostic seeding, manual mounting or hot reload. Keep

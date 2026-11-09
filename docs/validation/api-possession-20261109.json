@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "runtime_build": "20261108-anchor-dynamics-1",
+  "api_version": 1,
+  "reported_symptom": "An add-on developer reported that switching the controlled Zoi around scene start crashed or disabled their integration, prevented further API starts and removed the manual starter.",
+  "method": "Retail Live Mode with four household Zois. A temporary independently mounted B2 client used the public SDK and public messages. Possession changes used the native game command. No framework or HZoi code was replaced.",
+  "native_checks": {
+    "during_playback": "A framework standing session kept playing after switching to the partner and then to a nearby nonparticipant. Its original SDK client retained access and stopped it. A fresh request from the new controlled Zoi started another scene, which also survived switching to its partner.",
+    "stale_initiator": "A start using the previous controlled Zoi as initiator returned initiator_not_controlled. The next valid start succeeded.",
+    "pending_start": "Switching after API acceptance and before playback produced session_start_failed with start_failed and a terminal failed request status. A new start from the newly controlled Zoi succeeded immediately.",
+    "authored_actions": "The three directed action records from HZoi's Standing Rear Sex declaration yielded one find_scenes result. start_random_scene with only the criteria reached the matched scene. It stayed active after switching to the partner and a nearby nonparticipant. A subsequent start_scene using the ID returned by find_scenes also reached playback with the female participant as the controlled initiator.",
+    "cleanup": "All tested completed sessions emitted session_ended with cleanup_complete. Native readback after the last API session showed idle/ok, gameplay input restored and autosave released. The temporary SDK probe was unmounted and archived outside Mods."
+  },
+  "manual_acceptance": "After remounting only the UI, the launcher acknowledgement and host token stayed stable through an action-based start, two possession changes and API Exit. The maintainer then opened the manual picker, started playback and exited. Native selection and Exit records confirm the run.",
+  "limits": "The reported add-on's code and logs were unavailable. The local probe used independent SDK clients for each caller entity and a fixed loaded household. Native mod startup and distant spectator exit were outside this check.",
+  "hot_reload_control": "The first probe unmount restarted the host and temporarily left its B1 actor registry empty, so a manual Start failed before selection. A separate Lua-only reload reset selection_launcher_ready to none while leaving the UI boot token unchanged. That result was reproduced with the probe removed and before any API request in the new host. A full Lua reload followed by a UI remount restored both readiness acknowledgements. See the development guide for the sequence."
+}

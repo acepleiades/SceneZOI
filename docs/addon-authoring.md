@@ -33,11 +33,10 @@ over wildcard bindings; the wildcard list is a fallback, not an additional list.
 A mod using only `key: "*"` can therefore lose household callbacks when another
 enabled mod declares `ResidenceFamily`, even though its Main script and UI run.
 
-SceneZOI binds both runtime and picker receivers explicitly in B1/B2 for all eight
-current `EB1CharacterGroupType` keys: `CompanyRoleNpc`, `Crowd`, `EventCrowd`,
-`ResidenceFamily`, `ServiceNpc`, `ShopNpc`, `SiteRoleNpc` and `StaticNpc`. Wildcard
-bindings remain for groups not explicitly listed. These are native group keys,
-not body types, participant roles or a list of supported third-party mods.
+Since SceneZOI 1.1.5, its runtime and picker receivers bind to the Zoi's
+appearance components in both environments. This avoids taking precedence
+over an independent mod's wildcard Zoi callbacks. See the
+[coexistence checkpoint](validation/wildcard-coexistence-20261108.json).
 
 Use ModKit's `modkit_list_lua_binding_keys` for the target environment/type when
 authoring your manifest. Test callbacks with an independent exact-group binding
@@ -76,7 +75,12 @@ end
 
 Keep caller entity identity stable while refreshing its current native wrapper.
 `refresh_owner` updates pending retries and renewal references only for matching
-entity IDs. Selecting another Zoi does not transfer that caller's registration.
+entity IDs. Selecting another Zoi does not transfer that caller's registration
+or ownership of an existing session. Keep the original caller available for its
+owned commands and events. For a new start, use the currently controlled Zoi as
+the initiator and include that Zoi in the participant roster. A control switch
+during startup can fail the pending request. Check its terminal status before
+starting again with the new initiator.
 Use fresh request IDs for new operations; retries reuse the identical request.
 Do not drive one client's clock from both global and per-character callbacks.
 The SDK needs real elapsed time even while gameplay is paused.

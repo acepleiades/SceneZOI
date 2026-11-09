@@ -109,6 +109,28 @@ reload. A fresh process launch establishes automatic package/declaration loading
 manual mounting and diagnostic patching do not. Released native appearance
 references can require a game restart. Matching build markers alone are insufficient.
 
+### Hot-update readiness
+
+Check readiness after every Lua reload or temporary Lua mod mount/unmount,
+including when removing a probe at the end of a test. A Lua-only reload can
+start a new host and clear `selection_launcher_ready` while the old launcher UI
+is still loaded. API starts can work in that state while manual Start is hidden.
+
+1. Finish Exit and confirm the game is idle. After a mount/unmount, use
+   `luamod_reload` with `Target: all` if actor registration is missing or the
+   change affects both Lua environments.
+2. Once the Lua host is ready, remount the SceneZOI UI with `uimod_remount` for
+   `SceneZOI_93C44199`. Check that `ui_boot` changed, that
+   `selection_ui_ready` acknowledges the current `selection_host_ready` token,
+   and that `selection_launcher_ready` reports ready.
+3. Reopen the native interaction menu before checking the button. If it appears
+   but the picker fails, inspect `selection_error` and `actor_registration`.
+   Zero registered Zois after unmount calls for a full Lua reload followed by
+   a UI remount. Keep this recovery separate from clean-launch acceptance.
+
+The [possession and API checkpoint](validation/api-possession-20261109.json)
+records the launcher flag clearing before any API request in the new host.
+
 ### Package location and persistent data
 
 Discover the installation directory and cfg directory independently. On the tested
