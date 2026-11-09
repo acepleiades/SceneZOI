@@ -78,6 +78,9 @@ assert(cfg.state:find('|host|',1,true)or cfg.state:find('host',1,true),'The pane
 assert(F.autosave.enabled==false and require('SceneZOI.Autosave').owner()==npc,'The suspension moves with the controlled Zoi')
 F.controlled=10;R.tick(.25)
 assert(R.snapshot()==nil and cfg.focus_session:find('none',1,true),'A free Zoi shows no scene')
+for _=1,4 do R.tick(.25)end
+assert(not cfg.state:find('error',1,true),'The mailbox keeps a Start packet: it must not run again while its scene is out of focus')
+assert(R.snapshot(player).phase=='playing','Leaving a scene does not end it')
 assert(F.autosave.enabled==true,'With no eligible owner the autosave setting is restored')
 assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','Scenes keep playing without the panel')
 -- A manual scene that lost its panel has a short life; an add-on's scene its own.

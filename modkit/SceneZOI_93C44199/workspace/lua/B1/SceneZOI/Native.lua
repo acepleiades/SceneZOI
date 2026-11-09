@@ -94,13 +94,19 @@ local function recover_avoidance(record, position)
     return true
 end
 
+local function incoming_name(instance)
+    local ok, name = pcall(function() return instance:GetCurrentActiveMontage():GetName() end)
+    return ok and name or "none"
+end
+
 function M.sample(record, position)
     assert(record.mesh:GetAnimationMode() == ANIMATION_BLUEPRINT and record.mesh:GetAnimInstance() == record.instance,
         "The game replaced the participant's animation instance")
     if not record.instance:Montage_IsActive(record.montage) then
         if recover_avoidance(record, position) then return end
         error('Scene montage stopped unexpectedly: participant='..tostring(record.id)..' role='..tostring(record.role)..
-            ' sample='..tostring(position)..' previous='..tostring(record.position)..' clip='..tostring(record.asset))
+            ' sample='..tostring(position)..' previous='..tostring(record.position)..' clip='..tostring(record.asset)..
+            ' incoming='..incoming_name(record.instance))
     end
     -- Keep the shared anchor without repeatedly teleporting an already aligned
     -- mesh. A teleport can disturb dynamics in the native post-process graph.

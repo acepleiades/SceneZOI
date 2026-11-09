@@ -780,6 +780,10 @@ local function poll()
         if not focused or client==focused.client and sequence==focused.sequence then publish(client,sequence,previous.phase,previous.code)end
         return
     end
+    -- The mailbox keeps a scene's Start packet: while that scene is out of focus it is not a new request.
+    for _, current in ipairs(Sessions.list()) do
+        if current ~= focused and current.client == client and current.sequence == sequence then return end
+    end
     if focused then
         if client ~= focused.client or sequence ~= focused.sequence then
             if action == "start" then

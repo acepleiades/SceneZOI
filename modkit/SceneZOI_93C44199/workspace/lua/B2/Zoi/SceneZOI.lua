@@ -253,6 +253,7 @@ local function receive(self, owner, kind, content)
         inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
     elseif kind == "SceneZOI.Placement" then
         local ok, x, y, z = pcall(require("SceneZOI.Placement").find, owner, tonumber(fields[2]), Protocol.decode(fields[3]))
+        if not ok then print("[SceneZOI] Floor search failed: " .. tostring(x)) end
         reply(owner, token, "placement", ok and x or "none", ok and y or 0, ok and z and tostring(z) or nil)
     elseif kind == "SceneZOI.Release" then
         if self.lease and self.lease.token == token then

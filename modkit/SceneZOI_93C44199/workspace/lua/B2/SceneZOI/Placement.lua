@@ -3,7 +3,7 @@ local M={}
 local RING_CM,RINGS,DIRECTIONS=75,8,12
 
 local function path_system()
- return assert(inzoi.getB2Manager('FB2PathFindSystem'),'Path finding is unavailable')
+ return assert(inzoi.getB2Subsystem('FB2PathFindSystem'),'Path finding is unavailable')
 end
 local function on_floor(system,point)
  return system:IsOnWalkableGrid(point)==true
