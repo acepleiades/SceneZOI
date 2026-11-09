@@ -20,8 +20,10 @@ the currently controlled Zoi.
 - The gameplay add-on decides who wants to participate, what they agree to do,
   and what happens afterward. SceneZOI verifies technical eligibility, reserves
   the roster and furniture, plays eligible nodes and reports the outcome. It
-  interprets task IDs as data. For example, a magic mod can request a spell-charge
-  task for one Zoi while another assists.
+  interprets task IDs as data. For example, a romance add-on can request one
+  completion of HZoi's excitement task for a Zoi whose partner has agreed to
+  participate (a magic add-on can request one spell-charge completion for a
+  caster whose partner has agreed to assist).
 
 ## Proposed start request
 
@@ -39,9 +41,14 @@ query, request-status and ownership contracts where they apply.
 | `stage_preferences` | Optional ordered selectors for ranges of stages. They rank eligible nodes. Use early or late fractions of the chosen stage count so the same policy works with random counts. |
 | `auto_speed` | On by default. Use a gentle stage-based speed ramp through the existing playback settings. An add-on can disable the ramp or provide a bounded profile. |
 
-For example, an add-on can request one completion of a task for Zoi A, add Zoi B
-as a participant with no goal, and exclude a particular action throughout. To
-require an action in at least one stage instead, add a matching stage selector.
+For example, a romance add-on can request one excitement completion for a
+male Zoi whose partner has agreed to participate and has no goal of her own.
+If she rules out fellatio, the add-on excludes that action for the entire
+session. In a separate request where both agree to include it, the add-on
+can require a stage that contains it (a magic add-on can request one
+spell-charge completion for the caster alone, exclude the use of a focus
+stone in one session, or require a focus-stone stage in another).
+
 A requirement and a restriction that cannot both be satisfied produce a
 structured refusal. Use a bounded request size and stage count, and return the
 chosen count and session ID in the accepted plan or subsequent status.
@@ -59,11 +66,15 @@ completion counts. For each requested participant/task pair:
 1. Count completions committed since entry. If the goal has reached its requested
    count, its progress is 100%.
 2. Otherwise compute `(completed_count + current_value / task_maximum) / requested_count`.
-   For example, one completion plus a meter at 50% is 75% of a two-completion goal.
+   For example, one excitement completion plus a meter at 50% is 75% of
+   a two-completion goal (the same calculation applies to two spell charges).
 3. Take the **minimum across all goals** for the session. With four stages, 0–25%
    is stage 1, 25–50% stage 2, 50–75% stage 3, and 75–100% stage 4. At an exact
-   boundary, the next stage is due. Once a stage is entered, decay cannot move
-   the session backward. Use current values when choosing what to play next.
+   boundary, the next stage is due. If two Zois are at 80% and 35% of their
+   excitement goals, the session is in stage 2 (two casters at the same
+   percentages of their spell-charge goals are also in stage 2). Once a stage
+   is entered, decay cannot move the session backward. Use current values when
+   choosing what to play next.
 
 A Zoi who has finished contributes 100%, so the remaining goals set the pace.
 Counting completions also keeps the progress measure continuous when a task
@@ -91,8 +102,10 @@ tag alone never permits a jump to a different placement or incompatible node.
 
 - **Check feasibility.** Read the authored rate and cap for each bound
   participant's requested task. A positive rate can contribute while there is
-  room below the cap. A 50% cap can help reach an early stage but cannot finish a
-  cycle. Omitted, zero and negative rates cannot advance that goal. Reject a
+  room below the cap. A handjob node that caps the giving partner's excitement
+  at 50% can advance her early goal but cannot finish it (a practice drill
+  capped at 50% can advance a spell charge but cannot finish it). Omitted, zero
+  and negative rates cannot advance that goal. Reject a
   request when available data shows a goal or required stage cannot be reached.
   Check routes from the proposed start, including the ability to leave required
   stages and reach completion-capable nodes. Report uncertainty separately if
@@ -120,14 +133,17 @@ tag alone never permits a jump to a different placement or incompatible node.
   `goal_unreachable`, `required_stage_unavailable` or `no_progress`. Never
   relax the restrictions to rescue a run.
 
-For the optional HZoi example, a gameplay add-on could prefer nonpenetrative
-nodes early and penetrative nodes later using action selectors. With only one
-requested goal, a node that can finish that Zoi's task can complete the whole
-session. With goals for both Zois, a node that caps one at 50% can help early but
-must give way to a node that can finish the remaining goal. If the restrictions
-rule out all such nodes, report that the plan is unreachable. SceneZOI has no
-built-in ranking for these actions. A magic add-on can use the same structure
-to prefer preparation animations early and practice animations later.
+For HZoi, a romance add-on could prefer handjob and fellatio nodes early and
+vaginal sex later, if the participants have agreed to those actions. If only the
+receiving Zoi has an excitement goal, a nonpenetrative node can complete the
+session by itself. If both have goals, a node that caps one partner at 50% can
+help early, then give way to a node that can finish the remaining goal (a magic
+add-on can prefer preparation drills early and full casting later, and skip
+full casting if the drill can already finish the only requested charge).
+
+If the restrictions rule out every node capable of finishing a remaining goal,
+report that the plan is unreachable. The ordering comes from the add-on's
+selectors.
 
 The optional speed ramp affects animation playback only. Task rates still use
 game time, so speeding up the animation does not advance the task meter faster.
