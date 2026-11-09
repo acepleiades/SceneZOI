@@ -40,7 +40,6 @@ function M.new()
     package.loaded["SceneZOI.AddonEffects"] = {idle = noop, retain = noop, restore = noop, tick = noop, release = noop, player_outfit = noop}
     package.loaded["SceneZOI.AddonControl"] = {reset = noop, tick = noop, init = noop, enter = noop, sample = noop, speed = function() return 1 end,
         ended = noop, release = noop, facts = function() return {} end}
-    package.loaded["SceneZOI.ControllerRange"] = {update = function(current) return fixture.far[current.token] == true, 9999, "9" end, focus_actor = function(actors, preferred) return preferred or select(2, next(actors)) end}
     package.loaded["SceneZOI.ModeGuard"] = {update = function() return {editor = fixture.editor == true} end, can_restore_input = function() return true, {} end}
     package.loaded["SceneZOI.SceneVisuals"] = {tick = function() return {} end, restore = noop}
     package.loaded["SceneZOI.Furniture"] = {valid = yes, prepare = noop}

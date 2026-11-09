@@ -87,9 +87,9 @@ Retain meaningful checks for first-click/cancel/repeat entry, explicit repeated-
 
 Automated suites, native numerical diagnostics and author visual acceptance establish different things. Consult [validation](../validation.json), not historical marker literals, before testing a loaded build. The [public native-message API is version 1](addons.md). Internal Lua modules, UI mailboxes and manual picker transport are private development interfaces. Scene metadata and schema compatibility are documented separately.
 
-## Spectator distance and duplicate entry
+## Control focus and duplicate entry
 
-Actual B1 controller identity, not the participant's captured entry-control trait, governs the distance safeguard. An outside-roster controlled Zoi beyond 3,500 cm for half a real second requests controller_too_far cleanup before optional guards/body sampling. This normal idle completion closes the UI and toasts after successful restoration. Nearby spectators and control swaps within the roster keep playing. Closed-panel input uses a currently registered world-context actor. Failed/missing distance reads do not create false exits.
+Actual B1 controller identity, not the participant's captured entry-control trait, selects the focused session. The panel, task tray, input and autosave suspension follow that session. Control can move anywhere without ending a scene: a scene left without its panel has a bounded background interval instead. Closed-panel input uses a currently registered world-context actor. A failed or missing controller lookup is not treated as a switch.
 
 Busy entry is a native toast and rejection, including stale launcher/native/runtime requests. The active session's status mailbox is preserved; duplicate rejected commands do not repeatedly toast. Optional toast failures cannot end the existing session. last_stop records the initiating reason, last_exit records final and initiating results, and controller_range retains the latest bounded distance/readiness diagnostic. An older last_error is not evidence of a new failure.
 

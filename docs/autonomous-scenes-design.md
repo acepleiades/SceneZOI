@@ -1,7 +1,8 @@
 # Concurrent sessions and autonomous scenes
 
-**Design proposal.** This describes planned behavior. The current release allows one
-active session and requires a controlled initiator, including for API starts.
+**Design notes.** Implemented; the public contract is in the
+[add-on API](addons.md#concurrent-and-background-sessions). This page keeps the
+reasoning behind it. Field names follow the implementation where they differ.
 
 A **session** is the fixed roster, placement, task state and cleanup that survive
 navigation. A **node** is one authored animation or transition within that session.

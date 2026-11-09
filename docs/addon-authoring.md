@@ -1,6 +1,6 @@
 # Authoring a SceneZOI add-on
 
-SceneZOI owns one active session, fixed participants, playback and cleanup.
+SceneZOI owns sessions, fixed participants, playback and cleanup. Several sessions can run at once.
 An add-on owns its gameplay decisions, persistence, rewards and assets. Starts
 require the controlled Zoi to participate. API version 1 does not add concurrent
 sessions, autonomous NPC starts or predetermined watch-only sequences.

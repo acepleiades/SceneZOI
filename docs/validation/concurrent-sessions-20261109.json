@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-09",
+  "runtime_build": "20261109-concurrent-sessions-1",
+  "ui_build": "20261109-concurrent-sessions-ui-1",
+  "method": "Unpacked Lua and UI mounted over the installed release through the mod hot-mount path, on a throwaway test save. No packaged build of these changes was produced.",
+  "automated": "tools/test.py passed. New: session-registry, addon-event-scopes, addon-delivery, session-unload, concurrent-sessions, background-api, plans and plan-runtime regressions, plus rewritten save-bridge, save-guard, controller and scene-visuals checks.",
+  "native_readback": {
+    "concurrent_sessions": "A player's scene and two NPC-only scenes played together. A third NPC-only start reported session_limit while a household scene stayed active.",
+    "focus": "Control moved between participants of different scenes and to a Zoi outside every scene. focus_session, the panel binding and the autosave owner followed. A scene survived leaving and returning.",
+    "bounded_background": "A manual scene left without its panel ended with lifetime_expired at the 60-second limit.",
+    "placement": "A standing scene on top of another was given a floor spot 2.25 m away through FB2PathFindSystem.",
+    "streaming_loss": "A scene ended with participant_unloaded when its Zois streamed out. A save request ended every scene with saving.",
+    "failure_isolation": "A scene that failed with runtime_error left the other scene playing.",
+    "autonomous": "On the installed reference pack: a real-clock timed plan ended at its duration; a goal plan used authored completion on the excitement task; a three-stage, two-goal plan moved from a node that caps one partner at 50% to one that can finish the remaining goal.",
+    "takeover": "set_auto_mode off stopped the plan clock and restored manual navigation; on resumed it."
+  },
+  "visual": "Three separate standing scenes were seen in one screenshot with the panel showing the controlled Zoi's scene. The Auto-mode toggle was seen on (blue, manual choices hidden) and off (grey, manual choices listed). This is a developer's visual check, not author acceptance.",
+  "frame_cost_ms_per_frame": {
+    "idle": 0.075,
+    "three_scenes_one_panel": 2.6,
+    "note": "Runtime.tick only. The earlier proof of concept, with the per-tick speech bubble scan, measured 7.1 for the player's scene alone."
+  },
+  "not_verified": [
+    "A real save followed by a load, so per-resource recovery after a load is covered only by automated checks.",
+    "A packaged build. Every live check used the unpacked mount.",
+    "Mixed sessions driven by a separate add-on, which needs VelvetZOI's integration.",
+    "Author acceptance."
+  ],
+  "known_limits": [
+    "An NPC interrupted while using an object can have its scene track replaced shortly after start. Seen twice in about ten NPC starts, on a Zoi busking with a guitar and one heading to a basketball. The session ends with runtime_error without affecting others. The replacing clip is now named in the diagnostic, but the cause was not established."
+  ]
+}

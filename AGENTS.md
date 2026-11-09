@@ -16,8 +16,9 @@ contracts and validation evidence when older investigation notes differ.
   [HZoi-Reference examples](docs/content-examples.md) when relevant. The reference
   has muted audio and separate asset rights. Keep its assets and original HZoi audio
   out of SceneZOI.
-- Keep one active session with a controlled initiator and fixed participants.
-  Concurrent sessions, autonomous NPC starts and watch-only sequences are deferred.
+- Keep fixed participants per session. Sessions can run concurrently: NPC-only
+  scenes are capped, the panel and autosave follow the controlled Zoi, and add-ons
+  start autonomous scenes through the public API. Watch-only sequences are deferred.
   Preserve manual Start without relationship or progression gates, alongside technical
   eligibility, role compatibility and furniture availability. Roles are independent
   of body type and control status. Reusable subsystems support 2+ participants,

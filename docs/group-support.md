@@ -47,11 +47,11 @@ After changing native chunk hooks/bindings, reload both Lua environments while n
 
 ## Active-session safeguards
 
-Only one SceneZOI session runs at a time. Starting another while a scene is preparing, playing or cleaning up displays a native toast and leaves the active session and participant ownership untouched. The launcher handles ordinary clicks; native entry/runtime guards cover stale-state races without overwriting the current session's status.
+Sessions can run side by side, each with its own roster. Starting a scene for a Zoi that is already in one, while that scene is preparing, playing or cleaning up, displays a native toast and leaves the active session and participant ownership untouched. The launcher handles ordinary clicks; native entry/runtime guards cover stale-state races without overwriting the current session's status.
 
-Switching control to either scene participant is allowed. When the actually controlled Zoi is outside the roster, SceneZOI checks their 3D distance to the scene anchor every 0.2 real seconds. Remaining beyond 35 metres for half a real second ends the session through ordinary retryable cleanup, closes its controls and shows an explanatory toast. Returning within range or controlling a participant resets the grace period. Unknown/transient control lookup is not treated as evidence of distance. Preparation uses the anchor participant's position until the final scene anchor is available. These limits are framework settings, not relationship or progression gates.
+Switching control is allowed at any time. The panel follows the controlled Zoi: a participant of another session shows that session, and a Zoi outside every session hides the panel while the other sessions keep playing. A manual session left without its panel ends with `lifetime_expired` after 60 real seconds. Returning to it resets that limit. An unknown or transient control lookup is not treated as a switch.
 
-The last_exit diagnostic stores client, sequence, final result and initiating exit reason. A distance exit uses controller_too_far and an idle final phase; restoration failures retain their own error result. Input restoration uses a currently registered world-context actor rather than an unloaded participant retained from session entry.
+The last_exit diagnostic stores client, sequence, final result and initiating exit reason. Restoration failures retain their own error result. Input restoration uses a currently registered world-context actor rather than an unloaded participant retained from session entry.
 
 ## Participant task ownership
 

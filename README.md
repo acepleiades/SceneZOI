@@ -76,8 +76,9 @@ SceneZOI builds and runs independently of either HZoi repository.
 
 ## Current scope and limits
 
-- **One active session.** The initiating controlled Zoi participates in it.
-  Concurrent sessions and autonomous NPC initiation are deferred.
+- **Concurrent sessions.** Scenes can run side by side, and add-ons can start
+  scenes for NPCs or autonomous scenes driven by a plan. NPC-only scenes are capped
+  at two. See [concurrent and background sessions](docs/addons.md#concurrent-and-background-sessions).
 - **Fixed membership.** Participants and role assignments remain fixed until Exit.
   The manual picker permits two or three total Zois; larger rosters require an
   integration and compatible authored content.

@@ -2,8 +2,8 @@
 
 Independent add-on acceptance was recorded on API-5. See [release validation](validation/README.md) for later runtime checks. Start with the [authoring guide](addon-authoring.md), use the [SDK](../sdk/README.md), and consult [live controls/results](addon-controls.md) for the extended contract. [Validation findings](validation/addon-api-20261104.md) record measured coverage and pitfalls.
 
-SceneZOI supports one active session. Concurrent NPC-owned sessions remain deferred.
-The unrestricted manual starter remains available. Add-ons supply gameplay decisions;
+Several sessions can run at once; see [concurrent and background sessions](#concurrent-and-background-sessions)
+and [autonomous scenes](#autonomous-scenes). The unrestricted manual starter remains available. Add-ons supply gameplay decisions;
 content packs supply inert declarations; SceneZOI owns playback and cleanup.
 
 ## Supported transport
@@ -66,7 +66,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 
 | Operation | Arguments / result |
 | --- | --- |
-| `get_version` | Returns API version, runtime build, host instance, features and maximum session count. |
+| `get_version` | Returns API version, runtime build, host instance, features, maximum session count and `maximum_npc_sessions`. |
 | `get_definitions` | Returns registered tags/actions, aliases, role descriptions, task definitions and the rating enum. |
 | `get_scene` | `scene_id`; returns library metadata, role requirements, furniture and authored navigation. |
 | `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`; returns all matches and count. |
@@ -74,10 +74,14 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 | `start_scene` | Required `scene_id`, `participants`, `initiator`; optional bindings, search, restrictions, furniture and context. |
 | `start_random_scene` | Required participants/initiator; optional bindings, search, restrictions, furniture and context. |
 | `start_at_hub` | Same, additionally requiring an installed `starting_hub`. |
+| `start_autonomous_scene` | See [autonomous scenes](#autonomous-scenes). |
+| `list_sessions` | Returns copied snapshots of every session and the current event cursor. |
+| `renew_session` | Required `session_id`; renews an owner lease. Only its owner may call it. |
+| `set_auto_mode` | Required `session_id`, `enabled`; switches a planned session between automatic and manual. Only its owner may call it. |
 | `get_session` | Optional `session_id`; returns a copied snapshot/null and current event cursor. |
 | `navigate_to_scene` | Required `session_id`, `scene_id`; only the creating add-on/client may command it. |
 | `stop_session` | Required `session_id`; only the creating add-on/client may command it. |
-| `subscribe` | Optional `events` list, default `["*"]`. Returns event cursor and a current snapshot; observe manual and add-on sessions. |
+| `subscribe` | Optional `events` list, default `["*"]`, and `scope` (`focused`, `owned`, `all`; default `focused`). Returns event cursor and a current snapshot; observe manual and add-on sessions. |
 | `unsubscribe` | Removes this caller's subscription. |
 | `get_request_status` | Required original `request_id`; inspect asynchronous start progress. |
 | `cancel_start` | Required original `start_request_id`; cancels a still-pending owned start. |
@@ -118,6 +122,102 @@ departure, controls startup, cached save recovery, participant preparation and
 furniture reservation still have to acknowledge readiness. Wait for
 `session_started` or inspect status. A busy/no-match/invalid request does not
 silently substitute another scene. Startup is bounded to 15 host real seconds.
+
+## Concurrent and background sessions
+
+Several sessions can run at once, each with its own roster, clock, tasks and
+cleanup. A participant or piece of furniture belongs to one session at a time, and
+a request that overlaps one is refused with `participant_busy`. A failure in one
+session never ends another.
+
+Pass `background: true` to `start_scene`, `start_random_scene` or `start_at_hub` to
+start without the player's panel. The initiator can be any loaded Zoi, including an
+NPC. It accepts two optional objects:
+
+| Field | Meaning |
+| --- | --- |
+| `placement` | `max_start_distance_m` (0-100, default 15) from each participant to the anchor, checked before the roster is held and again before playback. `exit`: `restore` (default) or `stay`, which applies only to ordinary Exit on floor the game reports as walkable. |
+| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Default 600-second deadline; hard ceiling 1,800 seconds. Time runs while the session has no panel. A lease that lapses ends with `owner_expired`, a deadline with `lifetime_expired`. |
+
+Scenes containing only NPCs are capped at `maximum_npc_sessions` from `get_version`
+(2). A household scene does not count against the cap, and a player's own start is
+never refused because of NPC scenes. The cap is known once the roster has been
+checked, so it reports `session_limit` through `session_start_failed`.
+
+A standing scene that would stand within 2 metres of another moves to the nearest
+walkable floor, up to 6 metres away. If there is none, a background start ends with
+`placement_unavailable`. Furniture does not move: busy furniture is simply busy.
+
+The panel, task tray, input and autosave suspension belong to the session of the
+**controlled Zoi**. Switching to a participant of another session switches them;
+switching to a Zoi outside every session hides the panel while the other sessions
+keep playing. A manual session left without its panel has 60 seconds before it ends
+with `lifetime_expired`. `get_session` without an ID returns the focused session;
+`list_sessions` returns all of them.
+
+Subscriptions take an optional `scope`: `focused` (default, matching earlier
+behavior), `owned` or `all`. An add-on always hears the sessions it started. If the
+Zoi it asked through unloads, delivery moves to the controlled Zoi.
+
+Ending a session reports the outcome for each participant in `restoration`:
+`restored`, `released_on_unload` or `deferred_recovery`. A save ends every session.
+
+**Migration.** `controller_too_far` is no longer emitted: control can move anywhere
+without ending a scene. `get_version` keeps `maximum_sessions: 1` for add-ons that
+read it, and describes the player's single focused session. Check
+`features.background_sessions` before using `background`.
+
+## Autonomous scenes
+
+`start_autonomous_scene` starts a session that SceneZOI drives from a plan. It
+accepts the arguments of a background start, using `restrictions` for its lifetime
+restrictions, plus:
+
+| Field | Meaning |
+| --- | --- |
+| `goals` | Up to 16 `{participant_id, task_id, completions}` entries. `completions` defaults to 1 and counts new completions in this session. |
+| `end_policy` | `{type:'goals'}` (default with goals), `{type:'duration', seconds, clock}` with `clock` `game` (default) or `real`, or `{type:'addon'}`. Required without goals. |
+| `task_progress_multiplier` | 0.1-5, default 1. Scales positive task rates under the plan. |
+| `stages` | A positive integer or `{min, max}`, up to 16. Default 1. Chosen once and returned in the accepted response. |
+| `required_stages` | `{stage?, match}` entries, where `match` is a scene query. Each must match a loop that actually plays. `stage` must exist for every possible count. |
+| `stage_preferences` | Ordered `{from?, to?, match}` entries. `from` and `to` are fractions (0-1) of the chosen count. They rank eligible loops. |
+| `auto_speed` | `false`, or `{start, finish}` within 0.5-1.5. Default ramp 1 to 1.25 across stages. Animation only: task rates keep using game time. |
+
+The accepted response includes `autonomous`, the chosen `stages`, and
+`route_uncertain` when the bounded route search could not establish a path. A
+plan is refused with `goal_unreachable` or `required_stage_unavailable` when the
+data shows it cannot be met under its restrictions. Restrictions are never relaxed
+to rescue a run.
+
+The scene follows authored navigation edges and transitions only. The slowest goal
+sets the stage, and a stage never moves back. On a timed plan without goals the
+stages divide the duration evenly. A goal counts only real completions from the
+task engine.
+
+| Ending | Code | `plan.outcome` |
+| --- | --- | --- |
+| Goals and required stages met, responses resolved | `ok` | `goals_met` |
+| Duration elapsed (unmet goals stay reported) | `ok` | `duration_elapsed` |
+| Add-on plan: goals met | none yet | Publishes `plan_goals_met` once, holds the loop and freezes fulfilled tasks until `stop_session`. |
+| Owner never decides | `owner_expired` | `wait_expired` after 300 seconds |
+| Nothing advanced for 90 seconds | `no_progress` | `no_progress` |
+| Caps, holds or restrictions left no route | `goal_unreachable` or `required_stage_unavailable` | same |
+| Playback budget of 1,800 seconds | `playback_budget_exceeded` | same |
+
+Copied snapshots carry `plan` with `auto_mode`, `state`, `outcome`, `goals`
+(`requested`, `completed`, `progress`, `satisfied`), `required_stages`, `stage`,
+`stage_count`, `real_seconds` and `game_seconds`. Plan events are `plan_goals_met`,
+`plan_stage_changed` and `plan_auto_mode_changed`.
+
+A session with a plan shows an **Auto-mode** toggle in its panel, and an owner can
+call `set_auto_mode` with `session_id` and `enabled`. While it is on, manual and
+`navigate_to_scene` navigation is refused with `navigation_locked`. Off keeps the
+node, tasks, goals and restrictions, and suspends automatic navigation, the ramp,
+the plan multiplier, the plan clock and planned Exit. Stage credit is earned only
+under Auto-mode. Turning it back on re-evaluates from the current state.
+
+SceneZOI verifies technical eligibility. The add-on that starts an autonomous scene
+decides who agrees to what, including age and consent rules for its content.
 
 ## Search and session restrictions
 
@@ -175,7 +275,8 @@ The public stream follows the existing deferred runtime dispatcher:
 `session_preparing`, `session_started`, `node_entered`, `node_leaving`,
 `node_preparing`, `playback_speed_changed`, `game_clock_changed`,
 `outfit_changing`, `outfit_changed`, `task_completed`, `task_route_selected`,
-`task_route_failed`, `transition_completed`, `addon_control_changed`, `session_ending`, `session_ended`.
+`task_route_failed`, `transition_completed`, `addon_control_changed`, `plan_goals_met`, `plan_stage_changed`,
+`plan_auto_mode_changed`, `session_ending`, `session_ended`.
 `session_start_failed` can occur before a session exists and carries its request
 ID/code/message rather than a session snapshot. Starters are subscribed by default
 if they have not already registered a subscription.
@@ -197,8 +298,9 @@ Stable error codes include `unsupported_api_version`, `unknown_operation`,
 `invalid_request`, `request_id_reused`, `request_not_found`,
 `session_already_running`, `session_not_found`, `session_not_owned`,
 `session_not_ready`, `initiator_not_controlled`, `no_matching_scenes`,
-`furniture_unavailable`, `incompatible_furniture`, `navigation_locked`, and
-`scene_restricted`. A queued start can later report `start_failed`;
+`furniture_unavailable`, `incompatible_furniture`, `navigation_locked`,
+`participant_busy`, `participant_too_far`, `session_limit`, `goal_unreachable`,
+`required_stage_unavailable`, `session_has_no_plan`, and `scene_restricted`. A queued start can later report `start_failed`;
 `transport_timeout` is generated by the SDK. Diagnostic messages are for debugging,
 not branching. Starting/playing does not imply consent: the integration owns its
 gameplay decision while framework technical checks remain mandatory.

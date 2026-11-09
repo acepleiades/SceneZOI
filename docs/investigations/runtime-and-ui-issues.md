@@ -30,6 +30,11 @@ The full development transcript and raw checkpoints are archived privately.
 | Save callbacks did not run on the actual Save As route; SDK Exit alone was too late for some native serialization. | Cache immutable originals through the UI SDK journal before any mutation; recover independent owners on load. SceneZOI must be enabled for recovery. [Save bridge](../../tests/save-bridge.lua). |
 | Scheduled autosaves interrupted scene playback. | Suspend only an originally enabled setting, persist ownership before mutation, restore/retry on Exit/boot, and keep manual/forced-save guards. [Autosave](../../tests/autosave.lua). |
 | World teardown may prevent final notifications. | Do not infer a complete final acknowledgement from an old last-exit value. The recorded interrupted trial had separate idle/state/furniture readback. Add-ons must reconcile on host change. |
+| A scene ended with `ui_disconnected` after control left it and returned. | The request mailbox keeps a scene's Start packet. While the scene was out of focus the packet ran again, failed and retired the live scene's request, so the panel stopped sending heartbeats. A session's own packet is no longer a new request while it is out of focus. [Concurrent sessions](../../tests/concurrent-sessions.lua). |
+| Every crowded standing scene ended with `placement_unavailable`. | `FB2PathFindSystem` is a subsystem and was reached through the manager accessor, so every floor search failed. Use the subsystem accessor and report why a search failed. |
+| A goal plan completed a fulfilled task a second time while waiting for its completion response. | Freeze fulfilled tasks while the plan resolves, as in the add-on wait. [Plans](../../tests/plans.lua). |
+| A stage change went through a hub and came back to the loop it had just left. | The plan keeps its destination across a route through a hub. [Plans](../../tests/plans.lua). |
+| An NPC interrupted while using an object can have its scene track replaced shortly after start (seen on a busking Zoi and one heading to a basketball). | Open: the cause was not established. The session ends with `runtime_error` without affecting others, and the diagnostic now names the replacing clip. |
 
 ## Appearance, placement and presentation
 

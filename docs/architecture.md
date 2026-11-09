@@ -17,7 +17,7 @@ registered metadata, create a technically eligible session, restrict its lifetim
 navigation and observe copied events. The independent SDK does not require private
 framework modules. Restrictions share the same predicate as scene search and are
 enforced at every route. Tags/actions remain inert content data; the framework
-derives ratings from action definitions. One active session remains the limit.
+derives ratings from action definitions. Sessions live in a registry and run side by side; `Plan` drives autonomous sessions.
 
 ## Native lifecycle constraints
 
