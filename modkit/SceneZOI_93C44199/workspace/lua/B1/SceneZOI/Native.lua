@@ -1,5 +1,6 @@
 -- Play through the existing game animation instance; keep its graph and references alive.
 local Config = require("SceneZOI.Config")
+local Protocol = require("SceneZOI.Protocol")
 local M = {}
 -- EAnimationMode::AnimationBlueprint; this enum is not exposed by the Lua binding.
 local ANIMATION_BLUEPRINT = 0
@@ -67,17 +68,30 @@ function M.rebind(record)
     record.mesh, record.instance = fresh.mesh, fresh.instance
 end
 
-local function avoidance_clip(instance)
-    local incoming = instance:GetCurrentActiveMontage()
+local function under_player_control(record)
+    local ok, id = pcall(function()
+        return Protocol.id(UE.UGameplayStatics.GetPlayerController(record.actor, 0):GetCharacterEntityId())
+    end)
+    if ok and id then return id == record.id end
+    return record.control ~= "npc"
+end
+
+-- What may be taken back: native pedestrian dodges, and on a Zoi the player does
+-- not control, any game task or reaction in the interaction slot. The simulation
+-- side is already cancelling those tasks. Leave other gameplay alone.
+local function recoverable_clip(record)
+    local incoming = record.instance:GetCurrentActiveMontage()
     if not incoming then return end
     local name = incoming:GetName()
-    -- Native pedestrian dodge and follow-up reactions use the Avoid family in
-    -- the interaction slot. Leave vehicle avoidance and other gameplay alone.
     if name:match("^ANIM_[FM]_Avoid_.+_Interaction_Montage$") then return name end
+    if name:match("_Interaction_Montage$") and not under_player_control(record) then
+        record.task_recoveries = (record.task_recoveries or 0) + 1
+        if record.task_recoveries <= Config.npc_track_recoveries then return name end
+    end
 end
 
 local function recover_avoidance(record, position)
-    local ok, incoming = pcall(avoidance_clip, record.instance)
+    local ok, incoming = pcall(recoverable_clip, record)
     if not ok or not incoming then return false end
 
     local now = UE.UGameplayStatics.GetRealTimeSeconds(record.actor)

@@ -12,9 +12,10 @@
     "streaming_loss": "A scene ended with participant_unloaded when its Zois streamed out. A save request ended every scene with saving.",
     "failure_isolation": "A scene that failed with runtime_error left the other scene playing.",
     "autonomous": "On the installed reference pack: a real-clock timed plan ended at its duration; a goal plan used authored completion on the excitement task; a three-stage, two-goal plan moved from a node that caps one partner at 50% to one that can finish the remaining goal.",
-    "takeover": "set_auto_mode off stopped the plan clock and restored manual navigation; on resumed it."
+    "takeover": "set_auto_mode off stopped the plan clock and restored manual navigation; on resumed it.",
+    "track_recovery": "With the fix absent, forcing a stock IB_BroomTray_Use animation on the participant the player did not control ended the scene with runtime_error, naming ANIM_M_BroomTray_Use_Interaction_Montage. With it, the same forced broom and guitar animations, and four in a row, left the scene playing and the montage_recovery diagnostic recorded each resumption."
   },
-  "visual": "Three separate standing scenes were seen in one screenshot with the panel showing the controlled Zoi's scene. The Auto-mode toggle was seen on (blue, manual choices hidden) and off (grey, manual choices listed). This is a developer's visual check, not author acceptance.",
+  "visual": "Three separate standing scenes were seen in one screenshot with the panel showing the controlled Zoi's scene. The Auto-mode toggle was seen on (blue, manual choices hidden) and off (grey, manual choices listed). This is a developer's visual check, not author acceptance. Screenshots before and 2 seconds after forcing the broom animation showed the participant holding the scene pose.",
   "frame_cost_ms_per_frame": {
     "idle": 0.075,
     "three_scenes_one_panel": 2.6,
@@ -27,6 +28,7 @@
     "Author acceptance."
   ],
   "known_limits": [
-    "An NPC interrupted while using an object can have its scene track replaced shortly after start. Seen twice in about ten NPC starts, on a Zoi busking with a guitar and one heading to a basketball. The session ends with runtime_error without affecting others. The replacing clip is now named in the diagnostic, but the cause was not established."
+    "The natural trigger of the track replacement fixed by the NPC track recovery was not identified. It did not recur in 27 later NPC scenes, including a street NPC playing a guitar, or in five scenes that interrupted a household Zoi at a vacuum, mirror, dressing table, sink and chair.",
+    "An NPC can fail to answer the group departure step. Seen twice on one seated street NPC: the start ended with start_failed after 15 seconds, and nothing was held afterwards. Cause not established."
   ]
 }

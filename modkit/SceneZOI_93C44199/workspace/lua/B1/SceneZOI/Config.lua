@@ -7,6 +7,7 @@ return {
     plan_max_goals = 16, plan_max_completions = 100, plan_min_multiplier = 0.1, plan_max_multiplier = 5,
     plan_max_seconds = 1800, plan_max_playback_seconds = 1800, plan_min_dwell_seconds = 4,
     plan_no_progress_seconds = 90, plan_wait_seconds = 300, plan_route_limit = 256,
+    npc_track_recoveries = 12,
     plan_max_stages = 16, plan_ramp_finish = 1.25, plan_min_speed = 0.5, plan_max_speed = 1.5,
     heartbeat_interval = 1.0, slot = "DefaultSlot", max_duration_difference = 0.0001,
     playback_speeds = {0.50, 1.00, 1.50, 2.00},

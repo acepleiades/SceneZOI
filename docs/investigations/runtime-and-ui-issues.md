@@ -34,7 +34,7 @@ The full development transcript and raw checkpoints are archived privately.
 | Every crowded standing scene ended with `placement_unavailable`. | `FB2PathFindSystem` is a subsystem and was reached through the manager accessor, so every floor search failed. Use the subsystem accessor and report why a search failed. |
 | A goal plan completed a fulfilled task a second time while waiting for its completion response. | Freeze fulfilled tasks while the plan resolves, as in the add-on wait. [Plans](../../tests/plans.lua). |
 | A stage change went through a hub and came back to the loop it had just left. | The plan keeps its destination across a route through a hub. [Plans](../../tests/plans.lua). |
-| An NPC interrupted while using an object can have its scene track replaced shortly after start (seen on a busking Zoi and one heading to a basketball). | Open: the cause was not established. The session ends with `runtime_error` without affecting others, and the diagnostic now names the replacing clip. |
+| A game task or reaction could take a Zoi's animation slot during a scene and end it with `runtime_error` (seen on two street NPCs, later reproduced by forcing a stock animation). | Only pedestrian dodges were taken back. A Zoi the player does not control now resumes its scene track from any `_Interaction_Montage`, at the shared position, within the existing limit of three attempts per two seconds and twelve per scene. The player's own Zoi keeps the old behavior. The original trigger was not observed again in 27 later NPC scenes, so its exact cause stays unconfirmed. [Native](../../tests/native.lua). |
 
 ## Appearance, placement and presentation
 
