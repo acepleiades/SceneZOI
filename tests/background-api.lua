@@ -22,6 +22,7 @@ package.loaded['SceneZOI.Runtime']={actors=actors,
  is_addon_owner=function(addon,client,id)return started[id]~=nil and addon=='test.addon'and client=='test.client'end,
  api_session=function(id)return assert(started[id],'session_not_found')end,
  renew_session=function(id)renewed[#renewed+1]=id end,
+ set_auto_mode=function(id,enabled)started[id].auto=enabled;return {auto_mode=enabled}end,
  start_background=function(row)
   if limit then error('session_limit')end
   count=count+1;local token='background.'..count;started[token]=row
@@ -148,4 +149,10 @@ assert(started['background.'..count].lifetime.deadline_seconds==1800)
 Sessions.release('background.'..count);started['background.'..count]=nil
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal});assert(r.ok and r.result.valid and Sessions.holder('5')==nil)
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals={{participant_id='6',task_id='charge'}}});assert(r.ok and r.result.valid==false and r.result.code=='goal_unreachable')
+-- Only the owner can switch a scene between automatic and manual.
+started['background.1']=started['background.1']or {}
+r=request('set_auto_mode',{session_id='background.1',enabled=false},'other.addon');assert(not r.ok and r.code=='session_not_owned')
+r=request('set_auto_mode',{session_id='background.1',enabled='no'});assert(not r.ok and r.code=='invalid_request')
+r=request('set_auto_mode',{session_id='background.1',enabled=false});assert(r.ok and r.result.auto_mode==false and started['background.1'].auto==false)
+assert(request('get_version').result.features.autonomous_stages==1)
 print('Background API passed: opt-in flag, old contract unchanged, reservations, departures, household detection, placement and lifetime validation, distance, cap, timeouts and addressing by id.')

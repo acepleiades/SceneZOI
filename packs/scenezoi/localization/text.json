@@ -116,7 +116,8 @@
         "Bag": "Bag",
         "Glasses": "Glasses",
         "Necklace": "Necklace",
-        "Earrings": "Earrings"
+        "Earrings": "Earrings",
+        "Auto-mode": "Auto-mode"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Standing Idle Hub",
@@ -238,7 +239,8 @@
         "Bag": "Tasche",
         "Glasses": "Brille",
         "Necklace": "Halskette",
-        "Earrings": "Ohrringe"
+        "Earrings": "Ohrringe",
+        "Auto-mode": "Automodus"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Stehender Ruhepunkt",
@@ -360,7 +362,8 @@
         "Bag": "Sac",
         "Glasses": "Lunettes",
         "Necklace": "Collier",
-        "Earrings": "Boucles d'oreilles"
+        "Earrings": "Boucles d'oreilles",
+        "Auto-mode": "Mode auto"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Point de repos debout",
@@ -482,7 +485,8 @@
         "Bag": "Bolso",
         "Glasses": "Gafas",
         "Necklace": "Collar",
-        "Earrings": "Pendientes"
+        "Earrings": "Pendientes",
+        "Auto-mode": "Modo automático"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punto de reposo de pie",
@@ -604,7 +608,8 @@
         "Bag": "Borsa",
         "Glasses": "Occhiali",
         "Necklace": "Collana",
-        "Earrings": "Orecchini"
+        "Earrings": "Orecchini",
+        "Auto-mode": "Modalità automatica"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punto di riposo in piedi",
@@ -726,7 +731,8 @@
         "Bag": "Bolsa",
         "Glasses": "Óculos",
         "Necklace": "Colar",
-        "Earrings": "Brincos"
+        "Earrings": "Brincos",
+        "Auto-mode": "Modo automático"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ponto de repouso em pé",
@@ -848,7 +854,8 @@
         "Bag": "Mala",
         "Glasses": "Óculos",
         "Necklace": "Colar",
-        "Earrings": "Brincos"
+        "Earrings": "Brincos",
+        "Auto-mode": "Modo automático"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ponto de repouso de pé",
@@ -970,7 +977,8 @@
         "Bag": "Tas",
         "Glasses": "Bril",
         "Necklace": "Ketting",
-        "Earrings": "Oorbellen"
+        "Earrings": "Oorbellen",
+        "Auto-mode": "Automatische modus"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Staand rustpunt",
@@ -1092,7 +1100,8 @@
         "Bag": "Çanta",
         "Glasses": "Gözlük",
         "Necklace": "Kolye",
-        "Earrings": "Küpe"
+        "Earrings": "Küpe",
+        "Auto-mode": "Otomatik mod"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ayakta dinlenme noktası",
@@ -1214,7 +1223,8 @@
         "Bag": "Torba",
         "Glasses": "Okulary",
         "Necklace": "Naszyjnik",
-        "Earrings": "Kolczyki"
+        "Earrings": "Kolczyki",
+        "Auto-mode": "Tryb automatyczny"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punkt spoczynku na stojąco",
@@ -1336,7 +1346,8 @@
         "Bag": "Сумка",
         "Glasses": "Очки",
         "Necklace": "Ожерелье",
-        "Earrings": "Серьги"
+        "Earrings": "Серьги",
+        "Auto-mode": "Авторежим"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Исходная сцена стоя",
@@ -1458,7 +1469,8 @@
         "Bag": "バッグ",
         "Glasses": "眼鏡",
         "Necklace": "ネックレス",
-        "Earrings": "イヤリング"
+        "Earrings": "イヤリング",
+        "Auto-mode": "オートモード"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "立位の待機ハブ",
@@ -1580,7 +1592,8 @@
         "Bag": "가방",
         "Glasses": "안경",
         "Necklace": "목걸이",
-        "Earrings": "귀걸이"
+        "Earrings": "귀걸이",
+        "Auto-mode": "자동 모드"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "서 있는 대기 허브",
@@ -1702,7 +1715,8 @@
         "Bag": "包",
         "Glasses": "眼镜",
         "Necklace": "项链",
-        "Earrings": "耳环"
+        "Earrings": "耳环",
+        "Auto-mode": "自动模式"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "站立待机枢纽",
@@ -1824,7 +1838,8 @@
         "Bag": "包包",
         "Glasses": "眼鏡",
         "Necklace": "項鍊",
-        "Earrings": "耳環"
+        "Earrings": "耳環",
+        "Auto-mode": "自動模式"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "站立待機樞紐",

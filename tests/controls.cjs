@@ -9,6 +9,7 @@ function fixture(options = {}) {
   for (const id of ['title-text', 'close-btn', 'scene-status', 'scene-exit', 'scene-navigation', 'speed-down', 'speed-up', 'speed-label', 'speed-dots', 'scene-tools', 'outfit-toggle', 'view-options', 'scene-settings', 'outfit-panel', 'outfit-close', 'outfit-selector', 'outfit-participants', 'outfit-status', 'outfit-pieces', 'outfit-title', 'personality-fields', 'personality-status', 'expression-set', 'expression-choices', 'voice-fields', 'settings-fields', 'outfit-selector-wrap', 'settings-status-audio', 'settings-status-task_rates', 'task-rate-settings', 'audio-volume-settings', ...['sfx','female','male','task-female','task-male'].flatMap(k=>['slider','number','fill','thumb'].map(v=>'volume-'+v+'-'+k))]) {
     elements[id] = {style: {}, listeners: {}, setAttribute(k,v){this[k]=v;}, addEventListener(k, cb) { this.listeners[k] = cb; }};
   }
+  elements['scene-navigation'].parentNode={insertBefore(el){elements[el.id]=el;}};
   const classes=new Set(),documentListeners={};
   const root = {id:'app-root',style: {},classList:{toggle(name,on){on?classes.add(name):classes.delete(name);}},setAttribute(){}, offsetLeft:100, offsetTop:100, offsetWidth:410, offsetHeight:210,appendChild(el){elements[el.id]=el;},insertAdjacentHTML(){}};
   const timers = {}, deferred = [], hover = [], rects = [], commands = [];
@@ -16,11 +17,11 @@ function fixture(options = {}) {
   const genders = {20522:'Male',20524:'Female',...(options.genders || {})};
   let characterFailure = options.characterFailure || false;
   let activated, navigationState = '', playbackState = '', wardrobeState = '', state = '', hidden = 0, blurred = 0, failWrite = false;
-  let personalityState = '';let catalogState='';let taskState='';let focusState='';
+  let personalityState = '';let catalogState='';let taskState='';let focusState='';let planState='';
   let deferNavigation = false, resolveNavigation;
   const context = {
     wf: {root, state:{}, content:{}, MOD_ID:'SceneZOI_93C44199'},
-    document:{addEventListener(name,fn){(documentListeners[name]??=[]).push(fn);},createElement(){return {style:{},classList:{add(){},remove(){}},setAttribute(){},innerHTML:""};},getElementById:id=>id==='app-root'?root:elements[id],activeElement:{blur(){blurred++;}}},
+    document:{addEventListener(name,fn){(documentListeners[name]??=[]).push(fn);},createElement(){return {style:{},listeners:{},addEventListener(k,cb){this.listeners[k]=cb;},classList:{add(){},remove(){},toggle(){}},setAttribute(){},innerHTML:""};},getElementById:id=>id==='app-root'?root:elements[id],activeElement:{blur(){blurred++;}}},
     window:{addEventListener(){}},
     inzoi:{
       saveState:{register(cb){context.saveProvider=cb;}},
@@ -35,6 +36,7 @@ function fixture(options = {}) {
           return Promise.resolve({success:true,data:{entity_id:params.entity_id,gender:genders[params.entity_id],bio_gender:genders[params.entity_id]==='Male'?'Female':'Male',growth_step:options.growth || 'Youth'}});
         }
         if (command==='uimod.cfg_load' && params?.key==='focus_session') return Promise.resolve({success:true,data:{value:focusState}});
+        if (command==='uimod.cfg_load' && params?.key==='plan_state') return Promise.resolve({success:true,data:{value:planState}});
         if (command==='uimod.cfg_load' && params?.key==='navigation_state' && deferNavigation) {
           deferNavigation=false;return new Promise(resolve=>{resolveNavigation=resolve;});
         }
@@ -56,7 +58,7 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/addon-bridge.js'),'utf8'),context);
   vm.runInNewContext(source,context);
 
-  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setState:s=>{state=s;},setNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
+  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
     deferNavigation:()=>{deferNavigation=true;},resolveNavigation:value=>resolveNavigation({success:true,data:{value}}),
     setControlled:value=>{controlled=value;},setGender:(entity,value)=>{genders[entity]=value;},setCharacterFailure:value=>{characterFailure=value;},
     catalog:context.SceneZOICatalog,setCatalog:value=>{catalogState=value;},readCatalog:()=>context.SceneZOICatalog,refreshCatalog:()=>context.SceneZOIControls.refreshCatalog(),decline:(...args)=>context.SceneZOIControls.decline(...args),content:context.wf.content,hidden:()=>hidden,blurred:()=>blurred,failWrite:()=>{failWrite=true;},runDeferred:()=>deferred.splice(0).forEach(cb=>cb())};
@@ -88,6 +90,26 @@ async function run(){
   const ownStart=writes(follower,'request').at(-1).split('|');
   assert.notEqual(ownStart[1],'host','A start after following another scene keeps this panel identity');
   assert.equal(ownStart[2],'1','This panel sequence is untouched by the scene it followed');
+  // A scene with a plan shows the Auto-mode toggle, and the toggle sends one counted command.
+  const planned=fixture();await flush();
+  planned.setFocus('SZ2|1|host.5.6|host|6|3|scenezoi.standing_idle|playing');planned.timers[250]();await flush();
+  planned.setPlan('SZ2|host|6|1|1|1|3');planned.timers[250]();await flush();
+  const toggle=planned.elements['scene-auto-mode'];
+  assert(toggle,'The toggle exists for a planned scene');
+  assert.equal(toggle.style.display,'block','It is shown while the scene has a plan');
+  assert.doesNotMatch(planned.elements['scene-navigation'].innerHTML||'',/data-option/,'Manual choices are hidden while Auto-mode drives');
+  toggle.listeners.click();await flush();
+  assert.match(writes(planned,'auto_mode').at(-1),/^SZ2\|host\|6\|auto_mode\|\d+\|0$/,'Turning it off names the scene it controls');
+  planned.setPlan('SZ2|host|6|1|0|1|3');planned.timers[250]();await flush();
+  toggle.listeners.click();await flush();
+  assert.match(writes(planned,'auto_mode').at(-1),/\|1$/,'And back on');
+  const counts=writes(planned,'auto_mode').map(v=>Number(v.split('|')[4]));assert(counts[1]>counts[0],'Each command is newer than the last');
+  planned.setFocus('SZ2|2|none');planned.timers[250]();await flush();
+  assert.equal(toggle.style.display,'none','A panel with no scene shows no toggle');
+  const manual=fixture();await flush();
+  manual.setFocus('SZ2|1|ui.1.2|ui.1|2|1|scenezoi.standing_idle|playing');manual.timers[250]();await flush();
+  manual.setPlan('SZ2|ui.1|2|0|0|0|0');manual.timers[250]();await flush();
+  assert.equal(manual.elements['scene-auto-mode'].style.display,'none','A manual scene has no toggle');
   const editorExit=fixture();await editorExit.start();await flush();
   const editorClient=writes(editorExit,'request').at(-1).split('|')[1];
   editorExit.setState(`SZ2|${editorClient}|1|idle|character_editor`);editorExit.timers[250]();await flush();

@@ -5,7 +5,7 @@ package.loaded['SceneZOI.Settings']={task_multiplier=function()return 1 end}
 package.loaded['SceneZOI.Catalog']={get_snapshot=function()return {nodes=nodes}end}
 local J=require('SceneZOI.Json');local Tasks=require('SceneZOI.Tasks');local Plan=require('SceneZOI.Plan');local C=require('SceneZOI.Config')
 local function refused(args,expected)
- local ok,err=pcall(Plan.parse,args,{charge={maximum=100}},{'1','2'})
+ local ok,err=pcall(Plan.parse,args,{charge={maximum=100}},{'1','2'},{tags={},actions={}})
  assert(not ok and tostring(err):find(expected,1,true),'Expected '..expected..', got '..tostring(err))
 end
 local function node(id,tasks,edges,extra)
@@ -25,7 +25,7 @@ node('explicit',{lead=full(),partner=full()},{},{content_rating='EXPLICIT'})
 local defs={charge={maximum=100,initial=0,decay=0}}
 local people={{id='1',body='male'},{id='2',body='female'}}
 local function row(id)return {scene_id=id,bindings={lead='1',partner='2'}}end
-local function spec_of(args)return Plan.parse(args,defs,{'1','2'})end
+local function spec_of(args)return Plan.parse(args,defs,{'1','2'},{tags={},actions={}})end
 local goal_lead={participant_id='1',task_id='charge'}
 local goal_partner={participant_id='2',task_id='charge'}
 
@@ -66,7 +66,7 @@ assert(picked({end_policy={type='duration',seconds=5}},{row('still')}).scene_id=
 local actions
 local function session(args,start)
  local participants={{id='1',role='lead',body='male'},{id='2',role='partner',body='female'}}
- local s={token='s.1',node=nodes[start or 'hub'],participants=participants,tasks=Tasks.new(defs,participants),session_restrictions={},preparing=false}
+ local s={token='s.1',revision=1,node=nodes[start or 'hub'],participants=participants,tasks=Tasks.new(defs,participants),session_restrictions={},preparing=false}
  local spec=spec_of(args);spec.seed=7
  s.plan=Plan.new(spec)
  actions={navigations=0}
@@ -82,7 +82,7 @@ local function step(s,count,dt,scale)
    if action.navigate then
     local target
     for _,edge in ipairs(s.node.navigation)do if edge.id==action.navigate then target=edge.target end end
-    s.node=assert(nodes[target],'A plan navigates only along authored edges');actions.navigations=actions.navigations+1
+    s.node=assert(nodes[target],'A plan navigates only along authored edges');s.revision=s.revision+1;actions.navigations=actions.navigations+1
    end
   end
  end
@@ -174,4 +174,96 @@ s.completion_effects=nil;step(s,1,1);assert(actions.stop=='ok')
 
 -- The overall playback budget is separate from the stall timer.
 s=session({end_policy={type='addon'}},'still');step(s,1,C.plan_max_playback_seconds+1);assert(actions.stop=='playback_budget_exceeded')
+-- While a finished scene resolves its completion response, a fulfilled task must not complete again.
+s=session({goals={goal_lead}},'both');s.completion_effects={motion={}};step(s,30,1)
+assert(s.tasks.participants['1'].charge.completions==1 and s.plan.state=='resolving','No extra completion while waiting to end')
+
+-- Stages: the count is chosen once, from the requested range, and reported.
+local function plan_spec(args)local spec=spec_of(args);spec.seed=11;return spec end
+local spec=plan_spec({end_policy={type='addon'},stages={min=2,max=5}})
+Plan.pick_entry({nodes=nodes},spec,{row('still')},people,{})
+assert(spec.stage_count>=2 and spec.stage_count<=5,'A count from the range')
+local chosen_count=spec.stage_count
+Plan.pick_entry({nodes=nodes},spec,{row('still')},people,{});assert(spec.stage_count==chosen_count,'Chosen once and kept')
+refused({end_policy={type='addon'},stages=0},'Invalid')
+refused({end_policy={type='addon'},stages={min=4,max=2}},'Invalid')
+local function staged(args,start,count)
+ local out=session(args,start);out.plan.stage_count=count or 1
+ return out
+end
+-- The slowest goal sets the stage, and at an exact boundary the next stage is due.
+local function at(goal_a,goal_b)
+ local out=staged({goals={goal_lead,goal_partner},stages=4},'both',4)
+ out.tasks.participants['1'].charge.value=goal_a;out.tasks.participants['2'].charge.value=goal_b
+ return out
+end
+s=at(80,35);step(s,2,.001);assert(s.plan.stage==2,'80% and 35% of their goals is stage 2')
+s=at(90,25);step(s,2,.001);assert(s.plan.stage==2,'Exactly 25% means the next stage is due')
+s=at(90,24.9);step(s,1,.001);assert(s.plan.stage==1)
+-- Decay cannot move a stage back.
+s=at(80,35);step(s,2,.001);assert(s.plan.stage==2);s.tasks.participants['2'].charge.value=1;step(s,3,.001);assert(s.plan.stage==2,'Once entered, a stage is kept')
+-- Several boundaries at once are entered one at a time, each with a playing update.
+s=at(99,99);local stages={}
+for _=1,8 do step(s,1,.001);stages[#stages+1]=s.plan.stage end
+assert(s.plan.stage==4,'Queued stages are all reached')
+local jumps=0;for i=2,#stages do local d=stages[i]-stages[i-1];assert(d<=1,'One stage per playing update');jumps=jumps+d end
+-- Required stages: a selector must have its loop actually play.
+local function rated(id,rating,edges)node(id,{lead=full(1),partner=full(1)},edges,{content_rating=rating})end
+rated('a','GENERAL',{'b','c'});rated('b','SUGGESTIVE',{'a','c'});rated('c','EXPLICIT',{'a','b'})
+local suggestive={allowed_content_ratings={'SUGGESTIVE'}}
+local explicit={allowed_content_ratings={'EXPLICIT'}}
+ok,err=pcall(picked,{goals={goal_lead},required_stages={{match=suggestive}}},{row('still')})
+assert(not ok,'A requirement nothing reachable can satisfy is refused')
+refused({goals={goal_lead},required_stages={{stage=3,match=suggestive}},stages={min=2,max=4}},'required_stage_unavailable')
+refused({goals={goal_lead},required_stages={{stage=2}}},'')
+-- A requirement that restrictions rule out is a structured refusal.
+ok,err=pcall(picked,{goals={goal_lead},required_stages={{match=explicit}}},{row('a')},{allowed_content_ratings={'GENERAL','SUGGESTIVE'}})
+assert(not ok and tostring(err):find('required_stage_unavailable',1,true))
+-- Credit comes from the loop playing in that stage, not from a transition or a repeat.
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'a')
+assert(not s.plan.required_stages[1].met)
+s.node=nodes.b;step(s,1,.5);assert(s.plan.required_stages[1].met,'Playing the matching loop earns it')
+s=staged({goals={goal_lead},required_stages={{match=explicit}}},'a')
+s.node={id='t',kind='transition',destination='c',content_rating='EXPLICIT',participants=s.node.participants};step(s,3,.5);assert(not s.plan.required_stages[1].met,'A transition earns nothing')
+-- A goal met early still has to play what is required.
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'c');s.tasks.participants['1'].charge.value=99.9
+step(s,1,1);assert(s.tasks.participants['1'].charge.completions==1 and not actions.stop,'Not done until the required stage has played')
+step(s,1,dwell);assert(s.node.id=='b','It moves to the loop the requirement needs')
+step(s,1,.5);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
+-- A stage-bound requirement that has passed cannot be met later.
+s=staged({goals={goal_lead,goal_partner},stages=3,required_stages={{stage=1,match=suggestive}}},'a',3)
+s.tasks.participants['1'].charge.value=50;s.tasks.participants['2'].charge.value=50
+step(s,3,.001);assert(actions.stop=='required_stage_unavailable','The first stage passed without its loop')
+-- Preferences rank what is eligible, by the fraction of the chosen count.
+local preference={{from=0,to=.4,match=suggestive},{from=.6,to=1,match=explicit}}
+local early=plan_spec({goals={goal_lead},stages=4,stage_preferences=preference});early.stage_count=4
+assert(Plan.pick_entry({nodes=nodes},early,{row('a'),row('b'),row('c')},people,{}).scene_id=='b','Early in the plan the early preference wins')
+s=staged({goals={goal_lead,goal_partner},stages=4,stage_preferences=preference},'b',4);s.plan.stage=4
+assert(Plan.route(s,s.plan)=='to.c','Late in the plan the late preference wins')
+-- A stage change prefers a different loop, and keeps the current one when it is the only choice.
+s=staged({goals={goal_lead,goal_partner},stages=2},'a',2)
+s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49;step(s,2,1)
+assert(s.plan.stage==2 and s.node.id~='a','A new stage plays a different loop')
+s=session({end_policy={type='duration',seconds=10},stages=2},'still');s.plan.stage_count=2
+step(s,12,.5);assert(s.plan.stage==2 and s.node.id=='still','The only loop is reused')
+-- A timed plan with no goals divides its duration evenly across stages.
+s=session({end_policy={type='duration',seconds=8},stages=4},'a');s.plan.stage_count=4
+step(s,3,1);assert(s.plan.stage==2);step(s,2,1);assert(s.plan.stage==3,'Even division of the duration')
+-- The speed ramp follows the stage, stays within limits, and leaves with manual play.
+s=session({end_policy={type='addon'},stages=4,auto_speed={start=1,finish=1.3}},'still');s.plan.stage_count=4
+assert(Plan.speed(s)==1);s.plan.stage=4;assert(math.abs(Plan.speed(s)-1.3)<.001);s.plan.stage=2;assert(math.abs(Plan.speed(s)-1.1)<.001)
+refused({end_policy={type='addon'},auto_speed={start=.1,finish=1}},'Invalid')
+s=session({end_policy={type='addon'},auto_speed=false},'still');assert(Plan.speed(s)==1,'The ramp can be turned off')
+-- Manual takeover: nothing automatic happens, the clock stops, and turning it back on re-evaluates.
+s=session({goals={goal_lead},task_progress_multiplier=2,end_policy={type='duration',seconds=100}},'hub')
+assert(Plan.set_auto(s,false)and not Plan.locked(s),'Off frees manual navigation')
+assert(not Plan.set_auto(s,false),'A repeat changes nothing')
+step(s,1,dwell+1);assert(s.node.id=='hub'and actions.navigations==0 and s.plan.game_used==0,'No automatic navigation and a stopped clock')
+s.node=nodes.both;step(s,1,1);assert(s.tasks.participants['1'].charge.value==10,'No plan multiplier while manual')
+assert(Plan.speed(s)==1)
+assert(Plan.set_auto(s,true)and Plan.locked(s));step(s,1,1);assert(s.tasks.participants['1'].charge.value==30 and s.plan.game_used==1,'Back on, the plan resumes')
+-- Manual play can still finish a goal: resuming then applies the end policy.
+s=session({goals={goal_lead}},'both');Plan.set_auto(s,false)
+step(s,10,1);assert(s.tasks.participants['1'].charge.completions==1 and not actions.stop)
+Plan.set_auto(s,true);step(s,1,.1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
 print('Plans passed: validation, feasibility, entry choice, caps, repeated completions, stall and unreachable ends, clocks, pause, add-on ending and bounds.')

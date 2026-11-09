@@ -135,7 +135,7 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime','goals','restrictions','end_policy','task_progress_multiplier'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime','goals','restrictions','end_policy','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
  local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
  if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
@@ -154,7 +154,7 @@ local function start(actor,req,row,data,preflight)
  for _,id in ipairs(ids)do assert(not Sessions.holder(id),'participant_busy')end
  local restrictions=Search.criteria(data.metadata,args.restrictions or args.session_restrictions)
  local search=Search.criteria(data.metadata,args.search)
- local spec=autonomous and Plan.parse(args,(data.tasks or {}).definitions or {},ids)or nil
+ local spec=autonomous and Plan.parse(args,(data.tasks or {}).definitions or {},ids,data.metadata)or nil
  local lifetime=M.lifetime(args.lifetime,spec)
  local mode=preflight and(args.start_mode or(args.scene_id and 'start_scene'or 'start_at_hub'))or req.operation
  assert(mode=='start_at_hub'or mode=='start_scene'or mode=='start_random_scene'or mode=='start_autonomous_scene','Invalid start mode')
@@ -183,7 +183,7 @@ local function start(actor,req,row,data,preflight)
  local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
  if not subscribers[sk]then subscribers[sk]={addon_id=req.addon_id,client_id=req.client_id,actor=actor,names={['*']=true}}end
  return {accepted=true,scene_id=chosen.scene_id,start_request_id=req.request_id,autonomous=autonomous or nil,
-  stages=spec and 1 or nil,route_uncertain=spec and spec.route_uncertain or nil}
+  stages=spec and spec.stage_count or nil,route_uncertain=spec and spec.route_uncertain or nil}
 end
 local function execute(actor,req,row)
  local args=req.arguments;local op=req.operation
@@ -192,7 +192,7 @@ local function execute(actor,req,row)
   if runtime().api_control_event and not op:match('^get_')and op~='renew_integration'and op~='register_integration'then runtime().api_control_event(req)end
   return result
  end
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
@@ -204,6 +204,10 @@ local function execute(actor,req,row)
   V.fields(args,{'session_id'});local s=runtime().snapshot(args.session_id);if args.session_id then assert(s and s.id==args.session_id,'session_not_found')end;return {session=s or J.null,event_cursor=cursor}
  end
  if op=='list_sessions'then V.fields(args,{});return {sessions=runtime().snapshots(),event_cursor=cursor}end
+ if op=='set_auto_mode'then
+  V.fields(args,{'session_id','enabled'},{'session_id','enabled'});V.boolean(args.enabled);owned(req)
+  return runtime().set_auto_mode(args.session_id,args.enabled)
+ end
  if op=='renew_session'then
   V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().renew_session(args.session_id);return {renewed=true}
  end
@@ -233,7 +237,7 @@ local function execute(actor,req,row)
   local ok,value=pcall(start,actor,req,row,data,true)
   if ok then return value end
   local message=tostring(value);local code=message:match('([a-z_]+)$')or 'invalid_request'
-  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true,goal_unreachable=true,participant_not_found=true,task_not_found=true}
+  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,participant_not_found=true,task_not_found=true}
   return {valid=false,code=known[code]and code or 'invalid_request',message=message,reservation=false}
  end
  if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy((data.tasks or {}).definitions or {}),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
@@ -264,7 +268,7 @@ function M.receive(actor,content)
  if success then response.result=value;response.code='ok'
  else
   local message=tostring(value);response.message=message
-  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,
+  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,session_has_no_plan=true,
    no_matching_scenes=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
    unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')

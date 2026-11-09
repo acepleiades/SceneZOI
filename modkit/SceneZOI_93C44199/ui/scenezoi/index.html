@@ -48,6 +48,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
 #content { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 #scene-status { flex: 0 0 auto; min-height: 22px; padding: 4px 12px; font-size: 12px;
     line-height: 1.35; color: #6f6f6f; word-break: normal; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
+#scene-auto-mode { display: none; width: 100%; cursor: pointer; margin-bottom: 7px; padding: 8px; font-family: var(--inzoi-font-ui);
+    border: 1px solid #bfbfbf; border-radius: 4px; background: #eeeeee; color: #333333; }
+#scene-auto-mode.selected { background: #3185c3; color: #ffffff; }
 #scene-navigation { flex: 1 1 auto; min-height: 0; overflow-y: scroll; overflow-x: hidden;
     margin: 0 8px 10px 12px; padding-right: 8px; overscroll-behavior: contain; }
 #scene-navigation::-webkit-scrollbar { width: 5px; }

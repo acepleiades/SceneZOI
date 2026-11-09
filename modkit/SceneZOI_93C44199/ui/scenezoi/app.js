@@ -5,6 +5,7 @@
     var sequence = 0;
     // The panel may show a session it did not start: these keep this panel's own identity for new starts.
     var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null;
+    var hasPlan = false, autoMode = false, autoCount = 0, lastPlan = null, autoButton = null;
     var heartbeat = 0;
     var pendingCommand = null;
     var active = false;
@@ -228,6 +229,7 @@
             return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function(data){
                 if (!initiator || entityId(data)!==initiator) {declineStart(initiator);return false;}
                 client=ownClient;sequence=++ownSequence;counterBase=0;
+                hasPlan=false;autoMode=false;lastPlan=null;
                 active=true;exiting=false;noticeInitiator=null;noticeToken=null;
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
@@ -326,6 +328,8 @@
         active = false; exiting = false; playing = false; currentNode = null;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
         client = ownClient; sequence = ownSequence; counterBase = 0;
+        hasPlan = false; autoMode = false; lastPlan = null;
+        renderAutoMode();
         closePanel();
     }
     function attachPanel(f) {
@@ -333,6 +337,7 @@
         active = true; exiting = f[7] === 'exiting'; playing = f[7] === 'playing'; heartbeat = 0;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
         noticeInitiator = null; noticeToken = null; lastState = ''; gameScale = 1;
+        hasPlan = false; autoMode = false; lastPlan = null;
         // Counters must beat anything this session has already acknowledged from an earlier binding.
         counterBase = Math.floor(Date.now() / 1000);
         navigationCount = counterBase; playbackCounter = counterBase; acknowledgedPlayback = 0;
@@ -365,9 +370,46 @@
     function escapeText(value) {
         return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
     }
+    function renderAutoMode() {
+        if (!autoButton) return;
+        autoButton.style.display = hasPlan && active && !exiting ? 'block' : 'none';
+        autoButton.textContent = window.SceneZOILocalization.text('Auto-mode');
+        if (autoButton.classList.toggle) autoButton.classList.toggle('selected', autoMode);
+        autoButton.setAttribute('aria-pressed', autoMode ? 'true' : 'false');
+    }
+    function applyPlan(value) {
+        var fields = value.split('|');
+        if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
+        hasPlan = fields[3] === '1'; autoMode = hasPlan && fields[4] === '1';
+        renderAutoMode(); renderNavigation();
+    }
+    function ensureAutoButton() {
+        if (autoButton || !navigation || !navigation.parentNode || !navigation.parentNode.insertBefore) return;
+        autoButton = document.createElement('button');
+        autoButton.id = 'scene-auto-mode'; autoButton.type = 'button';
+        navigation.parentNode.insertBefore(autoButton, navigation);
+        autoButton.addEventListener('click', function () {
+            if (!active || exiting || !hasPlan) return;
+            var enabled = autoMode ? '0' : '1';
+            autoCount = Math.max(autoCount + 1, counterBase + 1);
+            writePacket('auto_mode', ['SZ2', client, String(sequence), 'auto_mode', String(autoCount), enabled].join('|')).catch(function () {});
+        });
+    }
+    var readingPlan = false;
+    setInterval(function () {
+        if (!active || readingPlan) return;
+        readingPlan = true;
+        cfg('uimod.cfg_load', 'plan_state').then(function (data) {
+            var value = data && data.value !== undefined ? data.value : data;
+            if (typeof value !== 'string' || value === lastPlan) return;
+            lastPlan = value;
+            applyPlan(value);
+        }).catch(function () {}).then(function () { readingPlan = false; });
+    }, 250);
     function renderNavigation() {
         var html = '';
-        if (active && playing && !exiting && !pendingNavigation && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
+        ensureAutoButton();
+        if (active && playing && !exiting && !pendingNavigation && !autoMode && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
             html = currentNode.navigation.map(function (edge) {
                 var target = window.SceneZOICatalog.nodes[edge.target];
                 var caption = typeof edge.label === 'string' && edge.label.trim()
@@ -381,7 +423,7 @@
     }
     navigation.addEventListener('click', function (event) {
         var option = event.target && event.target.getAttribute('data-option');
-        if (!option || !active || !playing || exiting || pendingNavigation || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
+        if (!option || !active || !playing || exiting || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
         if (!currentNode.navigation.some(function (edge) { return edge.id === option; })) return;
         pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision)].join('|');
         writePacket('navigation', pendingNavigation).catch(function () {});

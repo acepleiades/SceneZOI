@@ -270,6 +270,16 @@ local function publish_node(current, code)
     current.node_state = packet
 end
 
+local function publish_plan(current)
+    if not has_panel(current) then return end
+    local plan = current.plan
+    local packet = plan and Protocol.pack(current.client, current.sequence, 1, plan.auto_mode and 1 or 0, plan.stage, plan.stage_count)
+        or Protocol.pack(current.client, current.sequence, 0, 0, 0, 0)
+    if current.plan_state == packet then return end
+    pcall(inzoi.cli.execute, command("uimod.cfg_save", "plan_state") .. " value=" .. packet)
+    current.plan_state = packet
+end
+
 local function prepare_packet(current, participant)
     return Protocol.pack(current.token, current.initiator, current.node.id, current.revision,
         current.subsystems:keep_body_unmerged(participant, current.node, require("SceneZOI.Binding").resolve(current.participants, current.node)) and 1 or 0, participant.role,
@@ -371,6 +381,7 @@ local function begin(fields)
     Autosave.transfer(current.token)
     publish(client, sequence, "preparing", "ok")
     publish_focus()
+    publish_plan(current)
     plan_placement(current, false)
     notify(current, "session_preparing")
     M.diagnostic("Preparing " .. current.token)
@@ -739,6 +750,20 @@ local function finish_outfit(current)
     publish_phase(current, "playing", "ok")
 end
 
+local function auto_mode_request(raw)
+    local current = Sessions.focused()
+    local fields = Protocol.unpack(raw)
+    if not current or current.stopping or not fields or fields[1] ~= current.client or
+        fields[2] ~= current.sequence or fields[3] ~= "auto_mode" then return end
+    local count = tonumber(fields[4])
+    if not count or count % 1 ~= 0 or count <= (current.last_auto_mode or 0) then return end
+    current.last_auto_mode = count
+    if Plan.set_auto(current, fields[5] == "1") then
+        notify(current, "plan_auto_mode_changed")
+        publish_plan(current)
+    end
+end
+
 local function poll()
     -- Cleanup finishing is too early for input focus: wait for the DOM close acknowledgement.
     local focused = Sessions.focused()
@@ -803,6 +828,7 @@ local function poll()
             Personality.request(focused,read("personality"))
             VoicePersonality.request(focused,read("voice"))
             navigate(read("navigation"))
+            auto_mode_request(read("auto_mode"))
         end
         return
     end
@@ -846,6 +872,8 @@ local function bind_panel(current)
     publish(current.client, current.sequence, phase_of(current), "ok")
     publish_node(current)
     publish_playback(current)
+    current.plan_state = nil
+    publish_plan(current)
     if Catalog.publish then pcall(Catalog.publish, current) end
 end
 
@@ -920,7 +948,7 @@ end
 
 -- Carries out what a plan asked for. Every automatic move goes through the same validated handoff.
 local function apply_plan(current, action)
-    if action.event then notify(current, action.event) end
+    if action.event then notify(current, action.event); publish_plan(current) end
     if action.stop then stop_session(current, action.stop); return end
     if not action.navigate then return end
     local ok, node, assets, duration, loaded = pcall(function()
@@ -1027,7 +1055,7 @@ local function advance(current, dt)
     end)
     if not current.preparing then
         Control.sample(current,dt,game_scale)
-        current.clock:advance(dt, game_scale, CompletionEffects.multiplier(current.completion_effects,dt,game_scale)*Control.speed(current))
+        current.clock:advance(dt, game_scale, math.min(2, CompletionEffects.multiplier(current.completion_effects,dt,game_scale)*Control.speed(current)*Plan.speed(current)))
         Playback.sample(current, current.clock:position(current.duration, current.node.kind))
         local completion_routes,completion_payloads={},{}
         if current.tasks then Tasks.update(current.tasks, current, dt * game_scale, function(payload)
@@ -1143,6 +1171,16 @@ function M.api_control_event(req)
     local snapshot=Session.snapshot(focused)
     snapshot.integration={addon_id=req.addon_id,client_id=req.client_id,operation=req.operation}
     Events.emit('addon_control_changed',snapshot)
+end
+function M.set_auto_mode(id, enabled)
+    local current = assert(Sessions.get(id), "session_not_found")
+    assert(current.plan, "session_has_no_plan")
+    assert(not current.stopping, "session_not_ready")
+    if Plan.set_auto(current, enabled) then
+        notify(current, "plan_auto_mode_changed")
+        publish_plan(current)
+    end
+    return {auto_mode = current.plan.auto_mode}
 end
 function M.api_session(id)
     return assert(type(id)=='string'and Sessions.get(id),'session_not_found')
