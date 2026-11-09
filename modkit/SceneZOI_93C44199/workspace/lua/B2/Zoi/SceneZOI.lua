@@ -21,6 +21,17 @@ local function set_autonomy(owner, enable)
     assert(ok, message or "Autonomy change failed")
 end
 
+-- If this Zoi's client actor has unloaded, its own reply cannot arrive. Say so through the controlled Zoi.
+local function relay_release(owner, token)
+    local ok, _, data = inzoi.cli.execute("entity.get_possessed")
+    local controlled = ok and data and data:match('"entity_id"%s*:%s*"?(%d+)')
+    local own = Protocol.id(owner:GetEntityId())
+    if not controlled or controlled == own then return end
+    local target = inzoi.FB1EntityId()
+    target.Value = tonumber(controlled)
+    inzoi.message.send_to_client(target, "SceneZOI.Reply", Protocol.pack(token, "released_unloaded", own))
+end
+
 local function release(self, owner, silent)
     local lease = self.lease
     if not lease then return end
@@ -56,7 +67,10 @@ local function release(self, owner, silent)
         self.retired[lease.token] = true
         self.retired_order[#self.retired_order + 1] = lease.token
         if #self.retired_order > 32 then self.retired[table.remove(self.retired_order, 1)] = nil end
-        if not silent then reply(owner, lease.token, "released", "ok") end
+        if not silent then
+            reply(owner, lease.token, "released", "ok")
+            pcall(relay_release, owner, lease.token)
+        end
     else
         local message = table.concat(errors, "; ")
         if lease.last_error ~= message then
@@ -218,6 +232,8 @@ local function receive(self, owner, kind, content)
         self.recovery_done=self.recovery_done or {}
         if self.recovery_done[token]then Save.reply(owner,token,'recovered');return end
         local data=Json.decode((assert(Protocol.decode(fields[2]),'Invalid recovery packet')))
+        -- This lease already released itself; restoring again would move a Zoi that has since walked away.
+        if self.retired[data.token]then Save.reply(owner,token,'recovered');return end
         if self.lease and (not self.lease.releasing or self.lease.token~=data.token)then return end
         if not self.lease then self.lease=assert(Recovery.lease(data),'Missing recovery record')end
         self.lease.recovery_request=token

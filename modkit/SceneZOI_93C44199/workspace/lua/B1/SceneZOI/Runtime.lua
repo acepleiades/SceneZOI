@@ -37,7 +37,7 @@ local Sessions=require('SceneZOI.Sessions')
 local serial = 0
 local poll_elapsed = 0
 local state_value
-local boot_request
+local boot_request, last_save_request
 local completed, completion_order = {}, {}
 local pending_focus, last_focus
 local rejected_focus = {}
@@ -117,15 +117,40 @@ local function playback_request(raw)
     publish_playback(current)
 end
 
+-- Only the scene with the controlled Zoi may hold the single global autosave suspension.
+local function reconcile_autosave()
+    local focused = Sessions.focused()
+    if focused and not focused.stopping then
+        local ok, err = pcall(Autosave.transfer, focused.token)
+        if not ok then M.diagnostic("Autosave suspension failed: " .. tostring(err)) end
+    else
+        Autosave.restore() -- Independent retries continue while idle if the setting write fails.
+    end
+end
+
+-- What this session's cleanup could not confirm stays in the journal for later recovery.
+local function retain_unconfirmed(old)
+    local unconfirmed = {}
+    for _, participant in ipairs(old.participants) do
+        if not participant.released then unconfirmed[#unconfirmed + 1] = participant.id end
+    end
+    for _, participant in ipairs(old.unloaded or {}) do
+        if participant.restoration == "deferred_recovery" then unconfirmed[#unconfirmed + 1] = participant.id end
+    end
+    pcall(Save.finish, old.token, unconfirmed, old.furniture ~= nil and not old.furniture_released)
+    return #unconfirmed == 0
+end
+
 local function finish_stop(old, code)
     if not Sessions.has(old) then return end
     Sessions.remove(old)
     if Catalog.publish then pcall(Catalog.publish)end
-    Autosave.restore() -- Independent retries continue while idle if the setting write fails.
+    reconcile_autosave()
     code = code or "ok"
     old.ended = true
     old.cleanup_code=code
-    old.cleanup_complete=Session.cleanup_complete(old)
+    local confirmed = retain_unconfirmed(old)
+    old.cleanup_complete=Session.cleanup_complete(old) and confirmed
     Effects.retain(old)
     notify(old, "session_ended", code)
     Control.ended(old,Session.snapshot(old))
@@ -180,6 +205,7 @@ local function stop_session(old, code)
     old.stop_reason=code or 'ok'
     old.stop_origin=old.stop_origin or {source='framework',reason=old.stop_reason}
     old.stopping, old.stop_code, old.age, old.heartbeat = true, code or "ok", 0, 0
+    reconcile_autosave()
     SceneVisuals.restore() -- Presentation restoration retries independently while idle.
     pcall(inzoi.cli.execute,command('uimod.cfg_save','last_stop')..' value='..Protocol.pack(old.client,old.sequence,old.stop_code,old.node.id))
     notify(old, "session_ending", old.stop_code)
@@ -238,6 +264,8 @@ local function begin(fields)
     for assignment in roster:gmatch("[^+]+") do
         local role, id = assignment:match("^([%w_.-]+):(%d+)$")
         assert(role and node.participants[role] and not roles[role] and not seen[id], "Invalid or duplicate role assignment")
+        local holder = Sessions.holder(id)
+        assert(not holder or (addon and holder == addon.token), "A participant is already in a scene")
         local actor = assert(M.actors[id], "All participants must be loaded nearby")
         local participant = Native.capture(actor)
         participant.role = role
@@ -269,11 +297,13 @@ local function begin(fields)
         current.addon_context=require('SceneZOI.DataValidation').copy(addon.context)
         current.session_restrictions=require('SceneZOI.DataValidation').copy(addon.restrictions)
     end
+    assert(not Save.overlaps(participant_ids, furniture_id), "restore_pending")
+    if not addon then assert(Sessions.reserve(current.token, participant_ids, furniture_id)) end
     Sessions.add(current)
     Sessions.focus(current)
     Addons.created(addon,current)
     if Catalog.publish then Catalog.publish(current)end
-    Autosave.acquire(current.token)
+    Autosave.transfer(current.token)
     publish(client, sequence, "preparing", "ok")
     notify(current, "session_preparing")
     M.diagnostic("Preparing " .. current.token)
@@ -319,6 +349,19 @@ function M.register(actor)
     return id
 end
 
+-- The actor is gone: stop touching it, and report honestly what is known about its restoration.
+local function drop_unloaded(current, actor)
+    for index, participant in ipairs(current.participants) do
+        if participant.actor == actor then
+            table.remove(current.participants, index)
+            current.unloaded = current.unloaded or {}
+            current.unloaded[#current.unloaded + 1] = participant
+            participant.restoration = participant.released and "restored" or "deferred_recovery"
+            return true
+        end
+    end
+end
+
 function M.unregister(actor)
     -- Teardown may already have reset GetEntityId() to Invalid.
     local id = registered_actor_ids[actor] or Protocol.id(actor:GetEntityId())
@@ -326,9 +369,7 @@ function M.unregister(actor)
     unregistrations=unregistrations+1;last_unregistered_id=id
     if M.actors[id] ~= actor then non_owner_unregistrations=non_owner_unregistrations+1 end
     for _, current in ipairs(Sessions.list()) do
-        for _, participant in ipairs(current.participants) do
-            if participant.actor == actor then stop_session(current, "participant_unloaded"); break end
-        end
+        if drop_unloaded(current, actor) then stop_session(current, "participant_unloaded") end
     end
     -- A late on_end from an older object must not remove its replacement.
     if M.actors[id] == actor then M.actors[id] = nil end
@@ -369,6 +410,15 @@ end
 
 function M.reply(actor, content)
     local fields = Protocol.unpack(content)
+    if fields and fields[2] == "released_unloaded" then
+        -- Relayed through the controlled Zoi: this participant's own client actor is gone.
+        pcall(Save.resolve, fields[1], fields[3])
+        local owner = Sessions.get(fields[1])
+        for _, participant in ipairs(owner and owner.unloaded or {}) do
+            if participant.id == fields[3] then participant.released, participant.restoration = true, "released_on_unload" end
+        end
+        return
+    end
     local current = fields and Sessions.get(fields[1])
     if not current then return end
     local kind, detail = fields[2], fields[3]
@@ -376,7 +426,7 @@ function M.reply(actor, content)
     if current.stopping then
         if kind ~= "released" then return end
         for _, participant in ipairs(current.participants) do
-            if participant.actor == actor then participant.released = true end
+            if participant.actor == actor then participant.released, participant.restoration = true, "restored" end
         end
         if detail ~= "ok" then current.stop_code = "restore_error" end
         if Session.cleanup_complete(current)then
@@ -563,6 +613,14 @@ local function poll()
         end
         if actor then pending_focus, last_focus = {actor = actor, age = 0,client=focus[1],sequence=focus[2]}, focus_raw end
     end
+    -- A save exits every scene, whether or not one has a panel.
+    local save_request = read("save_request")
+    if save_request and save_request ~= last_save_request then
+        last_save_request = save_request
+        for _, current in ipairs(Sessions.list()) do
+            if not current.stopping then stop_session(current, "saving") end
+        end
+    end
     -- A heartbeat can never replace Start or Exit: it has its own mailbox.
     local heartbeat = Protocol.unpack(read("heartbeat"))
     if focused and heartbeat and heartbeat[1] == focused.client and heartbeat[2] == focused.sequence then
@@ -602,7 +660,7 @@ local function poll()
         return
     end
     if action == "start" then
-        if Save.busy()or Autosave.busy()then remember(client,sequence,"error","restore_pending");return end
+        if Autosave.restoring()then remember(client,sequence,"error","restore_pending");return end
         local ok, err = pcall(begin, fields)
         if not ok then
             Addons.fail_start(fields[8],err)
@@ -624,6 +682,7 @@ function M.boot()
     Save.boot()
     -- Persisted Start/Exit packets belong to the previous runtime, not a new session.
     boot_request = read("request")
+    last_save_request = read("save_request")
     last_focus = read("focus")
     publish("none", 0, "idle", "ok")
     inzoi.cli.execute(command("uimod.cfg_save", "runtime_build") .. " value=" .. Config.build .. "")
@@ -636,7 +695,7 @@ local function update(dt)
     if not focused then Localization.tick(dt)end
     poll_elapsed = poll_elapsed + dt
     if poll_elapsed >= Config.poll_interval then
-        poll_elapsed=0;Autosave.tick(focused~=nil);Save.tick(M.actors,focused~=nil);poll()
+        poll_elapsed=0;Autosave.tick(focused~=nil);Save.tick(M.actors);poll()
     end
     local mode=ModeGuard.update(dt,Sessions.count()>0 or pending_focus~=nil)
     if mode.editor then

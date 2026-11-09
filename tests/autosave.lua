@@ -32,4 +32,13 @@ A.acquire('clear');fail_write=true;assert(not A.restore()and A.busy()and enabled
 -- Simulate a fresh environment after a crash: only local durable ownership survives.
 A.acquire('crash');package.loaded['SceneZOI.Autosave']=nil;A=require('SceneZOI.Autosave');A.boot();assert(enabled and not A.busy())
 enabled=false;package.loaded['SceneZOI.Autosave']=nil;A=require('SceneZOI.Autosave');A.boot();assert(not enabled,'A released lease must not override a later user preference')
+-- One suspension moves between eligible scenes without touching the game setting again.
+package.loaded['SceneZOI.Autosave']=nil;A=require('SceneZOI.Autosave');enabled=true;A.boot()
+A.transfer('scene.a');assert(not enabled and A.owner()=='scene.a'and not A.restoring())
+local before=#sets;A.transfer('scene.b');assert(not enabled and A.owner()=='scene.b'and #sets==before,'A transfer must not rewrite the setting')
+assert(P.unpack(cfg.lease)[2]=='scene.b'and P.unpack(cfg.lease)[3]=='held')
+A.transfer('scene.b');assert(#sets==before)
+fail_set=true;assert(not A.restore()and A.restoring());A.tick(false);assert(enabled and not A.busy()and not A.restoring())
+A.transfer('scene.c');fail_set=true;assert(not A.restore()and A.restoring());A.transfer('scene.d');assert(A.owner()=='scene.d'and not A.restoring()and not enabled,'A new owner adopts a failed restoration')
+assert(A.restore()and enabled)
 print('Autosave lease passed: enabled/disabled originals, unchanged interval, no recapture, read/persist/partial-write failures, idle retries and crash/boot recovery.')

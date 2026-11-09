@@ -4,7 +4,7 @@ local C=require('SceneZOI.Config')
 local P=require('SceneZOI.Protocol')
 local J=require('SceneZOI.Json')
 local M={}
-local lease,last_error
+local lease,last_error,releasing
 local function cfg(action,value)
  local command='uimod.cfg_'..action..' mod_id='..C.mod_id..' section='..C.section..' key=autosave_lease'
  if value then command=command..' value='..value end
@@ -26,14 +26,22 @@ function M.acquire(token)
  local changed,err=inzoi.cli.execute('gameplay.set_autosave enable=false')
  assert(changed,err or 'Could not suspend autosave')
 end
+-- Hands the suspension to another eligible scene without touching the game setting.
+function M.transfer(token)
+ if lease==token then return end
+ if not lease then M.acquire(token);return end
+ write('held',token)
+ lease,releasing=token,false
+end
 function M.restore()
  if not lease then return true end
+ releasing=true
  local ok,err=pcall(function()
   local changed,message=inzoi.cli.execute('gameplay.set_autosave enable=true')
   assert(changed,message or 'Could not restore autosave')
   write('released',lease)
  end)
- if ok then lease,last_error=nil,nil
+ if ok then lease,last_error,releasing=nil,nil,false
  elseif tostring(err)~=last_error then
   last_error=tostring(err);print('[SceneZOI] Autosave restoration will retry: '..last_error)
  end
@@ -43,9 +51,12 @@ function M.boot()
  local ok,message,data=cfg('load')
  local fields=ok and P.unpack(data or message)
  lease=fields and fields[1]=='autosave'and fields[3]=='held'and fields[2]or nil
- last_error=nil
+ last_error,releasing=nil,false
  M.restore()
 end
 function M.busy()return lease~=nil end
+function M.owner()return lease end
+-- A failed restoration is still retrying; separate from a scene holding the suspension.
+function M.restoring()return lease~=nil and releasing==true end
 function M.tick(active)if not active then M.restore()end end
 return M

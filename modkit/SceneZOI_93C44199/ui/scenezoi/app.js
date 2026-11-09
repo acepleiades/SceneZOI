@@ -69,7 +69,11 @@
         decode:function(v){return JSON.parse(decodeURIComponent(escape(String(v).replace(/../g,function(h){return String.fromCharCode(parseInt(h,16));}))));},
         read:function(key){return cfg('uimod.cfg_load',key).then(function(r){return r&&r.value!==undefined?r.value:r;});},
         write:writePacket,
-        stopForSave:function(){if(active){exiting=true;playing=false;pendingNavigation=null;pendingPlayback=null;send('save').catch(function(){});}},
+        stopForSave:function(){
+            // Every scene exits for a save, including ones this panel is not showing.
+            writePacket('save_request',client+'.'+Date.now()).catch(function(){});
+            if(active){exiting=true;playing=false;pendingNavigation=null;pendingPlayback=null;send('save').catch(function(){});}
+        },
         stopForLoad:function(){if(active){exiting=true;send('exit').catch(function(){});}}});
     function show(message) {
         if (tasks) tasks.update();
@@ -225,7 +229,6 @@
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
-                saveGuard.begin(sequence,Object.keys(entry.bindings).map(function(role){return entityId(entry.bindings[role]);}));
                 openPanel();show(window.SceneZOILocalization.text('Preparing Scene Mode…'));
                 return send('start',initiator,roster,node,entry.furniture,entry.api_token).then(function(){return true;});
             }).catch(function(error){
@@ -309,8 +312,8 @@
             else {
                 active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
                 pendingCommand = null;
-                if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving' || code === 'character_editor')) {saveGuard.end(true);closePanel();}
-                else {saveGuard.end(false);show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));}
+                if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving' || code === 'character_editor')) closePanel();
+                else show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));
             }
         }).catch(function () {}).then(function () { reading = false; });
     }, 250);

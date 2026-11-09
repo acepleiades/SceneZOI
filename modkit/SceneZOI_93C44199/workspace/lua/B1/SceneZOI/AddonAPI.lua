@@ -44,7 +44,7 @@ local function emit_failure(row,code,message)
 end
 function M.fail_start(token,reason)
  if pending and pending.token==token then
-  local row=pending;pending=nil;pcall(cfg,'api_start','none');emit_failure(row,'start_failed',tostring(reason))
+  local row=pending;pending=nil;require('SceneZOI.Sessions').release(token);pcall(cfg,'api_start','none');emit_failure(row,'start_failed',tostring(reason))
  end
 end
 function M.context(token,fields)
@@ -57,6 +57,7 @@ function M.context(token,fields)
 end
 function M.created(row,current)
  if not row then return end
+ require('SceneZOI.Sessions').transfer(row.token,current.token)
  row.status={phase='preparing',session_id=current.token};pending=nil;pcall(cfg,'api_start','none')
 end
 function M.has_pending()return pending~=nil end
@@ -102,10 +103,14 @@ local function start(actor,req,row,data,preflight)
  local args=req.arguments
  V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode'},{'participants','initiator'})
  assert(not runtime().snapshot()and not pending,'session_already_running')
- assert(not require('SceneZOI.SaveBridge').busy()and not require('SceneZOI.Autosave').busy(),'restore_pending')
+ assert(not require('SceneZOI.Autosave').restoring(),'restore_pending')
  local controller=UE.UGameplayStatics.GetPlayerController(actor,0)
  assert(controller and P.id(controller:GetCharacterEntityId())==args.initiator,'initiator_not_controlled')
  local people=assert(roster(args));local member=false;for _,person in ipairs(people)do if person.id==args.initiator then member=true end end;assert(member,'Initiator must participate')
+ local ids={};for _,person in ipairs(people)do ids[#ids+1]=person.id end
+ assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id),'restore_pending')
+ local Sessions=require('SceneZOI.Sessions')
+ for _,id in ipairs(ids)do assert(not Sessions.holder(id),'participant_busy')end
  local restrictions=Search.criteria(data.metadata,args.session_restrictions)
  local search=Search.criteria(data.metadata,args.search)
  local mode=preflight and(args.start_mode or(args.scene_id and 'start_scene'or 'start_at_hub'))or req.operation
@@ -121,6 +126,7 @@ local function start(actor,req,row,data,preflight)
  if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id])end
  if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),reservation=false,assets_checked=false,startup_rechecks=true}end
  serial=serial+1;row.token='api.'..os.time()..'.'..serial;row.age=0;row.retry=1;row.stage='depart';row.departures={}
+ local reserved,reason=Sessions.reserve(row.token,ids,args.furniture_id);assert(reserved,reason)
  for _,p in ipairs(people)do row.departures[p.id]=false end
  row.entry={initiator=args.initiator,node=chosen.scene_id,bindings=chosen.bindings,furniture=args.furniture_id,api_token=row.token}
  row.restrictions=restrictions;row.context=V.copy(args.context);row.status={phase='accepted',scene_id=chosen.scene_id};pending=row
@@ -169,7 +175,7 @@ local function execute(actor,req,row)
   local ok,value=pcall(start,actor,req,row,data,true)
   if ok then return value end
   local message=tostring(value);local code=message:match('([a-z_]+)$')or 'invalid_request'
-  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true}
+  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true}
   return {valid=false,code=known[code]and code or 'invalid_request',message=message,reservation=false}
  end
  if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy((data.tasks or {}).definitions or {}),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
@@ -200,7 +206,7 @@ function M.receive(actor,content)
  if success then response.result=value;response.code='ok'
  else
   local message=tostring(value);response.message=message
-  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,
+  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,participant_busy=true,
    no_matching_scenes=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
    unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')
