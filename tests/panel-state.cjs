@@ -37,6 +37,20 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  assert(!classes.has('scene-menu-blocked'),'Time-control pause alone must leave controls usable');
  assert(!emit('click',{id:'scene-exit',parentNode:root}));
  assert.equal(root['aria-disabled'],'false');ctx.inzoi.view.hover(true);assert.equal(hovers.at(-1),true);
+ // Other native surfaces may report blocked, including a popup over Game Menu.
+ for(const overlay of [
+   {primary_kind:'modal_ui',input_block_ui_type:'',esc_stack_remains:true},
+   {primary_kind:'modal_ui',input_block_ui_type:'PhotoMode'},
+   {primary_kind:'popup',primary_detail:'GameMenu_WaitForSaving',input_block_ui_type:'GameMenu',pause_reasons:['GameMenu']},
+   {primary_kind:'coach_mark'}
+ ]) {
+   state={blocked:true,...overlay};timers[125]();await flush();
+   assert(!classes.has('scene-menu-blocked'),'SceneZOI dimmed for '+(overlay.primary_detail||overlay.input_block_ui_type||overlay.primary_kind));
+   assert(!emit('click',{id:'scene-exit',parentNode:root}));
+   assert.deepEqual(reports.at(-1),[100,200,320,410]);
+ }
+ state={blocked:false};timers[125]();await flush();
+
  emit('click',icon);ctx.window.SceneZOIPanel.reset();assert(!classes.has('scene-compact'),'New entry resets the hidden presentation');
  root.style.left='-280px';root.offsetLeft=-280;emit('click',icon);assert.equal(root.style.left,'0px','Restore tab must remain on-screen');
  emit('click',restore);assert.equal(root.style.left,'-280px','Expanded position is restored');root.offsetLeft=100;
@@ -67,12 +81,12 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  now=1999;timers[125]();await flush();assert(classes.has('scene-menu-blocked'),'Keep the real blocker while waiting');
  now=2001;resolvePoll=null;state={blocked:false,pause_reasons:[]};timers[125]();await flush();
  assert(!classes.has('scene-menu-blocked'),'An unanswered read must expire so a fresh native response can unlock controls');
- delayed({success:true,data:{blocked:true,primary_kind:'modal_ui'}});await flush();
+ delayed({success:true,data:{blocked:true,primary_kind:'modal_ui',input_block_ui_type:'GameMenu'}});await flush();
  assert(!classes.has('scene-menu-blocked'),'A late expired response cannot reapply an old blocker');
  // Reset for a later session also retires an unfinished read and immediately polls again.
  resolvePoll=true;timers[125]();await flush();const previousSession=resolvePoll;
  resolvePoll=null;ctx.window.SceneZOIPanel.reset();await flush();
- previousSession({success:true,data:{blocked:true}});await flush();
+ previousSession({success:true,data:{blocked:true,primary_kind:'modal_ui',input_block_ui_type:'GameMenu'}});await flush();
  assert(!classes.has('scene-menu-blocked'),'An old-session modal response cannot wedge the next session');
  assert.equal(ctx.window.SceneZOIPanel.snapshot().native.blocked,false);
  const css=fs.readFileSync(base+'index.html','utf8');
@@ -81,5 +95,5 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  assert(css.indexOf('src="panel-state.js"')<css.indexOf('src="outfit-ui.js"'));
  for(const id of ['scene-tools','scene-tasks','outfit-panel'])assert(css.includes('#app-root.scene-menu-blocked #'+id+'::after'));
  assert(!fs.readFileSync(base+'panel-state.js','utf8').includes("action: 'hide'"));
- console.log('Panel state passed: injected hide capture, restore, expanded size, hidden bounds, modal input/dimming, time pause, serialized polling.');
+ console.log('Panel state passed: injected hide capture, restore, expanded size, hidden bounds, Game Menu input/dimming, unrelated overlays, time pause, serialized polling.');
 })().catch(e=>{console.error(e);process.exit(1);});

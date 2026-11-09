@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "release_version": "1.1.6",
+  "runtime_build": "20261109-pedestrian-recovery-1",
+  "ui_build": "20261109-game-menu-only-1",
+  "changes": [
+    "Recover scene playback after pedestrian avoidance interrupts a participant.",
+    "Dim and gate the scene panel only for the Esc Game Menu.",
+    "Skip redundant placement teleports while correcting drift."
+  ],
+  "runtime_basis": "See pedestrian-avoidance-20261109.json, game-menu-panel-20261109.json and anchor-dynamics-20261108.json for targeted verification.",
+  "hzoi": "Unchanged. HZoi 1.1.0 remains compatible.",
+  "source_distribution": "Player ZIP includes the GPL license and source repository notice. Source is distributed separately.",
+  "packaging": "Passed isolated native PackageUGC, exact four-owned-asset filter, ZIP CRC and full byte readback. No referenced Game or Engine payloads.",
+  "exact_zip_clean_acceptance": "Author confirmed two standing sessions started, played and exited from a clean installation of the exact 1.1.6 ZIP after a fresh launch. Native diagnostics confirm idle/ok, Exit cleanup ok/ok, gameplay input restored and autosave released after the last run.",
+  "customer_retest": "The public-location reporter has not retested this build. The avoidance recovery was verified with a controlled native interruption.",
+  "archive_sha256": "c8270e45a23dcdeb89d644bc7fb41b8c69f785f8ab2861cae3d30e135b9d41c5",
+  "archive_files": 135,
+  "preferences": "Original non-runtime preferences restored byte-for-byte while the game was closed."
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "runtime_build": "20261108-anchor-dynamics-1",
+  "status": "Confirmed native pedestrian Avoidance preempts the participant body montage. The local recovery candidate resumed the same scene after a controlled native interruption.",
+  "customer": "Two retained errors on 1.1.5 showed the male and female body tracks respectively going inactive. The second was a manual Standing Idle Hub about 44 seconds after entry. The screenshot showed a passerby reaction. It did not identify the native action.",
+  "local_reproduction": "The maintainer reproduced the same failure in an HZoi loop and Standing Idle Hub in another map. They observed a passerby contact both participants and the noncontrolled female Zoi play a bump-away animation. A read-only API watch of the idle-hub failure sampled no ordinary interaction on either participant before the error.",
+  "decisive_trace": [
+    "Both participants had active SceneZOI Standing Idle montages and their client actor collision flags were disabled.",
+    "About 2.75 seconds after the trace observed scene playback start, the female actor's native B2 SubAction changed to Avoidance (2). IsPlayingHitReaction and IsPlayingInteraction were both false.",
+    "In the same second the B1 trace observed ANIM_F_Avoid_L45_Interaction_Montage on her body animation instance in place of SceneZOI_Standing_idle_F. The framework recorded the owned montage inactive at loop sample 2.77 seconds and ended the session.",
+    "The native Avoidance trace also showed a follow-up positive reaction animation."
+  ],
+  "cleanup": "After Dismiss, gameplay input was restored and autosave released. The temporary probe was removed, Lua reloaded and the UI remounted. Both manual launcher readiness acknowledgements were verified.",
+  "scope": "The local trace confirms the trigger for the maintainer's reproduction and the same framework failure signature in both customer reports. The customer has not retested the recovery build.",
+  "fix_attempts": {
+    "simulation_hook": "A candidate scoped RequestStart and ForceStartSubAction to committed participants. Full checks and ModKit validation passed, but the natural sidewalk test still stopped with the same montage error. Both hooks were removed from the revised candidate.",
+    "playback_recovery": "20261109-pedestrian-recovery-1 recognizes native pedestrian avoidance montages on the unchanged animation instance and reacquires only the interrupted participant's scene track at the current shared sample. Recovery is bounded to three attempts per participant in a two-second window. Other failures still follow existing Exit cleanup.",
+    "checks": "Full framework and native Lua checks passed. The native playback regression covers shared sample restoration, preserved session snapshot, retry bound and unrelated interruption. Isolated packaging and four-asset filtering passed. The protected Lua installation preserved loaded cooked bytes and preferences, and both UI readiness acknowledgements were checked.",
+    "preparation_crash": "A native access violation occurred during the second start after hot reload. The saved state was Preparing and no recovery was recorded. The crash report does not identify a symbolized cause. The same candidate passed two ordinary Start/playback/Exit runs after a fresh launch.",
+    "controlled_native_test": "The game confirmed that AvoidanceL45 resolves to ANIM_F_Avoid_L45_Interaction_Montage in DefaultGroup. Triggering that stock motion on the female participant during Standing Idle Hub recorded recovery at sample 1.43 s, and the same session remained playing without a new retained runtime error.",
+    "natural_retest": "A subsequent pedestrian pass did not start avoidance, so that run verified ordinary playback only.",
+    "visual_acceptance": "The maintainer saw about one frame of the stock dodge during the controlled test, then normal scene playback resumed. The session ended with clean Exit, gameplay input restored and autosave released."
+  }
+}

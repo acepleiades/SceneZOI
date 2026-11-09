@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "ui_build": "20261109-game-menu-only-1",
+  "cause": "The SceneZOI panel applied its own dimming and input gate whenever ui.get_blocking returned blocked, including for unrelated overlays.",
+  "native_readback": "The Esc menu reported blocked=true, primary_kind=modal_ui and input_block_ui_type=GameMenu. An unrelated overlay reported blocked=true and modal_ui with no input owner.",
+  "change": "Require the native Game Menu modal for the SceneZOI panel gate. Preserve the separate native lifecycle checks.",
+  "automated_checks": "Full framework checks passed. The targeted regression failed before the fix and passed afterward. It covers Game Menu dimming, hover and bounds, generic and named modals, a popup with GameMenu as owner, a coach mark, ordinary time pause and stale responses.",
+  "native_packaging": "ModKit UI validation and isolated exact owned-payload filtering passed.",
+  "installation": "Verified the two UI files and their checksum entries. All other package bytes and saved preferences were preserved. UI remount changed the boot token and retained the ready Lua host and its launcher acknowledgements.",
+  "hot_update_test": "The first Start after the UI remount reached Preparing and crashed with a native access violation. The saved panel state was visible and unblocked and playback had not started. The crash cause is unconfirmed.",
+  "fresh_launch_acceptance": {
+    "startup_and_exit": "The same build launched without a crash, reached playback, and completed a clean Exit with gameplay input restored and the autosave lease released.",
+    "native_readback": "During the overlay test the panel gated on the native GameMenu modal and cleared the gate after it closed. An unrelated modal with native blocking and an Esc stack entry left the panel visible and ungated.",
+    "visual": "The maintainer confirmed that Esc still dimmed the scene panel and the other UI tested stayed undimmed. The other overlay was unnamed."
+  }
+}

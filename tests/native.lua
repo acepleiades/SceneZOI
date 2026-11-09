@@ -1,6 +1,7 @@
 local root=TEST_ROOT or "modkit/SceneZOI_93C44199/workspace/lua/"
 package.path=root.."B1/?.lua;"..package.path
 local active, rates, positions = {}, {}, {}
+local foreign, now
 local play_order, stop_order, order = {}, {}, 0
 local reject_play=false
 local instance = {}
@@ -13,6 +14,7 @@ function instance:PlaySlotAnimationAsDynamicMontage(asset,slot,blend_in,blend_ou
 end
 function instance:Montage_SetPlayRate(montage,rate) rates[montage]=rate end
 function instance:Montage_SetPosition(montage,position) positions[montage]=position end
+function instance:GetCurrentActiveMontage() return foreign end
 function instance:Montage_IsActive(montage) return active[montage] or false end
 function instance:Montage_Stop(blend_out,montage)
     assert(blend_out==0);active[montage]=nil
@@ -40,11 +42,11 @@ function actor:K2_SetActorTransform(value)
 end
 local focused=false
 local controller={ChangeUIInputMode=function(self,mode,force) assert(mode==1 and force);focused=true end}
-UE={UGameplayStatics={GetPlayerController=function() return controller end},
+UE={UGameplayStatics={GetPlayerController=function() return controller end, GetRealTimeSeconds=function() return now end},
     UWidgetBlueprintLibrary={SetFocusToGameViewport=function() assert(focused) end},
     UKismetMathLibrary={InvertTransform=function(t) return t end,ComposeTransforms=function(_,anchor) return anchor end,
         NearlyEqual_TransformTransform=function(a,b) return a == b end}}
-inzoi={EB1UIInputMode={CursorMode=1}}
+inzoi={EB1UIInputMode={CursorMode=1},cli={execute=function()end}}
 local Native=require("SceneZOI.Native")
 for _=1,20 do
     local record=Native.capture(actor)
@@ -120,6 +122,33 @@ record.between_nodes=true
 previous=instance;instance=setmetatable({}, {__index=previous})
 Native.restore(record)
 assert(not active[old_montage] and active[unrelated] and movement.MovementMode==1 and actor.collision)
+-- Native avoidance may preempt one track. Resume at the shared position
+-- without touching foreign tracks or recapturing the restoration snapshot.
+record=Native.capture(actor)
+local asset={}
+Native.enter(record,asset,anchor)
+original_transform=record.transform
+local function interrupt(name)
+    active[record.montage]=nil
+    foreign={GetName=function()return name end}
+end
+now=0
+for i=1,3 do
+    local prior=record.montage
+    interrupt("ANIM_F_Avoid_L45_Interaction_Montage")
+    Native.sample(record,1.25)
+    assert(record.montage~=prior and record.asset==asset and positions[record.montage]==1.25)
+    assert(record.transform==original_transform and active[unrelated])
+end
+interrupt("ANIM_F_Avoid_positive_Reaction_B_Interaction_Montage")
+assert(not pcall(Native.sample,record,1.5),"Persistent preemption must still take the failure path")
+now=2.1
+Native.sample(record,1.5)
+interrupt("ANIM_F_SomeOther_Interaction_Montage")
+assert(not pcall(Native.sample,record,1.6),"Unrelated interruption must retain the failure path")
+Native.restore(record)
+print("Pedestrian avoidance recovery passed: shared position, bounded retries and unrelated failures.")
+
 Native.release_input(actor)
 print("Native adapter checks passed: original animation instance preserved across 20 sessions; only owned montages stopped; movement/collision restored; game input routing used.")
 print("Native handoff checks passed: no empty-slot preparation interval, exact pose hold, game-owned instance replacement/recovery, rejected target and early Exit cleanup.")

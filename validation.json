@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "date": "2026-11-08",
-  "build": "20261108-component-bindings-3",
-  "ui_build": "20261106-ui-lifecycle-1",
+  "date": "2026-11-09",
+  "build": "20261109-pedestrian-recovery-1",
+  "ui_build": "20261109-game-menu-only-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.1.5 was packaged and passed exact ZIP clean-start standing playback, Exit and repeat entry. HZoi 1.1.0 unchanged.",
+  "release_status": "SceneZOI 1.1.6 was packaged and passed exact ZIP clean-start standing playback, Exit and repeat entry. HZoi 1.1.0 unchanged.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -237,7 +237,8 @@
     "2026-11-06: exact SceneZOI 1.1.1 ZIP clean installation and fresh launch with the same script mods enabled passed picker/playback/navigation/Exit.",
     "2026-11-06: exact SceneZOI 1.1.2 player ZIP clean installation/fresh launch passed Start/picker/playback/navigation/Esc recovery/Exit; no inactive source archive included.",
     "2026-11-07: exact SceneZOI 1.1.3 player ZIP passed the clean installation, fresh launch, regular interaction menu and bed Start/Exit checks.",
-    "2026-11-08: exact SceneZOI 1.1.5 player ZIP passed a clean installation, fresh launch and two standing Start/playback/Exit sessions."
+    "2026-11-08: exact SceneZOI 1.1.5 player ZIP passed a clean installation, fresh launch and two standing Start/playback/Exit sessions.",
+    "2026-11-09: exact SceneZOI 1.1.6 player ZIP passed a clean installation, fresh launch and two standing Start/playback/Exit sessions."
   ],
   "native_observations": [
     "Latest first/final Exit readbacks were idle/ok; final participants matched captured collision, autonomy and inheritance originals; autosave was restored.",
@@ -296,7 +297,7 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261108-component-bindings-3",
+  "runtime_build": "20261109-pedestrian-recovery-1",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
@@ -312,9 +313,12 @@
     "wildcard_coexistence": "docs/validation/wildcard-coexistence-20261108.json",
     "release_1_1_5": "docs/validation/release-1.1.5-20261108.json",
     "anchor_dynamics": "docs/validation/anchor-dynamics-20261108.json",
-    "api_possession": "docs/validation/api-possession-20261109.json"
+    "api_possession": "docs/validation/api-possession-20261109.json",
+    "pedestrian_avoidance": "docs/validation/pedestrian-avoidance-20261109.json",
+    "game_menu_panel": "docs/validation/game-menu-panel-20261109.json",
+    "release_1_1_6": "docs/validation/release-1.1.6-20261109.json"
   },
-  "version": "1.1.5",
+  "version": "1.1.6",
   "ui_lifecycle_hardening": {
     "checkpoint": "docs/validation/ui-lifecycle-20261106.json",
     "automated_checks": "passed",

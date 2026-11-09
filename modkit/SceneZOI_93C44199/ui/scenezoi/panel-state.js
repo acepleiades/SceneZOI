@@ -145,8 +145,9 @@
             readStatus = 'ok';
             nativeState = {blocked:state.blocked,primary_kind:state.primary_kind || '',primary_detail:state.primary_detail || '',
                 input_block_ui_type:state.input_block_ui_type || '',esc_stack_remains:!!state.esc_stack_remains,pause_reasons:state.pause_reasons || []};
-            // Native modal state, never simulation speed or pause_reasons alone.
-            var next = state.blocked;
+            // Only the Esc Game Menu owns this panel's dimming and input gate.
+            // A popup or another overlay can also report native blocking.
+            var next = state.blocked && state.primary_kind === 'modal_ui' && state.input_block_ui_type === 'GameMenu';
             if (next !== blocked) {
                 // End a drag/resize before blocking document mouseup handlers.
                 if (next) {
