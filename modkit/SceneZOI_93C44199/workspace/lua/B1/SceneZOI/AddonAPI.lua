@@ -18,8 +18,10 @@ local function cfg(key,value)
  return ok and(data or message)or nil
 end
 local function deliver(actor,kind,data)
- local ok,err=pcall(inzoi.message.send_to_sim,actor:GetEntityId(),kind,J.encode(data))
+ -- The actor can be released between events; one dead endpoint must not stop the others.
+ local ok,err=pcall(function()inzoi.message.send_to_sim(actor:GetEntityId(),kind,J.encode(data))end)
  if not ok then print('[SceneZOI] Add-on delivery failed: '..tostring(err))end
+ return ok
 end
 local function event_to(sub,event)
  if sub.names['*']or sub.names[event.name]then
@@ -208,7 +210,9 @@ function M.boot()
  handle=Events.subscribe('*',function(event)
   cursor=cursor+1;event.event_cursor=cursor
   event.api_version=1;event.instance_id=instance;event.session_id=event.id
-  for _,sub in pairs(subscribers)do event_to(sub,event)end
+  for k,sub in pairs(subscribers)do
+   if not pcall(function()return sub.actor:GetEntityId()end)then subscribers[k]=nil else event_to(sub,event)end
+  end
   if event.request_id then
    for _,row in pairs(cache)do if row.status and row.status.session_id==event.id then row.status={phase=event.phase,session_id=event.id,event=event.name,code=event.code}end end
   end
