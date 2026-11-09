@@ -20,10 +20,10 @@ the currently controlled Zoi.
 - The gameplay add-on decides who wants to participate, what they agree to do,
   and what happens afterward. SceneZOI verifies technical eligibility, reserves
   the roster and furniture, plays eligible nodes and reports the outcome. It
-  interprets task IDs as data. For example, a romance add-on can request one
-  completion of HZoi's excitement task for a Zoi whose partner has agreed to
-  participate (a magic add-on can request one spell-charge completion for a
-  caster whose partner has agreed to assist).
+  interprets task IDs as data. For example, a sexual gameplay add-on can start
+  a consensual sex scene and request one orgasm for a participant by targeting
+  one completion of HZoi's excitement task (a magic add-on can request one
+  spell-charge completion for a caster whose partner has agreed to assist).
 
 ## Proposed start request
 
@@ -41,10 +41,11 @@ query, request-status and ownership contracts where they apply.
 | `stage_preferences` | Optional ordered selectors for ranges of stages. They rank eligible nodes. Use early or late fractions of the chosen stage count so the same policy works with random counts. |
 | `auto_speed` | On by default. Use a gentle stage-based speed ramp through the existing playback settings. An add-on can disable the ramp or provide a bounded profile. |
 
-For example, a romance add-on can request one excitement completion for a
-male Zoi whose partner has agreed to participate and has no goal of her own.
-If she rules out fellatio, the add-on excludes that action for the entire
-session. In a separate request where both agree to include it, the add-on
+For example, a sexual gameplay add-on can request one orgasm for a male Zoi
+whose partner agrees to a sexual encounter and does not want an orgasm herself.
+The request gives him one excitement completion and leaves her out of the
+goal list. If she rules out fellatio, the add-on excludes that action for
+the entire session. In a separate request where both agree to include it, the add-on
 can require a stage that contains it (a magic add-on can request one
 spell-charge completion for the caster alone, exclude the use of a focus
 stone in one session, or require a focus-stone stage in another).
@@ -66,8 +67,8 @@ completion counts. For each requested participant/task pair:
 1. Count completions committed since entry. If the goal has reached its requested
    count, its progress is 100%.
 2. Otherwise compute `(completed_count + current_value / task_maximum) / requested_count`.
-   For example, one excitement completion plus a meter at 50% is 75% of
-   a two-completion goal (the same calculation applies to two spell charges).
+   For example, one orgasm plus an excitement meter at 50% is 75% of a
+   two-orgasm goal (the same calculation applies to two spell charges).
 3. Take the **minimum across all goals** for the session. With four stages, 0–25%
    is stage 1, 25–50% stage 2, 50–75% stage 3, and 75–100% stage 4. At an exact
    boundary, the next stage is due. If two Zois are at 80% and 35% of their
@@ -133,11 +134,12 @@ tag alone never permits a jump to a different placement or incompatible node.
   `goal_unreachable`, `required_stage_unavailable` or `no_progress`. Never
   relax the restrictions to rescue a run.
 
-For HZoi, a romance add-on could prefer handjob and fellatio nodes early and
+For HZoi, a sexual gameplay add-on could prefer handjob and fellatio nodes early and
 vaginal sex later, if the participants have agreed to those actions. If only the
-receiving Zoi has an excitement goal, a nonpenetrative node can complete the
-session by itself. If both have goals, a node that caps one partner at 50% can
-help early, then give way to a node that can finish the remaining goal (a magic
+receiving Zoi has an orgasm goal, a nonpenetrative node can complete the
+session by itself. If both want an orgasm, a node that caps one partner's
+excitement at 50% can help early, then give way to a node that can finish the
+remaining goal (a magic
 add-on can prefer preparation drills early and full casting later, and skip
 full casting if the drill can already finish the only requested charge).
 
