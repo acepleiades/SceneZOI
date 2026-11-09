@@ -246,6 +246,12 @@ s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value
 assert(s.plan.stage==2 and s.node.id~='a','A new stage plays a different loop')
 s=session({end_policy={type='duration',seconds=10},stages=2},'still');s.plan.stage_count=2
 step(s,12,.5);assert(s.plan.stage==2 and s.node.id=='still','The only loop is reused')
+-- A route through a hub keeps its destination: it does not fall back to the loop it just left.
+node('x',{lead=full(1),partner=full(1)},{'h'});node('h',nil,{'x','y'});node('y',{lead=full(1),partner=capped(1,50)},{'h'})
+s=staged({goals={goal_lead,goal_partner},stages=2},'x',2)
+s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49
+step(s,1,1);assert(s.plan.stage==2 and s.node.id=='h','Through the hub')
+step(s,1,.1);assert(s.node.id=='y','On to the different loop, not back to x')
 -- A timed plan with no goals divides its duration evenly across stages.
 s=session({end_policy={type='duration',seconds=8},stages=4},'a');s.plan.stage_count=4
 step(s,3,1);assert(s.plan.stage==2);step(s,2,1);assert(s.plan.stage==3,'Even division of the duration')

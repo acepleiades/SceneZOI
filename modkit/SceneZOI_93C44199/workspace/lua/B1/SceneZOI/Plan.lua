@@ -258,20 +258,14 @@ local function node_value(session,plan,node)
  return value+preference_bonus(plan,node,fraction(plan))+hash(node.id,plan.seed)
 end
 
--- Next authored edge toward the best loop the fixed roster can reach. Never a jump.
-function M.route(session,plan)
+-- Visits what the fixed roster can reach along authored edges, nearest first. Never a jump.
+local function walk(session,visit)
  local Catalog=require('SceneZOI.Catalog');local Search=search();local Binding=require('SceneZOI.Binding')
  local nodes=Catalog.get_snapshot().nodes
- local visited,queue,head,best={[session.node.id]=true},{{node=session.node,depth=0}},1,nil
+ local visited,queue,head={[session.node.id]=true},{{node=session.node,depth=0}},1
  while head<=#queue and head<=C.plan_route_limit do
   local row=queue[head];head=head+1
-  if row.depth>0 and row.node.kind~='transition'then
-   local value=node_value(session,plan,row.node)
-   if value then
-    value=value-row.depth*.01
-    if not best or value>best.value then best={first=row.first,value=value}end
-   end
-  end
+  if row.depth>0 and visit(row)then return end
   local edges=row.node.kind=='transition'and {{target=row.node.destination}}or row.node.navigation or {}
   for _,edge in ipairs(edges)do
    local target=nodes[edge.target]
@@ -282,7 +276,30 @@ function M.route(session,plan)
    end
   end
  end
- return best and best.first
+end
+
+-- The next edge toward the best loop, and that loop, so a route through a hub keeps its destination.
+function M.route(session,plan)
+ local best
+ walk(session,function(row)
+  if row.node.kind=='transition'then return false end
+  local value=node_value(session,plan,row.node)
+  if value then
+   value=value-row.depth*.01
+   if not best or value>best.value then best={first=row.first,value=value,target=row.node.id}end
+  end
+  return false
+ end)
+ if best then return best.first,best.target end
+end
+
+local function edge_toward(session,target)
+ local first
+ walk(session,function(row)
+  if row.node.id==target then first=row.first;return true end
+  return false
+ end)
+ return first
 end
 
 local function goals_met(session,plan)
@@ -365,9 +382,20 @@ function M.tick(session,dt,scale)
  for _,requirement in ipairs(plan.required_stages)do
   if not requirement.met and requirement.stage and requirement.stage<plan.stage then return finish(plan,'required_stage_unavailable')end
  end
+ -- One decision at a time: a route through a hub reaches its destination before anything else is decided.
+ if plan.heading then
+  if session.node.id==plan.heading then plan.heading=nil
+  else
+   local edge=edge_toward(session,plan.heading)
+   if edge and plan.stage_played then plan.dwell=0;return {navigate=edge}end
+   if not edge then plan.heading=nil end
+  end
+ end
  if plan.stage_played and stage_due(session,plan)>plan.stage then
   plan.stage,plan.stage_played,plan.dwell=plan.stage+1,false,0
-  return {event='plan_stage_changed',navigate=M.route(session,plan)}
+  local edge,target=M.route(session,plan)
+  plan.heading=target
+  return {event='plan_stage_changed',navigate=edge}
  end
  if not has_targets then return nil end
  local total=0
@@ -376,8 +404,8 @@ function M.tick(session,dt,scale)
  else plan.stall_age=plan.stall_age+dt end
  if plan.stall_age>=C.plan_no_progress_seconds then return finish(plan,'no_progress')end
  if plan.dwell>=C.plan_min_dwell_seconds and not advancing(session,plan,session.node)then
-  local edge=M.route(session,plan)
-  if edge then plan.dwell=0;return {navigate=edge}end
+  local edge,target=M.route(session,plan)
+  if edge then plan.dwell=0;plan.heading=target;return {navigate=edge}end
   if not goals_done then return finish(plan,'goal_unreachable')end
   return finish(plan,'required_stage_unavailable')
  end
