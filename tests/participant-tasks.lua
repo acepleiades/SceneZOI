@@ -23,10 +23,18 @@ inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3},EB1GenderType={F
    if cancel_failure then cancel_failure=false;return false,'Injected cancellation failure'end
    o.cancels=o.cancels+1;o.cancel_delay=2;return true
   end
+  if c:match('^motion.get_current') then
+   assert(not o.playing,'Let the interaction cancel before inspecting leftover motions')
+   return true,'',Json.encode({playing=#o.motions>0,motions=o.motions})
+  end
+  if c:match('^motion.stop') then
+   o.stopped[#o.stopped+1]=assert(c:match(' anim_id=([%w_]+)$'),'Stop only a specific motion')
+   return true
+  end
   error('Unexpected command '..c)
  end},message={send_to_client=function(id,kind,packet)if kind=='SceneZOI.Reply'then replies[id.Value]=packet end end}}
 local function owner(id)
- local o={id=id,queued=0,playing=false,current=1,clears=0,cancels=0,collision=true,
+ local o={id=id,queued=0,playing=false,current=1,clears=0,cancels=0,collision=true,motions={},stopped={},
   AutonomyOption={AutonomyEnable={Value=true,bFollowParent=true}}}
  function o:GetEntityId()return {Value=self.id}end
  function o:GetComponent(t)
@@ -84,6 +92,20 @@ assert(s.lease.ready and o.cancels==3);release(s,o,'talk')
 -- Waiting-only queues cannot start between idle preparation samples.
 o.queued=40;start(s,o,'waiting');tick(s,o)
 assert(s.lease.ready and o.queued==0);release(s,o,'waiting')
+-- The simulated interaction is idle before the native upper-body loop ends.
+o.motions={
+ {anim_id='MovingChair_Sit_R',group='PostureGroup'},
+ {anim_id='Dish_Eat_Stand',group='UpperGroup'},
+ {anim_id='Snack_Eat_Stand',group='DefaultGroup'},
+ {anim_id='Other_UpperBody_Action',group='UpperGroup'},
+}
+o.playing=true;o.current=4;start(s,o,'eating')
+assert(#o.stopped==0)
+for _=1,5 do tick(s,o)end
+assert(s.lease.ready and #o.stopped==1 and o.stopped[1]=='Dish_Eat_Stand')
+tick(s,o);assert(#o.stopped==1,'Do not repeatedly stop the same leftover motion')
+release(s,o,'eating')
+o.motions={}
 -- Failures restore independent ownership rather than leave autonomy disabled.
 o.queued=4;clear_failure=true;start(s,o,'clear-failure')
 assert(not s.lease and replies[1]:find('|rejected|prepare_error|',1,true))

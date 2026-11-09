@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "release_version": "1.1.7",
+  "runtime_build": "20261109-pedestrian-recovery-1",
+  "ui_build": "20261109-game-menu-only-1",
+  "changes": [
+    "Stop leftover upper-body eating animations when a participant enters a scene."
+  ],
+  "runtime_basis": "See eating-overlay-20261109.json for the reproduction and targeted verification.",
+  "hzoi": "Unchanged. HZoi 1.1.0 remains compatible.",
+  "source_distribution": "Player ZIP includes the GPL license and source repository notice. Source is distributed separately.",
+  "packaging": "Passed isolated native PackageUGC, exact four-owned-asset filter, ZIP CRC and full byte readback. No referenced Game or Engine payloads.",
+  "exact_zip_clean_acceptance": "Author confirmed two standing sessions started, played and exited from a clean installation of the exact 1.1.7 ZIP after a fresh launch. The maintainer confirmed the eating-to-scene fix worked. Native diagnostics confirm idle/ok, Exit cleanup ok/ok, gameplay input restored and autosave released after the last run.",
+  "customer_retest": "The original reporter has not retested the eating-overlay fix.",
+  "archive_sha256": "398a22c6dbd83ddecec4a68bd0b83a06e376f270edb881357454a99ffced9060",
+  "archive_files": 135,
+  "preferences": "Original non-runtime preferences restored byte-for-byte while the game was closed."
+}

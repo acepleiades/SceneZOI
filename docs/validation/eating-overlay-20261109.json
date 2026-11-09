@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "basis": "SceneZOI 1.1.6",
+  "reproduction": "The maintainer reproduced the eating gesture during Standing Idle Hub and paused the game. Both native interaction reads reported idle. The eating participant had a chair posture and Dish_Eat_Stand in UpperGroup; its native montage was ANIM_F_Table_Eat_Fork_Interaction_Montage.",
+  "targeted_native_test": "The explicit Dish_Eat_Stand stop advanced it to the final blend-out range while paused. The native posture tracks stayed unchanged and the SceneZOI session remained playing.",
+  "fix": "After the existing task-idle gate and before the initial participant-ready reply, stop only interruptible Dish_Eat_* and Snack_Eat_* motions found in UpperGroup. Preserve the native animation instance and unrelated groups.",
+  "automated_checks": "Regression failed before the fix. Full framework suite and native ModKit Lua validation passed afterward.",
+  "visual_acceptance": "The maintainer confirmed that the patched scene entry fades out the eating gesture briefly and it stays gone during the scene. Brushing teeth and showering had no reported overlap. The maintainer later confirmed the same result with a male participant on the installed candidate.",
+  "deferred": "The couch sleep posture and cat-paw pillow are recorded separately. The maintainer observed the pillow clear when the resumed sleep interaction was cancelled after Exit. Standing scene placement is outside this report.",
+  "installation": "Isolated native package passed the four-owned-asset filter. Updated one protected B2 Lua file and its manifest checksum, preserving loaded cooked bytes and preferences. Lua and UI launcher readiness verified.",
+  "patched_game_readback": "Standing Idle Hub reached playback with the same pair. The eating motion was absent in the native readback, while the chair and couch posture tracks remained. Normal Exit completed with gameplay input restored and autosave released.",
+  "zero_blend_experiment": "The live client could not identify the eating montage as current after native cancellation. A second candidate using a reference captured before cancellation reported an error in the client cut path. Both tests still faded. The experimental changes were reverted and the verified native stop restored."
+}

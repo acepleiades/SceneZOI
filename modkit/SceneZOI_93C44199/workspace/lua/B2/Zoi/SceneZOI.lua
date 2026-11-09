@@ -91,11 +91,30 @@ local function tasks_idle(owner, lease)
     return lease.idle_ticks >= 2
 end
 
+local function stop_eating_overlay(owner)
+    local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
+    local ok, _, data = inzoi.cli.execute("motion.get_current" .. target)
+    if not ok or type(data) ~= "string" then return end
+    local decoded, state = pcall(Json.decode, data)
+    if not decoded or type(state) ~= "table" or type(state.motions) ~= "table" then return end
+
+    for _, motion in ipairs(state.motions) do
+        local id = motion.anim_id
+        if motion.group == "UpperGroup" and not motion.non_interruptible and type(id) == "string" and
+            (id:match("^Dish_Eat_[%w_]+$") or id:match("^Snack_Eat_[%w_]+$")) then
+            local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. id)
+            if not stopped then print("[SceneZOI] Could not stop eating overlay: " .. tostring(message)) end
+        end
+    end
+end
+
 local function advance_prepare(self, owner)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
     if not tasks_idle(owner, lease) or lease.ready then return end
     if not lease.tasks_settled then
+        -- The task can be idle while its independent upper-body loop still plays.
+        stop_eating_overlay(owner)
         local location, rotation = owner:GetLocation(), owner:GetRotation()
         lease.entry_location = UE.FVector(location.X, location.Y, location.Z)
         lease.entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll)
