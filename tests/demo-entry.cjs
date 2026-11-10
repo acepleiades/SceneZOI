@@ -66,7 +66,7 @@ async function run(){
  for(const ids of ['1','1+1','3+1','1+2','1+3+4','1+2+3','1+2+3+4']){
   const f=fixture();await flush();await f.activate();await f.poll();f.set('selected',ids);await f.poll();await flush();assert.equal(f.starts.length,0,ids);
  }
- for(const [ids,roles] of [['1+2','first:1+second:2'],['3+4','first:3+second:4'],['1+3+4','one:1+two:3+three:4'],['1+2+3','one:1+two:2+three:3']]){const f=fixture(ids[0]);await flush();await f.activate();await flush();await f.poll();f.set('selected',ids,'other.hub',roles);await f.poll();await flush();assert.equal(f.starts.length,1);assert.equal(f.starts[0].node,'other.hub');}
+ for(const [ids,roles] of [['1','solo:1'],['1+2','first:1+second:2'],['3+4','first:3+second:4'],['1+3+4','one:1+two:3+three:4'],['1+2+3','one:1+two:2+three:3']]){const f=fixture(ids[0]);await flush();await f.activate();await flush();await f.poll();f.set('selected',ids,'other.hub',roles);await f.poll();await flush();assert.equal(f.starts.length,1);assert.equal(f.starts[0].node,'other.hub');}
  console.log('Demo entry passed: separate launcher/receiver, eight single native activations, discovered MF/MM/FF/MFF/MMF roles accepted; unavailable scenes declined, self-only preflight, busy guard/departure failure, stale boot request and cancellation.');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});

@@ -53,3 +53,15 @@ assert(S.task_multiplier('female')==.1 and S.task_multiplier('male')==5 and appl
 S.request(s,'task_rates',P.pack('test','1','settings_task_rates',5,2,9,500));assert(s.player_settings.task_rates.code=='settings_invalid')
 S.request(s,'task_rates',P.pack('test','1','settings_task_rates',6,2,10,500));assert(S.task_multiplier('female')==.1 and S.task_multiplier('male')==5)
 S.boot();assert(S.task_multiplier('female')==.1 and S.task_multiplier('male')==5,'New endpoints must persist and reload')
+
+-- NPC scene length, in in-game minutes: 15 until changed, 5 to 120, kept across restarts.
+assert(S.npc_scene_minutes()==15,'A new install uses 15 in-game minutes')
+local function npc(count,value)S.request(s,'npc_scene',P.pack('test','1','settings_npc_scene',count,2,value))end
+npc(1,30);assert(S.npc_scene_minutes()==30 and saved['scenezoi_settings/npc_scene']==P.pack('1',30))
+npc(2,4);assert(S.npc_scene_minutes()==30 and s.player_settings.npc_scene.code=='settings_invalid','Below 5 is refused')
+npc(3,121);assert(S.npc_scene_minutes()==30,'Above 120 is refused')
+npc(4,120);assert(S.npc_scene_minutes()==120);npc(5,5);assert(S.npc_scene_minutes()==5)
+S.boot();assert(S.npc_scene_minutes()==5,'It survives a restart')
+saved['scenezoi_settings/npc_scene']=P.pack('1',999);S.boot();assert(S.npc_scene_minutes()==15,'A damaged record falls back to 15')
+saved['scenezoi_settings/npc_scene']=P.pack('1',2);S.boot();assert(S.npc_scene_minutes()==5,'A stored value below the range loads at 5')
+print('NPC scene length passed: default, bounds, persistence and damaged records.')

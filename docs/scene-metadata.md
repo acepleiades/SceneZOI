@@ -131,7 +131,7 @@ traces the two directed hugs and separate scene/role scopes.
 | HZoi standing/kneeling fellatio | eye_contact | Male standing upright and pleased; female kneeling and looking up. Female performs fellatio and holds male penis at its base for positioning. No hug or handjob is inferred. |
 | HZoi standing rear | standing | Female facing away and bent forward; male behind her, energetic, performing vaginal penetration and holding her waist and wrist. |
 
-The four idle/hub scenes remain GENERAL; the three activity scenes remain EXPLICIT.
+The idle/hub scenes, solo idles included, remain GENERAL; the three activity scenes remain EXPLICIT.
 `fellatio`, `spanking` and `gesture` are not core tags: the first two activities
 are represented by actions, and the last was too broad. Static contact such as
 `hand_on_partner_chest`, `head_on_partner_shoulder` or `leg_over_partner_leg`

@@ -1,14 +1,14 @@
 require('./fixtures/localization.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const elements={},docEvents={},timers=[],writes=[];
-for(const key of ['sfx','female','male','task-female','task-male'])for(const part of ['slider','number','fill','thumb'])elements['volume-'+part+'-'+key]={style:{},value:'',setAttribute(k,v){this[k]=v;},addEventListener(k,f){this[k]=f;},getBoundingClientRect(){return {left:100,width:200};}};
-for(const k of ['settings-status-audio','settings-status-task_rates','audio-volume-settings','task-rate-settings'])elements[k]={};
-let taskRaw='';
+for(const key of ['sfx','female','male','task-female','task-male','npc-scene-length'])for(const part of ['slider','number','fill','thumb'])elements['volume-'+part+'-'+key]={style:{},value:'',setAttribute(k,v){this[k]=v;},addEventListener(k,f){this[k]=f;},getBoundingClientRect(){return {left:100,width:200};}};
+for(const k of ['settings-status-audio','settings-status-task_rates','settings-status-npc_scene','audio-volume-settings','task-rate-settings','npc-scene-settings'])elements[k]={};
+let taskRaw='',npcRaw='';
 let s={client:'test',sequence:1,revision:2,active:true,exiting:false,pendingNavigation:null},raw='',visible=true,deferred=null;
 const document={getElementById:k=>elements[k],activeElement:null,addEventListener(k,f){(docEvents[k]??=[]).push(f);}};
 const context={window:{addEventListener(){}},document,setInterval(f){timers.push(f);},Number,String,Object,Math,Promise};
 vm.runInNewContext(fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8'),context);
-const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
+const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_npc_scene_state')return Promise.resolve({value:npcRaw});return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
 const number=k=>elements['volume-number-'+k],slider=k=>elements['volume-slider-'+k];
 const event=x=>({button:0,clientX:x,preventDefault(){}});
 function frame(ack=0,values=[100,100,100],code='ok',rev=s.revision){return ['SZ2',s.client,s.sequence,rev,ack,code,...values].join('|');}
@@ -56,6 +56,14 @@ function typed(k,value){number(k).value=value;number(k).change();}
  assert.match(elements['task-rate-settings'].innerHTML,/aria-valuemin="10" aria-valuemax="500"/);
  const markup=fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8');assert(markup.indexOf('Female Task Progress Rate')<markup.indexOf("['Sound Effects'"),'Task sliders must precede volume sliders');
  const css=fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/index.html','utf8');
- assert.match(css,/#settings-status-task_rates, #settings-status-audio \{ font-size: 12px/,'Both settings hint/status blocks must use the shared 12px presentation');
+ assert.match(css,/#settings-status-task_rates, #settings-status-audio, #settings-status-npc_scene \{ font-size: 12px/,'Both settings hint/status blocks must use the shared 12px presentation');
+ npcRaw=frame(0,[15]);timers[2]();for(let i=0;i<10;i++)await Promise.resolve();
+ assert.equal(number('npc-scene-length').value,'15','The NPC length arrives from the runtime');
+ assert.equal(slider('npc-scene-length')['aria-valuetext'],'15 in-game min','The unit says in-game minutes');
+ assert.match(elements['npc-scene-settings'].innerHTML,/aria-valuemin="5" aria-valuemax="120"/);
+ assert.match(elements['npc-scene-settings'].innerHTML,/data-i18n="in-game min"/);
+ const npcWrites=writes.length;typed('npc-scene-length','4');typed('npc-scene-length','121');assert.equal(writes.length,npcWrites,'Out-of-range minutes are refused');
+ assert.match(elements['settings-status-npc_scene'].textContent,/5 to 120/);
+ typed('npc-scene-length','60');assert.match(writes.at(-1).v,/\|settings_npc_scene\|\d+\|2\|60$/);assert.equal(writes.at(-1).k,'settings_npc_scene');
  console.log('Settings UI passed: drag/keyboard/numeric input, bounded values, coalesced persistence, retry/ack ordering, stale/foreign frames, failure feedback, panel/Exit cancellation and cross-session settings.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

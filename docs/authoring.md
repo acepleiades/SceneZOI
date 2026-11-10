@@ -92,7 +92,9 @@ appearance compatibility. Mutual actions are explicitly authored in both directi
 Declare `starting_hub: true` on a compatible loop to make it eligible for entry.
 The selected roster must match the entire scene. Membership and role assignments
 stay fixed; connected nodes must preserve compatible roles and furniture context.
-A hub extension links your pack into enabled framework navigation. See
+A hub extension links your pack into enabled framework navigation. A solo scene
+has one role and extends `scenezoi.solo_idle_female` or `scenezoi.solo_idle_male`,
+with the same role name, body and life stages as that hub. See
 [participants](group-support.md), [furniture](furniture.md) and
 [navigation/package extensions](package-split.md#roles-entry-and-extensions).
 

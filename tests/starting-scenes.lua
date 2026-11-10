@@ -15,4 +15,10 @@ assert(not Choose.choose({a=a},{person('1','female'),person('2','female')}))
 for i=1,2 do local choice,n=Choose.choose({a=a,b=b},{person('2','female'),person('1','male')},function(size)assert(size==2);return i end);assert(choice.node==(i==1 and'a'or'b')and n==2)end
 a.participants.role1.growth_steps={'Adult'};assert(not Choose.choose({a=a},{person('1','male'),person('2','female')}))
 assert(not pcall(Choose.choose,{a=b},{person('1','male'),person('1','female')}))
+local solo=hub('solo',{'female'})
+local alone=Choose.choose({a=a,solo=solo},{person('1','female')},function()return 1 end);assert(alone.node=='solo'and alone.bindings.role1=='1','A lone Zoi gets a one-role scene')
+assert(not Choose.choose({a=a},{person('1','female')}),'A two-role scene is no solo start')
+assert(not Choose.choose({solo=hub('m',{'male'})},{person('1','female')}),'A solo scene is for its own body')
+local grown=hub('g',{'female'});grown.participants.role1.growth_steps={'Youth','Adult','Old','Elderly'}
+local teen=person('1','female');teen.growth_step='Teen';assert(not Choose.choose({g=grown},{teen}),'A teen never matches an adults-only solo scene')
 print('Generic starting scenes passed: repeated bodies, arbitrary roles, complete rosters, eligibility and random scene selection.')

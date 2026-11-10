@@ -33,7 +33,7 @@ end
 local serial=0
 local function row(a,b,household,options)
  serial=serial+1;options=options or {}
- return {token='start.'..serial,has_household=household,lifetime=options.lifetime or {deadline_seconds=600},
+ return {token='start.'..serial,has_household=household,lifetime=options.lifetime or {deadline_seconds=600},default_length=options.default_length,
   placement={max_start_distance_cm=1500,exit=options.exit or 'restore'},req={addon_id='test.addon',client_id='test.client',request_id='r'..serial},
   restrictions={},entry={initiator=tostring(a),node='test.node',bindings={first=tostring(a),second=tostring(b)}}}
 end
@@ -178,4 +178,23 @@ assert(not R.any_active())
 F.controlled=10
 for _=1,34 do local passing=background(3,4,true);R.stop('ok',passing);release(passing,{3,4})end
 R.tick(.25);R.tick(.25);assert(not R.any_active(),'Nothing started by itself')
+-- NPCs nobody asked a length for follow the player's setting, counted on the game's calendar from the first frame.
+local MINUTE=600000000
+F.calendar=0
+local waiting=background(3,4,false,{default_length=true})
+F.calendar=MINUTE*100;R.tick(.25);assert(R.snapshot(waiting).phase~='exiting','Preparing does not count')
+playing(waiting,{3,4});R.tick(.05)
+F.calendar=F.calendar+MINUTE*14;R.tick(.05);assert(R.snapshot(waiting).phase=='playing','14 in-game minutes is still inside the 15')
+F.calendar=F.calendar+MINUTE*2;R.tick(.05);assert(R.snapshot(waiting).phase=='exiting');release(waiting,{3,4});assert(ended[waiting].code=='lifetime_expired')
+F.npc_minutes=120
+local long=background(3,4,false,{default_length=true});playing(long,{3,4});R.tick(.05)
+F.calendar=F.calendar+MINUTE*119;R.tick(.05);assert(R.snapshot(long).phase=='playing','The slider value is what counts')
+R.stop('ok',long);release(long,{3,4});F.npc_minutes=nil
+-- A household scene, or a length an add-on asked for, keeps its real-time limit.
+local family=background(3,4,true,{default_length=true});playing(family,{3,4});R.tick(.05)
+F.calendar=F.calendar+MINUTE*600;R.tick(.05);assert(R.snapshot(family).phase=='playing')
+R.stop('ok',family);release(family,{3,4})
+local asked=background(3,4,false,{lifetime={deadline_seconds=900}});playing(asked,{3,4});R.tick(.05)
+F.calendar=F.calendar+MINUTE*600;R.tick(.05);assert(R.snapshot(asked).phase=='playing')
+R.stop('ok',asked);release(asked,{3,4})
 print('Concurrent sessions passed: independent rosters and failures, panel and autosave following the controlled Zoi, bounded background life, owner leases, NPC-only cap, placement and save.')

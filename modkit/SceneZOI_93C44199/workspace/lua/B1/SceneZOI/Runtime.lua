@@ -441,7 +441,9 @@ function M.start_background(row)
     direct_serial = direct_serial + 1
     local current = create_session("host", tostring(direct_serial), entry.initiator, entry.node,
         table.concat(assignments, "+"), entry.furniture, row)
-    current.npc_only, current.lifetime, current.exit_policy = npc_only, row.lifetime, row.placement.exit
+    -- NPCs nobody asked a length for run for the player's default, counted on the game's calendar.
+    local lifetime = npc_only and row.default_length and {game_minutes = Settings.npc_scene_minutes()} or row.lifetime
+    current.npc_only, current.lifetime, current.exit_policy = npc_only, lifetime, row.placement.exit
     if row.plan then current.plan = Plan.new(row.plan) end
     current.max_start_distance_cm = row.placement.max_start_distance_cm
     Sessions.add(current)
@@ -794,6 +796,7 @@ local function apply_panel_controls(focused)
     outfit_request(read("outfit"))
     Settings.request(focused,"task_rates",read("settings_task_rates"))
     Settings.request(focused,"audio",read("settings_audio"))
+    Settings.request(focused,"npc_scene",read("settings_npc_scene"))
     Personality.request(focused,read("personality"))
     VoicePersonality.request(focused,read("voice"))
     navigate(read("navigation"))
@@ -935,6 +938,11 @@ local function background_limit_reached(current, dt)
     current.background_age = (current.background_age or 0) + dt
     if current.background_age >= Config.background_max_seconds then return "lifetime_expired" end
     if lifetime.deadline_seconds and current.background_age >= lifetime.deadline_seconds then return "lifetime_expired" end
+    if lifetime.game_minutes and not current.preparing then
+        local now = Clock.calendar_ticks()
+        current.calendar_start = current.calendar_start or now
+        if (now - current.calendar_start) / Clock.TICKS_PER_GAME_MINUTE >= lifetime.game_minutes then return "lifetime_expired" end
+    end
 end
 
 -- A lease is about the owner still being there, whoever is watching.

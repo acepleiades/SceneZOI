@@ -1,0 +1,45 @@
+{
+  "id": "scenezoi.solo_idle_male",
+  "label": "Solo Idle",
+  "kind": "loop",
+  "hub": "standing",
+  "duration": 12.8,
+  "fps": 30,
+  "tracks": {
+    "male": "/Game/Characters/Anims/Locomotion/Male/ANIM_M_IdleBase.ANIM_M_IdleBase"
+  },
+  "navigation": [],
+  "participants": {
+    "male": {
+      "body": "male",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    }
+  },
+  "anchor_participant": "male",
+  "expressions": {
+    "male": {
+      "context": "Idle"
+    }
+  },
+  "starting_hub": true,
+  "tags": [
+    "standing"
+  ],
+  "participant_tags": {
+    "male": [
+      "standing"
+    ]
+  },
+  "actions": [
+    {
+      "type": "idle",
+      "actor": "male"
+    }
+  ]
+}

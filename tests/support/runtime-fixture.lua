@@ -29,7 +29,7 @@ function M.new()
         return out
     end}
     package.loaded["SceneZOI.Localization"] = {refresh = noop, tick = noop, toast = noop}
-    package.loaded["SceneZOI.Settings"] = {boot = noop, publish = noop, request = noop, forget = noop}
+    package.loaded["SceneZOI.Settings"] = {boot = noop, publish = noop, request = noop, forget = noop, npc_scene_minutes = function() return fixture.npc_minutes or 15 end}
     package.loaded["SceneZOI.Personality"] = {publish = noop, request = noop}
     package.loaded["SceneZOI.VoicePersonality"] = {publish = noop, request = noop}
     package.loaded["SceneZOI.OutfitControl"] = {publish = noop, request = noop, receive = noop}
@@ -52,7 +52,7 @@ function M.new()
     UE = {UGameplayStatics = {GetPlayerController = function()
         return {GetCharacterEntityId = function() return {Value = fixture.controlled} end}
     end}}
-    inzoi = {UB1System = {Get = function() return {GetTimeManager = function() return {GetTimeScale = function() return 1 end} end} end},
+    inzoi = {UB1System = {Get = function() return {GetTimeManager = function() return {GetTimeScale = function() return 1 end, GetCurrentDateTime = function() return {GetTicks = function() return fixture.calendar or 0 end} end} end} end},
         cli = {execute = function(line)
             local key = line:match(" key=([^ ]+)")
             if line == "gameplay.get_settings" then return true, "", '{"auto_save_enabled":"1"}' end

@@ -14,5 +14,10 @@ local scene=require('SceneZOI.SceneData')
 local native=Json.decode(TEST_SCENE_PACKS).scenezoi
 local ids={};for _,n in ipairs(native.nodes)do ids[n.id]=n;scene.node(n,'scenezoi')end
 assert(ids['scenezoi.bed_single_idle'].duration==4 and ids['scenezoi.bed_queen_idle'].duration==4)
-assert(V.equal(ids['scenezoi.bed_single_idle'].tracks,ids['scenezoi.bed_queen_idle'].tracks));assert(#native.nodes==3)
+assert(V.equal(ids['scenezoi.bed_single_idle'].tracks,ids['scenezoi.bed_queen_idle'].tracks));assert(#native.nodes==5)
+for _,body in ipairs({'female','male'})do
+ local n=ids['scenezoi.solo_idle_'..body];local roles=0;for _ in pairs(n.participants)do roles=roles+1 end
+ assert(n.starting_hub and n.hub=='standing'and roles==1 and n.anchor_participant==body and n.tracks[body]:find('/Game/Characters/Anims/Locomotion/',1,true)==1,'Solo hubs: one role, stock idle clip')
+ assert(table.concat(n.participants[body].growth_steps,',')=='Youth,Adult,Old,Elderly','Solo hubs keep the same adult life stages as the other hubs')
+end
 print('Furniture data passed: profile validation/isolation, independent single/queen contexts, standing-entry exclusion and actual neutral hubs.')

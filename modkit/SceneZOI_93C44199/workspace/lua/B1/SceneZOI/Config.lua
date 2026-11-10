@@ -1,6 +1,6 @@
 -- Runtime settings only. Pack-specific assets live in declarative pack data.
 return {
-    mod_id = "SceneZOI_93C44199", section = "scenezoi_runtime", data_table = "Text", data_prefix = "SceneZOI_Declaration_",
+    solo_click_window = .35, mod_id = "SceneZOI_93C44199", section = "scenezoi_runtime", data_table = "Text", data_prefix = "SceneZOI_Declaration_",
     picker_cap = 3, poll_interval = 0.2, prepare_timeout = 8.0, lease_timeout = 6.0,
     max_npc_sessions = 15, standing_spacing_cm = 200, background_max_start_distance_cm = 1500,
     background_default_seconds = 600, background_max_seconds = 7200,

@@ -117,12 +117,19 @@
         "Glasses": "Glasses",
         "Necklace": "Necklace",
         "Earrings": "Earrings",
-        "Auto-mode": "Auto-mode"
+        "Auto-mode": "Auto-mode",
+        "Start Solo": "Start Solo",
+        "NPC Scenes": "NPC Scenes",
+        "Default NPC Scene Length": "Default NPC Scene Length",
+        "in-game min": "in-game min",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Standing Idle Hub",
         "scene.scenezoi.bed_queen_idle": "Queen Bed Idle Hub",
-        "scene.scenezoi.bed_single_idle": "Single Bed Idle Hub"
+        "scene.scenezoi.bed_single_idle": "Single Bed Idle Hub",
+        "scene.scenezoi.solo_idle_female": "Solo Idle",
+        "scene.scenezoi.solo_idle_male": "Solo Idle"
       }
     },
     "de-DE": {
@@ -240,12 +247,19 @@
         "Glasses": "Brille",
         "Necklace": "Halskette",
         "Earrings": "Ohrringe",
-        "Auto-mode": "Automodus"
+        "Auto-mode": "Automodus",
+        "Start Solo": "Solo starten",
+        "NPC Scenes": "NPC-Szenen",
+        "Default NPC Scene Length": "Standarddauer von NPC-Szenen",
+        "in-game min": "Ingame-Min.",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "So lange dauert eine Szene zwischen Zois, die du nicht steuerst, sofern ein Add-on keine längere Dauer anfordert. Wähle 5 bis 120 Ingame-Minuten. Gilt für neue Szenen."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Stehender Ruhepunkt",
         "scene.scenezoi.bed_queen_idle": "Ruhepunkt im Doppelbett",
-        "scene.scenezoi.bed_single_idle": "Ruhepunkt im Einzelbett"
+        "scene.scenezoi.bed_single_idle": "Ruhepunkt im Einzelbett",
+        "scene.scenezoi.solo_idle_female": "Solo-Leerlauf",
+        "scene.scenezoi.solo_idle_male": "Solo-Leerlauf"
       }
     },
     "fr-FR": {
@@ -363,12 +377,19 @@
         "Glasses": "Lunettes",
         "Necklace": "Collier",
         "Earrings": "Boucles d'oreilles",
-        "Auto-mode": "Mode auto"
+        "Auto-mode": "Mode auto",
+        "Start Solo": "Démarrer en solo",
+        "NPC Scenes": "Scènes de PNJ",
+        "Default NPC Scene Length": "Durée par défaut des scènes de PNJ",
+        "in-game min": "min en jeu",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Durée d'une scène entre des Zois que vous ne contrôlez pas, sauf si un add-on demande plus longtemps. Choisissez de 5 à 120 minutes en jeu. S'applique aux nouvelles scènes."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Point de repos debout",
         "scene.scenezoi.bed_queen_idle": "Point de repos sur lit double",
-        "scene.scenezoi.bed_single_idle": "Point de repos sur lit simple"
+        "scene.scenezoi.bed_single_idle": "Point de repos sur lit simple",
+        "scene.scenezoi.solo_idle_female": "Attente en solo",
+        "scene.scenezoi.solo_idle_male": "Attente en solo"
       }
     },
     "es-ES": {
@@ -486,12 +507,19 @@
         "Glasses": "Gafas",
         "Necklace": "Collar",
         "Earrings": "Pendientes",
-        "Auto-mode": "Modo automático"
+        "Auto-mode": "Modo automático",
+        "Start Solo": "Empezar en solitario",
+        "NPC Scenes": "Escenas de PNJ",
+        "Default NPC Scene Length": "Duración predeterminada de las escenas de PNJ",
+        "in-game min": "min de juego",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Cuánto dura una escena entre Zois que no controlas, salvo que un complemento pida más tiempo. Elige de 5 a 120 minutos de juego. Se aplica a las escenas nuevas."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punto de reposo de pie",
         "scene.scenezoi.bed_queen_idle": "Punto de reposo en cama doble",
-        "scene.scenezoi.bed_single_idle": "Punto de reposo en cama individual"
+        "scene.scenezoi.bed_single_idle": "Punto de reposo en cama individual",
+        "scene.scenezoi.solo_idle_female": "Reposo en solitario",
+        "scene.scenezoi.solo_idle_male": "Reposo en solitario"
       }
     },
     "it-IT": {
@@ -609,12 +637,19 @@
         "Glasses": "Occhiali",
         "Necklace": "Collana",
         "Earrings": "Orecchini",
-        "Auto-mode": "Modalità automatica"
+        "Auto-mode": "Modalità automatica",
+        "Start Solo": "Avvia da solo",
+        "NPC Scenes": "Scene dei PNG",
+        "Default NPC Scene Length": "Durata predefinita delle scene dei PNG",
+        "in-game min": "min di gioco",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Quanto dura una scena tra Zois che non controlli, a meno che un componente aggiuntivo non chieda più tempo. Scegli da 5 a 120 minuti di gioco. Vale per le nuove scene."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punto di riposo in piedi",
         "scene.scenezoi.bed_queen_idle": "Punto di riposo su letto matrimoniale",
-        "scene.scenezoi.bed_single_idle": "Punto di riposo su letto singolo"
+        "scene.scenezoi.bed_single_idle": "Punto di riposo su letto singolo",
+        "scene.scenezoi.solo_idle_female": "Attesa da solo",
+        "scene.scenezoi.solo_idle_male": "Attesa da solo"
       }
     },
     "pt-BR": {
@@ -732,12 +767,19 @@
         "Glasses": "Óculos",
         "Necklace": "Colar",
         "Earrings": "Brincos",
-        "Auto-mode": "Modo automático"
+        "Auto-mode": "Modo automático",
+        "Start Solo": "Começar sozinho",
+        "NPC Scenes": "Cenas de NPC",
+        "Default NPC Scene Length": "Duração padrão das cenas de NPC",
+        "in-game min": "min de jogo",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Quanto dura uma cena entre Zois que você não controla, a menos que um complemento peça mais tempo. Escolha de 5 a 120 minutos de jogo. Vale para novas cenas."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ponto de repouso em pé",
         "scene.scenezoi.bed_queen_idle": "Ponto de repouso na cama de casal",
-        "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama de solteiro"
+        "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama de solteiro",
+        "scene.scenezoi.solo_idle_female": "Espera a sós",
+        "scene.scenezoi.solo_idle_male": "Espera a sós"
       }
     },
     "pt-PT": {
@@ -855,12 +897,19 @@
         "Glasses": "Óculos",
         "Necklace": "Colar",
         "Earrings": "Brincos",
-        "Auto-mode": "Modo automático"
+        "Auto-mode": "Modo automático",
+        "Start Solo": "Começar sozinho",
+        "NPC Scenes": "Cenas de NPC",
+        "Default NPC Scene Length": "Duração predefinida das cenas de NPC",
+        "in-game min": "min de jogo",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Quanto dura uma cena entre Zois que não controlas, a menos que um suplemento peça mais tempo. Escolhe de 5 a 120 minutos de jogo. Aplica-se a novas cenas."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ponto de repouso de pé",
         "scene.scenezoi.bed_queen_idle": "Ponto de repouso na cama de casal",
-        "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama individual"
+        "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama individual",
+        "scene.scenezoi.solo_idle_female": "Espera a sós",
+        "scene.scenezoi.solo_idle_male": "Espera a sós"
       }
     },
     "nl-NL": {
@@ -978,12 +1027,19 @@
         "Glasses": "Bril",
         "Necklace": "Ketting",
         "Earrings": "Oorbellen",
-        "Auto-mode": "Automatische modus"
+        "Auto-mode": "Automatische modus",
+        "Start Solo": "Solo starten",
+        "NPC Scenes": "NPC-scènes",
+        "Default NPC Scene Length": "Standaardduur van NPC-scènes",
+        "in-game min": "min in game",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Hoe lang een scène duurt tussen Zois die je niet bestuurt, tenzij een add-on om meer tijd vraagt. Kies 5 tot 120 minuten in de game. Geldt voor nieuwe scènes."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Staand rustpunt",
         "scene.scenezoi.bed_queen_idle": "Rustpunt in tweepersoonsbed",
-        "scene.scenezoi.bed_single_idle": "Rustpunt in eenpersoonsbed"
+        "scene.scenezoi.bed_single_idle": "Rustpunt in eenpersoonsbed",
+        "scene.scenezoi.solo_idle_female": "Solo wachten",
+        "scene.scenezoi.solo_idle_male": "Solo wachten"
       }
     },
     "tr-TR": {
@@ -1101,12 +1157,19 @@
         "Glasses": "Gözlük",
         "Necklace": "Kolye",
         "Earrings": "Küpe",
-        "Auto-mode": "Otomatik mod"
+        "Auto-mode": "Otomatik mod",
+        "Start Solo": "Tek Başına Başlat",
+        "NPC Scenes": "NPC Sahneleri",
+        "Default NPC Scene Length": "Varsayılan NPC Sahnesi Süresi",
+        "in-game min": "oyun içi dk",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Kontrol etmediğin Zoiler arasındaki bir sahnenin süresi; bir eklenti daha uzun süre istemediği sürece geçerlidir. 5 ile 120 oyun içi dakika arasında seç. Yeni sahnelere uygulanır."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ayakta dinlenme noktası",
         "scene.scenezoi.bed_queen_idle": "Çift kişilik yatakta dinlenme noktası",
-        "scene.scenezoi.bed_single_idle": "Tek kişilik yatakta dinlenme noktası"
+        "scene.scenezoi.bed_single_idle": "Tek kişilik yatakta dinlenme noktası",
+        "scene.scenezoi.solo_idle_female": "Tek Başına Bekleme",
+        "scene.scenezoi.solo_idle_male": "Tek Başına Bekleme"
       }
     },
     "pl-PL": {
@@ -1224,12 +1287,19 @@
         "Glasses": "Okulary",
         "Necklace": "Naszyjnik",
         "Earrings": "Kolczyki",
-        "Auto-mode": "Tryb automatyczny"
+        "Auto-mode": "Tryb automatyczny",
+        "Start Solo": "Rozpocznij solo",
+        "NPC Scenes": "Sceny NPC",
+        "Default NPC Scene Length": "Domyślna długość scen NPC",
+        "in-game min": "min w grze",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Jak długo trwa scena między Zois, którymi nie sterujesz, chyba że dodatek poprosi o więcej czasu. Wybierz od 5 do 120 minut w grze. Dotyczy nowych scen."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punkt spoczynku na stojąco",
         "scene.scenezoi.bed_queen_idle": "Punkt spoczynku na podwójnym łóżku",
-        "scene.scenezoi.bed_single_idle": "Punkt spoczynku na pojedynczym łóżku"
+        "scene.scenezoi.bed_single_idle": "Punkt spoczynku na pojedynczym łóżku",
+        "scene.scenezoi.solo_idle_female": "Bezczynność solo",
+        "scene.scenezoi.solo_idle_male": "Bezczynność solo"
       }
     },
     "ru-RU": {
@@ -1347,12 +1417,19 @@
         "Glasses": "Очки",
         "Necklace": "Ожерелье",
         "Earrings": "Серьги",
-        "Auto-mode": "Авторежим"
+        "Auto-mode": "Авторежим",
+        "Start Solo": "Начать соло",
+        "NPC Scenes": "Сцены NPC",
+        "Default NPC Scene Length": "Длительность сцен NPC по умолчанию",
+        "in-game min": "мин. в игре",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Сколько длится сцена между Zoi, которыми вы не управляете, если дополнение не запросит больше времени. Выберите от 5 до 120 игровых минут. Применяется к новым сценам."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Исходная сцена стоя",
         "scene.scenezoi.bed_queen_idle": "Исходная сцена на двуспальной кровати",
-        "scene.scenezoi.bed_single_idle": "Исходная сцена на односпальной кровати"
+        "scene.scenezoi.bed_single_idle": "Исходная сцена на односпальной кровати",
+        "scene.scenezoi.solo_idle_female": "Ожидание соло",
+        "scene.scenezoi.solo_idle_male": "Ожидание соло"
       }
     },
     "ja-JP": {
@@ -1470,12 +1547,19 @@
         "Glasses": "眼鏡",
         "Necklace": "ネックレス",
         "Earrings": "イヤリング",
-        "Auto-mode": "オートモード"
+        "Auto-mode": "オートモード",
+        "Start Solo": "ソロで開始",
+        "NPC Scenes": "NPCシーン",
+        "Default NPC Scene Length": "NPCシーンの既定の長さ",
+        "in-game min": "ゲーム内分",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "操作していないZoi同士のシーンの長さです。アドオンがより長い時間を指定した場合はそちらが優先されます。ゲーム内時間で5〜120分から選択してください。新しいシーンに適用されます。"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "立位の待機ハブ",
         "scene.scenezoi.bed_queen_idle": "ダブルベッドの待機ハブ",
-        "scene.scenezoi.bed_single_idle": "シングルベッドの待機ハブ"
+        "scene.scenezoi.bed_single_idle": "シングルベッドの待機ハブ",
+        "scene.scenezoi.solo_idle_female": "ソロ待機",
+        "scene.scenezoi.solo_idle_male": "ソロ待機"
       }
     },
     "ko-KR": {
@@ -1593,12 +1677,19 @@
         "Glasses": "안경",
         "Necklace": "목걸이",
         "Earrings": "귀걸이",
-        "Auto-mode": "자동 모드"
+        "Auto-mode": "자동 모드",
+        "Start Solo": "혼자 시작",
+        "NPC Scenes": "NPC 장면",
+        "Default NPC Scene Length": "NPC 장면 기본 길이",
+        "in-game min": "게임 내 분",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "조작하지 않는 Zoi들 사이의 장면 길이입니다. 애드온이 더 긴 시간을 요청하면 그 시간이 적용됩니다. 게임 시간 5~120분 중에서 선택하세요. 새 장면부터 적용됩니다."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "서 있는 대기 허브",
         "scene.scenezoi.bed_queen_idle": "더블 침대 대기 허브",
-        "scene.scenezoi.bed_single_idle": "싱글 침대 대기 허브"
+        "scene.scenezoi.bed_single_idle": "싱글 침대 대기 허브",
+        "scene.scenezoi.solo_idle_female": "혼자 대기",
+        "scene.scenezoi.solo_idle_male": "혼자 대기"
       }
     },
     "zh-CN": {
@@ -1716,12 +1807,19 @@
         "Glasses": "眼镜",
         "Necklace": "项链",
         "Earrings": "耳环",
-        "Auto-mode": "自动模式"
+        "Auto-mode": "自动模式",
+        "Start Solo": "单人开始",
+        "NPC Scenes": "NPC 场景",
+        "Default NPC Scene Length": "NPC 场景默认时长",
+        "in-game min": "游戏内分钟",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "你未控制的 Zoi 之间的场景持续多久，除非附加组件要求更长时间。可选择 5 至 120 游戏内分钟。适用于新场景。"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "站立待机枢纽",
         "scene.scenezoi.bed_queen_idle": "双人床待机枢纽",
-        "scene.scenezoi.bed_single_idle": "单人床待机枢纽"
+        "scene.scenezoi.bed_single_idle": "单人床待机枢纽",
+        "scene.scenezoi.solo_idle_female": "单人待机",
+        "scene.scenezoi.solo_idle_male": "单人待机"
       }
     },
     "zh-TW": {
@@ -1839,12 +1937,19 @@
         "Glasses": "眼鏡",
         "Necklace": "項鍊",
         "Earrings": "耳環",
-        "Auto-mode": "自動模式"
+        "Auto-mode": "自動模式",
+        "Start Solo": "單人開始",
+        "NPC Scenes": "NPC 場景",
+        "Default NPC Scene Length": "NPC 場景預設時長",
+        "in-game min": "遊戲內分鐘",
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "你未控制的 Zoi 之間的場景持續多久，除非附加元件要求更長時間。可選擇 5 至 120 遊戲內分鐘。適用於新場景。"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "站立待機樞紐",
         "scene.scenezoi.bed_queen_idle": "雙人床待機樞紐",
-        "scene.scenezoi.bed_single_idle": "單人床待機樞紐"
+        "scene.scenezoi.bed_single_idle": "單人床待機樞紐",
+        "scene.scenezoi.solo_idle_female": "單人待機",
+        "scene.scenezoi.solo_idle_male": "單人待機"
       }
     }
   }

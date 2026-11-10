@@ -26,13 +26,15 @@ function M.message(owner,fields)
     if not p or p.owner_id~=id(owner:GetEntityId()) or p.token~=fields[1] then return end
     if fields[2]=="heartbeat" then p.last_heartbeat=os.time()
     elseif fields[2]=="shown" then send(p,"armed")
+    elseif fields[2]=="solo" then if not p.ids then p.ids={p.owner_id};p.confirmed=not p.expired end
     elseif fields[2]=="closed" then p.closing=0
     elseif fields[2]=="cancel" then M.cancel(p.token) end
 end
 function M.create(leader,characters)
     local p=pending
     if not p or id(leader)~=p.owner_id then return false end
-    local ids,seen={p.owner_id},{[p.owner_id]=true}
+    -- The game lists the controlled Zoi only while it stays selected.
+    local ids,seen={},{}
     for _,character in ipairs(characters) do
         local value=id(character:GetEntityId())
         if not seen[value] then seen[value]=true;ids[#ids+1]=value end
@@ -43,7 +45,7 @@ function M.create(leader,characters)
         if b==p.owner_id then return false end
         return tonumber(a)<tonumber(b)
     end)
-    p.ids=ids;p.confirmed=not p.expired and #ids>=2 and #ids<=Config.picker_cap
+    p.ids=ids;p.confirmed=not p.expired and #ids>=1 and #ids<=Config.picker_cap
     return true
 end
 function M.tick()

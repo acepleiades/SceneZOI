@@ -25,7 +25,9 @@ class MetadataTests(unittest.TestCase):
   with self.assertRaises(ValueError):dictionaries([(owner,kind,p,bad)]+docs[1:])
  def test_real_scenes(self):
   for p in (ROOT/'packs/scenezoi/scenes').glob('*.json'):
-   raw=json.loads(p.read_text(encoding='utf-8'));self.assertNotIn('content_rating',raw);v=validate_scene(raw,self.registry);self.assertEqual(v['content_rating'],'GENERAL');self.assertEqual({(a['actor'],a['target']) for a in v['actions'] if a['type']=='hug'},{('male','female'),('female','male')})
+   raw=json.loads(p.read_text(encoding='utf-8'));self.assertNotIn('content_rating',raw);v=validate_scene(raw,self.registry);self.assertEqual(v['content_rating'],'GENERAL')
+   if len(raw['participants'])==1:self.assertEqual({a['type'] for a in v['actions']},{'idle'});continue
+   self.assertEqual({(a['actor'],a['target']) for a in v['actions'] if a['type']=='hug'},{('male','female'),('female','male')})
  def test_curated_vocabulary(self):
   self.assertEqual(len(self.registry['actions']),85)
   self.assertFalse(any('tail' in n for n in self.registry['actions']))
