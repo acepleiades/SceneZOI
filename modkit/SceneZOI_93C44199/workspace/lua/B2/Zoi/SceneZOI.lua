@@ -139,7 +139,7 @@ local function advance_prepare(self, owner)
         lease.tasks_settled = true
     end
     local directive = lease.node.outfits and lease.node.outfits[lease.role]
-    Outfit.apply(owner, lease, directive and directive.remove_slots or {})
+    if Outfit.apply(owner, lease, directive and directive.remove_slots or {}) == false then return end
     lease.ready = true
     reply(owner, lease.token, "ready", lease.body .. ":" .. lease.control, lease.revision)
     inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
@@ -250,7 +250,8 @@ local function receive(self, owner, kind, content)
         if count > (lease.outfit_counter or 0) then
             if not Wardrobe.toggle(lease, fields[3], fields[4] == "1") then return end
             if fields[6] == "1" then Outfit.keep_unmerged(owner, lease) end
-            Outfit.apply(owner, lease, {})
+            -- Not acknowledged while the game is still queueing the change, so the panel's resend retries it.
+            if Outfit.apply(owner, lease, {}) == false then return end
             lease.outfit_counter = count
         end
         inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))

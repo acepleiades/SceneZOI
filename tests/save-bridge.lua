@@ -67,4 +67,7 @@ assert(B.overlaps({'5'})and record('good')and not record('bad'))
 -- The journal is bounded: the oldest record goes, the newest stay.
 local many={};for i=1,40 do many[i]={token='r'..i,participants={[tostring(100+i)]={token='r'..i}},furniture={}}end
 load_rows(many,'many',7);assert(#journal().records==32 and not record('r1')and record('r40'))
+-- The record learns which uniform was really taken off.
+load_rows({{token='worn',participants={['61']={token='worn'}},furniture={}}},'worn',8)
+B.offer(nil,actor('61'),{'worn','lent','Uniform01'});assert(record('worn').participants['61'].lent_costume=='Uniform01')
 print('Save bridge passed: one journal for every scene, host and revision acknowledgements, per-resource recovery, unrelated starts during recovery, bounded size and old-format migration.')

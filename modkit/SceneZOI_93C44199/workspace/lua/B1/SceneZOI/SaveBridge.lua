@@ -72,7 +72,8 @@ function M.offer(current,actor,fields)
   current.journal_revision=publish()
  else
   local record=records[fields[1]];if not record then return end
-  if fields[2]=='recovered'and record.people[id]then record.people[id]=nil
+  if fields[2]=='lent'and record.people[id]then record.people[id].lent_costume=fields[3]
+  elseif fields[2]=='recovered'and record.people[id]then record.people[id]=nil
   elseif fields[2]=='furniture_recovered'then
    local beds={};for _,bed in ipairs(record.beds)do if bed.owner~=id then beds[#beds+1]=bed end end
    record.beds=beds

@@ -19,7 +19,8 @@
     "panel_controls": "A real click on the panel's scene button during an add-on-started scene entered the chosen node. Before the fix it stayed on Changing scene.",
     "mixed_sessions": "A separate add-on using the public API started an autonomous NPC-only timed scene while another separate add-on's scene, moved along its authored navigation, played with the panel on the controlled Zoi. Both played together. The autonomous scene ended with duration_elapsed and its owner received preparing, started, node entered, ending and ended. No scene failed.",
     "save_and_load": "A real save with a household scene and an NPC-only scene running ended both with saving and no failure. The world load brings the installed package back in place of the unpacked mount, so the journal from that save was then delivered to the remounted build. Records for loaded Zois were recovered, the one Zoi not loaded stayed recorded, and a new scene played.",
-    "track_recovery_seen": "Natural take-backs recorded: pedestrian dodges (about 90), a stand clap, a street cheer, a ghost reaction and an electric guitar. Each resumed the scene at its shared position. Each is now logged by name."
+    "track_recovery_seen": "Natural take-backs recorded: pedestrian dodges (about 90), a stand clap, a street cheer, a ghost reaction and an electric guitar. Each resumed the scene at its shared position. Each is now logged by name.",
+    "uniform_swap": "Explicit NPC scenes on Zois in work outfits: the outfit was off during each scene and all 8 scenes held. Outfits tagged Job came back afterwards, some in the same role's Daily version when the scene had interrupted the shift. Outfits tagged otherwise stay refused."
   },
   "visual": "Three separate standing scenes were seen in one screenshot with the panel showing the controlled Zoi's scene. The Auto-mode toggle was seen on (blue, manual choices hidden) and off (grey, manual choices listed). This is a developer's visual check, not author acceptance. Screenshots before and 2 seconds after forcing the broom animation showed the participant holding the scene pose. A screenshot during a home scene showed no bubble over the pair. Before clearing on entry was added, a screenshot showed a thought icon sent just before a scene still above a participant at its start.",
   "frame_cost_ms_per_frame": {
@@ -54,7 +55,7 @@
     "An NPC can fail to answer the group departure step. Seen twice on one seated street NPC: the start ended with start_failed after 15 seconds, and nothing was held afterwards. Cause not established.",
     "Scripts.B2Script_SpeechBubble is a single native override. A second mod defining the same chunk would conflict with it.",
     "The game crashed once on an animation worker thread just after a scene started, reading address 0xffffffffffffffff, after three Lua hot reloads on the unpacked mount. It did not recur in more than 40 later scenes. A related failure was seen once when a clip could not be played. Clips are now fetched on the tick they start playing, but the engine's collector cannot be forced from Lua, so the cause is not proven.",
-    "A Zoi in a game work uniform or role outfit cannot enter a scene that removes clothes, because that outfit holds the shared Script layer. The session ends as interrupted and the log names the holder.",
+    "A work uniform is put back when a scene ends even if the Zoi's shift ended during the scene, so it can stay on until the game next changes that outfit.",
     "One NPC-only explicit start stalled once waiting to match attachment colors. It did not recur in later attempts. The status line now names what it is waiting for."
   ]
 }
