@@ -200,14 +200,17 @@ task engine.
 | Duration elapsed (unmet goals stay reported) | `ok` | `duration_elapsed` |
 | Add-on plan: goals met | none yet | Publishes `plan_goals_met` once, holds the loop and freezes fulfilled tasks until `stop_session`. |
 | Owner never decides | `owner_expired` | `wait_expired` after 300 seconds |
-| Nothing advanced for 90 seconds | `no_progress` | `no_progress` |
-| Caps, holds or restrictions left no route | `goal_unreachable` or `required_stage_unavailable` | same |
+| Nothing advanced for 90 seconds, including a completion hold that never lifts | `no_progress` | `no_progress` |
+| Caps or restrictions left no route | `goal_unreachable` or `required_stage_unavailable` | same |
 | Playback budget of 1,800 seconds | `playback_budget_exceeded` | same |
 
 Copied snapshots carry `plan` with `auto_mode`, `state`, `outcome`, `goals`
 (`requested`, `completed`, `progress`, `satisfied`), `required_stages`, `stage`,
 `stage_count`, `real_seconds` and `game_seconds`. Plan events are `plan_goals_met`,
 `plan_stage_changed` and `plan_auto_mode_changed`.
+
+A timed plan runs out its duration even if nothing is advancing, and reports what it did not reach.
+Authored completion responses finish before the plan moves on, publishes `plan_goals_met` or ends.
 
 A session with a plan shows an **Auto-mode** toggle in its panel, and an owner can
 call `set_auto_mode` with `session_id` and `enabled`. While it is on, manual and

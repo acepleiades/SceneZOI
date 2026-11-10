@@ -21,6 +21,8 @@ function M.enter(current)
             current.anchor.Translation = UE.FVector(current.spot.X, current.spot.Y, height)
         end
     end
+    -- The engine can collect a clip only Lua is holding. Fetched on the tick it starts playing, it cannot be.
+    current.assets = require("SceneZOI.Catalog").load(current.node)
     current.tracks = {}
     for _, participant in ipairs(current.participants) do
         local asset = assert(current.assets[participant.role], "Participant has no animation track")

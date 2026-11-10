@@ -75,17 +75,17 @@ local function recoverable_clip(record)
     return incoming and incoming:GetName() or "none"
 end
 
-local function recover_avoidance(record, position)
+local function take_back_track(record, position)
     local ok, incoming = pcall(recoverable_clip, record)
     if not ok or not incoming then return false end
 
     local now = UE.UGameplayStatics.GetRealTimeSeconds(record.actor)
-    if not record.avoidance_window or now - record.avoidance_window >= 2 then
-        record.avoidance_window, record.avoidance_attempts = now, 0
+    if not record.recovery_window or now - record.recovery_window >= 2 then
+        record.recovery_window, record.recovery_attempts = now, 0
     end
     -- Bound recovery if the game repeatedly replaces our track.
-    if record.avoidance_attempts >= 3 then return false end
-    record.avoidance_attempts = record.avoidance_attempts + 1
+    if record.recovery_attempts >= 3 then return false end
+    record.recovery_attempts = record.recovery_attempts + 1
     M.enter(record, record.asset, record.desired, position)
     pcall(inzoi.cli.execute, "uimod.cfg_save mod_id=" .. Config.mod_id ..
         " section=" .. Config.section .. " key=montage_recovery value=" ..
@@ -102,7 +102,7 @@ function M.sample(record, position)
     assert(record.mesh:GetAnimationMode() == ANIMATION_BLUEPRINT and record.mesh:GetAnimInstance() == record.instance,
         "The game replaced the participant's animation instance")
     if not record.instance:Montage_IsActive(record.montage) then
-        if recover_avoidance(record, position) then return end
+        if take_back_track(record, position) then return end
         error('Scene montage stopped unexpectedly: participant='..tostring(record.id)..' role='..tostring(record.role)..
             ' sample='..tostring(position)..' previous='..tostring(record.position)..' clip='..tostring(record.asset)..
             ' incoming='..incoming_name(record.instance))
