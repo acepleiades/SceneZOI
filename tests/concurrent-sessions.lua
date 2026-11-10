@@ -1,6 +1,7 @@
 -- Scenes run beside each other with their own roster, panel binding, lifetime and failure.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;tests/?.lua;'..package.path
 local F=require('support.runtime-fixture').new()
+require('SceneZOI.Config').max_npc_sessions=2 -- The rule is under test here, not the shipped number.
 local R,P,cfg=F.Runtime,F.Protocol,F.cfg
 local J=require('SceneZOI.Json');local Sessions=require('SceneZOI.Sessions')
 local ended={}

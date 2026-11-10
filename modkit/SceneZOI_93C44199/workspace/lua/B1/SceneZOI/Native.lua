@@ -87,6 +87,7 @@ local function take_back_track(record, position)
     if record.recovery_attempts >= 3 then return false end
     record.recovery_attempts = record.recovery_attempts + 1
     M.enter(record, record.asset, record.desired, position)
+    print("[SceneZOI] Scene track taken back on " .. tostring(record.id) .. " from " .. incoming)
     pcall(inzoi.cli.execute, "uimod.cfg_save mod_id=" .. Config.mod_id ..
         " section=" .. Config.section .. " key=montage_recovery value=" ..
         tostring(record.id) .. "|" .. incoming .. "|" .. tostring(position))

@@ -57,7 +57,7 @@ local function start(extra)
  return request('start_at_hub',args)
 end
 
-local r=request('get_version');assert(r.result.maximum_sessions==1 and r.result.maximum_npc_sessions==2 and r.result.features.background_sessions==1)
+local r=request('get_version');assert(r.result.maximum_sessions==1 and r.result.maximum_npc_sessions==15 and r.result.features.background_sessions==1)
 assert(r.result.features.placement==1 and r.result.features.session_lifetimes==1)
 
 -- The controlled Zoi is 1. Without the flag every old rule still holds.
@@ -144,8 +144,8 @@ local planned=started['background.'..count];assert(planned.plan.goals[1].task_id
 assert(planned.restrictions.allowed_content_ratings[1]=='GENERAL','Named restrictions become the session restrictions')
 Sessions.release('background.'..count);started['background.'..count]=nil
 -- A timed plan is not cut short by the default deadline, and the deadline still has a ceiling.
-r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},end_policy={type='duration',seconds=1200}});assert(r.ok);API.tick(.5);depart();API.tick(.05)
-assert(started['background.'..count].lifetime.deadline_seconds==1800)
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},end_policy={type='duration',seconds=6000}});assert(r.ok);API.tick(.5);depart();API.tick(.05)
+assert(started['background.'..count].lifetime.deadline_seconds==7200)
 Sessions.release('background.'..count);started['background.'..count]=nil
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal});assert(r.ok and r.result.valid and Sessions.holder('5')==nil)
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals={{participant_id='6',task_id='charge'}}});assert(r.ok and r.result.valid==false and r.result.code=='goal_unreachable')
