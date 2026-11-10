@@ -155,4 +155,9 @@ r=request('set_auto_mode',{session_id='background.1',enabled=false},'other.addon
 r=request('set_auto_mode',{session_id='background.1',enabled='no'});assert(not r.ok and r.code=='invalid_request')
 r=request('set_auto_mode',{session_id='background.1',enabled=false});assert(r.ok and r.result.auto_mode==false and started['background.1'].auto==false)
 assert(request('get_version').result.features.autonomous_stages==1)
+-- An add-on that comes back through another Zoi can still ask about its own request.
+local _,asked=request('list_sessions',{})
+serial=serial+1
+API.receive(b,J.encode({api_version=1,addon_id='test.addon',client_id='test.client',request_id='r'..serial,operation='get_request_status',arguments={request_id=asked}}))
+assert(responses[#responses].ok,'A request is found whichever Zoi asks')
 print('Background API passed: opt-in flag, old contract unchanged, reservations, departures, household detection, placement and lifetime validation, distance, cap, timeouts and addressing by id.')

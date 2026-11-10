@@ -137,7 +137,7 @@ NPC. It accepts two optional objects:
 | Field | Meaning |
 | --- | --- |
 | `placement` | `max_start_distance_m` (0-100, default 15) from each participant to the anchor, checked before the roster is held and again before playback. `exit`: `restore` (default) or `stay`, which applies only to ordinary Exit on floor the game reports as walkable. |
-| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Default 600-second deadline; hard ceiling 1,800 seconds. Time runs while the session has no panel. A lease that lapses ends with `owner_expired`, a deadline with `lifetime_expired`. |
+| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Default 600-second deadline; hard ceiling 1,800 seconds. A deadline and the ceiling add up the time the session has no panel, so visiting it restarts neither. A lease always runs. A lease that lapses ends with `owner_expired`, a deadline with `lifetime_expired`. |
 
 Scenes containing only NPCs are capped at `maximum_npc_sessions` from `get_version`
 (2). A household scene does not count against the cap, and a player's own start is

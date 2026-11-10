@@ -42,6 +42,7 @@ local boot_request, last_save_request
 local direct_serial, focus_serial = 0, 0
 local completed, completion_order = {}, {}
 local pending_focus, last_focus
+local last_start_packet
 local rejected_focus = {}
 
 local function command(name, key)
@@ -156,13 +157,14 @@ local function retain_unconfirmed(old)
     for _, participant in ipairs(old.unloaded or {}) do
         if participant.restoration == "deferred_recovery" then unconfirmed[#unconfirmed + 1] = participant.id end
     end
-    pcall(Save.finish, old.token, unconfirmed, old.furniture ~= nil and not old.furniture_released)
+    pcall(Save.finish, old.token, unconfirmed, old.furniture ~= nil and (not old.furniture_released or old.furniture_deferred == true))
     return #unconfirmed == 0
 end
 
 local function finish_stop(old, code)
     if not Sessions.has(old) then return end
     local had_panel = has_panel(old)
+    old.final_focus = had_panel or old.focus_at_stop == true
     Sessions.remove(old)
     if had_panel and Catalog.publish then pcall(Catalog.publish)end
     reconcile_autosave()
@@ -175,7 +177,8 @@ local function finish_stop(old, code)
     notify(old, "session_ended", code)
     Control.ended(old,Session.snapshot(old))
     local controlled = Session.controlled(old)
-    local normal = {ok = true, saving = true, character_editor = true, addon_requested = true, lifetime_expired = true, owner_expired = true}
+    local normal = {ok = true, saving = true, character_editor = true, addon_requested = true, lifetime_expired = true, owner_expired = true,
+        goal_unreachable = true, required_stage_unavailable = true, no_progress = true, playback_budget_exceeded = true}
     -- A scene with no panel still retires its request ID, silently.
     remember(old.client, old.sequence, normal[code] and "idle" or "error", code, controlled and controlled.actor, not had_panel)
     if had_panel then
@@ -190,7 +193,7 @@ end
 
 -- Only an ordinary end may leave Zois where the scene put them; anything else uses the original snapshot.
 local function stays_in_place(old)
-    return old.exit_policy == "stay" and (old.stop_code == "ok" or old.stop_code == "addon_requested" or old.stop_code == "lifetime_expired")
+    return old.exit_policy == "stay" and (old.stop_code == "ok" or old.stop_code == "addon_requested")
 end
 
 local function request_release(old)
@@ -232,6 +235,7 @@ local function stop_session(old, code)
     if old.stopping then request_release(old); return end
     -- Initialize all cleanup state before callbacks can acknowledge a release.
     old.stop_reason=code or 'ok'
+    old.focus_at_stop=has_panel(old)
     old.stop_origin=old.stop_origin or {source='framework',reason=old.stop_reason}
     old.stopping, old.stop_code, old.age, old.heartbeat = true, code or "ok", 0, 0
     reconcile_autosave()
@@ -409,18 +413,20 @@ end
 local function participants_close(current)
     if not current.max_start_distance_cm then return true end
     local anchor, actors = current.participants[1].actor, {}
+    local object = current.furniture and Furniture.actor(current.furniture.id)
     for _, person in ipairs(current.participants) do
         actors[#actors + 1] = person.actor
         if person.role == current.node.anchor_participant then anchor = person.actor end
     end
-    return start_distance_ok(anchor, actors, current.max_start_distance_cm)
+    return start_distance_ok(object or anchor, actors, current.max_start_distance_cm)
 end
 
-function M.check_start_distance(node, bindings, limit)
+function M.check_start_distance(node, bindings, limit, furniture_id)
     local anchor = assert(M.actors[bindings[node.anchor_participant]], "Participant is not loaded")
     local others = {}
     for _, id in pairs(bindings) do others[#others + 1] = assert(M.actors[id], "Participant is not loaded") end
-    assert(start_distance_ok(anchor, others, limit), "participant_too_far")
+    local object = furniture_id and Furniture.actor(furniture_id)
+    assert(start_distance_ok(object or anchor, others, limit), "participant_too_far")
 end
 
 -- A scene that does not need the panel: no UI round trip, and it can run beside the player's own.
@@ -499,6 +505,10 @@ local function drop_unloaded(current, actor)
             current.unloaded = current.unloaded or {}
             current.unloaded[#current.unloaded + 1] = participant
             participant.restoration = participant.released and "restored" or "deferred_recovery"
+            if participant == current.furniture_owner and current.furniture and not current.furniture_released then
+                -- Only this Zoi can release it. The journal keeps the furniture for when it returns.
+                current.furniture_released, current.furniture_deferred = true, true
+            end
             return true
         end
     end
@@ -559,6 +569,7 @@ function M.reply(actor, content)
         for _, participant in ipairs(owner and owner.unloaded or {}) do
             if participant.id == fields[3] then participant.released, participant.restoration = true, "released_on_unload" end
         end
+        Control.note_restoration(fields[1], fields[3], "released_on_unload")
         return
     end
     local current = fields and Sessions.get(fields[1])
@@ -569,8 +580,17 @@ function M.reply(actor, content)
         current.placement_pending = nil
         local x, y, z = tonumber(fields[3]), tonumber(fields[4]), tonumber(fields[5])
         if x and y and z then
-            current.spot = {X = x, Y = y, Z = z}
-            Sessions.claim_spot(current.token, current.spot)
+            local spot = {X = x, Y = y, Z = z}
+            current.placement_tries = (current.placement_tries or 0) + 1
+            if Sessions.spot_free(current.token, spot, Config.standing_spacing_cm) then
+                current.spot = spot
+                Sessions.claim_spot(current.token, spot)
+            elseif current.placement_tries < 3 then
+                -- Another scene took it while this one was looking.
+                plan_placement(current, current.placement_must_fit)
+            elseif current.placement_must_fit then
+                stop_session(current, "placement_unavailable")
+            end
         elseif current.placement_must_fit then
             stop_session(current, "placement_unavailable")
         end
@@ -580,7 +600,10 @@ function M.reply(actor, content)
     if current.stopping then
         if kind ~= "released" then return end
         for _, participant in ipairs(current.participants) do
-            if participant.actor == actor then participant.released, participant.restoration = true, "restored" end
+            if participant.actor == actor then
+                participant.released, participant.restoration = true, "restored"
+                if fields[4] == "1" then pcall(Native.restore_position, participant) end
+            end
         end
         if detail ~= "ok" then current.stop_code = "restore_error" end
         if Session.cleanup_complete(current)then
@@ -758,6 +781,7 @@ local function auto_mode_request(raw)
     local count = tonumber(fields[4])
     if not count or count % 1 ~= 0 or count <= (current.last_auto_mode or 0) then return end
     current.last_auto_mode = count
+    if tonumber(fields[6]) ~= current.revision then return end -- Sent before a scene change it could not see.
     if Plan.set_auto(current, fields[5] == "1") then
         notify(current, "plan_auto_mode_changed")
         publish_plan(current)
@@ -840,6 +864,8 @@ local function poll()
     end
     if action == "start" then
         if Autosave.restoring()then remember(client,sequence,"error","restore_pending");return end
+        if raw == last_start_packet then return end -- The mailbox keeps it after its scene has gone.
+        last_start_packet = raw
         local ok, err = pcall(begin, fields)
         if not ok then
             Addons.fail_start(fields[8],err)
@@ -892,23 +918,33 @@ local function update_focus()
     Sessions.focus(target)
     if old then old.unfocused_age = 0 end
     publish_focus()
-    if target then bind_panel(target) elseif Catalog.publish then pcall(Catalog.publish) end
+    if target then bind_panel(target)
+    else
+        if Catalog.publish then pcall(Catalog.publish) end
+        if old and M.actors[id] then pending_focus = {actor = M.actors[id], age = 0, client = old.client, sequence = old.sequence} end
+    end
     reconcile_autosave()
 end
 
 -- Every scene that can run without a panel has a finite life.
 local function background_limit_reached(current, dt)
-    current.unfocused_age = (current.unfocused_age or 0) + dt
-    if current.unfocused_age >= Config.background_max_seconds then return "lifetime_expired" end
     local lifetime = current.lifetime
     if not lifetime then
+        current.unfocused_age = (current.unfocused_age or 0) + dt
         return current.unfocused_age >= Config.manual_background_seconds and "lifetime_expired" or nil
     end
-    if lifetime.deadline_seconds and current.unfocused_age >= lifetime.deadline_seconds then return "lifetime_expired" end
-    if lifetime.lease_seconds then
-        current.lease_age = (current.lease_age or 0) + dt
-        if current.lease_age >= lifetime.lease_seconds then return "owner_expired" end
-    end
+    -- An add-on's scene adds up its time without a panel: visiting it restarts nothing.
+    current.background_age = (current.background_age or 0) + dt
+    if current.background_age >= Config.background_max_seconds then return "lifetime_expired" end
+    if lifetime.deadline_seconds and current.background_age >= lifetime.deadline_seconds then return "lifetime_expired" end
+end
+
+-- A lease is about the owner still being there, whoever is watching.
+local function owner_lease_lapsed(current, dt)
+    local seconds = current.lifetime and current.lifetime.lease_seconds
+    if not seconds then return false end
+    current.lease_age = (current.lease_age or 0) + dt
+    return current.lease_age >= seconds
 end
 
 local function update(dt)
@@ -947,7 +983,7 @@ local function update(dt)
         end
     end
     Effects.idle()
-    Control.tick(dt,Sessions.focused(),function(key)
+    Control.tick(dt,Sessions.list(),function(key)
         for _,current in ipairs(Sessions.list())do Effects.release(current,key)end
     end)
 end
@@ -989,6 +1025,7 @@ local function advance(current, dt)
         else for _,p in ipairs(current.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(current.token))end end
     end
     if not Sessions.has(current) or current.stopping then return end
+    if owner_lease_lapsed(current, dt) then stop_session(current, "owner_expired"); return end
     if not has_panel(current) then
         local expired = background_limit_reached(current, dt)
         if expired then stop_session(current, expired); return end
@@ -1171,10 +1208,11 @@ function M.navigate_to(id,scene_id)
 end
 
 function M.api_control_event(req)
-    local focused=Sessions.focused()
-    if not focused then return end
-    focused.event_index=(focused.event_index or 0)+1
-    local snapshot=Session.snapshot(focused)
+    local id=req.arguments and req.arguments.session_id
+    local target=id and Sessions.get(id)or Sessions.focused()
+    if not target then return end
+    target.event_index=(target.event_index or 0)+1
+    local snapshot=Session.snapshot(target)
     snapshot.integration={addon_id=req.addon_id,client_id=req.client_id,operation=req.operation}
     Events.emit('addon_control_changed',snapshot)
 end

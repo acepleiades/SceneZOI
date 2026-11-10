@@ -59,6 +59,9 @@ function M.in_scope(sub,event)
  return event.focused~=false
 end
 local function key(req,actor)return req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())..'|'..req.request_id end
+-- An add-on that reconnects through another Zoi can still ask about its own request.
+local latest={}
+local function request_key(req)return req.addon_id..'|'..req.client_id..'|'..req.request_id end
 local function emit_failure(row,code,message)
  row.status={phase='failed',code=code,message=message}
  local event={name='session_start_failed',request_id=row.req.request_id,addon_id=row.req.addon_id,code=code,message=message}
@@ -117,7 +120,8 @@ local function roster(args)
  return rows
 end
 local function refresh()
- if not runtime().snapshot()and not pending then
+ -- Every running scene keeps the catalog it started with.
+ if require('SceneZOI.Sessions').count()==0 and not pending and next(background_starts)==nil then
   require('SceneZOI.DataFiles').refresh();Catalog.refresh()
  end
  return Catalog.get_snapshot()
@@ -149,6 +153,7 @@ local function start(actor,req,row,data,preflight)
  local placement=M.placement(args.placement)
  local people=assert(roster(args));local member=false;for _,person in ipairs(people)do if person.id==args.initiator then member=true end end;assert(member,'Initiator must participate')
  local ids={};for _,person in ipairs(people)do ids[#ids+1]=person.id end
+ assert(not require('SceneZOI.SaveBridge').restore_waiting(),'restore_pending')
  assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id),'restore_pending')
  local Sessions=require('SceneZOI.Sessions')
  for _,id in ipairs(ids)do assert(not Sessions.holder(id),'participant_busy')end
@@ -170,7 +175,7 @@ local function start(actor,req,row,data,preflight)
  else chosen=assert(Search.random(allowed),'no_matching_scenes')end
  if args.context then assert(V.object(args.context)and #J.encode(args.context)<=4096,'Invalid/oversized add-on context')end
  if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id])end
- if background then runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm)end
+ if background then runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm,args.furniture_id)end
  if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),reservation=false,assets_checked=false,startup_rechecks=true}end
  serial=serial+1;row.token='api.'..os.time()..'.'..serial;row.age=0;row.retry=1;row.stage='depart';row.departures={}
  local reserved,reason=Sessions.reserve(row.token,ids,args.furniture_id);assert(reserved,reason)
@@ -212,7 +217,7 @@ local function execute(actor,req,row)
   V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().renew_session(args.session_id);return {renewed=true}
  end
  if op=='get_request_status'then
-  V.fields(args,{'request_id'},{'request_id'});local k=V.copy(req);k.request_id=args.request_id;local r=assert(cache[key(k,actor)],'request_not_found');return V.copy(r.status or {phase='completed',response=r.response})
+  V.fields(args,{'request_id'},{'request_id'});local k=V.copy(req);k.request_id=args.request_id;local r=assert(cache[key(k,actor)]or latest[request_key(k)],'request_not_found');return V.copy(r.status or {phase='completed',response=r.response})
  end
  if op=='stop_session'then V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().api_session(args.session_id).stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason='creator_stop'};runtime().stop('ok',args.session_id);return {accepted=true}end
  if op=='navigate_to_scene'then
@@ -275,8 +280,14 @@ function M.receive(actor,content)
   response.code=known[candidate]and candidate or 'invalid_request'
   if message:find('Scene is restricted for this session',1,true)then response.code='scene_restricted'end
  end
- row.response=response;cache[k]=row;order[#order+1]=k
- while #order>256 do local oldest=table.remove(order,1);if not pending or pending~=cache[oldest]then cache[oldest]=nil end end
+ row.response=response;cache[k]=row;order[#order+1]=k;latest[request_key(req)]=row
+ while #order>256 do
+  local oldest=table.remove(order,1);local gone=cache[oldest]
+  if gone and(not pending or pending~=gone)then
+   cache[oldest]=nil
+   if latest[request_key(gone.req)]==gone then latest[request_key(gone.req)]=nil end
+  end
+ end
  deliver(actor,'SceneZOI.API.Response',response)
 end
 -- Bounded on purpose: anything without a player panel needs a finite life.

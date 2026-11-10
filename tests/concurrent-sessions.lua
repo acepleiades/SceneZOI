@@ -84,9 +84,11 @@ assert(cfg.state:find('|host|',1,true)or cfg.state:find('host',1,true),'The pane
 assert(F.autosave.enabled==false and require('SceneZOI.Autosave').owner()==npc,'The suspension moves with the controlled Zoi')
 -- This scene never wrote a Start packet, and its panel still works.
 panel_reaches_focused(7)
+local input_released=0;package.loaded['SceneZOI.Native'].release_input=function()input_released=input_released+1 end
 F.controlled=10;R.tick(.25)
 assert(R.snapshot()==nil and cfg.focus_session:find('none',1,true),'A free Zoi shows no scene')
 for _=1,4 do R.tick(.25)end
+assert(input_released==1,'Leaving every scene gives the input back')
 assert(not cfg.state:find('error',1,true),'The mailbox keeps a Start packet: it must not run again while its scene is out of focus')
 assert(R.snapshot(player).phase=='playing','Leaving a scene does not end it')
 assert(F.autosave.enabled==true,'With no eligible owner the autosave setting is restored')
@@ -108,6 +110,14 @@ for _=1,10 do R.tick(.25)end;assert(R.snapshot(leased).phase=='playing')
 R.renew_session(leased)
 for _=1,10 do R.tick(.25)end;assert(R.snapshot(leased).phase=='playing','A renewal extends the lease')
 for _=1,10 do R.tick(.25)end;assert(R.snapshot(leased).phase=='exiting');release(leased,{7,8});assert(ended[leased].code=='owner_expired')
+-- Visiting a scene restarts neither its deadline nor its ceiling, and a lease runs even while it is on screen.
+local visited=background(7,8,true,{lifetime={deadline_seconds=6}});playing(visited,{7,8})
+for _=1,16 do R.tick(.25)end
+F.controlled=7;R.tick(.25);assert(R.snapshot().id==visited);F.controlled=10;R.tick(.25)
+for _=1,12 do R.tick(.25)end;assert(R.snapshot(visited).phase=='exiting','The time without a panel adds up');release(visited,{7,8});assert(ended[visited].code=='lifetime_expired')
+local watched=background(7,8,true,{lifetime={lease_seconds=2}});playing(watched,{7,8})
+F.controlled=7;for _=1,10 do R.tick(.25)end;assert(R.snapshot(watched).phase=='exiting','An owner that is gone ends the scene it is watched in');F.controlled=10;R.tick(.25)
+release(watched,{7,8});assert(ended[watched].code=='owner_expired')
 -- A failure stays in its own scene.
 F.sample_error=second;R.tick(.25);F.sample_error=nil
 assert(R.snapshot(second).phase=='exiting'and R.snapshot(npc).phase=='playing','One scene failing must not end another')
@@ -127,10 +137,19 @@ for _,id in ipairs({7,8})do F.reply(crowded,id,'ready','female:npc',1)end;R.tick
 assert(R.snapshot(crowded).phase=='preparing','Playback waits for a spot')
 R.reply(F.actors[7],P.pack(crowded,'placement','2300.0','0.0','0.0'));R.tick(.05);R.tick(.05)
 assert(R.snapshot(crowded).phase=='playing')
+-- Offered a spot another scene has since taken, it looks again rather than standing on it.
+local function placements()local n=0;for _,sent in ipairs(F.sent)do if sent.kind=='SceneZOI.Placement'then n=n+1 end end;return n end
+place(9,2310);place(10,2310);F.clear_sent()
+local racing=background(9,10,true);assert(placements()==1)
+F.clear_sent();R.reply(F.actors[9],P.pack(racing,'placement','2300.0','0.0','0.0'));assert(placements()==1,'A taken spot is not claimed')
+R.reply(F.actors[9],P.pack(racing,'placement','none','0'));assert(R.snapshot(racing).phase=='exiting');release(racing,{9,10})
 -- Exit: an ordinary end may stay in place, anything else goes back.
 F.clear_sent();R.stop('ok',crowded)
 for _,sent in ipairs(F.sent)do if sent.kind=='SceneZOI.Release'then assert(sent.fields[2]=='stay')end end
-release(crowded,{7,8})
+-- The simulation can refuse a spot the client thought was fine: the client then follows it back.
+local moved_back;package.loaded['SceneZOI.Native'].restore_position=function(person)moved_back=person.id end
+F.reply(crowded,7,'released','ok',1);assert(moved_back=='7','A refused stay does not leave the two sides apart')
+release(crowded,{8})
 -- No floor at all: a background scene gives up, cleanly.
 place(9,2005);place(10,2005)
 local nowhere=background(9,10,true)
@@ -143,9 +162,19 @@ offer(far_start,{9,10});R.tick(.05)
 place(10,9000)
 for _,id in ipairs({9,10})do F.reply(far_start,id,'ready','female:npc',1)end;R.tick(.05);R.tick(.05)
 assert(R.snapshot(far_start).phase=='exiting');release(far_start,{9,10});assert(ended[far_start].code=='participant_too_far')
+-- A Zoi streaming out ends only its own scene.
+place(9,7000);place(10,7000)
+local streamed=background(9,10,true);playing(streamed,{9,10})
+R.unregister(F.actors[9])
+assert(R.snapshot(streamed).phase=='exiting'and R.snapshot(npc).phase=='playing'and R.snapshot(near).phase~='exiting','Only that scene is affected')
+F.reply(streamed,10,'released');R.flush_notifications();assert(ended[streamed].code=='participant_unloaded')
 -- A save ends every scene; those with a panel and those without.
 cfg.save_request='save.1';R.tick(.25)
 assert(R.snapshot(near).phase=='exiting'and R.snapshot(npc).phase=='exiting')
 release(near,{5,6});release(npc,{3,4});assert(ended[npc].code=='saving')
 assert(not R.any_active())
+-- A Start packet left in the mailbox never runs again, however many scenes have ended since.
+F.controlled=10
+for _=1,34 do local passing=background(3,4,true);R.stop('ok',passing);release(passing,{3,4})end
+R.tick(.25);R.tick(.25);assert(not R.any_active(),'Nothing started by itself')
 print('Concurrent sessions passed: independent rosters and failures, panel and autosave following the controlled Zoi, bounded background life, owner leases, NPC-only cap, placement and save.')

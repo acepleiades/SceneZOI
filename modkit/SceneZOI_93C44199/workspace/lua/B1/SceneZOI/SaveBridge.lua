@@ -175,6 +175,13 @@ function M.tick(actors)
   end
  end end
 end
+-- A loaded journal that has not been read yet could name anyone.
+function M.restore_waiting()
+ local raw=read('save_restore')
+ if not raw or raw==seen then return false end
+ local f=P.unpack(raw)
+ return f~=nil and f[3]=='restore'
+end
 -- A start is refused only when it overlaps something not yet recovered.
 function M.overlaps(ids,furniture_id)
  for _,record in pairs(records)do if record.deferred then

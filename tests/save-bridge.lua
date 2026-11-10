@@ -41,6 +41,9 @@ B.offer(nil,d,{'scene.2','recovered'});assert(not record('scene.2')and not B.ove
 assert(not B.resolve('scene.2','4'))
 -- Loading: the whole journal is indexed at once, and only what it names is blocked.
 local function load_rows(rows,client,n)cfg.save_restore=P.pack(client,n,'restore',P.encode(J.encode({version=2,records=rows})));B.tick({})end
+-- A journal delivered but not yet read holds every start back.
+assert(not B.restore_waiting());cfg.save_restore=P.pack('early',1,'restore',P.encode(J.encode({version=2,records={}})));assert(B.restore_waiting(),'Not read yet')
+B.tick({});assert(not B.restore_waiting())
 load_rows({{token='saved.1',participants={['5']={token='saved.1'},['6']={token='saved.1'}},furniture={{id='8',owner='5'}}}},'new',2)
 assert(cfg.save_restore_state==P.pack('new',2,'ready','ok'),'Indexing must not wait for absent Zois')
 assert(B.overlaps({'5'})and B.overlaps({},'8')and not B.overlaps({'7'})and not B.overlaps({},'9'),'An unrelated start stays possible')
@@ -48,6 +51,8 @@ assert(record('saved.1').participants['5'],'Unresolved records stay in later sav
 sent={};local five=actor('5');B.tick({['5']=five});assert(#sent==2)
 B.offer(nil,five,{'saved.1','recovered'});assert(B.overlaps({},'8')and not B.overlaps({'5'}),'Participant and furniture recover independently')
 B.offer(nil,five,{'saved.1','furniture_recovered'});assert(not B.overlaps({},'8'))
+-- Repeated saves keep what is still unresolved.
+local before_saves=journal();B.tick({});B.tick({});assert(#journal().records==#before_saves.records and record('saved.1'),'Still there after more saves')
 -- A released Zoi can be confirmed through another route.
 assert(B.resolve('saved.1','6')and not record('saved.1'))
 -- Records from the single-session journal format still recover.

@@ -29,6 +29,7 @@ local first=start(1,1,2)
 R.stop('ok');F.reply(first,1,'released');F.reply(first,2,'released');R.flush_notifications()
 assert(ended[first].code=='ok'and ended[first].result_facts~=nil and row(ended[first],'1').restoration=='restored')
 assert(journal_people(first)==nil,'A clean finish leaves nothing to recover')
+assert(ended[first].focused==true,'The end of the scene on screen reaches whoever saw it start')
 -- One unloads: the rest clean up at once, and it is not called a timeout.
 local second=start(2,3,4)
 R.unregister(F.actors[3])

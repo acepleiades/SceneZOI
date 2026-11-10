@@ -134,6 +134,11 @@ function M.hold(record, anchor)
     return true
 end
 
+-- The simulation refused to leave this Zoi where the scene put it, so the client follows it back.
+function M.restore_position(record)
+    record.actor:K2_SetActorTransform(record.transform, false, nil, true)
+end
+
 function M.restore(record)
     if not record.changed then return end
     local failures = {}

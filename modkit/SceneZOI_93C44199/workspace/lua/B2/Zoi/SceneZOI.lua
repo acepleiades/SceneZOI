@@ -71,7 +71,7 @@ local function release(self, owner, silent)
         self.retired_order[#self.retired_order + 1] = lease.token
         if #self.retired_order > 32 then self.retired[table.remove(self.retired_order, 1)] = nil end
         if not silent then
-            reply(owner, lease.token, "released", "ok")
+            reply(owner, lease.token, "released", "ok", lease.stay_refused and 1 or 0)
             pcall(relay_release, owner, lease.token)
         end
     else
@@ -262,6 +262,7 @@ local function receive(self, owner, kind, content)
         if self.lease and self.lease.token == token then
             -- Only stay if the game agrees this floor is walkable; otherwise go back as usual.
             self.lease.stay = fields[2] == "stay" and require("SceneZOI.Placement").walkable(owner)
+            self.lease.stay_refused = fields[2] == "stay" and not self.lease.stay
             release(self, owner)
         else
             -- Retire even an unseen token: a delayed Prepare must not reacquire it.

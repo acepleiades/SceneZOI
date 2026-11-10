@@ -256,6 +256,9 @@
             show(window.SceneZOILocalization.text('Retrying Exit and waiting for all participants…'));
         });
     });
+    // Ended on purpose or by its own limits: nothing for the player to dismiss.
+    var quietEnds = {ok: true, saving: true, character_editor: true, lifetime_expired: true, owner_expired: true,
+        goal_unreachable: true, required_stage_unavailable: true, no_progress: true, playback_budget_exceeded: true};
     var errors = {
         transition_destination_error: window.SceneZOILocalization.text('The transition finished, but its destination could not load. The scene has ended.'),
         busy: window.SceneZOILocalization.text('A participant is already owned by another scene.'),
@@ -317,7 +320,7 @@
             else {
                 active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
                 pendingCommand = null;
-                if (phase === 'idle' && (code === 'ok' || code === 'saving' || code === 'character_editor')) closePanel();
+                if (phase === 'idle' && quietEnds[code]) closePanel();
                 else show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));
             }
         }).catch(function () {}).then(function () { reading = false; });
@@ -392,7 +395,7 @@
             if (!active || exiting || !hasPlan) return;
             var enabled = autoMode ? '0' : '1';
             autoCount = Math.max(autoCount + 1, counterBase + 1);
-            writePacket('auto_mode', ['SZ2', client, String(sequence), 'auto_mode', String(autoCount), enabled].join('|')).catch(function () {});
+            writePacket('auto_mode', ['SZ2', client, String(sequence), 'auto_mode', String(autoCount), enabled, String(revision)].join('|')).catch(function () {});
         });
     }
     var readingPlan = false;

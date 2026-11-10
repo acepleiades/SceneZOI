@@ -38,10 +38,14 @@ function M.release(s,key)
  registrations[key]=nil
  if s and s.addon_controls then s.addon_controls[key]=nil end
 end
-function M.tick(dt,s,release)
+function M.tick(dt,sessions,release)
  local expired={};for key,r in pairs(registrations)do r.age=r.age+dt;if r.age>=12 then expired[#expired+1]=key end end
  table.sort(expired)
- for _,key in ipairs(expired)do M.release(s,key);if release then release(key)end end
+ for _,key in ipairs(expired)do
+  registrations[key]=nil
+  for _,s in ipairs(sessions)do M.release(s,key)end
+  if release then release(key)end
+ end
 end
 function M.speed(s)
  local factor=1
@@ -103,5 +107,10 @@ function M.ended(s,snapshot)
  while #result_order>32 do results[table.remove(result_order,1)]=nil end
 end
 function M.result(id)return V.copy(results[id])end
+-- A confirmation can arrive after the session has ended and its result was kept.
+function M.note_restoration(token,id,value)
+ local result=results[token];if not result then return end
+ for _,person in ipairs(result.participants or {})do if person.id==id then person.restoration=value end end
+end
 function M.reset()registrations,results,result_order={},{},{} end
 return M

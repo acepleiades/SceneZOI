@@ -39,10 +39,10 @@ function M.new()
     package.loaded["SceneZOI.SceneSearch"] = {allowed = yes}
     package.loaded["SceneZOI.AddonEffects"] = {idle = noop, retain = noop, restore = noop, tick = noop, release = noop, player_outfit = noop}
     package.loaded["SceneZOI.AddonControl"] = {reset = noop, tick = noop, init = noop, enter = noop, sample = noop, speed = function() return 1 end,
-        ended = noop, release = noop, facts = function() return {} end}
+        ended = noop, release = noop, facts = function() return {} end, note_restoration = noop}
     package.loaded["SceneZOI.ModeGuard"] = {update = function() return {editor = fixture.editor == true} end, can_restore_input = function() return true, {} end}
     package.loaded["SceneZOI.SceneVisuals"] = {tick = function() return {} end, restore = noop}
-    package.loaded["SceneZOI.Furniture"] = {valid = yes, prepare = noop}
+    package.loaded["SceneZOI.Furniture"] = {valid = yes, prepare = noop, actor = noop}
     package.loaded["SceneZOI.Tasks"] = {new = noop}
     package.loaded["SceneZOI.TaskRoutes"] = {select = noop}
     package.loaded["SceneZOI.TaskActions"] = {trigger = noop}

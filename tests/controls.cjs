@@ -99,10 +99,10 @@ async function run(){
   assert.equal(toggle.style.display,'block','It is shown while the scene has a plan');
   assert.doesNotMatch(planned.elements['scene-navigation'].innerHTML||'',/data-option/,'Manual choices are hidden while Auto-mode drives');
   toggle.listeners.click();await flush();
-  assert.match(writes(planned,'auto_mode').at(-1),/^SZ2\|host\|6\|auto_mode\|\d+\|0$/,'Turning it off names the scene it controls');
+  assert.match(writes(planned,'auto_mode').at(-1),/^SZ2\|host\|6\|auto_mode\|\d+\|0\|\d+$/,'Turning it off names the scene it controls');
   planned.setPlan('SZ2|host|6|1|0|1|3');planned.timers[250]();await flush();
   toggle.listeners.click();await flush();
-  assert.match(writes(planned,'auto_mode').at(-1),/\|1$/,'And back on');
+  assert.match(writes(planned,'auto_mode').at(-1),/\|1\|\d+$/,'And back on');
   const counts=writes(planned,'auto_mode').map(v=>Number(v.split('|')[4]));assert(counts[1]>counts[0],'Each command is newer than the last');
   planned.setFocus('SZ2|2|none');planned.timers[250]();await flush();
   assert.equal(toggle.style.display,'none','A panel with no scene shows no toggle');
