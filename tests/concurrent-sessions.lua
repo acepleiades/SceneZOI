@@ -46,6 +46,12 @@ local function background(a,b,household,options)
  return result
 end
 local function playing(token,ids)offer(token,ids);R.tick(.05);ready(token,ids);assert(R.snapshot(token).phase=='playing')end
+local function panel_reaches_focused(count)
+ local shown=Sessions.focused()
+ cfg.navigation=P.pack(shown.client,shown.sequence,'navigate',tostring(count),'test.nowhere',tostring(shown.revision))
+ R.tick(.25)
+ assert(cfg.navigation_state:find('|'..count..'|',1,true),'The panel reaches the focused scene')
+end
 local function place(id,x)F.actors[id].K2_GetActorLocation=function()return {X=x,Y=0,Z=0}end end
 for id,x in pairs({[3]=1000,[4]=1000,[5]=2000,[6]=2000,[7]=3000,[8]=3000,[9]=5000,[10]=5000})do place(id,x)end
 -- The player's own scene.
@@ -76,6 +82,8 @@ F.controlled=3;heartbeat('host','1');R.tick(.25)
 assert(R.snapshot().id==npc and cfg.focus_session:find(npc,1,true),'Controlling a participant shows that scene')
 assert(cfg.state:find('|host|',1,true)or cfg.state:find('host',1,true),'The panel state now belongs to that scene')
 assert(F.autosave.enabled==false and require('SceneZOI.Autosave').owner()==npc,'The suspension moves with the controlled Zoi')
+-- This scene never wrote a Start packet, and its panel still works.
+panel_reaches_focused(7)
 F.controlled=10;R.tick(.25)
 assert(R.snapshot()==nil and cfg.focus_session:find('none',1,true),'A free Zoi shows no scene')
 for _=1,4 do R.tick(.25)end

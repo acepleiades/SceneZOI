@@ -764,6 +764,18 @@ local function auto_mode_request(raw)
     end
 end
 
+-- Every control carries its own session identity, so it can be read whatever the request mailbox holds.
+local function apply_panel_controls(focused)
+    playback_request(read("playback"))
+    outfit_request(read("outfit"))
+    Settings.request(focused,"task_rates",read("settings_task_rates"))
+    Settings.request(focused,"audio",read("settings_audio"))
+    Personality.request(focused,read("personality"))
+    VoicePersonality.request(focused,read("voice"))
+    navigate(read("navigation"))
+    auto_mode_request(read("auto_mode"))
+end
+
 local function poll()
     -- Cleanup finishing is too early for input focus: wait for the DOM close acknowledgement.
     local focused = Sessions.focused()
@@ -798,8 +810,12 @@ local function poll()
         end
     end
     local raw = read("request")
+    local fields = raw ~= boot_request and Protocol.unpack(raw) or nil
+    -- An add-on's start never wrote a Start packet, and a switch of control leaves another scene's there.
+    local leaving = focused and fields and fields[1] == focused.client and fields[2] == focused.sequence and
+        (fields[3] == "exit" or fields[3] == "save")
+    if focused and not leaving then apply_panel_controls(focused) end
     if not raw or raw == boot_request then return end
-    local fields = Protocol.unpack(raw)
     if not fields or #fields < 3 then return end
     local client, sequence, action = fields[1], fields[2], fields[3]
     local previous = completed[client .. "|" .. sequence]
@@ -819,17 +835,7 @@ local function poll()
             end
             return
         end
-        if action == "exit" or action == "save" then M.stop(action=="save"and "saving"or "ok")
-        else
-            playback_request(read("playback"))
-            outfit_request(read("outfit"))
-            Settings.request(focused,"task_rates",read("settings_task_rates"))
-            Settings.request(focused,"audio",read("settings_audio"))
-            Personality.request(focused,read("personality"))
-            VoicePersonality.request(focused,read("voice"))
-            navigate(read("navigation"))
-            auto_mode_request(read("auto_mode"))
-        end
+        if action == "exit" or action == "save" then M.stop(action=="save"and "saving"or "ok") end
         return
     end
     if action == "start" then
