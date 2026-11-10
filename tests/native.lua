@@ -145,51 +145,44 @@ assert(not pcall(Native.sample,record,1.5),"Persistent preemption must still tak
 now=2.1
 Native.sample(record,1.5)
 interrupt("ANIM_F_SomeOther_Interaction_Montage")
-assert(not pcall(Native.sample,record,1.6),"Unrelated interruption must retain the failure path")
+Native.sample(record,1.6)
+assert(positions[record.montage]==1.6,"Any other clip is taken back too")
 Native.restore(record)
--- A Zoi the player does not control: a game task or reaction is taken back too.
-record=Native.capture(actor);record.control='npc';record.id='7'
-Native.enter(record,asset,anchor)
-now=10
+-- Whatever takes the slot is taken back, whoever the player controls, within the same bound.
 local function take_back(name)
     local prior=record.montage
     interrupt(name)
     Native.sample(record,2.5)
     assert(record.montage~=prior and record.asset==asset and positions[record.montage]==2.5,'The track resumes at the shared position')
 end
-take_back('ANIM_M_BroomTray_Use_Interaction_Montage')
-assert(active[unrelated],'Only the scene track is touched')
-take_back('ANIM_F_Object_Guitar01_Play_Interaction_Montage')
-take_back('ANIM_M_SomeReaction_Interaction_Montage')
-interrupt('ANIM_M_BroomTray_Use_Interaction_Montage')
-assert(not pcall(Native.sample,record,2.6),'A game that keeps taking the slot still ends the scene')
-now=20
-interrupt('ANIM_M_Something_Other_Montage')
-assert(not pcall(Native.sample,record,2.7),'Only the interaction slot family is taken back')
-Native.enter(record,asset,anchor)
--- Bounded over the whole scene, not just per window.
-local Config=require('SceneZOI.Config')
-record.task_recoveries=Config.npc_track_recoveries
-now=30
-interrupt('ANIM_M_BroomTray_Use_Interaction_Montage')
-assert(not pcall(Native.sample,record,2.8),'A scene is not interrupted forever')
--- Dodges keep their own handling, whatever the count.
-Native.enter(record,asset,anchor)
-now=40
-take_back('ANIM_F_Avoid_L45_Interaction_Montage')
-Native.restore(record)
--- Whoever the player controls right now keeps today's behavior, even if it was an NPC at entry.
-record=Native.capture(actor);record.control='npc';record.id='7'
-Native.enter(record,asset,anchor)
-local saved_controller=UE.UGameplayStatics.GetPlayerController
-UE.UGameplayStatics.GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=7}end}end
-now=50
-interrupt('ANIM_M_BroomTray_Use_Interaction_Montage')
-assert(not pcall(Native.sample,record,3),'The player\'s own Zoi is left alone')
-UE.UGameplayStatics.GetPlayerController=saved_controller
-Native.enter(record,asset,anchor)
-Native.restore(record)
-print("Track recovery passed: dodges, NPC game tasks, shared position, per-window and per-scene bounds, and the player's own Zoi left alone.")
+local function emptied()
+    local prior=record.montage
+    active[record.montage]=nil;foreign=nil
+    Native.sample(record,2.5)
+    assert(record.montage~=prior and positions[record.montage]==2.5,'An empty slot resumes at the shared position')
+end
+now=10
+for _,control in ipairs({'npc','controlled'})do
+    record=Native.capture(actor);record.control=control;record.id='7'
+    Native.enter(record,asset,anchor)
+    now=now+10
+    take_back('ANIM_M_BroomTray_Use_Interaction_Montage')
+    assert(active[unrelated],'Only the scene track is touched')
+    take_back('ANIM_F_Clap_Stand_Montage')
+    take_back('ANIM_F_turn_R_90_Locomotion_Montage')
+    interrupt('ANIM_M_Something_Else_Montage')
+    assert(not pcall(Native.sample,record,2.6),'A game that keeps taking the slot still ends the scene')
+    now=now+3
+    Native.enter(record,asset,anchor)
+    emptied()
+    active[record.montage]=nil;foreign=nil
+    now=now+0.1
+    Native.sample(record,2.5)
+    now=now+3
+    for count=1,8 do take_back('ANIM_F_Clap_Stand_Montage');now=now+3 end
+    Native.restore(record)
+end
+print("Track recovery passed: any clip or empty slot, on any Zoi, at the shared position, with a repeat limit but no cap over a scene.")
 
 Native.release_input(actor)
 print("Native adapter checks passed: original animation instance preserved across 20 sessions; only owned montages stopped; movement/collision restored; game input routing used.")
