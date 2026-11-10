@@ -15,6 +15,7 @@ local handler={SelectWidget=widget,IsA=function()return true end}
 local noop=function()end
 package.loaded["SceneZOI.Runtime"]={authorize_rejected_focus=function(_,t)authorized=t end}
 package.loaded["SceneZOI.DataFiles"]={refresh=noop}
+package.loaded["SceneZOI.Sessions"]={holder=function(id)return id=="8"and"other"or nil end}
 package.loaded["SceneZOI.Catalog"]={refresh=noop,get_snapshot=function()return {nodes={}}end}
 package.loaded["SceneZOI.Traits"]={capture=function(a)return {id=tostring(a:GetEntityId().Value)}end}
 package.loaded["SceneZOI.Localization"]={text=function(t)return t end,toast=noop,refresh=noop}
@@ -63,6 +64,10 @@ assert(started=="2+3:pack.pair"and authorized=="npc"and cfg.selection_state:find
 open("gone");count="2 / 3";tick();visible=false;tick()
 E.reply(actor,P.pack("gone","selected","2+9"));tick()
 assert(authorized=="gone"and cfg.selection_state:find("|unavailable|no_starting_scene|",1,true),"Someone out of range: a message, no scene")
+actors["8"]=actor
+open("held");count="2 / 3";tick();visible=false;tick()
+E.reply(actor,P.pack("held","selected","1+8"));tick()
+assert(authorized=="held"and cfg.selection_state:find("|unavailable|participant_busy|",1,true),"A Zoi already in a scene is refused with its own message")
 solo_exists=false;count="1 / 3"
 open("none");assert(enabled==false and dimmed==true and caption=="OK","No solo scene for this Zoi: the old rule stands")
 hovered=true;tick();visible=false;tick();hovered=false

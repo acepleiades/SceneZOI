@@ -142,16 +142,17 @@ local function update(dt,actors,busy)
         if p.result[2]=="selected"then
             local Files=require("SceneZOI.DataFiles");Files.refresh()
             local Catalog=require("SceneZOI.Catalog");Catalog.refresh()
-            local roster,ids,loaded,with_self={},{},true,false
+            local roster,ids,loaded,with_self,held={},{},true,false,false
             local self_id=Protocol.id(p.actor:GetEntityId())
             for id in p.result[3]:gmatch("[^+]+")do
                 ids[#ids+1]=id
                 if id==self_id then with_self=true end
+                if require("SceneZOI.Sessions").holder(id) then held=true end
                 if actors[id] then roster[#roster+1]=require("SceneZOI.Traits").capture(actors[id]) else loaded=false end
             end
             local profile
             if p.furniture then profile=assert(require('SceneZOI.Furniture').available(p.furniture),'The bed became unavailable during selection')end
-            local chosen=loaded and require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,roster,nil,profile) or nil
+            local chosen=loaded and not held and require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,roster,nil,profile) or nil
             -- With the controlled Zoi unselected the scene runs between the others, on the background path.
             local npc_started=chosen and not with_self and pcall(require("SceneZOI.AddonAPI").start_from_picker,p.actor,ids,chosen,p.furniture)
             if npc_started then
@@ -161,9 +162,9 @@ local function update(dt,actors,busy)
                 local roles={};for role,id in pairs(chosen.bindings)do roles[#roles+1]=role..":"..id end;table.sort(roles)
                 publish(p.token,"selected",p.result[3],chosen.node,table.concat(roles,"+"))
             else
-                pcall(require('SceneZOI.Localization').toast,'SceneZOI could not find a suitable starting scene for the selected Zois.')
+                pcall(require('SceneZOI.Localization').toast,held and 'A participant is already owned by another scene.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
                 require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
-                publish(p.token,"unavailable","no_starting_scene")
+                publish(p.token,"unavailable",held and "participant_busy" or "no_starting_scene")
             end
         else publish(p.token,p.result[2],p.result[3])end
         pending=nil
