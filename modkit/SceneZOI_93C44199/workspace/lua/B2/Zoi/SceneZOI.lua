@@ -7,6 +7,7 @@ local SceneData = require("SceneZOI.SceneData")
 local Binding = require("SceneZOI.Binding")
 local Save=require("SceneZOI.SaveGuard")
 local Recovery=require("SceneZOI.SaveRecovery")
+local Members=require("SceneZOI.SceneMembers")
 local M = {}
 
 local function reply(owner, token, kind, detail, revision, diagnostic)
@@ -61,6 +62,7 @@ local function release(self, owner, silent)
     end)
     if #errors == 0 then
         self.lease = nil
+        Members.remove(owner:GetEntityId())
         if lease.recovery_request then
             self.recovery_done=self.recovery_done or {};self.recovery_done[lease.recovery_request]=true
             Save.reply(owner,lease.recovery_request,'recovered')
@@ -195,6 +197,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
         entry_location = UE.FVector(location.X, location.Y, location.Z),
         entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll),
     }
+    Members.add(owner:GetEntityId())
     Outfit.recover(owner,node.cleanup_layers)
     Wardrobe.capture(owner, self.lease)
     -- Capture only. The UI must cache this save record before any native mutation.

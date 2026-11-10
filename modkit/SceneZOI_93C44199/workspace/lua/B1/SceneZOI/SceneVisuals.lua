@@ -1,6 +1,5 @@
 -- Presentation-only leases on scene participants' selection markers. Never deactivate native FX.
--- Speech bubbles stay under the game's control: the game exposes no owner for a bubble, so
--- hiding them would also hide every bystander's.
+-- Speech bubbles are handled at their source, per Zoi, by the B2 Scripts.B2Script_SpeechBubble chunk.
 local M={}
 local markers={}
 local last_error

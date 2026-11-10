@@ -25,4 +25,4 @@ V.tick(actors,true,{['1']=true});a.fail=true;V.tick(actors,false);assert(not a.b
 V.tick(actors,true,{['1']=true});a.bHiddenInGame=false;V.tick(actors,false);assert(a.bHiddenInGame==false)
 -- A released component is forgotten.
 V.tick(actors,true,{['1']=true});a.dead=true;local status=V.tick({},true,{});assert(status.markers==0)
-print('Scene visuals passed: participant markers across scenes, restoration, retries and released components. Bubbles stay under game control.')
+print('Scene visuals passed: participant markers across scenes, restoration, retries and released components.')

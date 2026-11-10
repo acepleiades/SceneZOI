@@ -195,8 +195,8 @@ readback and author acceptance separate.
 
 The female O is accepted. New facial poses and an actual head-attached tongue mesh
 still need their own fit tests. Head-parent replacement and generic eye-pose handoff
-have isolated regression coverage. Local-UI-wide bubble suppression, fixed session
-membership and the one-session limit remain current boundaries.
+have isolated regression coverage. Fixed session membership remains a current
+boundary, and only script-made bubbles are withheld for participants.
 
 Earlier dated statements of "pending" in retained investigation notes apply to
 those checkpoints; current acceptance above supersedes them where it covers the
