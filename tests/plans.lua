@@ -204,7 +204,7 @@ s=at(90,24.9);step(s,1,.001);assert(s.plan.stage==1)
 s=at(80,35);step(s,2,.001);assert(s.plan.stage==2);s.tasks.participants['2'].charge.value=1;step(s,3,.001);assert(s.plan.stage==2,'Once entered, a stage is kept')
 -- Several boundaries at once are entered one at a time, each with a playing update.
 s=at(99,99);local stages={}
-for _=1,8 do step(s,1,.001);stages[#stages+1]=s.plan.stage end
+for _=1,8 do s.plan.dwell=dwell;step(s,1,.001);stages[#stages+1]=s.plan.stage end
 assert(s.plan.stage==4,'Queued stages are all reached')
 local jumps=0;for i=2,#stages do local d=stages[i]-stages[i-1];assert(d<=1,'One stage per playing update');jumps=jumps+d end
 -- Required stages: a selector must have its loop actually play.
@@ -242,7 +242,7 @@ s=staged({goals={goal_lead,goal_partner},stages=4,stage_preferences=preference},
 assert(Plan.route(s,s.plan)=='to.c','Late in the plan the late preference wins')
 -- A stage change prefers a different loop, and keeps the current one when it is the only choice.
 s=staged({goals={goal_lead,goal_partner},stages=2},'a',2)
-s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49;step(s,2,1)
+s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49;s.plan.dwell=dwell;step(s,2,1)
 assert(s.plan.stage==2 and s.node.id~='a','A new stage plays a different loop')
 s=session({end_policy={type='duration',seconds=10},stages=2},'still');s.plan.stage_count=2
 step(s,12,.5);assert(s.plan.stage==2 and s.node.id=='still','The only loop is reused')
@@ -250,8 +250,8 @@ step(s,12,.5);assert(s.plan.stage==2 and s.node.id=='still','The only loop is re
 node('x',{lead=full(1),partner=full(1)},{'h'});node('h',nil,{'x','y'});node('y',{lead=full(1),partner=capped(1,50)},{'h'})
 s=staged({goals={goal_lead,goal_partner},stages=2},'x',2)
 s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49
-step(s,1,1);assert(s.plan.stage==2 and s.node.id=='h','Through the hub')
-step(s,1,.1);assert(s.node.id=='y','On to the different loop, not back to x')
+s.plan.dwell=dwell;step(s,1,1);assert(s.plan.stage==2 and s.node.id=='h','Through the hub')
+s.plan.dwell=dwell;step(s,1,.1);assert(s.node.id=='y','On to the different loop, not back to x')
 -- A timed plan with no goals divides its duration evenly across stages.
 s=session({end_policy={type='duration',seconds=8},stages=4},'a');s.plan.stage_count=4
 step(s,3,1);assert(s.plan.stage==2);step(s,2,1);assert(s.plan.stage==3,'Even division of the duration')
@@ -272,4 +272,59 @@ assert(Plan.set_auto(s,true)and Plan.locked(s));step(s,1,1);assert(s.tasks.parti
 s=session({goals={goal_lead}},'both');Plan.set_auto(s,false)
 step(s,10,1);assert(s.tasks.participants['1'].charge.completions==1 and not actions.stop)
 Plan.set_auto(s,true);step(s,1,.1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
-print('Plans passed: validation, feasibility, entry choice, caps, repeated completions, stall and unreachable ends, clocks, pause, add-on ending and bounds.')
+-- A meter held at its maximum still needs a real completion: the plan waits, within the no-progress window.
+s=session({goals={goal_lead}},'both');s.tasks.participants['1'].charge.value=100
+for _=1,math.floor(C.plan_no_progress_seconds)-2 do assert(not Plan.tick(s,1,1),'A completion hold is not a dead end') end
+assert(s.tasks.participants['1'].charge.completions==0 and s.node.id=='both')
+local waited;for _=1,10 do waited=Plan.tick(s,1,1) or waited end
+assert(waited and waited.stop=='no_progress','A hold that never lifts still ends')
+-- Unequal rates: the slowest goal sets the stage.
+node('uneven',{lead=full(20),partner=full(5)},{})
+s=staged({goals={goal_lead,goal_partner},stages=4},'uneven',4);step(s,5,1)
+assert(s.tasks.participants['1'].charge.completions==1 and s.tasks.participants['2'].charge.value==25 and s.plan.stage==2)
+-- A required loop must connect to where the goals can finish.
+node('gate',nil,{'dead','fin'},{starting_hub=true});node('dead',{},{},{content_rating='SUGGESTIVE'});node('fin',{lead=full(),partner=full()},{'dead'})
+node('gate2',nil,{'dead2','fin2'},{starting_hub=true});node('dead2',{},{},{content_rating='SUGGESTIVE'});node('fin2',{lead=full(),partner=full()},{})
+ok,err=pcall(picked,{goals={goal_lead},required_stages={{match=suggestive}}},{row('gate2')})
+assert(not ok and tostring(err):find('required_stage_unavailable',1,true),'Two dead ends cannot both be played')
+assert(pcall(picked,{goals={goal_lead},required_stages={{match=suggestive}}},{row('gate')}),'Finishing first and then going there is viable')
+-- It finishes the goal first when the required loop has no way back.
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'gate');step(s,1,dwell+.1)
+assert(s.node.id=='fin','A dead-end requirement waits for the goal')
+step(s,10,1);assert(s.tasks.participants['1'].charge.completions==1 and s.node.id=='fin')
+s.plan.dwell=dwell;step(s,1,.1);assert(s.node.id=='dead','Then it plays what was required')
+step(s,1,.1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
+-- Reachable only through a completion route: possible, not provable, and reported as such.
+node('door',{lead=capped(10,50),partner=capped(10,50)},{},{task_completion_routes={charge={lead='late'}}});node('late',{lead=full(),partner=full()},{})
+spec=plan_spec({goals={goal_lead}});assert(Plan.pick_entry({nodes=nodes},spec,{row('door')},people,{}).scene_id=='door'and spec.route_uncertain==true)
+-- With neither goals nor a timer the plan cannot pass its first stage.
+refused({end_policy={type='addon'},stages=2,required_stages={{stage=2,match=suggestive}}},'required_stage_unavailable')
+-- Authored responses resolve before anything moves on.
+s=session({goals={goal_lead}});s.completion_effects={shakes={['1']={}}};step(s,1,dwell+.1);assert(s.node.id=='hub','A shake holds navigation')
+s.completion_effects=nil;s.voice_responses={channels={['1']={}}};step(s,1,dwell+.1);assert(s.node.id=='hub','A voice response holds navigation')
+s.voice_responses=nil;step(s,1,dwell+.1);assert(s.node.id~='hub')
+s=session({goals={goal_lead},end_policy={type='addon'}},'both');s.completion_effects={motion={}};step(s,12,1)
+assert(#actions==0 and s.plan.state=='resolving','The milestone waits for the response')
+s.completion_effects=nil;step(s,1,1);assert(actions[1]=='plan_goals_met')
+-- A timed plan runs its time, whatever its goals are doing, and reports what it did not reach.
+s=session({goals={goal_lead},end_policy={type='duration',seconds=120}},'still');step(s,110,1);assert(not actions.stop,'Past the stall window and still playing')
+step(s,11,1);assert(actions.stop=='ok'and s.plan.outcome=='duration_elapsed'and not Plan.snapshot(s).goals[1].satisfied)
+-- The longest allowed duration ends as a success, not as a blown budget.
+s=session({end_policy={type='duration',seconds=C.plan_max_playback_seconds,clock='real'}},'still');step(s,1,C.plan_max_playback_seconds+1)
+assert(actions.stop=='ok'and s.plan.outcome=='duration_elapsed')
+-- A capped goal gets a loop that can move it, even while another goal is still advancing.
+s=session({goals={goal_lead,goal_partner}},'light');step(s,6,1);assert(s.node.id=='both','Reassessed for the goal the cap stopped')
+-- A required loop is visited before the final completion where possible.
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'a');step(s,1,dwell+.1)
+assert(s.node.id=='b'and s.tasks.participants['1'].charge.completions==0,'The required loop comes first')
+-- Rapid boundary crossings do not flip through loops.
+s=at(99,99);step(s,8,.016);assert(actions.navigations==0,'Navigation waits for the dwell')
+-- Any goal rising resets the stall timer, even while another one decays.
+s=session({goals={goal_lead,goal_partner}},'both')
+for i=1,65 do s.tasks.participants['1'].charge.value=i;s.tasks.participants['2'].charge.value=60-i*.9;assert(not Plan.tick(s,1.4,1)or actions.stop==nil) end
+assert(s.plan.state=='running','A rising goal is progress')
+-- Taking over clears a route in progress, and a loop chosen by hand earns no stage credit.
+s=session({goals={goal_lead}});s.plan.heading='both';Plan.set_auto(s,false);assert(s.plan.heading==nil)
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'a');Plan.set_auto(s,false);s.node=nodes.b;s.revision=s.revision+1;Plan.set_auto(s,true);step(s,1,.1)
+assert(not s.plan.required_stages[1].met,'Credit comes through auto-mode entry')
+print('Plans passed: validation, feasibility, routes out, entry choice, caps, holds, unequal rates, responses, stall and unreachable ends, clocks, pause, add-on ending and bounds.')

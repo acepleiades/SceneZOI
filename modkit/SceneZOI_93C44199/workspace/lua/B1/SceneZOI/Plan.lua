@@ -87,22 +87,30 @@ function M.parse(args,definitions,ids,metadata)
  local multiplier=args.task_progress_multiplier==nil and 1 or args.task_progress_multiplier
  V.number(multiplier,C.plan_min_multiplier,C.plan_max_multiplier)
  local least,most=stage_range(args.stages)
- return {goals=goals,end_policy=end_policy(args.end_policy,#goals>0),task_progress_multiplier=multiplier,
-  stage_min=least,stage_max=most,required_stages=required_stages(args.required_stages,metadata,least),
+ local policy=end_policy(args.end_policy,#goals>0)
+ local required=required_stages(args.required_stages,metadata,least)
+ -- Neither goals nor a timer can move this plan past its first stage.
+ if #goals==0 and policy.type=='addon'then
+  for _,row in ipairs(required)do assert(row.stage==nil or row.stage==1,'required_stage_unavailable')end
+ end
+ return {goals=goals,end_policy=policy,task_progress_multiplier=multiplier,
+  stage_min=least,stage_max=most,required_stages=required,
   stage_preferences=stage_preferences(args.stage_preferences,metadata),auto_speed=auto_speed(args.auto_speed)}
 end
 
-local function targets(node)
+local function targets(node,with_completion_routes)
  if node.kind=='transition'then return {node.destination}end
  local out={}
  for _,edge in ipairs(node.navigation or {})do out[#out+1]=edge.target end
- for _,routes in pairs(node.task_completion_routes or {})do for _,target in pairs(routes)do out[#out+1]=target end end
+ if with_completion_routes then
+  for _,routes in pairs(node.task_completion_routes or {})do for _,target in pairs(routes)do out[#out+1]=target end end
+ end
  return out
 end
 local function finishes(directive)return directive~=nil and directive.rate>0 and(directive.cap_percent or 100)>=100 end
 
 -- Walks the authored graph from a proposed entry. A node counts only if the fixed roster can play it.
-local function route_check(nodes,entry,spec,people,restrictions)
+local function explore(nodes,entry,spec,people,restrictions,with_completion_routes)
  local Search=search();local Binding=require('SceneZOI.Binding')
  local start=nodes[entry.scene_id];local roles={}
  for role,id in pairs(entry.bindings)do roles[id]=role end
@@ -110,34 +118,73 @@ local function route_check(nodes,entry,spec,people,restrictions)
  local function playable(node)
   return V.equal(node.furniture,start.furniture)and Search.allowed(nodes,node,restrictions)and pcall(Binding.resolve,roster,node)
  end
- local visited,queue,finishable,matched,head,uncertain={[entry.scene_id]=true},{entry.scene_id},{},{},1,false
+ local visited,queue,finishable,matched,head,uncertain,links={[entry.scene_id]=true},{entry.scene_id},{},{},1,false,{}
  while head<=#queue do
-  local node=nodes[queue[head]];head=head+1
+  local id=queue[head];local node=nodes[id];head=head+1
+  links[id]={}
   if node.kind~='transition'then
    for _,goal in ipairs(spec.goals)do
     local directive=((node.tasks or {})[roles[goal.participant_id]]or {})[goal.task_id]
-    if finishes(directive)then finishable[goal.participant_id..'|'..goal.task_id]=true end
+    if finishes(directive)then
+     local key=goal.participant_id..'|'..goal.task_id
+     finishable[key]=finishable[key]or {};finishable[key][id]=true
+    end
    end
    for index,requirement in ipairs(spec.required_stages or {})do
-    if Search.matches(node,requirement.match)then matched[index]=true end
+    if Search.matches(node,requirement.match)then matched[index]=matched[index]or {};matched[index][id]=true end
    end
   end
-  for _,target in ipairs(targets(node))do
+  for _,target in ipairs(targets(node,with_completion_routes))do
    local candidate=nodes[target]
-   if candidate and not visited[target]and playable(candidate)then
-    if #queue>=C.plan_route_limit then uncertain=true else visited[target]=true;queue[#queue+1]=target end
+   if candidate and playable(candidate)then
+    links[id][target]=true
+    if not visited[target]then
+     if #queue>=C.plan_route_limit then uncertain=true else visited[target]=true;queue[#queue+1]=target end
+    end
    end
   end
  end
- if not uncertain then
-  for _,goal in ipairs(spec.goals)do
-   if not finishable[goal.participant_id..'|'..goal.task_id]then return false,false,'goal_unreachable'end
+ if uncertain then return true,true end
+ local function reaches(from,to)
+  if from==to then return true end
+  local seen,stack={[from]=true},{from}
+  while #stack>0 do
+   for target in pairs(links[table.remove(stack)]or {})do
+    if target==to then return true end
+    if not seen[target]then seen[target]=true;stack[#stack+1]=target end
+   end
   end
-  for index in ipairs(spec.required_stages or {})do
-   if not matched[index]then return false,false,'required_stage_unavailable'end
-  end
+  return false
  end
- return true,uncertain
+ for _,goal in ipairs(spec.goals)do
+  if not finishable[goal.participant_id..'|'..goal.task_id]then return false,false,'goal_unreachable'end
+ end
+ -- A required loop must connect to where each goal can finish, in one order or the other.
+ for index in ipairs(spec.required_stages or {})do
+  if not matched[index]then return false,false,'required_stage_unavailable'end
+  local workable=false
+  for id in pairs(matched[index])do
+   local connected=true
+   for _,goal in ipairs(spec.goals)do
+    local linked=false
+    for finish in pairs(finishable[goal.participant_id..'|'..goal.task_id])do
+     if reaches(id,finish)or reaches(finish,id)then linked=true;break end
+    end
+    if not linked then connected=false;break end
+   end
+   if connected then workable=true;break end
+  end
+  if not workable then return false,false,'required_stage_unavailable'end
+ end
+ return true,false
+end
+
+local function route_check(nodes,entry,spec,people,restrictions)
+ local viable,uncertain,why=explore(nodes,entry,spec,people,restrictions,false)
+ if viable then return viable,uncertain end
+ -- A completion route may open a path that automatic navigation cannot take: possible, not provable.
+ if explore(nodes,entry,spec,people,restrictions,true)then return true,true end
+ return false,false,why
 end
 
 local function hash(text,seed)
@@ -188,7 +235,7 @@ end
 function M.new(spec)
  local plan=V.copy(spec)
  plan.auto_mode=true;plan.state='running';plan.stage=1;plan.stage_count=plan.stage_count or 1;plan.stage_played=false
- plan.real_used,plan.game_used,plan.stall_age,plan.dwell,plan.wait_age,plan.progress_mark=0,0,0,0,0,-1
+ plan.real_used,plan.game_used,plan.stall_age,plan.dwell,plan.wait_age,plan.marks=0,0,0,0,0,{}
  plan.seed=plan.seed or 1;plan.credited={};plan.required_stages=plan.required_stages or J.array({})
  plan.stage_preferences=plan.stage_preferences or J.array({})
  if plan.auto_speed==nil then plan.auto_speed=false end
@@ -236,33 +283,12 @@ local function open_requirement(plan,requirement)
  return not requirement.met and(requirement.stage==nil or requirement.stage==plan.stage)
 end
 
--- Worth of a candidate loop for this stage. Nil means it moves nothing the plan still needs.
-local function node_value(session,plan,node)
- local value,useful=0,false
- local has_work=false
- for _,requirement in ipairs(plan.required_stages)do
-  if not requirement.met then has_work=true end
-  if open_requirement(plan,requirement)and search().matches(node,requirement.match)then value=value+1000;useful=true end
- end
- local least=math.huge
- each_open(session,plan,function(_,progress)least=math.min(least,progress);has_work=true end)
- each_open(session,plan,function(goal,progress,entry,maximum)
-  local can,full=advance(session,node,goal,entry,maximum)
-  if can then
-   useful=true;value=value+1
-   if full then value=value+10 end
-   if progress<=least then value=value+100 end
-  end
- end)
- if has_work and not useful then return nil end
- return value+preference_bonus(plan,node,fraction(plan))+hash(node.id,plan.seed)
-end
-
 -- Visits what the fixed roster can reach along authored edges, nearest first. Never a jump.
-local function walk(session,visit)
+local function walk(session,visit,from)
  local Catalog=require('SceneZOI.Catalog');local Search=search();local Binding=require('SceneZOI.Binding')
  local nodes=Catalog.get_snapshot().nodes
- local visited,queue,head={[session.node.id]=true},{{node=session.node,depth=0}},1
+ from=from or session.node
+ local visited,queue,head={[from.id]=true},{{node=from,depth=0}},1
  while head<=#queue and head<=C.plan_route_limit do
   local row=queue[head];head=head+1
   if row.depth>0 and visit(row)then return end
@@ -278,6 +304,46 @@ local function walk(session,visit)
  end
 end
 
+-- A required loop is worth visiting only if the goals still open can be reached from it.
+local function route_out(session,plan,node)
+ local missing={}
+ each_open(session,plan,function(goal,_,entry,maximum)
+  if not advance(session,node,goal,entry,maximum)then missing[goal]={entry,maximum}end
+ end)
+ if next(missing)==nil then return true end
+ walk(session,function(row)
+  if row.node.kind~='transition'then
+   for goal,state in pairs(missing)do
+    if advance(session,row.node,goal,state[1],state[2])then missing[goal]=nil end
+   end
+  end
+  return next(missing)==nil
+ end,node)
+ return next(missing)==nil
+end
+
+-- Worth of a candidate loop for this stage. Nil means it moves nothing the plan still needs.
+local function node_value(session,plan,node)
+ local value,useful=0,false
+ local has_work=false
+ for _,requirement in ipairs(plan.required_stages)do
+  if not requirement.met then has_work=true end
+  if open_requirement(plan,requirement)and search().matches(node,requirement.match)and route_out(session,plan,node)then value=value+1000;useful=true end
+ end
+ local least=math.huge
+ each_open(session,plan,function(_,progress)least=math.min(least,progress);has_work=true end)
+ each_open(session,plan,function(goal,progress,entry,maximum)
+  local can,full=advance(session,node,goal,entry,maximum)
+  if can then
+   useful=true;value=value+1
+   if full then value=value+10 end
+   if progress<=least then value=value+100 end
+  end
+ end)
+ if has_work and not useful then return nil end
+ return value+preference_bonus(plan,node,fraction(plan))+hash(node.id,plan.seed)
+end
+
 -- The next edge toward the best loop, and that loop, so a route through a hub keeps its destination.
 function M.route(session,plan)
  local best
@@ -290,7 +356,7 @@ function M.route(session,plan)
   end
   return false
  end)
- if best then return best.first,best.target end
+ if best then return best.first,best.target,best.value end
 end
 
 local function edge_toward(session,target)
@@ -311,9 +377,12 @@ local function requirements_met(plan)
  return true
 end
 
+-- Authored responses to a completion resolve before the plan moves on or ends.
 local function settled(session)
  local effects=session.completion_effects
- return not(effects and effects.motion)
+ if effects and(effects.motion or next(effects.shakes or {}))then return false end
+ local voices=session.voice_responses
+ return not(voices and next(voices.channels or {}))
 end
 
 local function finish(plan,code,outcome)
@@ -326,6 +395,8 @@ local function clock_seconds(plan,clock)return clock=='real'and plan.real_used o
 -- A stage is earned by its loop actually playing. A later visit to the same stage earns nothing.
 local function credit_stage(session,plan)
  plan.stage_played=true
+ -- A loop the player chose by hand earns nothing: credit comes through auto-mode entry.
+ if plan.manual_revision~=nil and plan.manual_revision==session.revision then return false end
  local key=plan.stage..':'..session.revision
  if plan.credited[key]then return false end
  plan.credited[key]=true
@@ -350,6 +421,29 @@ local function stage_due(session,plan)
  return math.max(plan.stage,math.min(due,plan.stage_count))
 end
 
+-- A hold or a paused rate is temporary. The no-progress window decides if it never lifts.
+local function held(session,plan,node)
+ local found=false
+ each_open(session,plan,function(goal,_,entry,maximum)
+  local directive=((node.tasks or {})[role_of(session,goal.participant_id)]or {})[goal.task_id]
+  if directive and directive.rate and directive.rate>0 and(Control.task(session,goal.participant_id,goal.task_id)<=0 or
+   (entry.value>=maximum and(directive.cap_percent or 100)>=100))then found=true end
+ end)
+ return found
+end
+
+-- This loop still does something, but a requirement or the slowest goal needs another one.
+local function wants_move(session,plan,node)
+ for _,requirement in ipairs(plan.required_stages)do
+  if open_requirement(plan,requirement)and not search().matches(node,requirement.match)then return true end
+ end
+ local least,lagging=math.huge,false
+ each_open(session,plan,function(goal,progress,entry,maximum)
+  if progress<least then least,lagging=progress,not advance(session,node,goal,entry,maximum)end
+ end)
+ return lagging
+end
+
 function M.tick(session,dt,scale)
  local plan=session.plan
  if not plan or plan.state=='finished'or not plan.auto_mode or session.preparing or session.stopping or scale<=0 or dt<=0 then return nil end
@@ -358,57 +452,69 @@ function M.tick(session,dt,scale)
  plan.dwell=plan.dwell+dt
  local earned=credit_stage(session,plan)
  if earned then plan.stall_age=0 end
- if plan.real_used>=C.plan_max_playback_seconds then return finish(plan,'playback_budget_exceeded')end
  local policy=plan.end_policy
+ local timed=policy.type=='duration'
+ if timed and clock_seconds(plan,policy.clock)>=policy.seconds and settled(session)then
+  return finish(plan,'ok','duration_elapsed')
+ end
+ if plan.real_used>=C.plan_max_playback_seconds then return finish(plan,'playback_budget_exceeded')end
  local goals_done,requirements_done=goals_met(session,plan),requirements_met(plan)
  local done=goals_done and requirements_done
  local has_targets=#plan.goals>0 or #plan.required_stages>0
- if policy.type=='duration'and clock_seconds(plan,policy.clock)>=policy.seconds and settled(session)then
-  return finish(plan,'ok','duration_elapsed')
- end
  if done and has_targets then
-  if policy.type=='goals'then
-   if settled(session)then return finish(plan,'ok','goals_met')end
-   plan.state='resolving'
-   return nil
-  end
-  if policy.type=='addon'then
-   if plan.state~='waiting'then plan.state='waiting';return {event='plan_goals_met'}end
-   plan.wait_age=plan.wait_age+dt
-   if plan.wait_age>=C.plan_wait_seconds then return finish(plan,'owner_expired','wait_expired')end
-  end
+  if timed then return nil end
+  if not settled(session)then plan.state='resolving';return nil end
+  if policy.type=='goals'then return finish(plan,'ok','goals_met')end
+  if plan.state~='waiting'then plan.state='waiting';return {event='plan_goals_met'}end
+  plan.wait_age=plan.wait_age+dt
+  if plan.wait_age>=C.plan_wait_seconds then return finish(plan,'owner_expired','wait_expired')end
   return nil
  end
- for _,requirement in ipairs(plan.required_stages)do
-  if not requirement.met and requirement.stage and requirement.stage<plan.stage then return finish(plan,'required_stage_unavailable')end
+ if not timed then
+  for _,requirement in ipairs(plan.required_stages)do
+   if not requirement.met and requirement.stage and requirement.stage<plan.stage then return finish(plan,'required_stage_unavailable')end
+  end
  end
+ if not settled(session)then return nil end
+ local rested=plan.dwell>=C.plan_min_dwell_seconds
  -- One decision at a time: a route through a hub reaches its destination before anything else is decided.
  if plan.heading then
   if session.node.id==plan.heading then plan.heading=nil
   else
    local edge=edge_toward(session,plan.heading)
-   if edge and plan.stage_played then plan.dwell=0;return {navigate=edge}end
-   if not edge then plan.heading=nil end
+   if edge then
+    if plan.stage_played and rested then plan.dwell=0;return {navigate=edge}end
+    return nil
+   end
+   plan.heading=nil
   end
  end
  if plan.stage_played and stage_due(session,plan)>plan.stage then
-  plan.stage,plan.stage_played,plan.dwell=plan.stage+1,false,0
+  plan.stage,plan.stage_played=plan.stage+1,false
   local edge,target=M.route(session,plan)
   plan.heading=target
-  return {event='plan_stage_changed',navigate=edge}
+  if edge and rested then plan.dwell=0;return {event='plan_stage_changed',navigate=edge}end
+  return {event='plan_stage_changed'}
  end
  if not has_targets then return nil end
- local total=0
- for _,goal in ipairs(plan.goals)do local _,progress=goal_state(session,goal);total=total+progress end
- if total>plan.progress_mark+1e-6 then plan.progress_mark,plan.stall_age=total,0
- else plan.stall_age=plan.stall_age+dt end
- if plan.stall_age>=C.plan_no_progress_seconds then return finish(plan,'no_progress')end
- if plan.dwell>=C.plan_min_dwell_seconds and not advancing(session,plan,session.node)then
-  local edge,target=M.route(session,plan)
-  if edge then plan.dwell=0;plan.heading=target;return {navigate=edge}end
-  if not goals_done then return finish(plan,'goal_unreachable')end
-  return finish(plan,'required_stage_unavailable')
- end
+ local moved=false
+ each_open(session,plan,function(goal,progress)
+  local key=goal.participant_id..'|'..goal.task_id
+  if progress>(plan.marks[key]or -1)+1e-6 then plan.marks[key],moved=progress,true end
+ end)
+ plan.stall_age=moved and 0 or plan.stall_age+dt
+ if plan.stall_age>=C.plan_no_progress_seconds and not timed then return finish(plan,'no_progress')end
+ if not rested then return nil end
+ local stuck=not advancing(session,plan,session.node)
+ if not stuck and not wants_move(session,plan,session.node)then return nil end
+ local edge,target,value=M.route(session,plan)
+ local here=node_value(session,plan,session.node)
+ plan.dwell=0
+ if edge and(stuck or not here or value>here)then plan.heading=target;return {navigate=edge}end
+ -- A timed plan runs its time and reports what it did not reach.
+ if not stuck or timed or held(session,plan,session.node)then return nil end
+ if not goals_done then return finish(plan,'goal_unreachable')end
+ return finish(plan,'required_stage_unavailable')
 end
 
 function M.rate_factor(session)
@@ -438,8 +544,11 @@ end
 function M.set_auto(session,enabled)
  local plan=session.plan
  if not plan or plan.state=='finished'or plan.auto_mode==enabled then return false end
- plan.auto_mode=enabled
- if enabled then plan.dwell,plan.stall_age,plan.progress_mark=0,0,-1 end
+ plan.auto_mode,plan.heading=enabled,nil
+ if enabled then
+  plan.dwell,plan.stall_age,plan.marks=0,0,{}
+  if session.revision~=plan.handover_revision then plan.manual_revision=session.revision end
+ else plan.handover_revision=session.revision end
  return true
 end
 
