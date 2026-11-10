@@ -66,8 +66,13 @@ function M.apply(owner, lease, slots)
     assert(appearance, "Participant has no appearance component")
     local reason = inzoi.EB1ChangeOutfitReason.Script
     local previous = tostring(appearance:GetActiveCostumeIdByReason(reason))
+    -- A leftover of ours from an earlier scene: this lease has no record of it, and nothing else uses the id.
+    if previous == COSTUME then
+        appearance:RemoveCostumeByCostumeId(COSTUME, reason)
+        previous = tostring(appearance:GetActiveCostumeIdByReason(reason))
+    end
     -- Script is a shared game reason. Refuse to replace another system's existing layer.
-    assert(previous == "None" or previous == "", "Another script already controls the participant's outfit")
+    assert(previous == "None" or previous == "", "Another script already controls the participant's outfit: " .. previous)
     local style = inzoi.FB1StyleSetting()
     -- EmplaceActiveOutfit retains the struct's Reason; its separate argument does not assign it.
     style.Reason, style.Outfit.CostumeId = reason, COSTUME

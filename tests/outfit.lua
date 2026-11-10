@@ -52,6 +52,10 @@ appearance.active="AnotherMod"
 local lease={}
 assert(not pcall(enter,owner,lease) and not lease.outfit)
 assert(appearance.active=="AnotherMod","Existing script layer was replaced")
+appearance.active="SceneZOI_Demo_Outfit"
+local leftover={}
+enter(owner,leftover);assert(leftover.outfit and appearance.remove_count>0,"A leftover layer of our own is cleared, not refused")
+outfit.restore(owner,leftover)
 appearance.active="None"
 enter(owner,lease);appearance.remove_failure=true
 assert(not pcall(outfit.restore,owner,lease) and lease.outfit)

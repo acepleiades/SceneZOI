@@ -53,12 +53,17 @@ function M.ready(attachment, body, profile_id)
     -- final skin MID. Do not guess a color or expose the attachment during that gap.
     if not dynamic(material) then
         if attachment.color then attachment.color.frames = 0 end
+        attachment.color_wait = "no_dynamic_body_material"
         return false
     end
     local skin = material:K2_GetVectorParameterValue(profile.source_skin_parameter)
     local chromophore = material:K2_GetVectorParameterValue(profile.source_chromophore_parameter)
     local hair, source = hair_color(attachment.actor,profile.source_hair_parameter)
-    if not valid(skin) or not valid(hair) then return false end
+    if not valid(skin) or not valid(hair) then
+        attachment.color_wait = not valid(skin) and "skin" or "hair"
+        return false
+    end
+    attachment.color_wait = nil
     assert(valid(chromophore) and chromophore.R > 0.000001 and chromophore.G > 0.000001 and chromophore.B > 0.000001,
         "Body material has no usable Chromophore Contribution for stock skin matching")
     local component = attachment.component
@@ -94,7 +99,7 @@ end
 
 function M.status(attachment)
     local state = attachment and attachment.color
-    if not state or not state.signature then return "color=waiting" end
+    if not state or not state.signature then return "color=waiting:" .. tostring(attachment and attachment.color_wait or "unknown") end
     return "skin_linear=" .. state.skin_value .. ":skin_chromophore=" .. state.chromophore_value ..
         ":hair_linear=" .. state.hair_value .. ":hair_source=" .. state.hair_source
 end
