@@ -297,7 +297,7 @@ end
 function M.start_from_picker(actor,ids,chosen,furniture)
  local req={api_version=1,addon_id='scenezoi.picker',client_id='picker',request_id='picker.'..os.time()..'.'..math.random(1,1073741823),operation='start_scene',
   arguments={participants=J.array(ids),initiator=ids[1],background=true,scene_id=chosen.node,furniture_id=furniture,placement={max_start_distance_m=100}}}
- return start(actor,req,{req=req,actor=actor},refresh())
+ return start(actor,req,{req=req,actor=actor,origin_id=ids[1]},refresh())
 end
 function M.placement(value)
  local out={max_start_distance_cm=C.background_max_start_distance_cm,exit='restore'}

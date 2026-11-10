@@ -356,6 +356,10 @@ local function plan_placement(current, must_fit)
     for _, participant in ipairs(current.participants) do
         if participant.role == current.node.anchor_participant then owner = participant end
     end
+    -- The picker's NPC scene plays where the first Zoi picked is standing.
+    for _, participant in ipairs(current.participants) do
+        if current.origin_id and tostring(participant.id) == current.origin_id then owner = participant; current.place_owner = participant end
+    end
     local point = owner.actor:K2_GetActorLocation()
     if Sessions.spot_free(current.token, point, Config.standing_spacing_cm) then
         Sessions.claim_spot(current.token, point)
@@ -444,6 +448,7 @@ function M.start_background(row)
     -- NPCs nobody asked a length for run for the player's default, counted on the game's calendar.
     local lifetime = npc_only and row.default_length and {game_minutes = Settings.npc_scene_minutes()} or row.lifetime
     current.npc_only, current.lifetime, current.exit_policy = npc_only, lifetime, row.placement.exit
+    current.origin_id = row.origin_id
     if row.plan then current.plan = Plan.new(row.plan) end
     current.max_start_distance_cm = row.placement.max_start_distance_cm
     Sessions.add(current)

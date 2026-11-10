@@ -13,7 +13,7 @@ end
 
 function M.enter(current)
     for _, participant in ipairs(current.participants) do Native.rebind(participant) end
-    local anchor_owner = assert(current.bindings[current.node.anchor_participant])
+    local anchor_owner = assert(current.place_owner or current.bindings[current.node.anchor_participant])
     if not current.anchor then
         current.anchor = anchor_owner.mesh:K2_GetComponentToWorld()
         if current.spot then

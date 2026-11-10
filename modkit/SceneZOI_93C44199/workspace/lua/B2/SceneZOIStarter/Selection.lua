@@ -39,12 +39,13 @@ function M.create(leader,characters)
         local value=id(character:GetEntityId())
         if not seen[value] then seen[value]=true;ids[#ids+1]=value end
     end
-    table.sort(ids,function(a,b)
+    -- Without the controlled Zoi the game's order is the order they were picked in: the first one sets the place.
+    if seen[p.owner_id] then table.sort(ids,function(a,b)
         if a==b then return false end
         if a==p.owner_id then return true end
         if b==p.owner_id then return false end
         return tonumber(a)<tonumber(b)
-    end)
+    end) end
     p.ids=ids;p.confirmed=not p.expired and #ids>=1 and #ids<=Config.picker_cap
     return true
 end
