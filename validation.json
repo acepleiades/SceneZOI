@@ -77,7 +77,6 @@
     "max_npc_sessions": 15,
     "standing_spacing_cm": 200,
     "background_max_start_distance_cm": 1500,
-    "manual_background_seconds": 60,
     "background_default_seconds": 600,
     "background_max_seconds": 7200,
     "plan_no_progress_seconds": 90,

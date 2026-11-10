@@ -94,11 +94,11 @@ assert(not cfg.state:find('error',1,true),'The mailbox keeps a Start packet: it 
 assert(R.snapshot(player).phase=='playing','Leaving a scene does not end it')
 assert(F.autosave.enabled==true,'With no eligible owner the autosave setting is restored')
 assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','Scenes keep playing without the panel')
--- A manual scene that lost its panel has a short life; an add-on's scene its own.
+-- A manual scene stays active while the player is elsewhere.
 for _=1,240 do R.tick(.25)end
 R.flush_notifications()
-assert(R.snapshot(player).phase=='exiting'and R.snapshot(npc).phase=='playing','A manual scene gets a bounded background interval')
-release(player,{1,2});assert(ended[player].code=='lifetime_expired')
+assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','A manual scene has no time limit without its panel')
+R.stop('ok',player);release(player,{1,2});assert(ended[player].code=='ok')
 assert(Sessions.holder('1')==nil,'Its roster is free again')
 -- Returning to a scene before its limit resets it.
 F.controlled=5;R.tick(.25);assert(R.snapshot().id==second)

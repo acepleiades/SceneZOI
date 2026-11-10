@@ -151,8 +151,8 @@ walkable floor, up to 6 metres away. If there is none, a background start ends w
 The panel, task tray, input and autosave suspension belong to the session of the
 **controlled Zoi**. Switching to a participant of another session switches them;
 switching to a Zoi outside every session hides the panel while the other sessions
-keep playing. A manual session left without its panel has 60 seconds before it ends
-with `lifetime_expired`. `get_session` without an ID returns the focused session;
+keep playing. A manual session left without its panel keeps playing until the player returns to
+Exit it, a save, or its Zois unload. `get_session` without an ID returns the focused session;
 `list_sessions` returns all of them.
 
 Subscriptions take an optional `scope`: `focused` (default, matching earlier

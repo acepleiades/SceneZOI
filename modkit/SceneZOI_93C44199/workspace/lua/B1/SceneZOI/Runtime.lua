@@ -929,10 +929,8 @@ end
 -- Every scene that can run without a panel has a finite life.
 local function background_limit_reached(current, dt)
     local lifetime = current.lifetime
-    if not lifetime then
-        current.unfocused_age = (current.unfocused_age or 0) + dt
-        return current.unfocused_age >= Config.manual_background_seconds and "lifetime_expired" or nil
-    end
+    -- A scene started by hand stays active while the player is elsewhere; Exit, a save or unloading ends it.
+    if not lifetime then return nil end
     -- An add-on's scene adds up its time without a panel: visiting it restarts nothing.
     current.background_age = (current.background_age or 0) + dt
     if current.background_age >= Config.background_max_seconds then return "lifetime_expired" end
