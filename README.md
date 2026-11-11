@@ -76,8 +76,9 @@ SceneZOI builds and runs independently of either HZoi repository.
 
 ## Current scope and limits
 
-- **One active session.** The initiating controlled Zoi participates in it.
-  Concurrent sessions and autonomous NPC initiation are deferred.
+- **Concurrent sessions.** Scenes can run side by side, and add-ons can start
+  scenes for NPCs or autonomous scenes driven by a plan. NPC-only scenes are capped
+  at two. See [concurrent and background sessions](docs/addons.md#concurrent-and-background-sessions).
 - **Fixed membership.** Participants and role assignments remain fixed until Exit.
   The manual picker permits two or three total Zois; larger rosters require an
   integration and compatible authored content.
@@ -92,9 +93,9 @@ SceneZOI builds and runs independently of either HZoi repository.
   cancelled interactions and departed gameplay groups are not reconstructed.
 - **Navigation-based sessions.** Predetermined watch-only animation sequences are
   deferred. Ordinary authored transition nodes are supported.
-- **Presentation boundaries.** Speech/thought bubbles are suppressed across the
-  local UI during a session. Custom facial poses, meshes and furniture models need
-  their own visual fit checks.
+- **Presentation boundaries.** Speech bubbles and thought icons from game scripts
+  are withheld for Zois in a session, and everyone else keeps theirs. Custom facial
+  poses, meshes and furniture models need their own visual fit checks.
 
 The [validation report](validation.json) distinguishes automated checks, native
 diagnostic evidence and author visual acceptance. The [runtime contracts](docs/tier1-contracts.md)

@@ -15,10 +15,9 @@ packs/add-ons, exact steps, expected behavior and actual behavior. Add focused
 diagnostics or a minimal JSON/Lua example where available. State whether evidence
 comes from an isolated test, native readback or something seen/heard in game.
 
-Larger proposals should be discussed before implementation. SceneZOI
-currently supports one controlled-initiator session with fixed participants.
-Concurrent sessions, autonomous NPC starts and predetermined watch-only
-sequences are deferred.
+Larger proposals should be discussed before implementation. SceneZOI runs
+concurrent sessions with fixed participants, and add-ons can start autonomous
+scenes. Predetermined watch-only sequences are deferred.
 
 ## Keep ownership clear
 

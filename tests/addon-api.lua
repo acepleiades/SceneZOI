@@ -13,7 +13,7 @@ local current,stops,navigations=nil,0,0;local cfg,responses,events={},{},{};loca
 package.loaded['SceneZOI.Traits']={capture=function(actor)return {id=actor.id,body=actor.body}end,matches=function(requirement,person)return requirement.body==person.body end}
 package.loaded['SceneZOI.DataFiles']={refresh=function()end}
 package.loaded['SceneZOI.Catalog']={refresh=function()return data end,get_snapshot=function()return data end,get=function(id)return assert(data.nodes[id])end,public_node=function(n)return V.copy(n)end}
-package.loaded['SceneZOI.Runtime']={actors={['1']=a,['2']=b},snapshot=function()return current end,is_addon_owner=function(addon,client,id)return current and current.id==id and current.addon_id==addon and current.client_id==client end,api_session=function()return current end,api_session=function()return current end,stop=function()stops=stops+1;current=nil end,navigate_to=function(_,id)navigations=navigations+1;return {scene_id=id}end}
+package.loaded['SceneZOI.Runtime']={actors={['1']=a,['2']=b},snapshot=function()return current end,is_addon_owner=function(addon,client,id)return current and current.id==id and current.addon_id==addon and current.client_id==client end,api_session=function()return current end,api_session=function()return current end,stop=function()stops=stops+1;current=nil;require('SceneZOI.Sessions').release('session.1')end,navigate_to=function(_,id)navigations=navigations+1;return {scene_id=id}end}
 inzoi={cli={execute=function(command)
  if command=='entity.get_possessed'then return true,'','{"entity_id":1}'end
  local key=command:match(' key=([%w_]+)')

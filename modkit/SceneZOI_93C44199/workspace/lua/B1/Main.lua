@@ -18,7 +18,7 @@ function M.on_tick(dt, module_dt)
     discovery_elapsed = discovery_elapsed + (module_dt or dt)
     if discovery_elapsed >= 2 then
         discovery_elapsed = 0
-        if not Runtime.is_active() then
+        if not Runtime.any_active() then
             local files = require("SceneZOI.DataFiles")
             local previous = files.get()
             if files.refresh() ~= previous then

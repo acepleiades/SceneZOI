@@ -9,7 +9,7 @@ These pages describe the active framework at the repository root. Dated investig
 | Ownership and native declarations | [Package split](package-split.md) |
 | Runtime architecture | [Design](architecture.md) and [lifecycle contracts](tier1-contracts.md) |
 | Participants and native picker | [Group support](group-support.md) |
-| Proposed concurrent sessions and auto-mode | [Autonomous scenes design](autonomous-scenes-design.md) |
+| Concurrent sessions and auto-mode | [Add-on API](addons.md#concurrent-and-background-sessions), [design notes](autonomous-scenes-design.md) |
 | Furniture | [Furniture](furniture.md) |
 | Animation authoring | [Authoring](authoring.md) and [worked content-pack examples](content-examples.md) |
 | Scene tags, actions and ratings | [Metadata](scene-metadata.md) |

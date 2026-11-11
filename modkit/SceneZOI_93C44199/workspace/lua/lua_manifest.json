@@ -18,7 +18,8 @@
   "chunkScripts": {
     "B2": [
       "Systems.B2ZoiGroupManager",
-      "Components.B2SlotComponent"
+      "Components.B2SlotComponent",
+      "Scripts.B2Script_SpeechBubble"
     ]
   }
 }

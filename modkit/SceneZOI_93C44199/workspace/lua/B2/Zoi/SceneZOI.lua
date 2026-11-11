@@ -7,6 +7,7 @@ local SceneData = require("SceneZOI.SceneData")
 local Binding = require("SceneZOI.Binding")
 local Save=require("SceneZOI.SaveGuard")
 local Recovery=require("SceneZOI.SaveRecovery")
+local Members=require("SceneZOI.SceneMembers")
 local M = {}
 
 local function reply(owner, token, kind, detail, revision, diagnostic)
@@ -19,6 +20,17 @@ local function set_autonomy(owner, enable)
     local ok, message = inzoi.cli.execute("autonomy.set_enable entity_id=" ..
         Protocol.id(owner:GetEntityId()) .. " enable=" .. tostring(enable))
     assert(ok, message or "Autonomy change failed")
+end
+
+-- If this Zoi's client actor has unloaded, its own reply cannot arrive. Say so through the controlled Zoi.
+local function relay_release(owner, token)
+    local ok, _, data = inzoi.cli.execute("entity.get_possessed")
+    local controlled = ok and data and data:match('"entity_id"%s*:%s*"?(%d+)')
+    local own = Protocol.id(owner:GetEntityId())
+    if not controlled or controlled == own then return end
+    local target = inzoi.FB1EntityId()
+    target.Value = tonumber(controlled)
+    inzoi.message.send_to_client(target, "SceneZOI.Reply", Protocol.pack(token, "released_unloaded", own))
 end
 
 local function release(self, owner, silent)
@@ -35,6 +47,7 @@ local function release(self, owner, silent)
     restore("furniture", function() if lease.saved_furniture then require('SceneZOI.FurnitureLease').restore_saved(owner,lease.saved_furniture)end end)
     restore("outfit", function() Outfit.restore(owner, lease) end)
     restore("position", function()
+        if lease.stay then return end
         owner:SetLocationAndRotationOnlySimul(lease.entry_location, lease.entry_rotation, false)
     end)
     restore("collision", function() owner:SetCollisionEnabled(lease.collision) end)
@@ -49,6 +62,7 @@ local function release(self, owner, silent)
     end)
     if #errors == 0 then
         self.lease = nil
+        Members.remove(owner:GetEntityId())
         if lease.recovery_request then
             self.recovery_done=self.recovery_done or {};self.recovery_done[lease.recovery_request]=true
             Save.reply(owner,lease.recovery_request,'recovered')
@@ -56,7 +70,10 @@ local function release(self, owner, silent)
         self.retired[lease.token] = true
         self.retired_order[#self.retired_order + 1] = lease.token
         if #self.retired_order > 32 then self.retired[table.remove(self.retired_order, 1)] = nil end
-        if not silent then reply(owner, lease.token, "released", "ok") end
+        if not silent then
+            reply(owner, lease.token, "released", "ok", lease.stay_refused and 1 or 0)
+            pcall(relay_release, owner, lease.token)
+        end
     else
         local message = table.concat(errors, "; ")
         if lease.last_error ~= message then
@@ -122,7 +139,7 @@ local function advance_prepare(self, owner)
         lease.tasks_settled = true
     end
     local directive = lease.node.outfits and lease.node.outfits[lease.role]
-    Outfit.apply(owner, lease, directive and directive.remove_slots or {})
+    if Outfit.apply(owner, lease, directive and directive.remove_slots or {}) == false then return end
     lease.ready = true
     reply(owner, lease.token, "ready", lease.body .. ":" .. lease.control, lease.revision)
     inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
@@ -180,6 +197,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
         entry_location = UE.FVector(location.X, location.Y, location.Z),
         entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll),
     }
+    Members.add(owner:GetEntityId())
     Outfit.recover(owner,node.cleanup_layers)
     Wardrobe.capture(owner, self.lease)
     -- Capture only. The UI must cache this save record before any native mutation.
@@ -218,6 +236,8 @@ local function receive(self, owner, kind, content)
         self.recovery_done=self.recovery_done or {}
         if self.recovery_done[token]then Save.reply(owner,token,'recovered');return end
         local data=Json.decode((assert(Protocol.decode(fields[2]),'Invalid recovery packet')))
+        -- This lease already released itself; restoring again would move a Zoi that has since walked away.
+        if self.retired[data.token]then Save.reply(owner,token,'recovered');return end
         if self.lease and (not self.lease.releasing or self.lease.token~=data.token)then return end
         if not self.lease then self.lease=assert(Recovery.lease(data),'Missing recovery record')end
         self.lease.recovery_request=token
@@ -230,12 +250,21 @@ local function receive(self, owner, kind, content)
         if count > (lease.outfit_counter or 0) then
             if not Wardrobe.toggle(lease, fields[3], fields[4] == "1") then return end
             if fields[6] == "1" then Outfit.keep_unmerged(owner, lease) end
-            Outfit.apply(owner, lease, {})
+            -- Not acknowledged while the game is still queueing the change, so the panel's resend retries it.
+            if Outfit.apply(owner, lease, {}) == false then return end
             lease.outfit_counter = count
         end
         inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
+    elseif kind == "SceneZOI.Placement" then
+        local ok, x, y, z = pcall(require("SceneZOI.Placement").find, owner, tonumber(fields[2]), Protocol.decode(fields[3]))
+        if not ok then print("[SceneZOI] Floor search failed: " .. tostring(x)) end
+        reply(owner, token, "placement", ok and x or "none", ok and y or 0, ok and z and tostring(z) or nil)
     elseif kind == "SceneZOI.Release" then
-        if self.lease and self.lease.token == token then release(self, owner)
+        if self.lease and self.lease.token == token then
+            -- Only stay if the game agrees this floor is walkable; otherwise go back as usual.
+            self.lease.stay = fields[2] == "stay" and require("SceneZOI.Placement").walkable(owner)
+            self.lease.stay_refused = fields[2] == "stay" and not self.lease.stay
+            release(self, owner)
         else
             -- Retire even an unseen token: a delayed Prepare must not reacquire it.
             self.retired[token] = true

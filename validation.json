@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "date": "2026-11-09",
-  "build": "20261109-pedestrian-recovery-1",
-  "ui_build": "20261109-game-menu-only-1",
+  "build": "20261109-concurrent-sessions-1",
+  "ui_build": "20261109-concurrent-sessions-ui-1",
   "content_build": "20261105-localization-1",
   "release_status": "SceneZOI 1.1.7 was packaged and passed exact ZIP clean-start standing playback, Exit and repeat entry. HZoi 1.1.0 unchanged.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
@@ -31,9 +31,6 @@
     "authored_bed_support_cm": 0,
     "female_bed_gaze": "self body hand_l",
     "male_bed_gaze": "omitted: forward",
-    "controller_max_distance_cm": 3500,
-    "controller_distance_grace_real_seconds": 0.5,
-    "controller_distance_poll_real_seconds": 0.2,
     "facial_pose_preset": "scenezoi.open_o",
     "facial_pose_declarations": 1,
     "player_audio_volume_percent": {
@@ -76,7 +73,15 @@
       "pl-PL",
       "tr-TR",
       "nl-NL"
-    ]
+    ],
+    "max_npc_sessions": 15,
+    "standing_spacing_cm": 200,
+    "background_max_start_distance_cm": 1500,
+    "background_default_seconds": 600,
+    "background_max_seconds": 7200,
+    "plan_no_progress_seconds": 90,
+    "plan_wait_seconds": 300,
+    "plan_max_playback_seconds": 7200
   },
   "api_version": 1,
   "verification": {
@@ -266,13 +271,14 @@
     "visual_fixes": "docs/validation/visual-fixes-20261105.json",
     "cjk_fonts": "docs/validation/cjk-fonts-20261105.json",
     "fresh_install_startup": "docs/validation/fresh-install-startup-20261105.json",
-    "actor_registration": "docs/validation/actor-registration-20261105.json"
+    "actor_registration": "docs/validation/actor-registration-20261105.json",
+    "concurrent_sessions": "docs/validation/concurrent-sessions-20261109.json"
   },
   "known_limits": [
     "Exact B1 Zoi bindings in older SceneZOI releases could suppress independent wildcard callbacks. SceneZOI 1.1.5 uses appearance components and passed B1/B2 receiver checks. Organized Crime mission compatibility has not been verified.",
-    "One active, controlled-initiator session with fixed membership; concurrent/NPC-autonomous sessions and predetermined watch-only sequences are deferred.",
+    "Fixed membership per session; predetermined watch-only sequences are deferred.",
     "The manual picker accepts two or three Zois; bundled hubs require adult-compatible male/female appearance roles. Other rosters require compatible authored content.",
-    "Overhead bubbles are suppressed across the local UI, including nonparticipants; marker suppression is participant-scoped.",
+    "Script-made speech bubbles and thought icons are withheld for participants; icons the game sends without a script command are not. Marker suppression is participant-scoped.",
     "New facial poses, customized heads, meshes and furniture require their own fit tests. The female O was visually accepted; no new tongue asset was created or visually tested.",
     "Furniture profiles support upright unit-scale objects with fixed placement offsets; all cosmetic variants, occupancy/menu routes and third-party combinations were not exhaustively tested.",
     "Native mod-manager dependency enforcement/load ordering is not established by manifest declarations. SceneZOI must remain enabled for save-journal recovery.",

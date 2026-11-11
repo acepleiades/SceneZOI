@@ -6,7 +6,7 @@
     function cfg(cmd,key,value){var args={mod_id:wf.MOD_ID,section:'scenezoi_runtime',key:key};if(value!==undefined)args.value=value;return inzoi.cli.execute(cmd,args).then(decode);}
     function stop(p){if(pending!==p)return;pending=null;window.SceneZOIControls.decline(p.initiator,p.token);}
     function selected(p,ids,node,roster,furniture){
-        if(ids.length<2 || new Set(ids).size!==ids.length || ids[0]!==p.initiator){stop(p);return Promise.resolve();}
+        if(ids.length<1 || new Set(ids).size!==ids.length || ids[0]!==p.initiator){stop(p);return Promise.resolve();}
         var bindings={},seen=new Set();
         if(typeof node!=='string'||typeof roster!=='string'){stop(p);return Promise.resolve();}
         for(var item of roster.split('+')){

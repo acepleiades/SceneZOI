@@ -145,9 +145,44 @@ assert(not pcall(Native.sample,record,1.5),"Persistent preemption must still tak
 now=2.1
 Native.sample(record,1.5)
 interrupt("ANIM_F_SomeOther_Interaction_Montage")
-assert(not pcall(Native.sample,record,1.6),"Unrelated interruption must retain the failure path")
+Native.sample(record,1.6)
+assert(positions[record.montage]==1.6,"Any other clip is taken back too")
 Native.restore(record)
-print("Pedestrian avoidance recovery passed: shared position, bounded retries and unrelated failures.")
+-- Whatever takes the slot is taken back, whoever the player controls, within the same bound.
+local function take_back(name)
+    local prior=record.montage
+    interrupt(name)
+    Native.sample(record,2.5)
+    assert(record.montage~=prior and record.asset==asset and positions[record.montage]==2.5,'The track resumes at the shared position')
+end
+local function emptied()
+    local prior=record.montage
+    active[record.montage]=nil;foreign=nil
+    Native.sample(record,2.5)
+    assert(record.montage~=prior and positions[record.montage]==2.5,'An empty slot resumes at the shared position')
+end
+now=10
+for _,control in ipairs({'npc','controlled'})do
+    record=Native.capture(actor);record.control=control;record.id='7'
+    Native.enter(record,asset,anchor)
+    now=now+10
+    take_back('ANIM_M_BroomTray_Use_Interaction_Montage')
+    assert(active[unrelated],'Only the scene track is touched')
+    take_back('ANIM_F_Clap_Stand_Montage')
+    take_back('ANIM_F_turn_R_90_Locomotion_Montage')
+    interrupt('ANIM_M_Something_Else_Montage')
+    assert(not pcall(Native.sample,record,2.6),'A game that keeps taking the slot still ends the scene')
+    now=now+3
+    Native.enter(record,asset,anchor)
+    emptied()
+    active[record.montage]=nil;foreign=nil
+    now=now+0.1
+    Native.sample(record,2.5)
+    now=now+3
+    for count=1,8 do take_back('ANIM_F_Clap_Stand_Montage');now=now+3 end
+    Native.restore(record)
+end
+print("Track recovery passed: any clip or empty slot, on any Zoi, at the shared position, with a repeat limit but no cap over a scene.")
 
 Native.release_input(actor)
 print("Native adapter checks passed: original animation instance preserved across 20 sessions; only owned montages stopped; movement/collision restored; game input routing used.")

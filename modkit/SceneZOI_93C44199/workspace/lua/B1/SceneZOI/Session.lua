@@ -55,14 +55,19 @@ end
 
 function M.snapshot(current)
     local participants, tracks = {}, {}
-    for _, participant in ipairs(current.participants) do
-        participants[#participants + 1] = {id = participant.id, control = participant.control,
-            body = participant.body, role = participant.role,expression_error=participant.expression_error,facial_pose_error=participant.facial_pose_error,voice_error=participant.voice_error}
+    local function row(participant)
+        return {id = participant.id, control = participant.control,
+            body = participant.body, role = participant.role,expression_error=participant.expression_error,facial_pose_error=participant.facial_pose_error,voice_error=participant.voice_error,
+            restoration=participant.restoration}
     end
+    for _, participant in ipairs(current.participants) do participants[#participants + 1] = row(participant) end
+    for _, participant in ipairs(current.unloaded or {}) do participants[#participants + 1] = row(participant) end
     for _, track in ipairs(current.tracks or {}) do
         tracks[#tracks + 1] = {id = track.id, kind = track.kind, participant_id = track.participant_id}
     end
     return {event_index=current.event_index or 0,addon_client_id=current.addon_client_id,
+        plan=require('SceneZOI.Plan').snapshot(current),
+        focused=current.final_focus==true or require('SceneZOI.Sessions').focused()==current,
         result_facts=require('SceneZOI.AddonControl').facts(current),
         task_state=current.tasks and require('SceneZOI.Tasks').inspect(current.tasks,current)or {},
         addon_data=require('SceneZOI.DataValidation').copy(current.node.addon_data or {}),

@@ -9,7 +9,8 @@ function M.on_lua_message(self,owner,kind,content)
     if kind=='SceneZOI.API.Depart'then
         local f=Protocol.unpack(content);if not f then return end
         local ok=pcall(require('SceneZOIStarter.GroupDeparture').leave,owner)
-        inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.API.DepartReply',Protocol.pack(f[1],ok and 'ok'or 'error'))
+        local household=pcall(function()assert(inzoi.FB2ControllerSystem.IsPossessedHouseholdId(owner:GetHouseholdEntityId()))end)
+        inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.API.DepartReply',Protocol.pack(f[1],ok and 'ok'or 'error',household and 'household'or 'npc'))
         return
     end
     if kind=='SceneZOI.FurnitureRecover'then

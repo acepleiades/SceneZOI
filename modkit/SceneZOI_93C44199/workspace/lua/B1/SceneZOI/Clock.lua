@@ -21,6 +21,14 @@ function M.game_scale()
     return scale
 end
 
+-- The game's calendar, in FDateTime ticks. Speed, pauses and skipped time move it exactly as the game moves it.
+M.TICKS_PER_GAME_MINUTE = 600000000
+function M.calendar_ticks()
+    local system = assert(inzoi.UB1System.Get(), "Game client system is unavailable")
+    local manager = assert(system:GetTimeManager(), "Game time manager is unavailable")
+    return manager:GetCurrentDateTime():GetTicks()
+end
+
 function M.new()
     return setmetatable({index = 2, elapsed = 0, session_elapsed = 0, game_elapsed = 0, scale = 0, effective = 0}, M)
 end

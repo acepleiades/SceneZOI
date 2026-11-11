@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-09",
+  "runtime_build": "20261109-concurrent-sessions-1",
+  "ui_build": "20261109-concurrent-sessions-ui-1",
+  "method": "Unpacked Lua and UI mounted over the installed release through the mod hot-mount path, on a throwaway test save. No packaged build of these changes was produced.",
+  "automated": "tools/test.py passed. New: session-registry, addon-event-scopes, addon-delivery, session-unload, concurrent-sessions, background-api, plans and plan-runtime regressions, plus rewritten save-bridge, save-guard, controller and scene-visuals checks. Also speech-bubbles, covering participants across scenes, bystanders, target ownership, clearing on entry and lease membership. native covers any clip and an empty slot on any Zoi with the repeat limit. concurrent-sessions covers panel controls on a scene with no Start packet.",
+  "native_readback": {
+    "concurrent_sessions": "A player's scene and two NPC-only scenes played together. A third NPC-only start reported session_limit while a household scene stayed active.",
+    "focus": "Control moved between participants of different scenes and to a Zoi outside every scene. focus_session, the panel binding and the autosave owner followed. A scene survived leaving and returning.",
+    "bounded_background": "A manual scene left without its panel ended with lifetime_expired at the 60-second limit.",
+    "placement": "A standing scene on top of another was given a floor spot 2.25 m away through FB2PathFindSystem.",
+    "streaming_loss": "A scene ended with participant_unloaded when its Zois streamed out. A save request ended every scene with saving.",
+    "failure_isolation": "A scene that failed with runtime_error left the other scene playing.",
+    "autonomous": "On the installed reference pack: a real-clock timed plan ended at its duration; a goal plan used authored completion on the excitement task; a three-stage, two-goal plan moved from a node that caps one partner at 50% to one that can finish the remaining goal.",
+    "takeover": "set_auto_mode off stopped the plan clock and restored manual navigation; on resumed it.",
+    "track_recovery": "Forcing a broom, a guitar and two turning animations, and stopping every montage so the slot was empty, left the scene playing with each resumption recorded by the montage_recovery diagnostic. Before the fix a broom ended a scene on a Zoi the player did not control, and a turning animation, an empty slot and a clap ended scenes on the controlled Zoi.",
+    "speech_bubbles": "A thought icon sent to a participant reached the screen with no scene, was withheld during a scene with no widget shown, and a different icon appeared again after the scene. Natural bubbles on other Zois passed through the hook and were delivered, so the override and its call to the original work on the game's own path. About 80 seconds of scene time were matched bubble by bubble, at home with only the pair present and on a public square: nothing stayed on the pair. With clearing on entry, a thought icon sent just before a scene was gone within about half a second of the start in the one case that was still showing.",
+    "track_recovery_soak": "On a public square: 14 of 14 GENERAL scenes and 8 of 8 explicit scenes played to the end, the explicit ones with 255 logged bystander reactions. Natural take-backs recorded a clap, a street cheer and pedestrian dodges. Five more scenes with a participant's needs at 8 percent also played to the end.",
+    "panel_controls": "A real click on the panel's scene button during an add-on-started scene entered the chosen node. Before the fix it stayed on Changing scene.",
+    "mixed_sessions": "A separate add-on using the public API started an autonomous NPC-only timed scene while another separate add-on's scene, moved along its authored navigation, played with the panel on the controlled Zoi. Both played together. The autonomous scene ended with duration_elapsed and its owner received preparing, started, node entered, ending and ended. No scene failed.",
+    "save_and_load": "A real save with a household scene and an NPC-only scene running ended both with saving and no failure. The world load brings the installed package back in place of the unpacked mount, so the journal from that save was then delivered to the remounted build. Records for loaded Zois were recovered, the one Zoi not loaded stayed recorded, and a new scene played.",
+    "track_recovery_seen": "Natural take-backs recorded: pedestrian dodges (about 90), a stand clap, a street cheer, a ghost reaction and an electric guitar. Each resumed the scene at its shared position. Each is now logged by name.",
+    "uniform_swap": "Explicit NPC scenes on Zois in work outfits: the outfit was off during each scene and all 8 scenes held. Outfits tagged Job came back afterwards, some in the same role's Daily version when the scene had interrupted the shift. Outfits tagged otherwise stay refused.",
+    "npc_scene_length": "An NPC-only scene with no requested length ended with lifetime_expired at 14.8 and 14.9 in-game minutes with the slider at 15, and at 4.7 with it at 5. Real time at normal speed was 54.3 s, 30.3 s and 9.9 s. The slider saved 5 and 15 to scenezoi_settings. A longer add-on lifetime was not confirmed live: that run was cut off when the world unloaded.",
+    "solo_start": "With only the controlled Zoi selected the native OK button read Start Solo and was enabled. A simulated click started a one-participant scene on the stock idle clip with the panel and Scene Settings available. The game does not call CreateZoiGroup for an empty selection, so a close with the pointer over the button counts as the click.",
+    "picker_selection": "The game passes the controlled Zoi in the character list only while it stays selected: selected gave leader 24536, characters 24536,39464; unselected gave leader 24536, characters 33704,22679."
+  },
+  "visual": "Three separate standing scenes were seen in one screenshot with the panel showing the controlled Zoi's scene. The Auto-mode toggle was seen on (blue, manual choices hidden) and off (grey, manual choices listed). This is a developer's visual check, not author acceptance. Screenshots before and 2 seconds after forcing the broom animation showed the participant holding the scene pose. A screenshot during a home scene showed no bubble over the pair. Before clearing on entry was added, a screenshot showed a thought icon sent just before a scene still above a participant at its start.",
+  "frame_cost_ms_per_frame": {
+    "idle": 0.075,
+    "three_scenes_one_panel": 2.6,
+    "note": "Runtime.tick only, on a public square. The with and without figures come from one build, with a read-only copy of the released per-tick bubble scan switched on and off in alternating 20-second windows. The scan costs about 1.5 ms. The earlier 7.1 ms proof of concept differed in more than the scan.",
+    "one_scene_without_released_bubble_scan": 1.85,
+    "one_scene_with_released_bubble_scan": 3.31,
+    "npc_only_scenes_runtime_tick": {
+      "0": 0.06,
+      "1": 0.51,
+      "2": 0.94,
+      "3": 1.28,
+      "5": 1.94
+    },
+    "npc_only_scenes_fps": {
+      "0": 57.9,
+      "1": 58.4,
+      "2": 58.9,
+      "3": 58.2,
+      "5": 57.8
+    },
+    "limit_of_measurement": "NPC-only GENERAL scenes on a public square, 13 seconds per step. More than six scenes could not be measured because too few adult pairs stayed loaded."
+  },
+  "not_verified": [
+    "A packaged build. Every live check used the unpacked mount, so a load of a save through the installed build has not run end to end. The package needs the author's animation inputs.",
+    "Bubbles sent without a script command. Low needs produced no need icon in 35 seconds even without a scene, so that comparison was inconclusive.",
+    "Author acceptance."
+  ],
+  "known_limits": [
+    "The natural trigger of the track replacement fixed by the NPC track recovery was not identified. It did not recur in 27 later NPC scenes, including a street NPC playing a guitar, or in five scenes that interrupted a household Zoi at a vacuum, mirror, dressing table, sink and chair.",
+    "An NPC can fail to answer the group departure step. Seen twice on one seated street NPC: the start ended with start_failed after 15 seconds, and nothing was held afterwards. Cause not established.",
+    "Scripts.B2Script_SpeechBubble is a single native override. A second mod defining the same chunk would conflict with it.",
+    "The game crashed once on an animation worker thread just after a scene started, reading address 0xffffffffffffffff, after three Lua hot reloads on the unpacked mount. It did not recur in more than 40 later scenes. A related failure was seen once when a clip could not be played. Clips are now fetched on the tick they start playing, but the engine's collector cannot be forced from Lua, so the cause is not proven.",
+    "A work uniform is put back when a scene ends even if the Zoi's shift ended during the scene, so it can stay on until the game next changes that outfit.",
+    "One NPC-only explicit start stalled once waiting to match attachment colors. It did not recur in later attempts. The status line now names what it is waiting for."
+  ],
+  "unperformed_solo_and_npc_picker": "Real mouse click on Start Solo, cancel with X, Exit from a solo scene, and a live NPC-only start from the picker were not run by the contributor at the time of this record."
+}

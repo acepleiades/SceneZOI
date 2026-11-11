@@ -2,8 +2,8 @@
 local Config=require('SceneZOI.Config')
 local Protocol=require('SceneZOI.Protocol')
 local M={}
-local order={'task_rates','audio'}
-local groups={task_rates={values={100,100},min=10,max=500},audio={values={100,100,100},min=0,max=200}}
+local order={'task_rates','audio','npc_scene'}
+local groups={task_rates={values={100,100},min=10,max=500},audio={values={100,100,100},min=0,max=200},npc_scene={values={15},min=5,max=120,default=15}}
 local function decode(f,offset,size,spec,loading)
  if not f then return nil end
  local result={}
@@ -32,7 +32,7 @@ function M.boot()
   local size=#groups[group].values
   local ok,_,raw=command('load',group);local f=ok and Protocol.unpack(raw)
   local values=f and #f==size+1 and f[1]=='1'and decode(f,1,size,groups[group],true)
-  if not values then values={};for i=1,size do values[i]=100 end end
+  if not values then values={};for i=1,size do values[i]=groups[group].default or 100 end end
   apply(group,values)
  end
 end
@@ -40,6 +40,7 @@ function M.task_multiplier(body)
  local index=body=='female'and 1 or body=='male'and 2
  return index and groups.task_rates.values[index]/100 or 1
 end
+function M.npc_scene_minutes()return groups.npc_scene.values[1]end
 function M.request(session,group,raw)
  if session.stopping or session.ended or not groups[group]then return end
  local size=#groups[group].values;local f=Protocol.unpack(raw)
@@ -52,6 +53,10 @@ function M.request(session,group,raw)
  local ok=command('save',group,Protocol.pack('1',table.unpack(values)))
  if not ok then s.code='settings_storage';return end
  apply(group,values);s.code='ok'
+end
+-- The controls were rebound to this session: everything has to be sent again.
+function M.forget(session)
+ for _,group in ipairs(order)do state(session,group).published=nil end
 end
 function M.publish(session)
  for _,group in ipairs(order)do

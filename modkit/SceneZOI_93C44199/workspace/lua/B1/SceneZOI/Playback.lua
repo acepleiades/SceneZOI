@@ -13,8 +13,16 @@ end
 
 function M.enter(current)
     for _, participant in ipairs(current.participants) do Native.rebind(participant) end
-    local anchor_owner = assert(current.bindings[current.node.anchor_participant])
-    current.anchor = current.anchor or anchor_owner.mesh:K2_GetComponentToWorld()
+    local anchor_owner = assert(current.place_owner or current.bindings[current.node.anchor_participant])
+    if not current.anchor then
+        current.anchor = anchor_owner.mesh:K2_GetComponentToWorld()
+        if current.spot then
+            local height = current.anchor.Translation.Z
+            current.anchor.Translation = UE.FVector(current.spot.X, current.spot.Y, height)
+        end
+    end
+    -- The engine can collect a clip only Lua is holding. Fetched on the tick it starts playing, it cannot be.
+    current.assets = require("SceneZOI.Catalog").load(current.node)
     current.tracks = {}
     for _, participant in ipairs(current.participants) do
         local asset = assert(current.assets[participant.role], "Participant has no animation track")

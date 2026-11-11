@@ -3,6 +3,9 @@
     var section = 'scenezoi_runtime';
     var client = 'ui.' + Date.now() + '.' + Math.floor(Math.random() * 1000000);
     var sequence = 0;
+    // The panel may show a session it did not start: these keep this panel's own identity for new starts.
+    var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null;
+    var hasPlan = false, autoMode = false, autoCount = 0, lastPlan = null, autoButton = null;
     var heartbeat = 0;
     var pendingCommand = null;
     var active = false;
@@ -48,7 +51,7 @@
         changed:function(){updateHitRect();}}) : null;
     var outfits = window.SceneZOIOutfitUI.create({root:root, cfg:cfg, write:writePacket, tasks:tasks,
         state:function () { return {active:active, playing:playing, exiting:exiting, client:client, sequence:sequence,
-            revision:revision, pendingNavigation:pendingNavigation}; },
+            revision:revision, pendingNavigation:pendingNavigation, counterBase:counterBase}; },
         changed:function () { renderNavigation(); renderPlayback(); }});
 
     function decode(response) {
@@ -69,7 +72,11 @@
         decode:function(v){return JSON.parse(decodeURIComponent(escape(String(v).replace(/../g,function(h){return String.fromCharCode(parseInt(h,16));}))));},
         read:function(key){return cfg('uimod.cfg_load',key).then(function(r){return r&&r.value!==undefined?r.value:r;});},
         write:writePacket,
-        stopForSave:function(){if(active){exiting=true;playing=false;pendingNavigation=null;pendingPlayback=null;send('save').catch(function(){});}},
+        stopForSave:function(){
+            // Every scene exits for a save, including ones this panel is not showing.
+            writePacket('save_request',client+'.'+Date.now()).catch(function(){});
+            if(active){exiting=true;playing=false;pendingNavigation=null;pendingPlayback=null;send('save').catch(function(){});}
+        },
         stopForLoad:function(){if(active){exiting=true;send('exit').catch(function(){});}}});
     function show(message) {
         if (tasks) tasks.update();
@@ -162,7 +169,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261109-game-menu-only-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261109-concurrent-sessions-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         root.style.visibility = 'hidden';
@@ -221,11 +228,12 @@
             checkingStart = true;
             return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function(data){
                 if (!initiator || entityId(data)!==initiator) {declineStart(initiator);return false;}
-                active=true;exiting=false;noticeInitiator=null;noticeToken=null;sequence++;
+                client=ownClient;sequence=++ownSequence;counterBase=0;
+                hasPlan=false;autoMode=false;lastPlan=null;
+                active=true;exiting=false;noticeInitiator=null;noticeToken=null;
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
-                saveGuard.begin(sequence,Object.keys(entry.bindings).map(function(role){return entityId(entry.bindings[role]);}));
                 openPanel();show(window.SceneZOILocalization.text('Preparing Scene Mode…'));
                 return send('start',initiator,roster,node,entry.furniture,entry.api_token).then(function(){return true;});
             }).catch(function(error){
@@ -248,6 +256,9 @@
             show(window.SceneZOILocalization.text('Retrying Exit and waiting for all participants…'));
         });
     });
+    // Ended on purpose or by its own limits: nothing for the player to dismiss.
+    var quietEnds = {ok: true, saving: true, character_editor: true, lifetime_expired: true, owner_expired: true,
+        goal_unreachable: true, required_stage_unavailable: true, no_progress: true, playback_budget_exceeded: true};
     var errors = {
         transition_destination_error: window.SceneZOILocalization.text('The transition finished, but its destination could not load. The scene has ended.'),
         busy: window.SceneZOILocalization.text('A participant is already owned by another scene.'),
@@ -309,17 +320,99 @@
             else {
                 active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
                 pendingCommand = null;
-                if (phase === 'idle' && (code === 'ok' || code === 'controller_too_far' || code === 'saving' || code === 'character_editor')) {saveGuard.end(true);closePanel();}
-                else {saveGuard.end(false);show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));}
+                if (phase === 'idle' && quietEnds[code]) closePanel();
+                else show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));
             }
         }).catch(function () {}).then(function () { reading = false; });
+    }, 250);
+    // The panel follows the controlled Zoi: it shows that Zoi's scene, or nothing.
+    function detachPanel() {
+        if (!active) return;
+        active = false; exiting = false; playing = false; currentNode = null;
+        pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
+        client = ownClient; sequence = ownSequence; counterBase = 0;
+        hasPlan = false; autoMode = false; lastPlan = null;
+        renderAutoMode();
+        closePanel();
+    }
+    function attachPanel(f) {
+        client = f[3]; sequence = Number(f[4]) || 0;
+        active = true; exiting = f[7] === 'exiting'; playing = f[7] === 'playing'; heartbeat = 0;
+        pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
+        noticeInitiator = null; noticeToken = null; lastState = ''; gameScale = 1;
+        hasPlan = false; autoMode = false; lastPlan = null;
+        // Counters must beat anything this session has already acknowledged from an earlier binding.
+        counterBase = Math.floor(Date.now() / 1000);
+        navigationCount = counterBase; playbackCounter = counterBase; acknowledgedPlayback = 0;
+        revision = Number(f[5]) || 0;
+        currentNode = window.SceneZOICatalog.nodes[f[6]] || null;
+        refreshCatalog().then(function () {
+            currentNode = window.SceneZOICatalog.nodes[f[6]] || currentNode;
+            if (active) show(playing ? playingMessage() : window.SceneZOILocalization.text('Preparing all participants…'));
+        }).catch(function () {});
+        openPanel();
+        show(playing ? playingMessage() : window.SceneZOILocalization.text('Preparing all participants…'));
+    }
+    function applyFocus(f) {
+        if (f[0] !== 'SZ2') return;
+        if (f[2] === 'none') { detachPanel(); return; }
+        if (active && client === f[3] && String(sequence) === f[4]) return; // Already showing this scene.
+        attachPanel(f);
+    }
+    var readingFocus = false;
+    setInterval(function () {
+        if (readingFocus) return;
+        readingFocus = true;
+        cfg('uimod.cfg_load', 'focus_session').then(function (data) {
+            var value = data && data.value !== undefined ? data.value : data;
+            if (typeof value !== 'string' || value === lastFocus) return;
+            lastFocus = value;
+            applyFocus(value.split('|'));
+        }).catch(function () {}).then(function () { readingFocus = false; });
     }, 250);
     function escapeText(value) {
         return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
     }
+    function renderAutoMode() {
+        if (!autoButton) return;
+        autoButton.style.display = hasPlan && active && !exiting ? 'block' : 'none';
+        autoButton.textContent = window.SceneZOILocalization.text('Auto-mode');
+        if (autoButton.classList.toggle) autoButton.classList.toggle('selected', autoMode);
+        autoButton.setAttribute('aria-pressed', autoMode ? 'true' : 'false');
+    }
+    function applyPlan(value) {
+        var fields = value.split('|');
+        if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
+        hasPlan = fields[3] === '1'; autoMode = hasPlan && fields[4] === '1';
+        renderAutoMode(); renderNavigation();
+    }
+    function ensureAutoButton() {
+        if (autoButton || !navigation || !navigation.parentNode || !navigation.parentNode.insertBefore) return;
+        autoButton = document.createElement('button');
+        autoButton.id = 'scene-auto-mode'; autoButton.type = 'button';
+        navigation.parentNode.insertBefore(autoButton, navigation);
+        autoButton.addEventListener('click', function () {
+            if (!active || exiting || !hasPlan) return;
+            var enabled = autoMode ? '0' : '1';
+            autoCount = Math.max(autoCount + 1, counterBase + 1);
+            writePacket('auto_mode', ['SZ2', client, String(sequence), 'auto_mode', String(autoCount), enabled, String(revision)].join('|')).catch(function () {});
+        });
+    }
+    var readingPlan = false;
+    setInterval(function () {
+        if (!active || readingPlan) return;
+        readingPlan = true;
+        cfg('uimod.cfg_load', 'plan_state').then(function (data) {
+            var value = data && data.value !== undefined ? data.value : data;
+            if (typeof value !== 'string' || value === lastPlan) return;
+            lastPlan = value;
+            applyPlan(value);
+        }).catch(function () {}).then(function () { readingPlan = false; });
+    }, 250);
     function renderNavigation() {
         var html = '';
-        if (active && playing && !exiting && !pendingNavigation && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
+        ensureAutoButton();
+        if (active && playing && !exiting && !pendingNavigation && !autoMode && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
             html = currentNode.navigation.map(function (edge) {
                 var target = window.SceneZOICatalog.nodes[edge.target];
                 var caption = typeof edge.label === 'string' && edge.label.trim()
@@ -333,7 +426,7 @@
     }
     navigation.addEventListener('click', function (event) {
         var option = event.target && event.target.getAttribute('data-option');
-        if (!option || !active || !playing || exiting || pendingNavigation || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
+        if (!option || !active || !playing || exiting || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
         if (!currentNode.navigation.some(function (edge) { return edge.id === option; })) return;
         pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision)].join('|');
         writePacket('navigation', pendingNavigation).catch(function () {});

@@ -35,7 +35,7 @@ function M.execute(actor,req)
  local function ready()assert(not s.preparing and not s.stopping,'session_not_ready')end
  if op=='request_stop'then
   fields({'reason'},{'reason'});authorize('interrupt');V.id(args.reason)
-  s.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason=args.reason};runtime().stop('addon_requested');return true,{accepted=true}
+  s.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason=args.reason};runtime().stop('addon_requested',s.token);return true,{accepted=true}
  end
  if op=='get_navigation'then fields({});return true,runtime().api_navigation(s)end
  if op=='get_task_state'then fields({});return true,{definitions=V.copy(s.tasks.definitions),participants=require('SceneZOI.Tasks').inspect(s.tasks,s)}end

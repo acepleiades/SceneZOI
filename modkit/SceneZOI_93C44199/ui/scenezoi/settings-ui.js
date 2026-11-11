@@ -1,13 +1,16 @@
 (function () {
     'use strict';
-    function createGroup(options,group,keys,labels,note,min,max) {
-        var container=options.container, session='', values=keys.map(function(){return 100;}), count=0, ack=0, pending=null;
+    function createGroup(options,group,keys,labels,note,min,max,format) {
+        format=format||{unit:'%',initial:100};
+        function unit(){return format.translated?window.SceneZOILocalization.text(format.unit):format.unit;}
+        function valueText(value){return value+(format.translated?' ':'')+unit();}
+        var container=options.container, session='', values=keys.map(function(){return format.initial;}), count=0, ack=0, pending=null;
         var ready=false, serverBusy=true, reading=false, dragging=null, message='';
         container.innerHTML='<p class="audio-settings-note" data-i18n="'+note+'">'+window.SceneZOILocalization.html(note)+'</p>'+keys.map(function(key,i){
             return '<div class="audio-setting"><label data-i18n="'+labels[i]+'" id="volume-label-'+key+'" for="volume-number-'+key+'">'+window.SceneZOILocalization.html(labels[i])+'</label>'+
                 '<div class="audio-setting-row"><div id="volume-slider-'+key+'" class="volume-slider" role="slider" tabindex="0" aria-labelledby="volume-label-'+key+'" aria-valuemin="'+min+'" aria-valuemax="'+max+'">'+
                 '<span class="volume-track"></span><span id="volume-fill-'+key+'" class="volume-fill"></span><span id="volume-thumb-'+key+'" class="volume-thumb"></span></div>'+
-                '<input id="volume-number-'+key+'" type="text" inputmode="numeric" maxlength="3" aria-labelledby="volume-label-'+key+'" autocomplete="off"><span>%</span></div></div>';
+                '<input id="volume-number-'+key+'" type="text" inputmode="numeric" maxlength="3" aria-labelledby="volume-label-'+key+'" autocomplete="off"><span'+(format.translated?' data-i18n="'+format.unit+'"':'')+'>'+window.SceneZOILocalization.html(format.unit)+'</span></div></div>';
         }).join('')+'<div id="settings-status-'+group+'" role="status" aria-live="polite"></div>';
         var sliders=keys.map(function(k){return document.getElementById('volume-slider-'+k);});
         var numbers=keys.map(function(k){return document.getElementById('volume-number-'+k);});
@@ -16,14 +19,14 @@
         function available(){var s=state();return ready && !serverBusy && s.active && !s.exiting && !s.pendingNavigation;}
         function update(){
             var s=state(),key=s.client+':'+s.sequence;
-            if(key!==session){session=key;values=keys.map(function(){return 100;});count=0;ack=0;pending=null;ready=false;serverBusy=true;dragging=null;message='';}
+            if(key!==session){session=key;values=keys.map(function(){return format.initial;});count=s.counterBase||0;ack=0;pending=null;ready=false;serverBusy=true;dragging=null;message='';}
             if(!s.active || s.exiting){pending=null;dragging=null;}
             if(!options.visible())dragging=null;
             var enabled=available();
             keys.forEach(function(k,i){
                 sliders[i].setAttribute('aria-disabled',enabled?'false':'true');
                 sliders[i].setAttribute('aria-valuenow',String(values[i]));
-                sliders[i].setAttribute('aria-valuetext',values[i]+'%');
+                sliders[i].setAttribute('aria-valuetext',valueText(values[i]));
                 sliders[i].tabIndex=enabled?0:-1;
                 numbers[i].disabled=!enabled;
                 if(document.activeElement!==numbers[i])numbers[i].value=String(values[i]);
@@ -99,10 +102,11 @@
         update();return {update:update,retry:retry};
     }
     window.SceneZOISettingsUI={create:function(options){
-        options.container.innerHTML='<h3 class="settings-section-title"><span data-i18n="Task Progress">'+window.SceneZOILocalization.html("Task Progress")+'</span></h3><div id="task-rate-settings"></div><h3 class="settings-section-title"><span data-i18n="Audio Volume">'+window.SceneZOILocalization.html("Audio Volume")+'</span></h3><div id="audio-volume-settings"></div>';
+        options.container.innerHTML='<h3 class="settings-section-title"><span data-i18n="Task Progress">'+window.SceneZOILocalization.html("Task Progress")+'</span></h3><div id="task-rate-settings"></div><h3 class="settings-section-title"><span data-i18n="Audio Volume">'+window.SceneZOILocalization.html("Audio Volume")+'</span></h3><div id="audio-volume-settings"></div><h3 class="settings-section-title"><span data-i18n="NPC Scenes">'+window.SceneZOILocalization.html("NPC Scenes")+'</span></h3><div id="npc-scene-settings"></div>';
         function groupOptions(id){return {container:document.getElementById(id),state:options.state,visible:options.visible,write:options.write,cfg:options.cfg};}
         var tasks=createGroup(groupOptions('task-rate-settings'),'task_rates',['task-female','task-male'],['Female Task Progress Rate','Male Task Progress Rate'],'100% uses authored progress. Choose 10% to 500%.',10,500);
         var audio=createGroup(groupOptions('audio-volume-settings'),'audio',['sfx','female','male'],['Sound Effects','Female Voice Sets','Male Voice Sets'],'100% uses the authored volume. 0% mutes the channel.',0,200);
-        return {update:function(){tasks.update();audio.update();},retry:function(){tasks.retry();audio.retry();}};
+        var npc=createGroup(groupOptions('npc-scene-settings'),'npc_scene',['npc-scene-length'],['Default NPC Scene Length'],'How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.',5,120,{unit:'in-game min',translated:true,initial:15});
+        return {update:function(){tasks.update();audio.update();npc.update();},retry:function(){tasks.retry();audio.retry();npc.retry();}};
     }};
 })();

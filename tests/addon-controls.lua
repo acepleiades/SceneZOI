@@ -21,7 +21,9 @@ s.preparing=true;tick(1);s.preparing=false;tick(1);assert(s.tasks.participants['
 a.voice_mutes['1']=true;b.voice_mutes['1']=true
 a.expressions['1']={context='a'};C.touch(a);b.expressions['1']={context='b'};C.touch(b)
 assert(C.expression(s,'1').context=='b');C.release(s,'b');assert(C.muted(s,'1')and C.expression(s,'1').context=='a')
-C.renew('a');C.tick(11,s);assert(C.muted(s,'1'));C.tick(1,s);assert(not C.muted(s,'1')and C.expression(s,'1')==nil)
+local unfocused={addon_controls={a={tasks={},expressions={},voice_mutes={}}}}
+C.renew('a');C.tick(11,{s,unfocused});assert(C.muted(s,'1'));C.tick(1,{s,unfocused});assert(not C.muted(s,'1')and C.expression(s,'1')==nil)
+assert(unfocused.addon_controls.a==nil,'An expired integration leaves every scene, not only the one on screen')
 assert(not pcall(C.authorize,s,'observer','tasks',false),'Subscribing grants no write permission')
 C.sample(s,3,0);assert(s.playing_seconds==0);s.preparing=true;C.sample(s,2,1);s.preparing=false;C.sample(s,4,2)
 assert(s.playing_seconds==4 and s.playing_game_seconds==8 and s.peak_content_rating=='GENERAL')

@@ -1,0 +1,45 @@
+{
+  "id": "scenezoi.solo_idle_female",
+  "label": "Solo Idle",
+  "kind": "loop",
+  "hub": "standing",
+  "duration": 1.866667,
+  "fps": 30,
+  "tracks": {
+    "female": "/Game/Characters/Anims/Locomotion/Female/ANIM_F_IdleBase.ANIM_F_IdleBase"
+  },
+  "navigation": [],
+  "participants": {
+    "female": {
+      "body": "female",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    }
+  },
+  "anchor_participant": "female",
+  "expressions": {
+    "female": {
+      "context": "Idle"
+    }
+  },
+  "starting_hub": true,
+  "tags": [
+    "standing"
+  ],
+  "participant_tags": {
+    "female": [
+      "standing"
+    ]
+  },
+  "actions": [
+    {
+      "type": "idle",
+      "actor": "female"
+    }
+  ]
+}

@@ -3,8 +3,8 @@
 Current runtime `20261104-facial-1` (following validated API-5) implements optional capabilities to the existing native-message
 contract. Negotiate `get_version.features`: `explicit_bindings`, `preflight`,
 `furniture_discovery`, `session_results`, `integration_leases`, `live_controls`,
-`presentation_overrides`, `facial_poses`, `head_attachments`, `addon_data`, and `events: 2`. One active session,
-controlled initiator participation, fixed membership and ordinary navigation remain
+`presentation_overrides`, `facial_poses`, `head_attachments`, `addon_data`, and `events: 2`. Fixed membership
+and ordinary navigation remain
 the release contract. This does not add autonomous starts or watch-only sequences.
 
 ## Starting and finding

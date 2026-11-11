@@ -17,4 +17,7 @@ assert(not pcall(c.advance,c,1,-1))
 local scale=0
 inzoi={UB1System={Get=function() return {GetTimeManager=function() return {GetTimeScale=function() return scale end} end} end}}
 assert(Clock.game_scale()==0);scale=4;assert(Clock.game_scale()==4)
+local ticks=1234
+inzoi={UB1System={Get=function() return {GetTimeManager=function() return {GetCurrentDateTime=function() return {GetTicks=function() return ticks end} end} end} end}}
+assert(Clock.calendar_ticks()==1234 and Clock.TICKS_PER_GAME_MINUTE==600000000)
 print("Clock checks passed: all four scene speeds, game pause/multiplication, no catch-up, node reset and invalid values.")

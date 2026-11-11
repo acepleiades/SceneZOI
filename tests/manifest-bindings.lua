@@ -13,6 +13,7 @@ for env,key in pairs(expected) do
 end
 assert(manifest.chunkScripts.B2[1]=='Systems.B2ZoiGroupManager')
 assert(manifest.chunkScripts.B2[2]=='Components.B2SlotComponent')
+assert(manifest.chunkScripts.B2[3]=='Scripts.B2Script_SpeechBubble')
 
 local id={Value=12}
 local actor={}

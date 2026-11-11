@@ -2,7 +2,7 @@
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B2/?.lua;'..package.path
 local P=require('SceneZOI.Protocol');local Json=require('SceneZOI.Json')
 local restored=0
-package.loaded['SceneZOI.Outfit']={recover=function()end,apply=function()end,restore=function()restored=restored+1 end}
+package.loaded['SceneZOI.Outfit']={borrowable=function()end,recover=function()end,apply=function()end,restore=function()restored=restored+1 end}
 package.loaded['SceneZOI.Wardrobe']={capture=function()end,inventory=function()return 'inventory'end}
 package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}

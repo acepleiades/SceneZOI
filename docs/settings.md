@@ -5,6 +5,18 @@ Management. It opens Scene Settings in the same attached panel. Only one of
 these panels is open at a time; task-tray ordering, resizing, compact mode,
 native-menu blocking and Exit behavior are shared.
 
+## NPC scene length
+
+**Default NPC Scene Length** accepts whole in-game minutes from **5 to 120**,
+default **15**. It applies to scenes that start after the change, when every
+participant is an NPC, and an add-on asked for neither a `lifetime` nor a plan.
+Those scenes end on the game's calendar, so game speed, pause and skipped time
+count as the game counts them. At normal speed 15 in-game minutes is about 30
+real seconds. An add-on's `lifetime` overrides this setting. A scene with a
+household Zoi keeps its own limit. The value is stored under
+`scenezoi_settings`, key `npc_scene`. Scene Settings needs a scene to be open,
+and **Start Solo** in the picker is the way to open one without a partner.
+
 ## Task progress
 
 Female Task Progress Rate and Male Task Progress Rate appear above the volume

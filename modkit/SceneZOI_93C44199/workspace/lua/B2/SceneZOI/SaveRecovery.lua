@@ -22,11 +22,13 @@ function M.lease(data)
     local l=vector(data.location,{1,2,3});local r=vector(data.rotation,{1,2,3})
     local merge=data.body_merge
     if merge then assert(type(merge)=='table'and type(merge.base)=='boolean'and type(merge.final)=='boolean','Invalid recovery body layout')end
+    local lent=data.lent_costume
+    if lent~=nil then assert(type(lent)=='string'and #lent<=128 and lent:match('^[%w_%-]+$'),'Invalid recovery outfit')end
     local furniture={}
     assert(type(data.furniture)=='table'and #data.furniture<=4,'Invalid recovery furniture')
     for _,id in ipairs(data.furniture)do assert(type(id)=='string'and id:match('^%d+$'),'Invalid recovery furniture ID');furniture[#furniture+1]=id end
     return {token=data.token,releasing=true,remaining=0,restored={},collision=data.collision,local_value=data.local_value,
-        follow_parent=data.follow_parent,outfit=data.outfit,body_merge=merge and {base=merge.base,final=merge.final},
+        follow_parent=data.follow_parent,outfit=data.outfit,lent_costume=lent,recovering=true,body_merge=merge and {base=merge.base,final=merge.final},
         entry_location=UE.FVector(table.unpack(l)),entry_rotation=UE.FRotator(table.unpack(r)),saved_furniture=furniture}
 end
 return M
