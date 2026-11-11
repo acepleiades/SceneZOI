@@ -35,7 +35,10 @@ local Effects=require('SceneZOI.AddonEffects')
 local ModeGuard=require('SceneZOI.ModeGuard')
 local Sessions=require('SceneZOI.Sessions')
 local Plan = require("SceneZOI.Plan")
-local serial = 0
+-- Session tokens (client.sequence.serial) key the save journal's recovery records, which outlive this Lua state.
+-- The serial starts at a number of this launch's own (time and chance), not at 0: a new session can never reuse the
+-- token of a record deferred from an earlier launch. The token keeps its shape (the last field is digits).
+local serial = (os.time() % 100000) * 10000 + math.random(0, 9999)
 local poll_elapsed = 0
 local state_value
 local boot_request, last_save_request
