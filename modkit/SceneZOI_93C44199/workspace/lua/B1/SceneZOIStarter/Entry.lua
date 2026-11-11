@@ -38,8 +38,33 @@ local function caption(p,solo)
         text:SetText(require("SceneZOI.Localization").text("Start Solo"))
     elseif p.ok_caption then text:SetText(p.ok_caption) end
 end
+-- The Esc Game Menu over the picker. From B1 the open menu shows as a pause reason ("GameMenu", beside the picker's
+-- own "ZoiGroupSelect") while blocked stays false; the panel's rule (a modal UI of type GameMenu) is kept as well.
+local function game_menu_open()
+    local ok,success,message,data=pcall(inzoi.cli.execute,"ui.get_blocking")
+    if not ok or not success then return false end
+    local parsed,state=pcall(require("SceneZOI.Json").decode,data or message or "")
+    if not parsed or type(state)~="table" then return false end
+    if type(state.pause_reasons)=="table" then
+        for _,reason in ipairs(state.pause_reasons) do if reason=="GameMenu" then return true end end
+    end
+    return state.blocked==true and state.primary_kind=="modal_ui" and state.input_block_ui_type=="GameMenu"
+end
+-- While the Game Menu is up the picker is hidden, and it comes back as it was when the menu closes. A picker hidden
+-- this way is still open: it is neither a close nor a cancel.
+local function hide_for_menu(p)
+    if p.menu_hidden~=nil then return end
+    p.menu_hidden=p.widget:GetVisibility()
+    p.widget:SetVisibility(2) -- Hidden: keeps its layout, takes no input
+end
+local function show_after_menu(p)
+    if p.menu_hidden==nil then return end
+    p.widget:SetVisibility(p.menu_hidden)
+    p.menu_hidden=nil
+end
 local function release(p,close)
     restore_cap(p)
+    if p.widget and p.menu_hidden~=nil then pcall(show_after_menu,p) end
     if p.widget and p.opened then
         if close and p.widget:IsVisible() then p.widget:OnClickedClose() end
         caption(p,false)
@@ -108,6 +133,13 @@ local function update(dt,actors,busy)
     end
     local p=pending;if not p then return end
     p.age,p.heartbeat=p.age+dt,p.heartbeat+dt
+    if p.opened and not p.closed then
+        p.menu_check=(p.menu_check or 0)-dt
+        if p.menu_check<=0 then
+            p.menu_check=0.2
+            if game_menu_open() then hide_for_menu(p) else show_after_menu(p) end
+        end
+    end
     if p.heartbeat>=1 then p.heartbeat=0;tell(p,"heartbeat") end
     if p.widget:IsVisible() then
         if not p.opened then
@@ -130,7 +162,7 @@ local function update(dt,actors,busy)
             local read,pressed=pcall(function() return button:IsPressed() end)
             if read and pressed==true then p.start_pressed=p.age end
         end
-    elseif p.opened and not p.closed then
+    elseif p.opened and not p.closed and p.menu_hidden==nil then
         p.closed=true;release(p,false)
         if p.start_pressed and p.age-p.start_pressed<=Config.solo_click_window then tell(p,"solo") end
         tell(p,"closed")
