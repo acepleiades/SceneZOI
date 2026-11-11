@@ -123,12 +123,16 @@ local function update(dt,actors,busy)
         button:SetIsEnabled(can_start)
         p.widget.BW_WBP_ButtonOK.bIsDimmed=not can_start
         caption(p,alone)
-        -- With nobody else picked the game just closes the picker and reports nothing, so a close
-        -- with the pointer on Start Solo is the only sign that it was chosen.
-        if alone and can_start and button:IsHovered() then p.start_hovered=p.age end
+        -- With nobody else picked the game just closes the picker and reports nothing. Start Solo needs an explicit
+        -- click: the button held down (IsPressed), not a pointer resting on it. Closing the picker (X, Esc, its close
+        -- handler) never presses it, however close the pointer was. If the press cannot be read, nothing starts.
+        if alone and can_start then
+            local read,pressed=pcall(function() return button:IsPressed() end)
+            if read and pressed==true then p.start_pressed=p.age end
+        end
     elseif p.opened and not p.closed then
         p.closed=true;release(p,false)
-        if p.start_hovered and p.age-p.start_hovered<=Config.solo_click_window then tell(p,"solo") end
+        if p.start_pressed and p.age-p.start_pressed<=Config.solo_click_window then tell(p,"solo") end
         tell(p,"closed")
     elseif not p.opened and p.age>4 then error("Native Zoi selection did not open") end
     if p.result and p.result[2]=="error" and not p.closed then

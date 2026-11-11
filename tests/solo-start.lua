@@ -1,11 +1,11 @@
 -- Start Solo: the native button opens for a lone Zoi only where a one-role starting scene fits.
 package.path="modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;"..package.path
 local P=require("SceneZOI.Protocol")
-local cfg,sent,cap,count,hovered,enabled,dimmed,caption={}, {}, 4,"1 / 3",false,nil,nil,"OK"
+local cfg,sent,cap,count,hovered,pressed,enabled,dimmed,caption={}, {}, 4,"1 / 3",false,false,nil,nil,"OK"
 local visible,solo_exists,authorized=false,true,nil
 local actor={GetEntityId=function()return {Value=1}end}
 local actors={["1"]=actor}
-local button={SetIsEnabled=function(_,v)enabled=v end,IsHovered=function()return hovered end}
+local button={SetIsEnabled=function(_,v)enabled=v end,IsHovered=function()return hovered end,IsPressed=function()return pressed end}
 local ok={BW_Button=button,BW_Text={GetText=function()return caption end,SetText=function(_,v)caption=v end}}
 setmetatable(ok,{__newindex=function(t,k,v)if k=="bIsDimmed"then dimmed=v else rawset(t,k,v)end end})
 local widget={BW_WBP_GroupOption={GetVisibility=function()return 0 end,SetVisibility=function()end},BW_WBP_ButtonOK=ok,
@@ -42,8 +42,8 @@ open("one");assert(enabled==true and dimmed==false and caption=="Start Solo","Al
 count="2 / 3";tick();assert(enabled==true and caption=="OK","With a partner it is the normal start")
 count="4 / 3";tick();assert(enabled==false and dimmed==true,"Over the cap stays refused")
 count="1 / 3";tick();assert(enabled==true and caption=="Start Solo")
-hovered=true;tick();visible=false;tick();hovered=false
-assert(has("one","solo")and caption=="OK","A close with the pointer on Start Solo chooses it and restores the caption")
+hovered,pressed=true,true;tick();visible=false;tick();hovered,pressed=false,false
+assert(has("one","solo")and caption=="OK","A click on Start Solo chooses it and restores the caption")
 E.reply(actor,P.pack("one","selected","1"));tick()
 assert(cfg.selection_state:find("|selected|1|pack.solo|female:1|",1,true),"The lone Zoi is bound to the solo scene")
 
@@ -51,9 +51,13 @@ open("x");assert(enabled==true);visible=false;tick()
 assert(not has("x","solo")and has("x","closed"),"Closing with the pointer elsewhere is a cancel")
 E.reply(actor,P.pack("x","cancelled","none"));tick()
 
-open("late");hovered=true;tick();hovered=false;for _=1,4 do tick(.1)end;visible=false;tick()
-assert(not has("late","solo"),"Passing over the button earlier is not a click")
+open("late");hovered,pressed=true,true;tick();hovered,pressed=false,false;for _=1,4 do tick(.1)end;visible=false;tick()
+assert(not has("late","solo"),"A press long before the close is not this click")
 E.reply(actor,P.pack("late","cancelled","none"));tick()
+-- PR #2 review: closing the picker (X, Esc, its close handler) right after the pointer rested on Start Solo is a cancel.
+open("hover");hovered=true;tick();visible=false;tick();hovered=false
+assert(not has("hover","solo")and has("hover","closed"),"A hover followed by a close is not a click")
+E.reply(actor,P.pack("hover","cancelled","none"));tick()
 
 local started
 package.loaded["SceneZOI.AddonAPI"]={start_from_picker=function(_,ids,chosen)started=table.concat(ids,"+")..":"..chosen.node;return {accepted=true}end}
@@ -70,7 +74,7 @@ E.reply(actor,P.pack("held","selected","1+8"));tick()
 assert(authorized=="held"and cfg.selection_state:find("|unavailable|participant_busy|",1,true),"A Zoi already in a scene is refused with its own message")
 solo_exists=false;count="1 / 3"
 open("none");assert(enabled==false and dimmed==true and caption=="OK","No solo scene for this Zoi: the old rule stands")
-hovered=true;tick();visible=false;tick();hovered=false
+hovered,pressed=true,true;tick();visible=false;tick();hovered,pressed=false,false
 assert(not has("none","solo"),"A greyed button can never start one")
 E.reply(actor,P.pack("none","cancelled","none"));tick()
 solo_exists=true
@@ -78,4 +82,4 @@ solo_exists=true
 cfg.selection_request=P.pack("early","open","1");E.tick(.2,actors,false);visible=true;tick()
 assert(enabled==false,"Before the simulation is ready the button stays off")
 E.stop()
-print("Start Solo passed: live only with a matching solo scene, caption follows the selection, click versus cancel, and the bound roster.")
+print("Start Solo passed: live only with a matching solo scene, caption follows the selection, an explicit click versus a hover or a cancel, and the bound roster.")
