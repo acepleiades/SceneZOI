@@ -230,10 +230,19 @@ s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'c');s.tasks.p
 step(s,1,1);assert(s.tasks.participants['1'].charge.completions==1 and not actions.stop,'Not done until the required stage has played')
 step(s,1,dwell);assert(s.node.id=='b','It moves to the loop the requirement needs')
 step(s,1,.5);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
--- A stage-bound requirement that has passed cannot be met later.
+-- Fast progress does not pass a stage whose required loop has not played while there is a way to it: the stage
+-- stays until that loop plays, then the next one is entered.
 s=staged({goals={goal_lead,goal_partner},stages=3,required_stages={{stage=1,match=suggestive}}},'a',3)
 s.tasks.participants['1'].charge.value=50;s.tasks.participants['2'].charge.value=50
-step(s,3,.001);assert(actions.stop=='required_stage_unavailable','The first stage passed without its loop')
+step(s,3,.001);assert(not actions.stop and s.plan.stage==1,'Progress before the dwell does not skip the required stage')
+step(s,1,dwell);assert(s.node.id=='b','It goes to the loop the stage needs')
+step(s,1,.001);assert(s.plan.required_stages[1].met,'and plays it')
+s.plan.dwell=dwell;step(s,1,.001);assert(s.plan.stage==2 and not actions.stop,'then the next stage is entered')
+-- With no way to the required loop, the safety stop still ends the plan.
+node('island',{lead=full(1),partner=full(1)},{},{content_rating='GENERAL'})
+s=staged({goals={goal_lead,goal_partner},stages=3,required_stages={{stage=1,match=suggestive}}},'island',3)
+s.tasks.participants['1'].charge.value=50;s.tasks.participants['2'].charge.value=50
+step(s,300,1);assert(actions.stop=='required_stage_unavailable','An unreachable required loop still ends the plan: '..tostring(actions.stop))
 -- Preferences rank what is eligible, by the fraction of the chosen count.
 local preference={{from=0,to=.4,match=suggestive},{from=.6,to=1,match=explicit}}
 local early=plan_spec({goals={goal_lead},stages=4,stage_preferences=preference});early.stage_count=4

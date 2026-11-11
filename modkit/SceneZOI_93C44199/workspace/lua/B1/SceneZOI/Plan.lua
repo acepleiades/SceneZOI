@@ -283,6 +283,15 @@ local function open_requirement(plan,requirement)
  return not requirement.met and(requirement.stage==nil or requirement.stage==plan.stage)
 end
 
+-- A requirement pinned to the current stage that has not played yet: the stage stays until its loop plays (the
+-- safety limits still apply), even when progress already calls for the next one.
+local function stage_bound_open(plan)
+ for _,requirement in ipairs(plan.required_stages)do
+  if not requirement.met and requirement.stage==plan.stage then return true end
+ end
+ return false
+end
+
 -- Visits what the fixed roster can reach along authored edges, nearest first. Never a jump.
 local function walk(session,visit,from)
  local Catalog=require('SceneZOI.Catalog');local Search=search();local Binding=require('SceneZOI.Binding')
@@ -489,7 +498,7 @@ function M.tick(session,dt,scale)
    plan.heading=nil
   end
  end
- if plan.stage_played and stage_due(session,plan)>plan.stage then
+ if plan.stage_played and stage_due(session,plan)>plan.stage and(timed or not stage_bound_open(plan))then
   plan.stage,plan.stage_played=plan.stage+1,false
   local edge,target=M.route(session,plan)
   plan.heading=target
