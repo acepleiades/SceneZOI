@@ -338,7 +338,7 @@
     //   - On game save (auto/manual): C++ calls __uimod_collectSaveState()
     //     which serializes _appState into the save file's UIMD chunk.
     //   - On game load:   __uimod_deliverLoadedState() restores _appState and
-    //     invokes window._onStateLoaded(state) if defined in app.js.
+    //     invokes window._onStateLoaded with only the incoming save data.
     // NOTE: guarded with `if (inzoi.saveState)` so the ModKit in-editor preview
     //       (whose mock SDK has no saveState) still defines `wf` below and runs.
     // ------------------------------------------------------------------
@@ -358,7 +358,7 @@
                     }
                 }
                 if (typeof window._onStateLoaded === 'function') {
-                    window._onStateLoaded(_appState);
+                    window._onStateLoaded(saved);
                 }
             } catch (e) {}
         });

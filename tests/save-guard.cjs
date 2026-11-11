@@ -1,15 +1,25 @@
 require('./fixtures/localization.cjs');
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),path=require('path');
-const src=fs.readFileSync(path.resolve(__dirname,'../modkit/SceneZOI_93C44199/ui/scenezoi/save-guard.js'),'utf8');
+const ui=path.resolve(__dirname,'../modkit/SceneZOI_93C44199/ui/scenezoi');
+const src=fs.readFileSync(path.join(ui,'save-guard.js'),'utf8');
+const windowSource=fs.readFileSync(path.join(ui,'window.js'),'utf8');
+const saveStateStart=windowSource.indexOf('    var _appState = {};');
+const saveStateEnd=windowSource.indexOf('    // Public API for app.js',saveStateStart);
+assert(saveStateStart>=0 && saveStateEnd>saveStateStart,'The native SaveState registration must be included');
+const nativeSaveState=windowSource.slice(saveStateStart,saveStateEnd);
 function fixture(supported=true){
- const state={},cfg={},writes=[],context={};context.window=context;
- vm.runInNewContext(src,context);
- let provider,saves=0,loads=0,fail=false;
- const guard=context.SceneZOISaveGuard.create({state,client:'client',sdk:supported?{register(cb){provider=cb;}}:null,
+ const cfg={},writes=[],context={};context.window=context;
+ let provider,onLoad,saves=0,loads=0,fail=false;
+ const sdk=supported?{register(cb){provider=cb;},onLoad(cb){onLoad=cb;}}:null;
+ context.inzoi={saveState:sdk};
+ // Use the real window registration so tests exercise the SDK callback and the journal hook together.
+ vm.runInNewContext(nativeSaveState+src,context);
+ const state=context._appState;
+ const guard=context.SceneZOISaveGuard.create({state,client:'client',sdk,
   encode:JSON.stringify,decode:JSON.parse,read:key=>Promise.resolve(cfg[key]),
   write(key,value){writes.push([key,value]);if(fail){fail=false;return Promise.reject(Error('transient'));}cfg[key]=value;return Promise.resolve();},
   stopForSave(){saves++;},stopForLoad(){loads++;}});
- return {state,cfg,writes,guard,load:v=>context._onStateLoaded(v),save:()=>JSON.parse(JSON.stringify(provider())),fail:()=>{fail=true;},saves:()=>saves,loads:()=>loads};
+ return {state,cfg,writes,guard,load:v=>onLoad(JSON.stringify(v)),save:()=>JSON.parse(JSON.stringify(provider())),fail:()=>{fail=true;},saves:()=>saves,loads:()=>loads};
 }
 const snapshot=(revision,records)=>({version:2,host:'host.1',revision,records});
 const record={token:'scene.1',serial:1,participants:{'1':{collision:true}},furniture:[]};
@@ -28,7 +38,11 @@ const record={token:'scene.1',serial:1,participants:{'1':{collision:true}},furni
  assert.equal(JSON.stringify(f.state.scenezoiSaveJournal),JSON.stringify(snapshot(9,[record])),'Loaded records stay cached until the runtime republishes');
  f.cfg.save_restore_state='SZ2|other|1|ready|ok';await f.guard.poll();assert(f.guard.restoring());assert.equal(f.cfg.save_restore,packet);
  f.cfg.save_restore_state='SZ2|client|1|ready|ok';await f.guard.poll();assert(f.guard.available(),'Indexing is enough; absent Zois must not block new scenes');
- const g=fixture();g.load({});await g.guard.poll();assert(g.cfg.save_restore.includes('"records":[]'),'Loading a save with no journal still clears the runtime');
+ const g=fixture();
+ g.cfg.save_snapshot=JSON.stringify(snapshot(5,[record]));await g.guard.poll();
+ g.load({});
+ assert.equal(g.state.scenezoiSaveJournal,null,'A loaded payload without a journal clears the previous world cached journal');
+ await g.guard.poll();assert(g.cfg.save_restore.includes('"records":[]'),'An empty journal reaches the runtime');
  g.cfg.save_restore_state='SZ2|client|1|error|invalid_recovery';await g.guard.poll();assert(g.guard.available(),'A rejected journal must not block forever');
  // A snapshot read started before a load must not reach the loaded world: neither its records nor its acknowledgement.
  const old={token:'old.1',serial:1,participants:{'7':{collision:true}},furniture:[]};

@@ -1059,7 +1059,9 @@ local function advance(current, dt)
         local change = current.outfit_change
         local operation = change and (" outfit=" .. change.participant.id .. ":" .. change.item .. ":enabled=" .. change.enabled ..
             ":count=" .. change.counter .. ":ack=" .. tostring(change.acknowledged)) or ""
-        M.diagnostic("Preparation failed: node=" .. current.node.id .. " stage=" .. code .. operation .. " " .. Appearance.status(current))
+        local ok, status = pcall(current.subsystems.status, current.subsystems)
+        M.diagnostic("Preparation failed: node=" .. current.node.id .. " stage=" .. code .. operation
+            .. " " .. Appearance.status(current) .. (ok and " " .. status or " subsystem_status_unavailable"))
         stop_session(current, code)
         return
     end

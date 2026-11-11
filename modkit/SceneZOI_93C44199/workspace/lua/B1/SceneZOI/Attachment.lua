@@ -46,6 +46,8 @@ end
 
 function M.status(session)
     if not session.node.attachment then return "attachment=none" end
+    local waiting = session.attachment_wait
+    if waiting then return "attachment_wait=" .. waiting end
     local attachment = session.attachment
     if attachment then
         local parent, component = attachment.parent, attachment.component
@@ -79,11 +81,16 @@ end
 
 function M.prepare(session, actor)
     if not session.node.attachment then return true end
-    if not clothes_removed(actor, session) then return false end
-    if session.node.attachment.body_profile and not Body.prepare(session, actor) then return false end
+    local clothes_ready, detail = clothes_removed(actor, session)
+    if not clothes_ready then session.attachment_wait = detail; return false end
+    if session.node.attachment.body_profile and not Body.prepare(session, actor) then
+        session.attachment_wait = "body_prepare:" .. Body.status(session)
+        return false
+    end
     local spec = session.node.attachment
     local parent = attachment_parent(actor,spec)
-    if not parent then return false end
+    if not parent then session.attachment_wait = "parent"; return false end
+    session.attachment_wait = nil
     assert(parent and parent:GetBoneIndex(spec.socket) >= 0, "Participant has no configured socket bone")
     if session.attachment then
         local attachment = session.attachment
@@ -171,11 +178,13 @@ end
 function M.ready(session)
     if not session.node.attachment then return true end
     local attachment = session.attachment
-    if not attachment then return false end
+    if not attachment then session.attachment_wait = "component"; return false end
     local component = attachment.component
     assert(attachment_parent(attachment.actor,session.node.attachment) == attachment.parent, "Participant attachment parent changed during preparation")
     assert(component:GetSkeletalMeshAsset() == session.attachment_asset, "Attachment mesh was replaced")
-    if component:GetNumBones() == 0 or not clothes_removed(attachment.actor, session) then
+    local clothes_ready, detail = clothes_removed(attachment.actor, session)
+    if component:GetNumBones() == 0 or not clothes_ready then
+        session.attachment_wait = clothes_ready and "bones" or detail
         attachment.ready_frames = 0
         return false
     end
@@ -183,11 +192,23 @@ function M.ready(session)
     local required_materials = session.node.attachment.material_profile and 2 or 1
     assert(material_count >= required_materials, "Attachment has insufficient material slots")
     for index = 0, material_count - 1 do
-        if not component:GetMaterial(index) then attachment.ready_frames = 0; return false end
+        if not component:GetMaterial(index) then
+            session.attachment_wait = "material_slot_" .. index
+            attachment.ready_frames = 0
+            return false
+        end
     end
     -- Apply participant colors while hidden, before switching body coverage or playback.
-    if session.node.attachment.material_profile and not Color.ready(attachment, session.body_region, session.node.attachment.material_profile) then attachment.ready_frames = 0; return false end
-    if session.node.attachment.body_profile and not Body.ready(session) then return false end
+    if session.node.attachment.material_profile and not Color.ready(attachment, session.body_region, session.node.attachment.material_profile) then
+        session.attachment_wait = Color.status(attachment)
+        attachment.ready_frames = 0
+        return false
+    end
+    if session.node.attachment.body_profile and not Body.ready(session) then
+        session.attachment_wait = "body_ready:" .. Body.status(session)
+        return false
+    end
+    session.attachment_wait = nil
     -- This is a post-load component warm-up, not a guessed delay in place of asset loading.
     -- Framework-managed attachments warm up hidden until the body-track handoff.
     if not session.defer_visibility then component:SetHiddenInGame(false, true) end

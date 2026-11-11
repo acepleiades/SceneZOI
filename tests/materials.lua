@@ -34,7 +34,11 @@ local function fixture()
     local actor={AppearanceComponent={AppearanceSetting={FinalHead={Hair=hair}},NamedComponents=map()}}
     local component={created={},slots={MatchedSkin=0,MatchedHair=1},original={material(color(1,1,1)),material(color(0,0,0))}}
     function component:GetMaterialIndex(name) return self.slots[name] or -1 end
-    function component:GetMaterial(slot) return self.original[slot+1] end
+    function component:GetMaterial(slot) return self.created[slot+1] or self.original[slot+1] end
+    function component:SetMaterial(slot,value)
+        assert(value==self.original[slot+1],"Restore the authored material")
+        self.created[slot+1]=nil
+    end
     function component:CreateDynamicMaterialInstance(slot,source)
         assert(source==self.original[slot+1],"Instantiate the mesh-assigned material without substituting an asset");local mid=material(color(0,0,0))
         self.created[slot+1]=mid;return mid
@@ -48,8 +52,15 @@ assert(not Color.ready(a,b) and not a.color,"Invalid skin input must not create 
 source.value=reference
 source.dynamic=false
 assert(not Color.ready(a,b) and not a.color,"An uninstalled skin MID must not create color instances")
-source.dynamic=true;hair.VectorParameters.TipColor=nil
-assert(not Color.ready(a,b) and not a.color,"Missing hair appearance must block readiness")
+source.dynamic=true
+local bald,bb,bs=fixture()
+bald.actor.AppearanceComponent.AppearanceSetting.FinalHead.Hair=nil
+assert(not Color.ready(bald,bb));assert(Color.ready(bald,bb))
+assert(bald.color.skin.SkinTint.R==reference.R,"Bald Zois still require skin matching")
+assert(not bald.color.hair and bald.component:GetMaterial(1)==bald.component.original[2],"Keep the authored hair material")
+assert(Color.status(bald):find("hair_source=authored",1,true))
+bs.value=color(-1,0,0)
+assert(not Color.ready(bald,bb) and Color.status(bald)=="color=waiting:skin","Missing hair does not relax skin readiness")
 hair.VectorParameters.TipColor=color(.1,.2,.3)
 hair.OverrideVectorParameters.TipColor=color(0,0,0)
 assert(not Color.ready(a,b));assert(Color.ready(a,b))
@@ -93,6 +104,12 @@ fallback.actor.AppearanceComponent.NamedComponents=map({Hair={GetMaterial=functi
 assert(not Color.ready(fallback,fb));assert(Color.ready(fallback,fb))
 close(fallback.color.hair.HairColor.R,.6);assert(fallback.color.hair_source=="material")
 assert(applied.writes==0)
+fallback.actor.AppearanceComponent.NamedComponents=map()
+assert(not Color.ready(fallback,fb));assert(Color.ready(fallback,fb))
+assert(not fallback.color.hair and fallback.component:GetMaterial(1)==fallback.component.original[2],"A retained attachment must drop its old hair override")
+fh.VectorParameters.TipColor=color(0,0,0)
+assert(not Color.ready(fallback,fb));assert(Color.ready(fallback,fb))
+assert(fallback.color.hair.HairColor.R==0 and fallback.color.hair_source=="appearance","A hair source that becomes available still matches")
 local invalid,ib=fixture()
 invalid.component.slots.MatchedSkin=nil
 assert(not pcall(Color.ready,invalid,ib),"A changed material-slot layout must fail explicitly")
@@ -105,4 +122,4 @@ assert(partial.color and partial.color.skin,"Partial creation must remain owned 
 local unsupported,ub,us=fixture()
 us.parameters["Chromophore Contribution"]=color(0,0,0)
 assert(not pcall(Color.ready,unsupported,ub),"Zero normalization denominators must fail explicitly")
-print("Color checks passed: mesh-assigned material instances, direct linear skin/chromophore inputs, delayed sources, overrides/black, hair fallback, isolated MIDs, readiness resets and partial failure.")
+print("Color checks passed: mesh-assigned material instances, direct linear skin/chromophore inputs, delayed sources, overrides/black, bald and delayed hair fallback, isolated MIDs, readiness resets and partial failure.")

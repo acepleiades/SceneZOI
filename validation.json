@@ -328,6 +328,12 @@
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
   "version": "1.1.7",
+  "bald_attachment_matching": {
+    "baseline": "Bald Zoi reached Standing Idle, then timed out preparing hzoi.standing_rear with participant appearance ready.",
+    "automated_checks": "Passed framework suite including authored hair tint fallback, resolved hair color, and skin readiness.",
+    "native_validation": "Lua and UI passed. Verified three protected Lua updates with cooked bytes and preferences preserved.",
+    "author_acceptance": "Standing Rear Sex played with the bald Zoi. Standing Handjob played after a mesh hairstyle was equipped. Both recorded clean Exit. Live tint values were not captured."
+  },
   "ui_lifecycle_hardening": {
     "checkpoint": "docs/validation/ui-lifecycle-20261106.json",
     "automated_checks": "passed",

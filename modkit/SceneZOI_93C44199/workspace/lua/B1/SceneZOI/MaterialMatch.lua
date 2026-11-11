@@ -21,15 +21,22 @@ end
 
 local function hair_color(actor, parameter)
     local appearance = actor.AppearanceComponent
-    local hair = appearance.AppearanceSetting.FinalHead.Hair
+    local setting = appearance and appearance.AppearanceSetting
+    local head = setting and setting.FinalHead
+    local hair = head and head.Hair
+    local color
     -- FinalHead includes the resolved style. Explicit color overrides take priority.
-    local color = lookup(hair.OverrideVectorParameters, parameter)
-    if valid(color) then return color, "override" end
-    color = lookup(hair.VectorParameters, parameter)
-    if valid(color) then return color, "appearance" end
+    if hair then
+        color = lookup(hair.OverrideVectorParameters, parameter)
+        if valid(color) then return color, "override" end
+        color = lookup(hair.VectorParameters, parameter)
+        if valid(color) then return color, "appearance" end
+    end
+    local components = appearance and appearance.NamedComponents
+    if not components then return end
     -- Some styles leave their default color in the applied material instead of the
     -- appearance maps. Read that existing MID without modifying the character.
-    for name, component in pairs(appearance.NamedComponents:ToTable()) do
+    for name, component in pairs(components:ToTable()) do
         if tostring(name):lower() == "hair" or
             (appearance.LoadedHairMesh and component:GetSkeletalMeshAsset() == appearance.LoadedHairMesh) then
             local material = component:GetMaterial(0)
@@ -58,11 +65,12 @@ function M.ready(attachment, body, profile_id)
     end
     local skin = material:K2_GetVectorParameterValue(profile.source_skin_parameter)
     local chromophore = material:K2_GetVectorParameterValue(profile.source_chromophore_parameter)
-    local hair, source = hair_color(attachment.actor,profile.source_hair_parameter)
-    if not valid(skin) or not valid(hair) then
-        attachment.color_wait = not valid(skin) and "skin" or "hair"
+    if not valid(skin) then
+        if attachment.color then attachment.color.frames = 0 end
+        attachment.color_wait = "skin"
         return false
     end
+    local hair, source = hair_color(attachment.actor,profile.source_hair_parameter)
     attachment.color_wait = nil
     assert(valid(chromophore) and chromophore.R > 0.000001 and chromophore.G > 0.000001 and chromophore.B > 0.000001,
         "Body material has no usable Chromophore Contribution for stock skin matching")
@@ -76,10 +84,20 @@ function M.ready(attachment, body, profile_id)
         -- Use the materials assigned to the mesh. Only per-attachment instances
         -- are created for tinting; there is no alternate skin asset to load/swap.
         state.skin = component:CreateDynamicMaterialInstance(skin_slot, component:GetMaterial(skin_slot), "SceneZOI_MatchedSkin")
-        state.hair = component:CreateDynamicMaterialInstance(hair_slot, component:GetMaterial(hair_slot), "SceneZOI_MatchedHair")
-        assert(state.skin and state.hair, "Could not create attachment color materials")
+        assert(state.skin, "Could not create attachment skin material")
+        state.hair_slot, state.authored_hair = hair_slot, component:GetMaterial(hair_slot)
     end
-    local signature = key(skin) .. ":" .. key(chromophore) .. ":" .. key(hair)
+    -- A bald style may have no scalp color. Leave the authored material in place
+    -- while continuing to sample for a usable color during attachment preparation.
+    if hair and not state.hair then
+        state.hair = assert(component:CreateDynamicMaterialInstance(state.hair_slot, state.authored_hair, "SceneZOI_MatchedHair"),
+            "Could not create attachment hair material")
+    elseif not hair and state.hair then
+        component:SetMaterial(state.hair_slot, state.authored_hair)
+        state.hair = nil
+    end
+    local hair_value = hair and key(hair) or "authored"
+    local signature = key(skin) .. ":" .. key(chromophore) .. ":" .. hair_value
     if signature ~= state.signature or state.body_material ~= material then
         -- The matched material performs the verified stock ordinary-skin branch
         -- per pixel: desaturation, power 1.15, divide by Chromophore Contribution,
@@ -87,9 +105,9 @@ function M.ready(attachment, body, profile_id)
         -- Dividing here by the default skin tone made colors1 visibly too pale.
         state.skin:SetVectorParameterValue(profile.skin_parameter, UE.FLinearColor(skin.R, skin.G, skin.B, 1))
         state.skin:SetVectorParameterValue(profile.chromophore_parameter, UE.FLinearColor(chromophore.R, chromophore.G, chromophore.B, 1))
-        state.hair:SetVectorParameterValue(profile.hair_parameter, UE.FLinearColor(hair.R, hair.G, hair.B, 1))
+        if hair then state.hair:SetVectorParameterValue(profile.hair_parameter, UE.FLinearColor(hair.R, hair.G, hair.B, 1)) end
         state.signature, state.body_material, state.frames = signature, material, 0
-        state.skin_value, state.chromophore_value, state.hair_value, state.hair_source = key(skin), key(chromophore), key(hair), source
+        state.skin_value, state.chromophore_value, state.hair_value, state.hair_source = key(skin), key(chromophore), hair_value, source or "authored"
     end
     -- The color instances belong solely to this temporary component; destroying it
     -- and dropping attachment state releases them without touching body/hair MIDs.
@@ -99,7 +117,8 @@ end
 
 function M.status(attachment)
     local state = attachment and attachment.color
-    if not state or not state.signature then return "color=waiting:" .. tostring(attachment and attachment.color_wait or "unknown") end
+    local waiting = attachment and attachment.color_wait
+    if waiting or not state or not state.signature then return "color=waiting:" .. tostring(waiting or "unknown") end
     return "skin_linear=" .. state.skin_value .. ":skin_chromophore=" .. state.chromophore_value ..
         ":hair_linear=" .. state.hair_value .. ":hair_source=" .. state.hair_source
 end
