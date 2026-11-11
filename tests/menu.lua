@@ -8,14 +8,23 @@ local object_rows,talk_rows={ours,native},{npc,other_mod}
 UE={UGameplayStatics={GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=controlled}end}end},
  UWidgetBlueprintLibrary={GetAllWidgetsOfClass=function(_,_,kind)return kind==1 and object_rows or talk_rows end}}
 inzoi={UB1ObjectInteractionListEntry={StaticClass=function()return 1 end},UB1TalkInteractionListEntry={StaticClass=function()return 2 end}}
+local debug_start=false
+package.loaded['SceneZOI.Settings']={debug_start_enabled=function()return debug_start end}
+package.loaded['SceneZOI.Localization']={text=function(key)return key end}
+ours.SizeBox_Tag=entry('MOD',1)
+ours.BW_Text_Content={SetText=function(_,label)ours.label=label end}
 local M=require("SceneZOIStarter.Menu")
 assert(M.tick({a={}},false));assert(ours.visibility==1 and npc.visibility==1)
 assert(M.tick({a={}},true));assert(ours.visibility==0 and npc.visibility==1 and native.visibility==0 and other_mod.visibility==0)
+assert(ours.label=='Solo SceneZOI session' and ours.SizeBox_Tag.visibility==1)
+debug_start=true;M.tick({a={}},true)
+assert(ours.label=='(Debug) SceneZOI manual start' and ours.SizeBox_Tag.visibility==0)
+debug_start=false;M.tick({a={}},true);assert(ours.SizeBox_Tag.visibility==1)
 controlled=2;M.tick({a={}},true);assert(ours.visibility==1 and npc.visibility==0,"Recycled widgets must follow current control")
 -- Native list entries are pooled. Rebinding Data does not reset Slate visibility.
 ours.Data={InteractionBagId='Object_Select_MyBed02',TargetEntityId={Value=30}}
 M.tick({a={}},true)
-assert(ours.visibility==0,'Recycled Assign Bed row must not inherit the SceneZOI collapse')
+assert(ours.visibility==0 and ours.SizeBox_Tag.visibility==0,'Recycled native rows restore visibility and tags')
 native.visibility=1
 npc.visibility=3;npc.Data.TargetEntityId.Value=1
 M.tick({a={}},true);assert(npc.visibility==1)
@@ -31,6 +40,13 @@ package.loaded['SceneZOI.Catalog']={get_snapshot=function()return {nodes={}}end}
 object_rows={furniture,native};M.tick({a={}},true);assert(furniture.visibility==1)
 object_rows={native};M.tick({a={}},true);assert(furniture.visibility==0,'Detached pooled entries must be released before reuse')
 object_rows={furniture,native};M.tick({a={}},true);assert(furniture.visibility==1)
-M.stop();assert(furniture.visibility==0 and native.visibility==1,'Unload restores owned mutations without changing other rows')
+local future=entry('_UIMod_SceneZOI_93C44199/scenezoi-starter~scenezoi_furniture',31)
+package.loaded['SceneZOI.Furniture']={available=function(id)return id=='31'and 'future_profile' or nil end}
+package.loaded['SceneZOI.Catalog']={get_snapshot=function()return {nodes={future={starting_hub=true,furniture='future_profile'}}}end}
+package.loaded['SceneZOI.FurnitureData']={compatible=function(node,profile)return node.furniture==profile end}
+object_rows={furniture,future,native};M.tick({a={}},true);assert(furniture.visibility==1 and future.visibility==1)
+debug_start=true;M.tick({a={}},true);assert(furniture.visibility==1 and future.visibility==0,'Debug mode supports any available compatible profile')
+debug_start=false;M.tick({a={}},true);assert(future.visibility==1,'Turning debug off hides future furniture profiles again')
+M.stop();assert(furniture.visibility==0 and future.visibility==0 and native.visibility==1,'Unload restores owned mutations without changing other rows')
 M.tick({},true)
 print("Native menu passed: control/readiness, reused rows, exact native visibility, detached entries and unload cleanup.")

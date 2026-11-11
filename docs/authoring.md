@@ -19,8 +19,8 @@ Give the agent this repository and the following inputs.
   to ModKit for import and packaging. For a local playback test, provide a
   working SceneZOI installation and a test save with a compatible roster.
 - **How to enter the scene.** Say whether it should appear in a compatible hub
-  or be selectable directly from Start SceneZOI. Mention any required
-  attachments, clothing behavior or other content dependencies.
+  or be selectable directly from the [debug picker](group-support.md#solo-launcher-and-debug-picker).
+  Mention any required attachments, clothing behavior or other content dependencies.
 
 For a first standing pair, point the agent to the
 [neutral standing scene](../packs/scenezoi/scenes/standing_idle.json) and the

@@ -5,7 +5,6 @@ local C=require('SceneZOI.Config')
 local P=require('SceneZOI.Protocol')
 local J=require('SceneZOI.Json')
 local M={}
-local MAX_RECORDS=32
 local RETRY_SECONDS=1
 local records,revision,serial,host,seen={},0,0,nil,nil
 local function read(key)
@@ -26,22 +25,17 @@ local function ordered()
  table.sort(rows,function(a,b)return a.serial<b.serial end)
  return rows
 end
-local function publish()
- revision=revision+1
+local function publish(check_readable)
+ local next_revision=revision+1
  local rows=J.array({})
  for _,record in ipairs(ordered())do
   rows[#rows+1]={token=record.token,serial=record.serial,participants=record.people,furniture=J.array(record.beds)}
  end
- write('save_snapshot',P.encode(J.encode({version=2,host=host,revision=revision,records=rows})))
+ local text=J.encode({version=2,host=host,revision=next_revision,records=rows})
+ if check_readable then J.decode(text)end
+ write('save_snapshot',P.encode(text))
+ revision=next_revision
  return revision
-end
--- Bounded, so a long save cannot grow without limit. Dropping the oldest keeps the rest recoverable.
-local function trim()
- local rows=ordered()
- for index=1,#rows-MAX_RECORDS do
-  records[rows[index].token]=nil
-  print('[SceneZOI] Save journal is full; dropped the oldest record '..rows[index].token)
- end
 end
 local function retire_if_empty(record)
  if next(record.people)==nil and #record.beds==0 then records[record.token]=nil end
@@ -68,8 +62,15 @@ function M.offer(current,actor,fields)
   local people={};for key,value in pairs(current.save_records)do people[key]=value end
   serial=serial+1
   records[current.token]={token=current.token,serial=serial,people=people,beds=beds,sent={}}
-  trim()
-  current.journal_revision=publish()
+  -- A new scene needs a journal that the save reader can load. Keep all older records if it cannot be written.
+  local ok,result=pcall(publish,true)
+  if not ok then
+   records[current.token]=nil
+   if not current.journal_write_failed then print('[SceneZOI] Save snapshot could not be written: '..tostring(result))end
+   current.journal_write_failed=true
+   return
+  end
+  current.journal_revision=result
  else
   local record=records[fields[1]];if not record then return end
   if fields[2]=='lent'and record.people[id]then record.people[id].lent_costume=fields[3]
@@ -152,7 +153,7 @@ function M.tick(actors)
    seen=raw
    local ok,result=pcall(index_journal,f[4])
    if ok then
-    records=result;trim();publish()
+    records=result;publish()
     write('save_restore_state',P.pack(f[1],f[2],'ready','ok'))
    else write('save_restore_state',P.pack(f[1],f[2],'error','invalid_recovery'))end
   end

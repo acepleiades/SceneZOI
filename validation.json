@@ -328,6 +328,26 @@
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
   "version": "1.1.7",
+  "solo_launcher_and_debug_start": {
+    "date": "2026-11-11",
+    "runtime_build": "20261111-solo-launcher-2",
+    "ui_build": "20261111-solo-launcher-ui-3",
+    "automated_checks": "Framework suite passed. Coverage includes direct compatible solo entry with no picker, control and ownership refusal, both debug switch states, any supported furniture profile, pooled row restoration and restart with stale focus and Start records.",
+    "native_validation": "ModKit Lua and both UI apps passed without errors. The filtered local exports retained exactly the four owned cooked assets. The hot updates preserved the loaded cooked bytes and used native integrity values.",
+    "retail_readback": "The solo row appeared immediately below AI Emote without MOD and started neutral solo playback with no picker or plan. After a fresh launch the styled switch saved on, the debug picker started a paired standing scene, and switching off allowed direct solo entry again. The paired standing Exit completed ok/ok. A subsequent debug start on a supported bed reached paired playback.",
+    "crash_and_recovery": "One retail process reported an out-of-memory allocation of about 109 GiB during a solo preparation after a UI remount, before switch interaction. Cause unconfirmed. The fresh process restored autosave but initially reopened the old panel from a stale focus record while the session registry was idle. Resetting the focus record hid the panel. The runtime now publishes its empty focus on boot.",
+    "verification_limits": "Furniture support beyond the tested bed was exercised with an automated non-bed profile. The allocation failure did not recur during the subsequent tested starts."
+  },
+  "session_recovery_and_manual_timeout": {
+    "date": "2026-11-11",
+    "runtime_build": "20261111-session-recovery-1",
+    "automated_checks": "Framework suite passed. Returning to a manual scene resets its 60-second off-panel timer. Expiry releases its roster and leaves other sessions playing. A 40-record journal survives loading, a failed publication, adding a 41st record and reloading. Participant and furniture acknowledgements retire the older record independently.",
+    "native_validation": "ModKit Lua and both UI apps passed without errors. Prepared bytes matched source. Isolated PackageUGC succeeded and the exact filter retained four owned asset packages.",
+    "installation": "Three protected Lua files and their native checksums hot-installed and hash-verified. Cooked containers and persisted preferences matched the backup. Launcher and controls acknowledged the new runtime after remount.",
+    "retail_readback": "Author clicked Start Solo and switched to another household Zoi during playback. Focus cleared and autosave was released while the journal still held the active record. About 60.1 seconds after the observed focus switch, the scene was idle with lifetime_expired and the journal was empty.",
+    "verification_limits": "Journal retention beyond 32 records was exercised with automated fixtures. No large journal was injected into a retail save, and packaged save/load was not repeated for this update.",
+    "earlier_concurrent_validation": "docs/validation/concurrent-sessions-20261109.json"
+  },
   "bald_attachment_matching": {
     "baseline": "Bald Zoi reached Standing Idle, then timed out preparing hzoi.standing_rear with participant appearance ready.",
     "automated_checks": "Passed framework suite including authored hair tint fallback, resolved hair color, and skin readiness.",

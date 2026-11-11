@@ -805,6 +805,7 @@ local function apply_panel_controls(focused)
     Settings.request(focused,"task_rates",read("settings_task_rates"))
     Settings.request(focused,"audio",read("settings_audio"))
     Settings.request(focused,"npc_scene",read("settings_npc_scene"))
+    Settings.request(focused,"debug_start",read("settings_debug_start"))
     Personality.request(focused,read("personality"))
     VoicePersonality.request(focused,read("voice"))
     navigate(read("navigation"))
@@ -891,6 +892,8 @@ local function poll()
 end
 
 function M.boot()
+    -- A crash can leave an old focus packet on disk even though the new registry is empty.
+    publish_focus()
     Localization.refresh()
     Settings.boot()
     Addons.boot()
@@ -940,8 +943,11 @@ end
 -- Every scene that can run without a panel has a finite life.
 local function background_limit_reached(current, dt)
     local lifetime = current.lifetime
-    -- A scene started by hand stays active while the player is elsewhere; Exit, a save or unloading ends it.
-    if not lifetime then return nil end
+    if not lifetime then
+        current.unfocused_age = (current.unfocused_age or 0) + dt
+        if current.unfocused_age >= Config.manual_background_seconds then return "lifetime_expired" end
+        return nil
+    end
     -- An add-on's scene adds up its time without a panel: visiting it restarts nothing.
     current.background_age = (current.background_age or 0) + dt
     if current.background_age >= Config.background_max_seconds then return "lifetime_expired" end

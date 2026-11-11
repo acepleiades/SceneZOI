@@ -7,7 +7,12 @@ local J=require('SceneZOI.Json');local Sessions=require('SceneZOI.Sessions')
 local ended={}
 F.Events.subscribe('session_ended',function(e)ended[e.id]=e end)
 for id=1,10 do F.add_actor(id)end
+cfg.focus_session=P.pack('9','old.session','old.ui','1','1','test.node','preparing')
+cfg.request=P.pack('old.ui','1','start','1','test.node','first:1+second:2','none')
 R.boot()
+assert(P.unpack(cfg.focus_session)[2]=='none','Boot must clear focus left by a terminated runtime')
+R.tick(.25)
+assert(not R.any_active(),'The persisted request must not restart the old session')
 local function journal_ack()
  local j=J.decode(P.decode(cfg.save_snapshot));cfg.save_ready=P.pack(j.host,j.revision,'ready')
 end
@@ -94,16 +99,18 @@ assert(not cfg.state:find('error',1,true),'The mailbox keeps a Start packet: it 
 assert(R.snapshot(player).phase=='playing','Leaving a scene does not end it')
 assert(F.autosave.enabled==true,'With no eligible owner the autosave setting is restored')
 assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','Scenes keep playing without the panel')
--- A manual scene stays active while the player is elsewhere.
-for _=1,240 do R.tick(.25)end
-R.flush_notifications()
-assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','A manual scene has no time limit without its panel')
-R.stop('ok',player);release(player,{1,2});assert(ended[player].code=='ok')
-assert(Sessions.holder('1')==nil,'Its roster is free again')
--- Returning to a scene before its limit resets it.
-F.controlled=5;R.tick(.25);assert(R.snapshot().id==second)
+-- Returning before the manual timeout gives a fresh interval on the next switch away.
+for _=1,160 do R.tick(.25)end
+assert(R.snapshot(player).phase=='playing')
+F.controlled=1;heartbeat('ui',1);R.tick(.25);assert(R.snapshot().id==player)
 F.controlled=10;R.tick(.25)
-for _=1,8 do R.tick(.25)end
+for _=1,238 do R.tick(.25)end
+assert(R.snapshot(player).phase=='playing','Returning resets the manual off-panel timer')
+R.tick(.25)
+assert(R.snapshot(player).phase=='exiting'and R.snapshot(npc).phase=='playing','Expiry is scoped to the manual scene')
+release(player,{1,2});assert(ended[player].code=='lifetime_expired')
+for _,participant in ipairs(ended[player].participants)do assert(participant.restoration=='restored')end
+assert(Sessions.holder('1')==nil,'Its roster is free again')
 -- An owner lease has to be renewed.
 local leased=background(7,8,true,{lifetime={lease_seconds=4}})
 playing(leased,{7,8})

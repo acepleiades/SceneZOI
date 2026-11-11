@@ -37,7 +37,7 @@ effect and release its own changes when finished.
   clock, including pause, speed changes and transitions. Playback preserves the
   game's animation instances.
 - **Explicit participant roles.** Roles are independent of body type and player
-  control. Runtime systems support two or more participants, repeated body types
+  control. Runtime systems support solo and multi-Zoi rosters, repeated body types
   and independently owned resources.
 - **Declarative presentation.** Scenes can select animated expressions, partial
   facial poses, gaze targets, spatial voices and SFX, outfits and animated props.
@@ -77,17 +77,22 @@ SceneZOI builds and runs independently of either HZoi repository.
 ## Current scope and limits
 
 - **Concurrent sessions.** Scenes can run side by side, and add-ons can start
-  scenes for NPCs or autonomous scenes driven by a plan. NPC-only scenes are capped
-  at two. See [concurrent and background sessions](docs/addons.md#concurrent-and-background-sessions).
+  background or autonomous scenes. Autonomous plans can drive navigation using
+  task goals, stages, restrictions and end policies. Up to 15 NPC-only sessions
+  can run alongside household sessions. The panel and autosave suspension follow
+  the controlled Zoi's session. A save requests Exit for every active session.
+  See [concurrent and background sessions](docs/addons.md#concurrent-and-background-sessions).
 - **Fixed membership.** Participants and role assignments remain fixed until Exit.
-  The manual picker permits two or three total Zois; larger rosters require an
-  integration and compatible authored content.
-- **Small bundled library.** Neutral standing, single-bed and queen-bed hubs use
-  adult-compatible male/female appearance roles. Broader roster support depends
-  on the scene data supplied by content authors.
-- **Direct manual entry.** Start SceneZOI remains available on the controlled Zoi
-  and supported furniture. Relationship and progression rules belong to gameplay
-  integrations; technical eligibility, compatibility and availability checks remain.
+  The manual picker supports one to three Zois with compatible content. The
+  player can unselect the controlled Zoi to start a scene between the selected
+  Zois. Larger rosters require an integration and compatible authored content.
+- **Bundled scenes.** Two solo standing hubs use stock idle clips. The paired
+  standing, single-bed and queen-bed hubs use adult-compatible male/female
+  appearance roles. Packs can contribute starting scenes for other rosters.
+- **Solo entry and debug starts.** Choose **Solo SceneZOI session** below **AI Emote**
+  on the controlled Zoi to start a solo scene and reach Scene Settings. Enable
+  **SceneZOI manual start** under **Debug** to use the native picker on the controlled
+  Zoi or any supported available furniture. Debug starts default to off.
 - **Interrupted gameplay tasks.** Scene entry cancels participants' queued
   interactions and temporarily disables autonomy. Exit restores original autonomy;
   cancelled interactions and departed gameplay groups are not reconstructed.

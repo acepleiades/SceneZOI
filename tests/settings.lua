@@ -65,3 +65,11 @@ S.boot();assert(S.npc_scene_minutes()==5,'It survives a restart')
 saved['scenezoi_settings/npc_scene']=P.pack('1',999);S.boot();assert(S.npc_scene_minutes()==15,'A damaged record falls back to 15')
 saved['scenezoi_settings/npc_scene']=P.pack('1',2);S.boot();assert(S.npc_scene_minutes()==5,'A stored value below the range loads at 5')
 print('NPC scene length passed: default, bounds, persistence and damaged records.')
+
+assert(not S.debug_start_enabled(),'Default debug start is off')
+local function debug_start(count,value)S.request(s,'debug_start',P.pack('test','1','settings_debug_start',count,2,value))end
+debug_start(1,1);assert(S.debug_start_enabled())
+S.boot();assert(S.debug_start_enabled(),'Debug start survives a new host')
+fail=true;debug_start(2,0);fail=false;assert(S.debug_start_enabled(),'Storage failure preserves the active setting')
+debug_start(3,2);assert(S.debug_start_enabled(),'Only zero or one is allowed')
+debug_start(4,0);S.boot();assert(not S.debug_start_enabled(),'Disabling debug start persists')

@@ -16,13 +16,13 @@
       "id": "scenezoi_demo",
       "type": "interaction_menu",
       "target": "character",
-      "label_key": "Start SceneZOI"
+      "label_key": "Solo SceneZOI session"
     },
     {
       "id": "scenezoi_furniture",
       "type": "interaction_menu",
       "target": "object",
-      "label_key": "Start SceneZOI"
+      "label_key": "(Debug) SceneZOI manual start"
     }
   ]
 }

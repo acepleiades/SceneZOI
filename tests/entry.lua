@@ -20,6 +20,8 @@ inzoi={EB1ManagerType={UI=1},EB1ZoiGroupType={Default=1},UB1ZoiGroupEditUIHandle
   local k=line:match(" key=([^ ]+)");if line:find("cfg_save",1,true)then cfg[k]=line:match(" value=(.*)") else return cfg[k]~=nil,"",cfg[k] end
   return true,""
  end}}
+local debug_start=true
+package.loaded['SceneZOI.Settings']={debug_start_enabled=function()return debug_start end}
 local E=require("SceneZOIStarter.Entry");E.boot()
 assert(cfg.selection_request=="none","A fresh install must create the optional request mailbox before publishing host readiness")
 cfg.selection_request=P.pack("timeout","open","1");E.tick(.2,{["1"]=actor},false);assert(cap==3)
@@ -53,3 +55,29 @@ print('Unavailable furniture entry restores input without opening a picker or ac
 cfg.selection_request=P.pack('busy_scene','open','1');local before=#sent
 E.tick(.2,{['1']=actor},true);E.tick(.2,{['1']=actor},true)
 assert(toasts==1 and #sent==before and cfg.selection_state:find('|unavailable|busy|',1,true),'Busy entry toasts once without opening/cancelling a picker')
+
+debug_start=false
+local possessed='1'
+package.loaded['SceneZOI.Controller']={controlled_id=function()return possessed end}
+package.loaded['SceneZOI.Localization']={refresh=function()end,toast=function()end}
+package.loaded['SceneZOI.DataFiles']={refresh=function()end}
+package.loaded['SceneZOI.Catalog']={refresh=function()end,get_snapshot=function()return {nodes={}}end}
+package.loaded['SceneZOI.Traits']={capture=function()return {id='1'}end}
+local owner,eligible=nil,true
+package.loaded['SceneZOI.Sessions']={holder=function()return owner end}
+package.loaded['SceneZOI.StartingScenes']={choose=function(_,roster,_,profile,ratings)
+ assert(#roster==1 and roster[1].id=='1' and not profile and ratings[1]=='GENERAL')
+ if eligible then return {node='scenezoi.solo_idle_female',bindings={female='1'}}end
+end}
+local function direct(token,id,furniture)
+ cfg.selection_request=P.pack(token,'open',id,furniture or 'none');E.tick(.2,{['1']=actor},false)
+ assert(#sent==before and not visible and cap==4,'Solo entry must never open the native picker')
+ return P.unpack(cfg.selection_state)
+end
+local solo=direct('solo','1')
+assert(solo[2]=='selected' and solo[3]=='1' and solo[4]=='scenezoi.solo_idle_female' and solo[5]=='female:1' and solo[6]=='none')
+assert(direct('furniture','1','50')[2]=='error','Default mode refuses furniture even if invoked directly')
+possessed='2';assert(direct('stale','1')[2]=='error','A click for a previous Zoi must not start')
+possessed='1';owner='other';assert(direct('held','1')[3]=='participant_busy')
+owner=nil;eligible=false;assert(direct('incompatible','1')[3]=='no_starting_scene')
+print('Direct solo entry passed: one eligible role, no picker, supported ratings, control and ownership checks, and no default furniture start.')

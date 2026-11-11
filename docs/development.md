@@ -15,7 +15,7 @@ python tools/build_catalog.py
 python tools/test.py --modkit-root $modkitRoot
 ```
 
-The default build stages ten framework declarations: one scene pack with three
+The default build stages ten framework declarations: one scene pack with five
 neutral nodes, five furniture profiles, two metadata dictionaries, one facial
 pose and one localization dictionary. The framework inventory owns four animation packages. Default checks are
 framework-only; `--content-root` is an optional test hook for a compatible author
@@ -172,8 +172,8 @@ and [issue ledger](investigations/runtime-and-ui-issues.md).
 
 ### Saves and cleanup
 
-During scene ownership, scheduled autosaves are suspended if enabled and restored
-on Exit. Manual saves and forced autosaves still request ordinary cleanup. The
+The controlled Zoi's session suspends scheduled autosaves if enabled. The
+setting is restored when control leaves all sessions. Manual saves and forced autosaves still request ordinary cleanup. The
 save recovery journal restores recorded participant state and furniture leases on
 load with SceneZOI enabled. Sessions do not resume after loading.
 

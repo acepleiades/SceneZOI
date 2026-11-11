@@ -1,9 +1,12 @@
 # Authoring a SceneZOI add-on
 
 SceneZOI owns sessions, fixed participants, playback and cleanup. Several sessions can run at once.
-An add-on owns its gameplay decisions, persistence, rewards and assets. Starts
-require the controlled Zoi to participate. API version 1 does not add concurrent
-sessions, autonomous NPC starts or predetermined watch-only sequences.
+An add-on owns its gameplay decisions, persistence, rewards and assets. Standard
+starts use the controlled Zoi. Background starts can use any eligible loaded
+initiator. Autonomous starts let the runtime navigate using a plan with goals,
+stages, restrictions and an end policy. Check `get_version.features` for
+`background_sessions` and `autonomous_scenes` before using these capabilities.
+See [concurrent starts and plans](addons.md#concurrent-and-background-sessions).
 
 ## Create and package a native project
 
@@ -77,10 +80,10 @@ Keep caller entity identity stable while refreshing its current native wrapper.
 `refresh_owner` updates pending retries and renewal references only for matching
 entity IDs. Selecting another Zoi does not transfer that caller's registration
 or ownership of an existing session. Keep the original caller available for its
-owned commands and events. For a new start, use the currently controlled Zoi as
-the initiator and include that Zoi in the participant roster. A control switch
-during startup can fail the pending request. Check its terminal status before
-starting again with the new initiator.
+owned commands and events. Include the initiator in the participant roster.
+For a standard start, use the currently controlled Zoi as initiator. A control
+switch during standard startup can fail the pending request. Check its terminal
+status before starting again with the new initiator.
 Use fresh request IDs for new operations; retries reuse the identical request.
 Do not drive one client's clock from both global and per-character callbacks.
 The SDK needs real elapsed time even while gameplay is paused.
@@ -108,6 +111,38 @@ before task/speed/presentation writes. Observing grants no navigation ownership.
 Use `request_stop` with interruption rights for an orderly foreign/manual Exit.
 Release your overrides/registration when finished; do not clear another caller's
 hold/mute. Persist gameplay consequences once using your own save data.
+
+## Start a goal-driven scene through the SDK
+
+After checking the autonomous feature flags, reuse the client and callbacks from
+[Wire the SDK](#wire-the-sdk). This example assumes your enabled pack defines the
+`training.focus` task and connects eligible loops tagged `training.practice`
+and `training.finish`. Use `get_definitions` to check the installed task and tags.
+The participant IDs must refer to loaded Zois whose roles can play those loops.
+
+```lua
+client:request(owner, "training.start.1", "start_autonomous_scene", {
+  initiator = "20522",
+  participants = {"20522", "20526"},
+  search = {required_tags = {"training.practice"}},
+  restrictions = {allowed_content_ratings = {"GENERAL"}},
+  goals = {{participant_id = "20522", task_id = "training.focus", completions = 2}},
+  stages = 2,
+  required_stages = {{stage = 1, match = {required_tags = {"training.practice"}}}},
+  stage_preferences = {{from = 1, match = {required_tags = {"training.finish"}}}},
+  end_policy = {type = "goals"}
+})
+```
+
+The initiator must complete the task twice, and a practice loop must play in
+stage one. The final-stage preference ranks eligible finish loops. Author a
+reachable loop with a positive rate and a cap that allows the task to complete
+for the initiator's role. The partner remains in the roster and has no goal.
+
+Handle the start reply in `response`. In `event`, use `session_started` to capture
+its session ID and `session_ended` to check the plan outcome and cleanup before
+applying gameplay consequences. Use a fresh request ID for each new start.
+See the [autonomous request and result contract](addons.md#autonomous-scenes).
 
 ## Query real content declarations
 

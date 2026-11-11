@@ -32,6 +32,7 @@ inzoi={EB1ManagerType={UI=1},EB1ZoiGroupType={Default=1},UB1ZoiGroupEditUIHandle
   local k=line:match(" key=([^ ]+)");if line:find("cfg_save",1,true)then cfg[k]=line:match(" value=(.*)") else return cfg[k]~=nil,"",cfg[k] end
   return true,""
  end}}
+package.loaded['SceneZOI.Settings']={debug_start_enabled=function()return true end}
 local E=require("SceneZOIStarter.Entry");E.boot()
 local function tick(dt)E.tick(dt or .05,actors,false)end
 local function open(token)

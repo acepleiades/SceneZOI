@@ -26,14 +26,13 @@ to build SceneZOI. Consult the reference's rights notices before reuse.
 
 | Project | Owns |
 | --- | --- |
-| SceneZOI | Runtime, UI, manual starter, three neutral hubs, five furniture profiles, metadata dictionaries, a fixed facial pose and four body animation packages. |
+| SceneZOI | Runtime, UI, manual starter, five neutral hubs, five furniture profiles, metadata dictionaries, a fixed facial pose and four body animation packages. |
 | Content pack | Its animations, meshes, audio, expression/voice sets, compatibility profiles, scene JSON and navigation extensions. No executable content-pack registration. |
 | Gameplay add-on | Its own Lua, gameplay decisions, persistence and consequences, using the public API/SDK. |
 
 Do not put pack-specific asset paths, scene IDs, expression defaults or anatomy
 profiles into the framework. Geometry comes from the character meshes and enabled
-content declarations. SceneZOI has no content-pack dependency; its manual starter
-retains technical eligibility/availability checks without gameplay progression gates.
+content declarations. SceneZOI has no content-pack dependency; its solo launcher and opt-in debug picker retain technical eligibility and availability checks.
 
 ## Native declarations and author builds
 
@@ -66,7 +65,7 @@ Every owner needs its own native project. The generic writer preserves unrelated
 patch entries and records owned declarations in `workspace/data_files.json` for
 packaging; runtime does not read that inventory. Native packaging carries the
 patch as `non_ufs/JsonPatch/Text_UI_patch.json` with manifest membership/checksums.
-The framework default stages ten declarations with three neutral scene nodes.
+The framework default stages ten declarations with five neutral scene nodes.
 
 Discovery runs at startup, while idle and before Start. Active sessions retain
 their captured graph/libraries. Malformed contributions are isolated with warnings;
@@ -81,10 +80,11 @@ Any eligible loop may declare `starting_hub: true`, separately from its navigati
 using appearance body and optional body-age/growth requirements, then selects an
 eligible start uniformly. Roles are independent of body type and control status.
 
-Current neutral hubs require adult-compatible male/female appearance roles.
-Character entry selects standing scenes; supported furniture selects a matching
-profile. Other rosters need compatible authored data. The manual picker permits
-two or three Zois; the runtime/API supports larger fixed rosters. No match shows
+The bundled paired hubs require adult-compatible male/female appearance roles.
+Two bundled solo hubs provide standing idle scenes. Character entry selects
+standing scenes and furniture entry selects scenes with a matching profile.
+The manual picker supports one to three Zois with compatible authored data. The
+add-on API supports larger fixed rosters. No match shows
 an explanatory notification and restores input without creating a session.
 
 A pack can extend a framework hub without editing its JSON:

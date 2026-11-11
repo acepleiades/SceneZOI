@@ -3,7 +3,7 @@
 Independent add-on acceptance was recorded on API-5. See [release validation](validation/README.md) for later runtime checks. Start with the [authoring guide](addon-authoring.md), use the [SDK](../sdk/README.md), and consult [live controls/results](addon-controls.md) for the extended contract. [Validation findings](validation/addon-api-20261104.md) record measured coverage and pitfalls.
 
 Several sessions can run at once; see [concurrent and background sessions](#concurrent-and-background-sessions)
-and [autonomous scenes](#autonomous-scenes). The unrestricted manual starter remains available. Add-ons supply gameplay decisions;
+and [autonomous scenes](#autonomous-scenes). Scene Settings offers the unrestricted manual picker as an opt-in debug tool. Add-ons supply gameplay decisions;
 content packs supply inert declarations; SceneZOI owns playback and cleanup.
 
 ## Supported transport
@@ -112,10 +112,11 @@ appearance-body/life-stage compatibility and matching furniture context. Furnitu
 queries require participants and an available loaded object. Existing reservation
 checks run again when starting; a search result is not a reservation.
 
-API starts require the currently controlled Zoi as initiator and roster member.
-They do not open the picker because the add-on supplies the complete roster.
-The manual picker is unchanged. API participants leave gameplay groups through
-the same native departure helper; cancellation does not rebuild those groups.
+Standard API starts require the currently controlled Zoi as initiator and roster
+member. Background and autonomous starts can use any eligible loaded initiator
+in the roster. The add-on supplies the complete roster directly. API participants
+leave gameplay groups through the same native departure helper as manual entry.
+Cancellation does not rebuild those groups.
 
 `accepted: true` means a start was queued, not that animation has begun. Group
 departure, controls startup, cached save recovery, participant preparation and
@@ -126,18 +127,20 @@ silently substitute another scene. Startup is bounded to 15 host real seconds.
 ## Concurrent and background sessions
 
 Several sessions can run at once, each with its own roster, clock, tasks and
-cleanup. A participant or piece of furniture belongs to one session at a time, and
-a request that overlaps one is refused with `participant_busy`. A failure in one
-session never ends another.
+cleanup. A participant or piece of furniture belongs to one session at a time.
+A start that overlaps a participant is refused with `participant_busy`. A start
+that overlaps reserved furniture is refused with `furniture_unavailable`. A failure
+in one session leaves other sessions running.
 
 Pass `background: true` to `start_scene`, `start_random_scene` or `start_at_hub` to
-start without the player's panel. The initiator can be any loaded Zoi, including an
-NPC. It accepts two optional objects:
+allow an eligible loaded Zoi, including an NPC, to initiate the session. The panel
+appears when the player controls a participant. Background starts accept two
+optional objects.
 
 | Field | Meaning |
 | --- | --- |
 | `placement` | `max_start_distance_m` (0-100, default 15) from each participant to the anchor, checked before the roster is held and again before playback. `exit`: `restore` (default) or `stay`, which applies only to ordinary Exit on floor the game reports as walkable. |
-| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). With no `lifetime` and no plan, an NPC-only scene ends after the player's **Default NPC Scene Length** setting (5 to 120 in-game minutes, default 15), counted on the game's calendar. Any other scene without a `lifetime` gets a 600-second deadline, and a timed plan is not cut short by it. Asking for a `lifetime` overrides the player's setting; hard ceiling 7,200 seconds. A deadline and the ceiling add up the time the session has no panel, so visiting it restarts neither. A lease always runs. A lease that lapses ends with `owner_expired`, a deadline with `lifetime_expired`. |
+| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Explicit values range from 1 to 7,200 seconds. Without a lifetime or plan, NPC-only scenes use the player's **Default NPC Scene Length** (5 to 120 in-game minutes, default 15). Other background starts default to 600 seconds. A timed plan defaults to the greater of 600 seconds and `duration × 1.5 + 60`, capped at 7,200 seconds. The deadline and the 7,200-second ceiling count time spent without a panel, including game pauses. A lease runs even with the panel visible. A lapsed lease ends with `owner_expired`. A deadline or ceiling ends with `lifetime_expired`. |
 
 Scenes containing only NPCs are capped at `maximum_npc_sessions` from `get_version`
 (15). A household scene does not count against the cap, and a player's own start is
@@ -151,13 +154,15 @@ walkable floor, up to 6 metres away. If there is none, a background start ends w
 The panel, task tray, input and autosave suspension belong to the session of the
 **controlled Zoi**. Switching to a participant of another session switches them;
 switching to a Zoi outside every session hides the panel while the other sessions
-keep playing. A manual session left without its panel keeps playing until the player returns to
-Exit it, a save, or its Zois unload. `get_session` without an ID returns the focused session;
-`list_sessions` returns all of them.
+keep playing. A manual household session has 60 real seconds without the panel
+before it ends with `lifetime_expired`. Returning resets that interval.
+`get_session` without an ID returns the focused session. `list_sessions` returns
+all sessions.
 
 Subscriptions take an optional `scope`: `focused` (default, matching earlier
-behavior), `owned` or `all`. An add-on always hears the sessions it started. If the
-Zoi it asked through unloads, delivery moves to the controlled Zoi.
+behavior), `owned` or `all`. An add-on's own sessions bypass the focus filter. Keep the relevant event names
+in your subscription. If the original endpoint unloads, delivery can fall back
+to the controlled Zoi when that endpoint is available.
 
 Ending a session reports the outcome for each participant in `restoration`:
 `restored`, `released_on_unload` or `deferred_recovery`. A save ends every session.
@@ -169,45 +174,98 @@ read it, and describes the player's single focused session. Check
 
 ## Autonomous scenes
 
-`start_autonomous_scene` starts a session that SceneZOI drives from a plan. It
-accepts the arguments of a background start, using `restrictions` for its lifetime
-restrictions, plus:
+Call `get_version` and check `features.autonomous_scenes` before using
+`start_autonomous_scene`. Check `features.autonomous_stages` when using stage
+counts or selectors. The operation uses background entry automatically and
+starts with Auto-mode enabled, whether or not a participant is controlled.
 
-| Field | Meaning |
+Supply `initiator` and `participants` as decimal string IDs for loaded Zois.
+Include the initiator in the roster. Optional `bindings` pin named roles and
+`furniture_id` selects supported furniture. Use `scene_id` to pin the initial
+node, or let SceneZOI select an eligible entry. `search` filters entry candidates.
+`restrictions` applies throughout the session, including authored transitions,
+completion routes and manual takeover. `placement` and `lifetime` use the
+[background start fields](#concurrent-and-background-sessions).
+
+| Plan field | Meaning |
 | --- | --- |
-| `goals` | Up to 16 `{participant_id, task_id, completions}` entries. `completions` defaults to 1 and counts new completions in this session. |
-| `end_policy` | `{type:'goals'}` (default with goals), `{type:'duration', seconds, clock}` with `clock` `game` (default) or `real`, or `{type:'addon'}`. Required without goals. |
+| `goals` | Up to 16 `{participant_id, task_id, completions}` entries. Use an installed task ID from `get_definitions` and a roster member's ID. Each participant/task pair can appear once. `completions` is an integer from 1 to 100, defaults to 1, and counts new completions in this session. |
+| `end_policy` | `{type:'goals'}` (default with goals), `{type:'duration', seconds, clock}` with 1–7,200 seconds and `clock` set to `game` (default) or `real`, or `{type:'addon'}`. Required without goals. |
 | `task_progress_multiplier` | 0.1-5, default 1. Scales positive task rates under the plan. |
 | `stages` | A positive integer or `{min, max}`, up to 16. Default 1. Chosen once and returned in the accepted response. |
-| `required_stages` | `{stage?, match}` entries, where `match` is a scene query. Each must match a loop that actually plays. `stage` must exist for every possible count. |
-| `stage_preferences` | Ordered `{from?, to?, match}` entries. `from` and `to` are fractions (0-1) of the chosen count. They rank eligible loops. |
-| `auto_speed` | `false`, or `{start, finish}` within 0.5-1.5. Default ramp 1 to 1.25 across stages. Animation only: task rates keep using game time. |
+| `required_stages` | Up to 16 `{stage?, match}` entries. Each scene query in `match` must match a loop that actually plays under Auto-mode. Omit `stage` to match any stage. A numbered stage must exist for every possible count. |
+| `stage_preferences` | Up to 16 ordered `{from?, to?, match}` entries that rank eligible loops. `from` defaults to 0 and `to` defaults to 1. The first stage is at fraction 0 and the last at 1, evenly spaced. A one-stage plan is at 0. |
+| `auto_speed` | `true` or omitted uses the 1 to 1.25 ramp across stages. Use `false` to disable it or `{start, finish}` with values from 0.5 to 1.5. The ramp affects animation speed. Task rates use game time. |
 
-The accepted response includes `autonomous`, the chosen `stages`, and
-`route_uncertain` when the bounded route search could not establish a path. A
-plan is refused with `goal_unreachable` or `required_stage_unavailable` when the
-data shows it cannot be met under its restrictions. Restrictions are never relaxed
-to rescue a run.
+### Timed start with bundled content
 
-The scene follows authored navigation edges and transitions only. The slowest goal
-sets the stage, and a stage never moves back. On a timed plan without goals the
-stages divide the duration evenly. A goal counts only real completions from the
-task engine.
+This example plays the bundled female solo idle for 20 seconds of real playback.
+Replace `20522` with the ID of a compatible loaded Zoi. Pass the object as
+`arguments` to `start_autonomous_scene`.
 
-| Ending | Code | `plan.outcome` |
+```json
+{
+  "initiator": "20522",
+  "participants": ["20522"],
+  "scene_id": "scenezoi.solo_idle_female",
+  "restrictions": {"allowed_content_ratings": ["GENERAL"]},
+  "end_policy": {"type": "duration", "seconds": 20, "clock": "real"},
+  "auto_speed": false
+}
+```
+
+To preflight, send the same arguments to `validate_start` with
+`start_mode: "start_autonomous_scene"`. Check `result.valid`. A successful
+preflight leaves the roster and furniture available to other starts.
+
+### Acceptance, progress and results
+
+1. Check `reply.ok` and `reply.result.accepted`. The accepted result contains
+   `start_request_id`, the selected `scene_id`, `autonomous: true`, the chosen
+   `stages`, and `route_uncertain: true` if the bounded search could not prove a
+   route. Proven incompatibility can return `goal_unreachable` or
+   `required_stage_unavailable`. Lifetime restrictions stay in force.
+2. Correlate `session_started` or `session_start_failed` by the original
+   `request_id`. `session_started` provides the `session_id` for subsequent
+   operations. Use `get_request_status` with the original request ID to recover
+   status, or `get_session` with a known session ID to inspect playback.
+3. On `session_ended`, inspect `plan.outcome`, the goal and stage results, and
+   `result_facts.stop_reason` and `result_facts.cleanup_complete`. If you missed
+   the event, query `get_session_result` with the session ID while the host still
+   retains the result.
+
+The planner follows authored navigation edges and transitions. It uses the
+slowest goal's progress to advance stages. A goal's progress is its completed
+count plus the current meter fraction, divided by its requested count. A goal
+at 100% still needs the task engine's completion event to count as satisfied.
+Stages move forward in order. A timed plan without goals divides its duration
+evenly across stages. Both plan clocks pause during preparation, game pause and
+manual takeover. The real clock ignores game speed and the game clock follows
+it. Transitions count toward elapsed playback and finish before planned Exit.
+Background deadlines and owner leases run independently of the plan clocks.
+
+### End policies and safety stops
+
+| Ending | Stop reason | `plan.outcome` |
 | --- | --- | --- |
 | Goals and required stages met, responses resolved | `ok` | `goals_met` |
 | Duration elapsed (unmet goals stay reported) | `ok` | `duration_elapsed` |
 | Add-on plan: goals met | none yet | Publishes `plan_goals_met` once, holds the loop and freezes fulfilled tasks until `stop_session`. |
-| Owner never decides | `owner_expired` | `wait_expired` after 300 seconds |
+| Add-on stays at the milestone without stopping | `owner_expired` | `wait_expired` after 300 seconds of active waiting |
 | Nothing advanced for 90 seconds, including a completion hold that never lifts | `no_progress` | `no_progress` |
 | Caps or restrictions left no route | `goal_unreachable` or `required_stage_unavailable` | same |
 | Playback budget of 7,200 seconds | `playback_budget_exceeded` | same |
 
 Copied snapshots carry `plan` with `auto_mode`, `state`, `outcome`, `goals`
-(`requested`, `completed`, `progress`, `satisfied`), `required_stages`, `stage`,
-`stage_count`, `real_seconds` and `game_seconds`. Plan events are `plan_goals_met`,
-`plan_stage_changed` and `plan_auto_mode_changed`.
+(`participant_id`, `task_id`, `requested`, `completed`, `progress`, `satisfied`),
+`required_stages` (ordered results with `stage` when specified and `met`),
+`stage`, `stage_count`, `real_seconds` and `game_seconds`. Plan events are
+`plan_goals_met`, `plan_stage_changed` and `plan_auto_mode_changed`.
+
+With `end_policy.type: "addon"`, the owner can call `stop_session` at any time.
+An add-on plan without goals stays in stage one. If using `lifetime.lease_seconds`,
+call `renew_session` before it lapses. The SDK's automatic integration renewal
+covers `register_integration` only.
 
 A timed plan runs out its duration even if nothing is advancing, and reports what it did not reach.
 Authored completion responses finish before the plan moves on, publishes `plan_goals_met` or ends.
@@ -303,7 +361,8 @@ Stable error codes include `unsupported_api_version`, `unknown_operation`,
 `session_not_ready`, `initiator_not_controlled`, `no_matching_scenes`,
 `furniture_unavailable`, `incompatible_furniture`, `navigation_locked`,
 `participant_busy`, `participant_too_far`, `session_limit`, `goal_unreachable`,
-`required_stage_unavailable`, `session_has_no_plan`, and `scene_restricted`. A queued start can later report `start_failed`;
+`required_stage_unavailable`, `participant_not_found`, `task_not_found`,
+`session_has_no_plan`, and `scene_restricted`. A queued start can later report `start_failed`;
 `transport_timeout` is generated by the SDK. Diagnostic messages are for debugging,
 not branching. Starting/playing does not imply consent: the integration owns its
 gameplay decision while framework technical checks remain mandatory.

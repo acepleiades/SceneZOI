@@ -1,5 +1,6 @@
 -- Hide only this integration's rendered entry. NPC injection bypasses the talk list's item array.
 local M={}
+local Settings=require('SceneZOI.Settings')
 local marker="_UIMod_SceneZOI_93C44199/scenezoi-starter~scenezoi_demo"
 local furniture_marker="_UIMod_SceneZOI_93C44199/scenezoi-starter~scenezoi_furniture"
 local last_error
@@ -35,23 +36,30 @@ local function update(actors,ready,dt)
     local controlled_actor=actors[controlled]
     if controlled_actor then require('SceneZOI.Furniture').tick(dt or 0,controlled_actor)end
     local kept={}
+    local debug_start=Settings.debug_start_enabled()
     for _,class in ipairs({inzoi.UB1ObjectInteractionListEntry:StaticClass(),inzoi.UB1TalkInteractionListEntry:StaticClass()}) do
         for _,entry in ipairs(UE.UWidgetBlueprintLibrary.GetAllWidgetsOfClass(actor,nil,class,false)) do
             local data=entry.Data
-            if data and(tostring(data.InteractionBagId)==marker or tostring(data.InteractionBagId)==furniture_marker)then
+            local key=data and tostring(data.InteractionBagId)
+            if key==marker or key==furniture_marker then
+                local solo=key==marker and not debug_start
                 local caption=entry.BW_Text_Content or entry.BW_CategoryText
-                if caption then caption:SetText(require('SceneZOI.Localization').text('Start SceneZOI'))end
-            end
-            if data and tostring(data.InteractionBagId)==marker then
-                filter(entry,ready and tostring(data.TargetEntityId.Value)==controlled,kept)
-            elseif data and tostring(data.InteractionBagId)==furniture_marker then
-                local profile=require('SceneZOI.Furniture').available(tostring(data.TargetEntityId.Value))
-                local nodes=require('SceneZOI.Catalog').get_snapshot().nodes
-                local eligible=false
-                if profile then for _,node in pairs(nodes)do
-                    if node.starting_hub and require('SceneZOI.FurnitureData').compatible(node,profile)then eligible=true;break end
-                end end
-                filter(entry,ready and eligible,kept)
+                if caption then caption:SetText(require('SceneZOI.Localization').text(solo and 'Solo SceneZOI session' or '(Debug) SceneZOI manual start'))end
+                if key==marker then
+                    local eligible=ready and tostring(data.TargetEntityId.Value)==controlled
+                    filter(entry,eligible,kept)
+                    local tag=entry.SizeBox_Tag or entry.BW_SizeBox_Tag
+                    if tag and eligible then filter(tag,not solo,kept)end
+                else
+                    local eligible=false
+                    local profile=ready and debug_start and require('SceneZOI.Furniture').available(tostring(data.TargetEntityId.Value))
+                    if profile then
+                        for _,node in pairs(require('SceneZOI.Catalog').get_snapshot().nodes)do
+                            if node.starting_hub and require('SceneZOI.FurnitureData').compatible(node,profile)then eligible=true;break end
+                        end
+                    end
+                    filter(entry,eligible,kept)
+                end
             else
                 restore(entry)
             end

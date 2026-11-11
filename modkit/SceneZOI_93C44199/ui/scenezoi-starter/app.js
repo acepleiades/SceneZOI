@@ -26,7 +26,7 @@
             return new Promise(function(resolve){setTimeout(resolve,100);}).then(function(){return waitReady(attempt+1);});
         });
     }
-    function markReady(){return cfg('uimod.cfg_save','selection_launcher_ready','SZ2|launcher|ready|20261102-voice-1');}
+    function markReady(){return cfg('uimod.cfg_save','selection_launcher_ready','SZ2|launcher|ready|20261111-solo-launcher-1');}
     inzoi.trigger.onActivated(function (event) {
         if(event && event.triggerId==='scenezoi_starter_lifetime'){if(!writing)close();markReady();return;}
         if (!event || event.triggerId !== 'scenezoi_demo' && event.triggerId !== 'scenezoi_furniture' || writing) return;

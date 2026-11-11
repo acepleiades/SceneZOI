@@ -14,8 +14,16 @@ Those scenes end on the game's calendar, so game speed, pause and skipped time
 count as the game counts them. At normal speed 15 in-game minutes is about 30
 real seconds. An add-on's `lifetime` overrides this setting. A scene with a
 household Zoi keeps its own limit. The value is stored under
-`scenezoi_settings`, key `npc_scene`. Scene Settings needs a scene to be open,
-and **Start Solo** in the picker is the way to open one without a partner.
+`scenezoi_settings`, key `npc_scene`.
+
+## Debug manual start
+
+Choose **Solo SceneZOI session** below **AI Emote** on the controlled Zoi to open
+Scene Settings without a picker. Enable **SceneZOI manual start** under **Debug**
+to replace the solo launcher with **(Debug) SceneZOI manual start** on the
+controlled Zoi and supported available furniture. Turn the toggle off to restore the solo
+launcher. The default is off. The setting persists in `scenezoi_settings` under
+`debug_start`.
 
 ## Task progress
 
@@ -91,7 +99,7 @@ On the tested retail build, the package is installed at
 
 | Subdirectory | Purpose |
 | --- | --- |
-| `scenezoi_settings/` | Global audio and task-rate preferences |
+| `scenezoi_settings/` | Global audio, task-rate, NPC scene length and debug start preferences |
 | `scenezoi_personality/` | Per-Zoi expression preferences |
 | `scenezoi_voice/` | Per-Zoi voice preferences |
 | `scenezoi_runtime/` | Runtime transport, status and diagnostics |

@@ -1,15 +1,13 @@
 # Expanded add-on controls (API version 1)
 
-Current runtime `20261104-facial-1` (following validated API-5) implements optional capabilities to the existing native-message
-contract. Negotiate `get_version.features`: `explicit_bindings`, `preflight`,
+These controls extend the version-1 native-message contract. Negotiate `get_version.features`: `explicit_bindings`, `preflight`,
 `furniture_discovery`, `session_results`, `integration_leases`, `live_controls`,
-`presentation_overrides`, `facial_poses`, `head_attachments`, `addon_data`, and `events: 2`. Fixed membership
-and ordinary navigation remain
-the release contract. This does not add autonomous starts or watch-only sequences.
+`presentation_overrides`, `facial_poses`, `head_attachments`, `addon_data`, and `events: 2`. For background starts and automatic navigation, see the
+[session and plan API](addons.md#concurrent-and-background-sessions).
 
 ## Starting and finding
 
-`find_scenes`, `choose_random_scene` and all three starts accept optional
+`find_scenes`, `choose_random_scene` and all start operations accept optional
 `bindings: {"giving": "20522", "receiving": "20526"}`. Bindings pin declared
 roles to selected participants, independently of control status and body type.
 Partial bindings are permitted; remaining roles use the same compatibility solver.
@@ -18,7 +16,8 @@ Unknown roles cannot match a scene; an incompatible or duplicate assignment does
 not silently get swapped. Search results return the actual complete assignment.
 
 `validate_start` accepts the corresponding start arguments, optionally
-`start_mode: "start_scene" | "start_random_scene" | "start_at_hub"`. The default
+`start_mode: "start_scene" | "start_random_scene" | "start_at_hub" | "start_autonomous_scene"`.
+The default
 is direct when `scene_id` is present, otherwise a hub. It returns `valid`, the
 matched scene/bindings, or a stable failure `code` and diagnostic `message`.
 It checks current eligibility, control, recovery/busy gates, restrictions and

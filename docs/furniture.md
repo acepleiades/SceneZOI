@@ -2,7 +2,10 @@
 
 Furniture is an optional, generic session context. The framework provides neutral
 single-bed and queen-bed hubs using a four-second paired animation. Their source
-navigation is empty; enabled packs may contribute compatible content.
+navigation is empty and enabled packs may contribute compatible content.
+The **(Debug) SceneZOI manual start** entry appears when the debug setting is
+on and the object has an available profile with a compatible starting scene.
+The same checks apply to furniture profiles added later. [Scene Settings](settings.md#debug-manual-start)
 
 ## Scene and profile data
 

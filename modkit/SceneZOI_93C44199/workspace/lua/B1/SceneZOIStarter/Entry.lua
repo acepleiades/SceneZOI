@@ -1,6 +1,7 @@
--- Demo entry policy and the native picker adapter; separate from framework sessions.
+-- Solo entry and the debug picker adapter share the existing session start handshake.
 local Config=require("SceneZOI.Config")
 local Protocol=require("SceneZOI.Protocol")
+local Settings=require("SceneZOI.Settings")
 local M={}
 local pending,last_request,elapsed,host_token,ui_ready
 local function cfg(command,key,value)
@@ -23,11 +24,11 @@ local function restore_cap(p)
     if p.asset then p.asset.MaxZoiGroupMemberNum:Add(inzoi.EB1ZoiGroupType.Default,p.old_cap);p.asset=nil end
 end
 -- A lone Zoi can start only where a one-role starting scene fits its body and the clicked furniture.
-local function solo_start(actor,furniture)
+local function solo_start(actor,furniture,ratings)
     require("SceneZOI.DataFiles").refresh()
     local Catalog=require("SceneZOI.Catalog");Catalog.refresh()
     local profile=furniture and require("SceneZOI.Furniture").available(furniture) or nil
-    return require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,{require("SceneZOI.Traits").capture(actor)},nil,profile)~=nil
+    return require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,{require("SceneZOI.Traits").capture(actor)},nil,profile,ratings)
 end
 local function caption(p,solo)
     if p.solo_caption==solo then return end
@@ -118,12 +119,27 @@ local function update(dt,actors,busy)
                     error("The controlled Zoi is not loaded")
                 end
                 local furniture=fields[4]~='none'and fields[4]or nil
-                if furniture then assert(require('SceneZOI.Furniture').available(furniture),'The bed is unavailable')end
+                if not Settings.debug_start_enabled() then
+                    assert(not furniture,"Furniture starts require debug mode")
+                    assert(require('SceneZOI.Controller').controlled_id(actors)==fields[3],"The controlled Zoi changed before Solo Start")
+                    local held=require('SceneZOI.Sessions').holder(fields[3])
+                    local chosen=not held and solo_start(actor,nil,{"GENERAL"})
+                    if chosen then
+                        local role,id=next(chosen.bindings)
+                        publish(fields[1],"selected",id,chosen.node,role..":"..id)
+                    else
+                        require('SceneZOI.Runtime').authorize_rejected_focus(actor,fields[1])
+                        pcall(require('SceneZOI.Localization').toast,held and 'A participant is already owned by another scene.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
+                        publish(fields[1],"unavailable",held and "participant_busy" or "no_starting_scene")
+                    end
+                    return
+                end
+                if furniture then assert(require('SceneZOI.Furniture').available(furniture),'The furniture is unavailable')end
                 local w=widget();assert(not w:IsVisible(),"A native Zoi picker is already open")
                 local checked,solo=pcall(solo_start,actor,furniture)
                 if not checked then print("[SceneZOI] Solo start unavailable: "..tostring(solo)) end
                 local asset=assert(UE.UObject.Load("/Game/Data/DataAsset/DA_ZoiGroup.DA_ZoiGroup"))
-                pending={token=fields[1],actor=actor,widget=w,asset=asset,furniture=furniture,solo=checked and solo or false,
+                pending={token=fields[1],actor=actor,widget=w,asset=asset,furniture=furniture,solo=checked and solo~=nil,
                     old_cap=asset.MaxZoiGroupMemberNum:Find(inzoi.EB1ZoiGroupType.Default),
                     option_visibility=w.BW_WBP_GroupOption:GetVisibility(),age=0,heartbeat=0}
                 asset.MaxZoiGroupMemberNum:Add(inzoi.EB1ZoiGroupType.Default,Config.picker_cap)
@@ -147,7 +163,7 @@ local function update(dt,actors,busy)
             restore_cap(p);tell(p,"shown");publish(p.token,"selecting")
         end
         p.widget.BW_WBP_GroupOption:SetVisibility(1)
-        p.widget.BW_Text_MainTitle:SetText(require("SceneZOI.Localization").text("Start SceneZOI"))
+        p.widget.BW_Text_MainTitle:SetText(require("SceneZOI.Localization").text("(Debug) SceneZOI manual start"))
         local count=tonumber(tostring(p.widget.BW_Text_TitleNum:GetText()):match("%d+")) or 0
         local alone=p.solo and count==1
         local can_start=p.armed and (alone or count>=2 and count<=Config.picker_cap) or false
@@ -187,7 +203,7 @@ local function update(dt,actors,busy)
                 if actors[id] then roster[#roster+1]=require("SceneZOI.Traits").capture(actors[id]) else loaded=false end
             end
             local profile
-            if p.furniture then profile=assert(require('SceneZOI.Furniture').available(p.furniture),'The bed became unavailable during selection')end
+            if p.furniture then profile=assert(require('SceneZOI.Furniture').available(p.furniture),'The furniture became unavailable during selection')end
             local chosen=loaded and not held and require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,roster,nil,profile) or nil
             -- With the controlled Zoi unselected the scene runs between the others, on the background path.
             local npc_started=chosen and not with_self and pcall(require("SceneZOI.AddonAPI").start_from_picker,p.actor,ids,chosen,p.furniture)

@@ -1,6 +1,6 @@
 # Runtime architecture
 
-SceneZOI is a reusable animation framework. HZoi is an optional assets/declarations pack with a private production checkout and a public [muted reference](content-examples.md); HZoi Gameplay is deferred. SceneZOI provides a manual Start SceneZOI entry without relationship/progression gates while preserving technical eligibility and availability checks.
+SceneZOI is a reusable animation framework. HZoi is an optional assets/declarations pack with a private production checkout and a public [muted reference](content-examples.md); HZoi Gameplay is deferred. SceneZOI provides a direct solo launcher and an opt-in debug picker. Both use technical eligibility checks. The debug picker also checks furniture availability.
 
 ## Data and ownership
 

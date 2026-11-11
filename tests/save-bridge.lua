@@ -1,9 +1,13 @@
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local P=require('SceneZOI.Protocol');local J=require('SceneZOI.Json')
 local cfg={save_restore=P.pack('stale',1,'restore',P.encode('{}'))};local sent={};local B
+local fail_snapshot_write=false
 inzoi={cli={execute=function(command)
  local key=command:match(' key=([%w_]+)')
- if command:find('cfg_save',1,true)then cfg[key]=command:match(' value=(.*)');return true end
+ if command:find('cfg_save',1,true)then
+  if fail_snapshot_write and key=='save_snapshot'then return false,'test write failure' end
+  cfg[key]=command:match(' value=(.*)');return true
+ end
  return true,nil,cfg[key]
 end},message={send_to_sim=function(id,kind,content)sent[#sent+1]={id=id,kind=kind,fields=P.unpack(content)}end}}
 local function actor(id)return {GetEntityId=function()return id end}end
@@ -64,10 +68,20 @@ load_rows({},'empty',4);assert(not B.overlaps({'5'}))
 cfg.save_restore=P.pack('new',5,'restore',P.encode('{}'));B.tick({});assert(cfg.save_restore_state==P.pack('new',5,'error','invalid_recovery'))
 load_rows({{token='bad',participants='nope',furniture={}},{token='good',participants={['5']={token='good'}},furniture={}}},'mixed',6)
 assert(B.overlaps({'5'})and record('good')and not record('bad'))
--- The journal is bounded: the oldest record goes, the newest stay.
+-- Loading a large journal and adding a new scene retain older unresolved participants and furniture.
 local many={};for i=1,40 do many[i]={token='r'..i,participants={[tostring(100+i)]={token='r'..i}},furniture={}}end
-load_rows(many,'many',7);assert(#journal().records==32 and not record('r1')and record('r40'))
+many[1].furniture={{id='81',owner='101'}}
+load_rows(many,'many',7);assert(#journal().records==40 and B.overlaps({'101'}) and B.overlaps({},'81'))
+local extra={token='extra',participants={{actor=a,id='1'}}}
+local extra_offer={'extra','snapshot',P.encode(J.encode({token='extra'}))}
+fail_snapshot_write=true
+B.offer(extra,a,extra_offer);assert(not B.ready(extra) and #journal().records==40)
+fail_snapshot_write=false
+B.offer(extra,a,extra_offer);assert(record('extra') and #journal().records==41 and record('r1'))
+load_rows(journal().records,'reload',8);assert(#journal().records==41 and B.overlaps({'101'}) and B.overlaps({},'81'))
+B.offer(nil,actor('101'),{'r1','recovered'});assert(record('r1') and not B.overlaps({'101'}))
+B.offer(nil,actor('101'),{'r1','furniture_recovered'});assert(not record('r1') and #journal().records==40)
 -- The record learns which uniform was really taken off.
 load_rows({{token='worn',participants={['61']={token='worn'}},furniture={}}},'worn',8)
 B.offer(nil,actor('61'),{'worn','lent','Uniform01'});assert(record('worn').participants['61'].lent_costume=='Uniform01')
-print('Save bridge passed: one journal for every scene, host and revision acknowledgements, per-resource recovery, unrelated starts during recovery, bounded size and old-format migration.')
+print('Save bridge passed: one journal for every scene, host and revision acknowledgements, per-resource recovery, unrelated starts during recovery, overflow retention and old-format migration.')
