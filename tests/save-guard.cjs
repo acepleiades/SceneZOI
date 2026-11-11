@@ -30,6 +30,26 @@ const record={token:'scene.1',serial:1,participants:{'1':{collision:true}},furni
  f.cfg.save_restore_state='SZ2|client|1|ready|ok';await f.guard.poll();assert(f.guard.available(),'Indexing is enough; absent Zois must not block new scenes');
  const g=fixture();g.load({});await g.guard.poll();assert(g.cfg.save_restore.includes('"records":[]'),'Loading a save with no journal still clears the runtime');
  g.cfg.save_restore_state='SZ2|client|1|error|invalid_recovery';await g.guard.poll();assert(g.guard.available(),'A rejected journal must not block forever');
+ // A snapshot read started before a load must not reach the loaded world: neither its records nor its acknowledgement.
+ const old={token:'old.1',serial:1,participants:{'7':{collision:true}},furniture:[]};
+ let finish;
+ const s=(()=>{
+  const state={},writes=[],ctx={};ctx.window=ctx;vm.runInNewContext(src,ctx);
+  const guard=ctx.SceneZOISaveGuard.create({state,client:'client',sdk:{register(){}},encode:JSON.stringify,decode:JSON.parse,
+   read:key=>key==='save_snapshot'?new Promise(r=>{finish=r;}):Promise.resolve(undefined),
+   write(key,value){writes.push([key,value]);return Promise.resolve();},stopForSave(){},stopForLoad(){}});
+  return {guard,state,writes,load:v=>ctx._onStateLoaded(v)};
+ })();
+ const pending=s.guard.poll();
+ s.load({scenezoiSaveJournal:snapshot(9,[record])});
+ finish(JSON.stringify(snapshot(5,[old])));await pending;
+ assert.equal(JSON.stringify(s.state.scenezoiSaveJournal),JSON.stringify(snapshot(9,[record])),'A read from before the load must not replace the loaded journal');
+ assert.equal(s.writes.filter(w=>w[0]==='save_ready').length,0,'Nor acknowledge the previous world\'s revision');
+ // A restore answer for an earlier load must not end the restore of a later one.
+ const r=fixture();r.load({scenezoiSaveJournal:snapshot(9,[record])});await r.guard.poll();
+ r.load({scenezoiSaveJournal:snapshot(10,[old])});r.cfg.save_restore_state='SZ2|client|1|ready|ok';await r.guard.poll();
+ assert(r.guard.restoring(),'The later load is still restoring');assert(r.cfg.save_restore.startsWith('SZ2|client|2|restore|'),'with its own request');
+ r.cfg.save_restore_state='SZ2|client|2|ready|ok';await r.guard.poll();assert(r.guard.available(),'Its own answer ends it');
  const no=fixture(false);assert(!no.guard.available());
- console.log('Save guard passed: cache-before-ack, per-revision acknowledgement, save requests every Exit, loaded journal indexing and empty loads.');
+ console.log('Save guard passed: cache-before-ack, per-revision acknowledgement, save requests every Exit, loaded journal indexing, empty loads and reads started before a load.');
 })().catch(e=>{console.error(e);process.exit(1);});
