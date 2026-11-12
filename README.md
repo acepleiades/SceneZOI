@@ -24,14 +24,6 @@ SceneZOI contributor responsible for implementing concurrent multi-scene support
 
 ## Player downloads
 
-**[Download SceneZOI — Latest Release](https://github.com/acepleiades/SceneZOI/releases/latest)**
-
-Ready-to-install SceneZOI packages are distributed through [GitHub Releases](https://github.com/acepleiades/SceneZOI/releases). Each release includes the downloadable mod package, installation instructions and release notes.
-
-SceneZOI is free and works independently of other mods.
-
-The optional adult animation pack **HZoi** is available separately through the [public SceneZOI & HZoi Patreon post](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155). Both SceneZOI and HZoi are free; no Patreon subscription is required.
-
 ### Installation and how to use
 
 1. **Download:** Get the latest SceneZOI ZIP from [GitHub Releases](https://github.com/acepleiades/SceneZOI/releases/latest). The optional **HZoi** content pack is available in the attachments of the [public Patreon post](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155).
