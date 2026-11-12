@@ -10,5 +10,5 @@ return {
     plan_max_stages = 16, plan_ramp_finish = 1.25, plan_min_speed = 0.5, plan_max_speed = 1.5,
     heartbeat_interval = 1.0, slot = "DefaultSlot", max_duration_difference = 0.0001,
     playback_speeds = {0.50, 1.00, 1.50, 2.00},
-    build = "20261112-shared-script-outfits-1",
+    build = "20261112-task-overlays-1",
 }

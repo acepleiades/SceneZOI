@@ -13,7 +13,7 @@ function M.capture(lease,furniture)
     return {version=1,token=lease.token,collision=lease.collision,local_value=lease.local_value,follow_parent=lease.follow_parent,
         location=vector(lease.entry_location,{'X','Y','Z'}),rotation=vector(lease.entry_rotation,{'Pitch','Yaw','Roll'}),
         outfit=lease.outfit==true,body_merge=lease.body_merge and {base=lease.body_merge.base,final=lease.body_merge.final},
-        furniture=furniture or {}}
+        grab_poses=lease.grab_snapshot,furniture=furniture or {}}
 end
 function M.lease(data)
     if type(data)~='table'or data.version==nil then return nil end
@@ -24,11 +24,24 @@ function M.lease(data)
     if merge then assert(type(merge)=='table'and type(merge.base)=='boolean'and type(merge.final)=='boolean','Invalid recovery body layout')end
     local lent=data.lent_costume
     if lent~=nil then assert(type(lent)=='string'and #lent<=128 and lent:match('^[%w_%-]+$'),'Invalid recovery outfit')end
+    local grabs, seen = {}, {}
+    if data.grab_poses then
+        assert(type(data.grab_poses)=="table", "Invalid recovery grab poses")
+        for index, row in pairs(data.grab_poses) do
+            assert((index==1 or index==2) and type(row)=="table" and
+                (row.hand==0 or row.hand==1) and not seen[row.hand] and
+                type(row.id)=="string" and row.id:match("^%d+$") and
+                type(row.pose)=="string" and row.pose~="None" and #row.pose<=128 and row.pose:match("^[%w_%-]+$"),
+                "Invalid recovery grab pose")
+            seen[row.hand]=true
+            grabs[#grabs+1]={hand=row.hand,id=row.id,pose=row.pose}
+        end
+    end
     local furniture={}
     assert(type(data.furniture)=='table'and #data.furniture<=4,'Invalid recovery furniture')
     for _,id in ipairs(data.furniture)do assert(type(id)=='string'and id:match('^%d+$'),'Invalid recovery furniture ID');furniture[#furniture+1]=id end
     return {token=data.token,releasing=true,remaining=0,restored={},collision=data.collision,local_value=data.local_value,
         follow_parent=data.follow_parent,outfit=data.outfit,lent_costume=lent,recovering=true,body_merge=merge and {base=merge.base,final=merge.final},
-        entry_location=UE.FVector(table.unpack(l)),entry_rotation=UE.FRotator(table.unpack(r)),saved_furniture=furniture}
+        entry_location=UE.FVector(table.unpack(l)),entry_rotation=UE.FRotator(table.unpack(r)),saved_furniture=furniture,grab_poses=#grabs>0 and grabs or nil}
 end
 return M

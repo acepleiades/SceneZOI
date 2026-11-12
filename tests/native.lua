@@ -35,6 +35,7 @@ local actor={Mesh=mesh,CharacterMovement=movement,collision=true,transform={}}
 function actor:GetTransform() return self.transform end
 function actor:GetActorEnableCollision() return self.collision end
 function actor:SetActorEnableCollision(value) self.collision=value end
+local attached={};function actor:GetAttachedActors() return attached end
 local placements = 0
 function actor:K2_SetActorTransform(value)
     placements = placements + 1
@@ -42,7 +43,8 @@ function actor:K2_SetActorTransform(value)
 end
 local focused=false
 local controller={ChangeUIInputMode=function(self,mode,force) assert(mode==1 and force);focused=true end}
-UE={UGameplayStatics={GetPlayerController=function() return controller end, GetRealTimeSeconds=function() return now end},
+UE={UObject={Load=function()return "carried"end},AStaticMeshActor={StaticClass=function()return "mesh"end},
+    UGameplayStatics={GetPlayerController=function() return controller end, GetRealTimeSeconds=function() return now end},
     UWidgetBlueprintLibrary={SetFocusToGameViewport=function() assert(focused) end},
     UKismetMathLibrary={InvertTransform=function(t) return t end,ComposeTransforms=function(_,anchor) return anchor end,
         NearlyEqual_TransformTransform=function(a,b) return a == b end}}
@@ -72,6 +74,34 @@ for _=1,20 do
     assert(not active[record.montage] and active[unrelated])
     assert(mesh:GetAnimInstance()==instance and movement.MovementMode==1 and actor.collision)
 end
+local function prop(class,socket,hidden)
+    local object={bHidden=hidden}
+    function object:IsA(wanted) return class==wanted end
+    function object:GetAttachParentSocketName() return socket end
+    function object:SetActorHiddenInGame(value)
+        if self.fail_restore and not value then error("injected prop restoration failure") end
+        self.bHidden=value
+    end
+    return object
+end
+local book=prop("carried","SOC_catch_r_FX",false)
+local phone=prop("mesh","SOC_catch_l_FX",false)
+local already_hidden=prop("mesh","SOC_catch_r_FX",true)
+local child=prop("character","SOC_catch_l_FX",false)
+local backpack=prop("mesh","spine_03",false)
+attached={book,phone,already_hidden,child,backpack}
+local held_record=Native.capture(actor)
+Native.enter(held_record,{}, {})
+assert(book.bHidden and phone.bHidden and already_hidden.bHidden and not child.bHidden and not backpack.bHidden)
+local hidden_before_destruction=phone.bHidden
+phone.bHidden=nil
+setmetatable(phone,{__index=function()error("destroyed actor")end})
+book.fail_restore=true
+assert(not pcall(Native.restore,held_record) and actor.collision,"A failed prop restore must leave other restoration independent")
+book.fail_restore=false
+Native.restore(held_record)
+assert(not book.bHidden and already_hidden.bHidden and hidden_before_destruction and next(held_record.hidden_hand_props)==nil)
+attached={}
 -- Exit after an outfit rebuild but before the next node has begun playback.
 local record=Native.capture(actor)
 Native.enter(record,{}, {})

@@ -33,6 +33,26 @@ local function relay_release(owner, token)
     inzoi.message.send_to_client(target, "SceneZOI.Reply", Protocol.pack(token, "released_unloaded", own))
 end
 
+local function grab_state(posture, hand)
+    if not posture or not posture:GetCurrentGrabObject(hand) then return end
+    local state = posture:GetGrabState(hand)
+    return Protocol.id(state.EntityId), tostring(state.GrabId)
+end
+
+local function capture_grab_poses(owner)
+    local posture = owner:GetComponent(inzoi.EB2ComponentType.Posture)
+    if not posture then return end
+    local hands = inzoi.EB1HandType
+    local poses = {}
+    for _, hand in ipairs({hands.LeftHand, hands.RightHand}) do
+        local id, pose = grab_state(posture, hand)
+        if id and pose ~= "None" and #pose <= 128 and pose:match("^[%w_%-]+$") then
+            poses[#poses + 1] = {hand = hand, id = id, pose = pose}
+        end
+    end
+    if #poses > 0 then return poses end
+end
+
 local function release(self, owner, silent)
     local lease = self.lease
     if not lease then return end
@@ -49,6 +69,18 @@ local function release(self, owner, silent)
     restore("position", function()
         if lease.stay then return end
         owner:SetLocationAndRotationOnlySimul(lease.entry_location, lease.entry_rotation, false)
+    end)
+    restore("grab_poses", function()
+        if not lease.grab_poses then return end
+        local posture = owner:GetComponent(inzoi.EB2ComponentType.Posture)
+        if not posture then return end
+        for index, original in pairs(lease.grab_poses) do
+            local id, pose = grab_state(posture, original.hand)
+            if id == original.id and pose == "None" then
+                posture:SetGrabId(original.hand, original.pose)
+            end
+            lease.grab_poses[index] = nil
+        end
     end)
     restore("collision", function() owner:SetCollisionEnabled(lease.collision) end)
     restore("autonomy", function()
@@ -108,7 +140,11 @@ local function tasks_idle(owner, lease)
     return lease.idle_ticks >= 2
 end
 
-local function stop_eating_overlay(owner)
+-- Only layer motions that can conflict with the scene pose. Posture and
+-- locomotion still belong to the game, as do unrelated protected motions.
+local task_overlay_groups = {UpperGroup = true, LeftArmGroup = true, RightArmGroup = true}
+
+local function stop_task_overlays(owner)
     local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
     local ok, _, data = inzoi.cli.execute("motion.get_current" .. target)
     if not ok or type(data) ~= "string" then return end
@@ -117,10 +153,25 @@ local function stop_eating_overlay(owner)
 
     for _, motion in ipairs(state.motions) do
         local id = motion.anim_id
-        if motion.group == "UpperGroup" and not motion.non_interruptible and type(id) == "string" and
-            (id:match("^Dish_Eat_[%w_]+$") or id:match("^Snack_Eat_[%w_]+$")) then
+        if task_overlay_groups[motion.group] and motion.non_interruptible == false and
+            type(id) == "string" and id:match("^[%w_%-]+$") then
             local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. id)
-            if not stopped then print("[SceneZOI] Could not stop eating overlay: " .. tostring(message)) end
+            if not stopped then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
+        end
+    end
+end
+
+local function suspend_grab_poses(owner, lease)
+    if not lease.grab_snapshot then return end
+    local posture = owner:GetComponent(inzoi.EB2ComponentType.Posture)
+    for _, original in ipairs(lease.grab_snapshot) do
+        local id, pose = grab_state(posture, original.hand)
+        if id == original.id and pose == original.pose then
+            lease.grab_poses = lease.grab_poses or {}
+            lease.grab_poses[#lease.grab_poses + 1] = original
+            -- The game regenerates the loop from the pose ID. Keep the held entity.
+            posture:StopGrabLoopAnimation(original.hand)
+            posture:SetGrabId(original.hand, "None")
         end
     end
 end
@@ -130,8 +181,9 @@ local function advance_prepare(self, owner)
     if not lease or lease.releasing or not lease.committed then return end
     if not tasks_idle(owner, lease) or lease.ready then return end
     if not lease.tasks_settled then
-        -- The task can be idle while its independent upper-body loop still plays.
-        stop_eating_overlay(owner)
+        -- Gameplay can keep upper-body and grab loops alive after the task is idle.
+        suspend_grab_poses(owner, lease)
+        stop_task_overlays(owner)
         local location, rotation = owner:GetLocation(), owner:GetRotation()
         lease.entry_location = UE.FVector(location.X, location.Y, location.Z)
         lease.entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll)
@@ -199,6 +251,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     }
     Members.add(owner:GetEntityId())
     Outfit.recover(owner,node.cleanup_layers)
+    self.lease.grab_snapshot = capture_grab_poses(owner)
     Wardrobe.capture(owner, self.lease)
     -- Capture only. The UI must cache this save record before any native mutation.
     Save.offer(owner,self.lease)

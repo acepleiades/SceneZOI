@@ -49,7 +49,7 @@ end
 package.loaded['SceneZOI.Json']={decode=function()return {id='node',participants={female={}}}end}
 package.loaded['SceneZOI.SceneData']={simulation=function(node)return node end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
-inzoi.EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3}
+inzoi.EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4}
 inzoi.EB1GenderType={Male=1,Female=2}
 inzoi.cli={execute=function()return true,'',''end}
 inzoi.message={send_to_client=function()end}
@@ -59,6 +59,7 @@ local option={Value=true,bFollowParent=false}
 function owner:GetEntityId()return id(77)end
 function owner:GetComponent(kind)
  if kind==inzoi.EB2ComponentType.Appearance then return {GetAppearanceSetting=function()return {Gender=2}end}end
+ if kind==inzoi.EB2ComponentType.Posture then return nil end
  return {OnAutonomyOptionChanged=function()end,SendAutonomyEnablePacket=function()end}
 end
 function owner:GetAutonomyOption()return {AutonomyEnable=option}end

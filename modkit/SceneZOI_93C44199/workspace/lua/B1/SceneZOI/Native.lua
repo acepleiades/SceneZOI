@@ -24,6 +24,34 @@ function M.desired_transform(record, anchor)
     return mathlib.ComposeTransforms(mathlib.InvertTransform(record.mesh:GetRelativeTransform()), anchor)
 end
 
+local hand_sockets = {SOC_catch_l_FX = true, SOC_catch_r_FX = true}
+
+local carriable_class
+local function hide_hand_props(record)
+    for _, prop in ipairs(record.actor:GetAttachedActors()) do
+        -- Native held objects and animation-notify meshes can share these sockets.
+        -- Leave components, carried characters and every other attachment alone.
+        if hand_sockets[tostring(prop:GetAttachParentSocketName())] and prop.bHidden == false then
+            carriable_class = carriable_class or UE.UObject.Load("/Script/BlueClient.B1CarriableObject")
+            if prop:IsA(UE.AStaticMeshActor:StaticClass()) or (carriable_class and prop:IsA(carriable_class)) then
+                record.hidden_hand_props = record.hidden_hand_props or {}
+                record.hidden_hand_props[prop] = true
+                prop:SetActorHiddenInGame(true)
+            end
+        end
+    end
+end
+
+local function restore_hand_props(record)
+    for prop in pairs(record.hidden_hand_props or {}) do
+        local alive, hidden = pcall(function() return prop.bHidden end)
+        if alive and hidden == true then
+            prop:SetActorHiddenInGame(false)
+        end
+        record.hidden_hand_props[prop] = nil
+    end
+end
+
 function M.enter(record, asset, transform, position)
     assert(record.mesh:GetAnimInstance() == record.instance, "Animation instance changed during task teardown")
     -- Task teardown can change position/movement after capture; restore this settled state.
@@ -33,6 +61,11 @@ function M.enter(record, asset, transform, position)
     end
     record.changed, record.desired = true, transform
     record.between_nodes = false
+    local props_ok, props_error = pcall(hide_hand_props, record)
+    if not props_ok and record.hand_props_error ~= tostring(props_error) then
+        record.hand_props_error = tostring(props_error)
+        print("[SceneZOI] Could not hide held props: " .. record.hand_props_error)
+    end
     record.actor:SetActorEnableCollision(false)
     record.movement:StopMovementImmediately()
     record.movement:DisableMovement()
@@ -164,6 +197,7 @@ function M.restore(record)
     attempt("position", function()
         if not record.keep_position then record.actor:K2_SetActorTransform(record.transform, false, nil, true) end
     end)
+    attempt("hand_props", function() restore_hand_props(record) end)
     attempt("movement", function() record.movement:SetMovementMode(record.movement_mode, record.custom_movement_mode) end)
     attempt("collision", function() record.actor:SetActorEnableCollision(record.collision) end)
     if #failures > 0 then error(table.concat(failures, "; ")) end

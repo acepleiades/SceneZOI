@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261109-concurrent-sessions-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.2.2 passed the framework and ModKit checks. The maintainer confirmed the exact release ZIP worked after a fresh launch with existing preferences.",
+  "release_status": "SceneZOI 1.2.3 passed the framework and ModKit checks. The maintainer confirmed the task cleanup candidate after restarting the game. The release adds the version metadata and build marker.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -304,7 +304,7 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261112-shared-script-outfits-1",
+  "runtime_build": "20261112-task-overlays-1",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.2.2",
+  "version": "1.2.3",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",
@@ -392,6 +392,15 @@
     "retail_readback": "Standing and queen bed idle-to-outfit transitions reached playback with an actual wedding-ring costume and a synthetic external layer. Native readback showed both remained active during playback and after Exit. Both Exits returned ok/ok, autosave was released, and launcher readiness recovered after probe removal.",
     "exact_zip_update": "Installed and hash-verified while the game was closed. A fresh game process reported the new build marker and clean Exit after a standing transition. The maintainer confirmed the candidate worked.",
     "verification_limits": "Native readback used an equivalent synthetic external layer. The reported third-party package and customer saves were not retested."
+  },
+  "task_overlay_and_hand_props": {
+    "date": "2026-11-12",
+    "baseline": "Retail 1.2.2 left the reading participant's protected grab loop and carried book active after cancellation. The sofa phone task left an interruptible posture montage and an attached static mesh actor. The carried book and phone had no simulation AttachMesh entries.",
+    "automated_checks": "Full framework suite passed. Regressions cover group-based overlay filtering, protected and posture motions, grip identity, legacy and new recovery data, unrelated attachments, and independent prop restoration.",
+    "native_validation": "ModKit Lua validated. Isolated native package build and exact four-asset filter passed. Three protected Lua files were hash-verified locally with existing cooked containers preserved.",
+    "retail_readback": "In separate standing sessions, native reading and grip motions were absent during playback, the chair posture remained, and the original book was hidden. The original grip, carried entity and visibility returned after Exit. The sofa posture remained and its phone was hidden during playback, then visible at the original posture after Exit. Both sessions exited ok/ok. After diagnostic removal, launcher readiness matched and the save journal was empty.",
+    "author_acceptance": "The maintainer restarted the game with the installed runtime changes and approved the candidate for release.",
+    "verification_limits": "The game still owns the original posture and carried items after Exit. Grip recovery was exercised with an automated save record. The new candidate has not had a live save/load run."
   },
   "ui_lifecycle_hardening": {
     "checkpoint": "docs/validation/ui-lifecycle-20261106.json",

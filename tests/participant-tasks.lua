@@ -8,7 +8,7 @@ package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
 local replies,owners={},{}
 local clear_failure,cancel_failure=false,false
-inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3},EB1GenderType={Female=1,Male=2},
+inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},
  cli={execute=function(c)
   local o=owners[c:match('entity_id=(%d+)')]
   if c=='entity.get_possessed'then return true,'','{"entity_id":1}'end
@@ -34,12 +34,21 @@ inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3},EB1GenderType={F
   error('Unexpected command '..c)
  end},message={send_to_client=function(id,kind,packet)if kind=='SceneZOI.Reply'then replies[id.Value]=packet end end}}
 local function owner(id)
- local o={id=id,queued=0,playing=false,current=1,clears=0,cancels=0,collision=true,motions={},stopped={},
+ local o={id=id,queued=0,playing=false,current=1,clears=0,cancels=0,collision=true,motions={},stopped={},grabs={},stopped_grabs={},restored_grabs={},grab_ids={},
   AutonomyOption={AutonomyEnable={Value=true,bFollowParent=true}}}
  function o:GetEntityId()return {Value=self.id}end
  function o:GetComponent(t)
   if t==1 then return {GetAppearanceSetting=function()return {Gender=1,Body={bUseMeshMerge=true},FinalBody={bUseMeshMerge=false}}end}end
   if t==3 then return {IsQueueEmpty=function()return self.queued==0 end,GetCurrentInteractionQueueId=function()return self.current end}end
+  if t==4 then return {
+    GetCurrentGrabObject=function(_,hand)return self.grabs[hand]end,
+    GetGrabState=function(_,hand)return {EntityId={Value=self.grabs[hand]},GrabId=self.grab_ids[hand] or "Hold"}end,
+    StopGrabLoopAnimation=function(_,hand)self.stopped_grabs[#self.stopped_grabs+1]=hand end,
+    SetGrabId=function(_,hand,id)
+        self.grab_ids[hand]=id
+        if id~="None" then self.restored_grabs[#self.restored_grabs+1]=hand end
+    end,
+  }end
   return {OnAutonomyOptionChanged=function()end,SendAutonomyEnablePacket=function()end}
  end
  function o:GetAutonomyOption()return self.AutonomyOption end
@@ -92,20 +101,38 @@ assert(s.lease.ready and o.cancels==3);release(s,o,'talk')
 -- Waiting-only queues cannot start between idle preparation samples.
 o.queued=40;start(s,o,'waiting');tick(s,o)
 assert(s.lease.ready and o.queued==0);release(s,o,'waiting')
--- The simulated interaction is idle before the native upper-body loop ends.
+-- Task cleanup follows the native group and interruption flag, independent of animation names.
 o.motions={
- {anim_id='MovingChair_Sit_R',group='PostureGroup'},
- {anim_id='Dish_Eat_Stand',group='UpperGroup'},
- {anim_id='Snack_Eat_Stand',group='DefaultGroup'},
- {anim_id='Other_UpperBody_Action',group='UpperGroup'},
+ {anim_id='MovingChair_Sit',group='PostureGroup',non_interruptible=false},
+ {anim_id='Dish_Eat_Stand',group='UpperGroup',non_interruptible=false},
+ {anim_id='Snack_Eat_Stand',group='DefaultGroup',non_interruptible=false},
+ {anim_id='ReadingLoop',group='UpperGroup',non_interruptible=false},
+ {anim_id='Other_Arm_Action',group='LeftArmGroup',non_interruptible=false},
+ {anim_id='NativeProtected',group='RightArmGroup',non_interruptible=true},
+ {anim_id='Unclassified',group='UpperGroup'},
 }
-o.playing=true;o.current=4;start(s,o,'eating')
-assert(#o.stopped==0)
+o.grabs={[0]=9,[1]=12}
+o.playing=true;o.current=4;start(s,o,'task-overlays')
+assert(#o.stopped==0 and #o.stopped_grabs==0)
 for _=1,5 do tick(s,o)end
-assert(s.lease.ready and #o.stopped==1 and o.stopped[1]=='Dish_Eat_Stand')
-tick(s,o);assert(#o.stopped==1,'Do not repeatedly stop the same leftover motion')
-release(s,o,'eating')
-o.motions={}
+assert(s.lease.ready and table.concat(o.stopped,",")=="Dish_Eat_Stand,ReadingLoop,Other_Arm_Action")
+assert(table.concat(o.stopped_grabs,",")=="0,1" and o.grab_ids[0]=="None" and o.grab_ids[1]=="None")
+assert(s.lease.save_snapshot.grab_poses[2].id=="12")
+tick(s,o);assert(#o.stopped==3 and #o.stopped_grabs==2,'Do not repeatedly stop the same leftover motion')
+o.grabs[0]=13
+release(s,o,'task-overlays')
+assert(#o.restored_grabs==1 and o.restored_grabs[1]==1,'Restore only the same carried object')
+o.motions={};o.grabs={};o.grab_ids={}
+-- Save recovery restores the original grip only for the same still-held object.
+local recovery=require("SceneZOI.SaveRecovery")
+local saved={version=1,token="saved",collision=true,local_value=true,follow_parent=true,outfit=false,
+ location={0,0,0},rotation={0,0,0},furniture={},grab_poses={{hand=1,id="22",pose="Hold"}}}
+o.grabs[1]=22;o.grab_ids[1]="None"
+s.lease=recovery.lease(saved);tick(s,o)
+assert(not s.lease and o.grab_ids[1]=="Hold")
+saved.grab_poses[2]={hand=1,id="23",pose="Other"}
+assert(not pcall(recovery.lease,saved))
+o.grabs={};o.grab_ids={}
 -- Failures restore independent ownership rather than leave autonomy disabled.
 o.queued=4;clear_failure=true;start(s,o,'clear-failure')
 assert(not s.lease and replies[1]:find('|rejected|prepare_error|',1,true))
