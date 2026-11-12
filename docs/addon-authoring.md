@@ -36,9 +36,11 @@ over wildcard bindings; the wildcard list is a fallback, not an additional list.
 A mod using only `key: "*"` can therefore lose household callbacks when another
 enabled mod declares `ResidenceFamily`, even though its Main script and UI run.
 
-Since SceneZOI 1.1.5, its runtime and picker receivers bind to the Zoi's
-appearance components in both environments. This avoids taking precedence
-over an independent mod's wildcard Zoi callbacks. See the
+SceneZOI receives client callbacks through the appearance component. In the
+simulation, it attaches its own native module to the controlled Zoi and uses
+native messages to attach the same receiver to other participants as needed.
+Appearance components still perform initial outfit recovery. SceneZOI leaves
+the Zoi wildcard namespace available to other mods. See the
 [coexistence checkpoint](validation/wildcard-coexistence-20261108.json).
 
 Use ModKit's `modkit_list_lua_binding_keys` for the target environment/type when

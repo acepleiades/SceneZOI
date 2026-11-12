@@ -169,7 +169,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261111-solo-launcher-ui-3').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261112-launcher-handshake-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         root.style.visibility = 'hidden';
@@ -207,6 +207,7 @@
     refreshCatalog().catch(function(){});
     setInterval(function(){if(!active&&!checkingStart)refreshCatalog().catch(function(){});},2000);
     window.SceneZOIControls = {
+        bootId: ownClient,
         clickedTarget: clickedTarget,
         refreshCatalog: refreshCatalog,
         decline: declineStart,

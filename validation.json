@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261109-concurrent-sessions-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.1.7 was packaged and passed exact ZIP clean-start standing playback, Exit and repeat entry. HZoi 1.1.0 unchanged.",
+  "release_status": "SceneZOI 1.2.1 passed automated checks and native package validation. The maintainer accepted the compatibility fix with AFA 0.7.0 before the final cancellation hardening.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -304,7 +304,7 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261109-pedestrian-recovery-1",
+  "runtime_build": "20261112-simulation-receiver-3",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
@@ -327,7 +327,37 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.1.7",
+  "version": "1.2.1",
+  "compatibility_release_1_2_1": {
+    "date": "2026-11-12",
+    "runtime_build": "20261112-simulation-receiver-3",
+    "release_change": "Cancelling a debug picker or failing an add-on start also discards the corresponding native commands queued before receiver attachment. The original AFA in-game acceptance used receiver build 2.",
+    "automated_checks": "Catalog build and full framework suite passed. Regression verifies a late receiver cannot deliver cancelled commands and preserves an unrelated queued command.",
+    "native_validation": "ModKit Lua and both UI apps passed. Isolated PackageUGC and exact four-asset filtering passed. Prepared Lua matched source, the protected export changed only the four expected Lua files, and catalog rows matched the existing native patch.",
+    "verification_limits": "The cancellation change was verified with an automated regression. A separate in-game test of the exact 1.2.1 ZIP with cleared preferences was not run."
+  },
+  "simulation_receiver_recovery": {
+    "date": "2026-11-12",
+    "runtime_build": "20261112-simulation-receiver-2",
+    "reproduction": "A fresh game launch with AFA 0.6.0 reached Solo Idle selection, then timed out preparing and restoring the participant. A scoped AFA remount reproduced it. A temporary dynamic Lua module received the actual Prepare and Release messages on the same Zoi and restored a clean Start and Exit.",
+    "change": "The simulation attaches a native receiver to the controlled Zoi. Native request and acknowledgement messages attach the same receiver to additional targets before releasing pending commands. The client uses per-actor tickets and retries attachment while the target loads.",
+    "automated_checks": "Framework suite passed. Regression covers missing and replacement actors, stale acknowledgement, ordered first delivery and the native receiver's save, load and end callbacks.",
+    "native_validation": "ModKit Lua reported zero errors and two existing AddonAPI shadowing warnings. Both UI apps passed. Isolated PackageUGC and exact four-asset filtering passed. Installed Lua and native integrity entries were verified with cooked payload hashes preserved.",
+    "retail_readback": "With temporary probes removed and AFA 0.6.0 enabled, Solo Idle entered playback and ended with ok/ok before and after a scoped AFA Live remount. The remount changed the client Lua host while the controls and launcher stayed mounted. Autosave was released and the recovery journal was empty after both exits.",
+    "fresh_process_retest": "The author relaunched and used the native Solo SceneZOI entry. The first attempt was interrupted by AFA's startup remount with mod_unloaded before playback. Two subsequent starts in the same fresh process reached Solo Idle playback and exited cleanly. Final Exit was ok/ok, input was restored, autosave was released and the journal was empty.",
+    "afa_0_7_0_author_acceptance": "The maintainer reported that SceneZOI worked with AFA 0.7.0 and that AFA appeared to block inputs during its Lua relaunch.",
+    "verification_limits": "AFA 0.6.0 can still interrupt a scene already preparing when it remounts Lua. The independent API-start reports remain unverified."
+  },
+  "launcher_handshake_recovery": {
+    "date": "2026-11-12",
+    "runtime_build": "20261112-launcher-handshake-1",
+    "ui_build": "20261112-launcher-handshake-ui-1",
+    "automated_checks": "Catalog build and full framework suite passed. Regressions cover an existing launcher pairing surviving a Lua restart, mismatched UI instances and stale Start requests.",
+    "native_validation": "ModKit Lua and both UI apps passed. Isolated PackageUGC succeeded and the exact filter retained four owned asset packages. Two protected Lua files and three UI files were hot-installed and verified using native integrity records, preserving loaded cooked bytes and preferences.",
+    "retail_launcher": "A scoped AFA Live 0.6.0 remount changed the B1 host. The existing controls acknowledged the new host with the original launcher pairing. The author clicked the native solo row and the runtime selected the controlled Zoi and Solo Idle.",
+    "retail_participant_timeout": "Playback did not begin after the AFA remount. The runtime recorded prepare_timeout followed by restore_timeout. Autosave was released and the journal was empty. A full Lua reload restored playback and Exit. A second AFA remount reproduced the failure. Reloading B2 alone restored the same solo scene to playing/ok and Exit to ok/ok without a new B1 host or UI remount. The recovery cycles used the normal solo selection and Exit mailboxes.",
+    "verification_limits": "The simulation dispatch failure after the scoped remount remains open. Fresh-process acceptance, AFA 0.7.0 and reported API-start failures remain unverified."
+  },
   "solo_launcher_and_debug_start": {
     "date": "2026-11-11",
     "runtime_build": "20261111-solo-launcher-2",

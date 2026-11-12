@@ -31,21 +31,25 @@
             if(f[2]==='cancelled' || f[2]==='error' || f[2]==='unavailable')stop(p);
         }).catch(function(){}).then(function(){p.reading=false;});
     }
-    var lastRequest, hostToken, watching=false;
+    var lastRequest, hostToken, launcherToken, watching=false;
     function value(data){return String(data && data.value!==undefined?data.value:data || '');}
     function watch(){
         if(watching)return Promise.resolve();
         watching=true;
-        return cfg('uimod.cfg_load','selection_host_ready').then(function(data){
-            var host=value(data).split('|');
+        return Promise.all([cfg('uimod.cfg_load','selection_host_ready'),
+            cfg('uimod.cfg_load','selection_launcher_ready').catch(function(){return null;})]).then(function(data){
+            var host=value(data[0]).split('|'), launcher=value(data[1]).split('|');
             if(host[0]!=='SZ2' || host[2]!=='ready')return;
-            if(hostToken!==host[1]){
-                if(pending)stop(pending);
-                return cfg('uimod.cfg_load','selection_request').then(function(raw){
-                    return cfg('uimod.cfg_save','selection_ui_ready',['SZ2',host[1],'ready','none'].join('|')).then(function(){
-                        // Commit only after acknowledgement succeeds, so a failed
-                        // read/write retries rather than hiding Start forever.
-                        lastRequest=value(raw);hostToken=host[1];
+            var newHost=hostToken!==host[1];
+            var token=launcher[0]==='SZ2' && /^launcher\.[0-9.]+$/.test(launcher[1])?launcher[1]:'none';
+            if(newHost || launcherToken!==token){
+                if(newHost && pending)stop(pending);
+                var request=newHost?cfg('uimod.cfg_load','selection_request'):Promise.resolve(lastRequest);
+                return request.then(function(raw){
+                    var ready=['SZ2',host[1],'ready',window.SceneZOIControls.bootId,token].join('|');
+                    return cfg('uimod.cfg_save','selection_ui_ready',ready).then(function(){
+                        // Keep old Start packets retired across a Lua restart.
+                        lastRequest=value(raw);hostToken=host[1];launcherToken=token;
                     });
                 });
             }

@@ -69,6 +69,7 @@ local function emit_failure(row,code,message)
  deliver(endpoint,'SceneZOI.API.Event',{api_version=1,instance_id=instance,addon_id=row.req.addon_id,client_id=row.req.client_id,event=event})
 end
 function M.fail_start(token,reason)
+ require('SceneZOI.SimulationRoute').discard('SceneZOI.API.Depart',P.pack(token))
  local Sessions=require('SceneZOI.Sessions')
  if pending and pending.token==token then
   local row=pending;pending=nil;Sessions.release(token);pcall(cfg,'api_start','none');emit_failure(row,'start_failed',tostring(reason))
@@ -339,7 +340,7 @@ end
 local function depart(row)
  for id,done in pairs(row.departures)do if not done then
   local actor=runtime().actors[id];if not actor then M.fail_start(row.token,'Participant unloaded');return false end
-  inzoi.message.send_to_sim(actor:GetEntityId(),'SceneZOI.API.Depart',P.pack(row.token))
+  require('SceneZOI.SimulationRoute').send(actor,'SceneZOI.API.Depart',P.pack(row.token))
  end end
  return true
 end

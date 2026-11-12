@@ -1,4 +1,4 @@
--- Component bindings preserve the Zoi wildcard namespace for independent mods.
+-- SceneZOI leaves the Zoi wildcard namespace available to independent mods.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local Json=require('SceneZOI.Json')
 local base='modkit/SceneZOI_93C44199/workspace/lua/'
@@ -53,9 +53,35 @@ for _,env in ipairs({'B1','B2'}) do
     end
     local module_env=setmetatable({require=function(name)
         if name=='Zoi.SceneZOI' then return runtime end
+        if name=='SceneZOI.Outfit' then return {recover=function(owner) assert(owner==current_actor) end} end
         assert(name=='Zoi.SceneZOIStarter')
         return starter
     end},{__index=_G})
+    if env=='B2' then
+        local appearance=assert(loadfile(base..env..'/Components/SceneZOICharacter.lua','t',module_env))()
+        local receiver=assert(loadfile(base..env..'/Zoi/SimulationReceiver.lua','t',module_env))()
+        ready=true
+        local state={}
+        current_actor={}
+        appearance.on_begin({},component)
+        assert(not appearance.on_lua_message, 'Appearance would duplicate native dynamic messages')
+        receiver.on_begin(state,current_actor)
+        receiver.on_begin(state,current_actor)
+        current_actor={}
+        receiver.on_lua_message(state,current_actor,'OtherMod.Message','payload')
+        receiver.on_lua_message(state,current_actor,'SceneZOI.Test','payload')
+        receiver.on_tick(state,current_actor,.1)
+        state.runtime.lease=true
+        state.starter.saved_beds={}
+        receiver.on_tick(state,current_actor,.1)
+        assert(type(receiver.on_savegame(state,current_actor))=='table')
+        receiver.on_loadgame(state,current_actor)
+        receiver.on_end(state,current_actor)
+        assert(state.runtime==nil and state.starter==nil)
+        assert(table.concat(received,',')=='runtime.on_begin,runtime.on_lua_message,starter.on_lua_message,runtime.on_tick,starter.on_tick,runtime.on_savegame,starter.on_savegame,runtime.on_loadgame,starter.on_loadgame,runtime.on_end,starter.on_end')
+        goto continue
+    end
+    do
     local receiver=assert(loadfile(base..env..'/Components/SceneZOICharacter.lua','t',module_env))()
     local state={}
     ready=false
@@ -66,26 +92,84 @@ for _,env in ipairs({'B1','B2'}) do
     receiver.on_tick(state,component,.1)
     current_actor={}
     receiver.on_lua_message(state,component,'SceneZOI.Test','payload')
-    if env=='B2' then
-        local count=lookups
-        receiver.on_tick(state,component,.1)
-        assert(lookups==count, 'Idle tick should not resolve a character')
-        current_actor={}
-        assert(type(receiver.on_savegame(state,component))=='table')
-        current_actor={}
-        receiver.on_loadgame(state,component)
-        current_actor={}
-    else
-        ready=false
-    end
+    ready=false
     receiver.on_end(state,component)
-    assert(state.character==nil and state.entity_id==nil)
+    assert(state.character==nil)
     local sequence=table.concat(received,',')
-    if env=='B1' then
-        assert(sequence=='runtime.on_begin,runtime.on_tick,runtime.on_lua_message,starter.on_lua_message,runtime.on_end',sequence)
-    else
-        assert(sequence=='runtime.on_begin,runtime.on_tick,starter.on_tick,runtime.on_lua_message,starter.on_lua_message,runtime.on_savegame,starter.on_savegame,runtime.on_loadgame,starter.on_loadgame,runtime.on_end,starter.on_end',sequence)
+    assert(sequence=='runtime.on_begin,runtime.on_tick,runtime.on_lua_message,starter.on_lua_message,runtime.on_end',sequence)
     end
+    ::continue::
 end
 inzoi=old_inzoi
-print('Component bindings passed: no Zoi declarations, deferred owner resolution, message routing and lifecycle forwarding.')
+local deliveries={}
+local b2,installed={},{}
+local function actor_for(value)
+    return {
+        GetEntityId=function() return {Value=value} end,
+        HasLuaModule=function(_,name) return installed[value]==name end,
+        AddLuaModule=function(_,name,path)
+            assert(path=='Zoi.SimulationReceiver')
+            installed[value]=name
+        end,
+    }
+end
+local sim={FindCharacter=function(_,native_id) return b2[native_id.Value] end}
+local client,simulation,acknowledgement
+local route_env=setmetatable({
+    require=function(name)
+        if name=='SceneZOI.Controller' then return {controlled_id=function() return '7' end} end
+        return require(name)
+    end,
+    inzoi={
+        message={
+            send_to_sim=function(native_id,kind,content)
+                if kind=='SceneZOI.Route' then
+                    local relay=b2[native_id.Value]
+                    if relay and installed[native_id.Value] then simulation.receive(relay,content) end
+                else deliveries[#deliveries+1]=native_id.Value..':'..kind..':'..content end
+            end,
+            send_to_client=function(native_id,kind,content)
+                assert(native_id.Value==7 and kind=='SceneZOI.RouteReady')
+                acknowledgement=content
+                client.ready(content)
+            end,
+        },
+        FB2ControllerSystem={GetPossessEntityId=function() return {Value=7} end},
+        getB2Manager=function() return sim end,
+        FB1EntityId=function() return {} end,
+    }
+},{__index=_G})
+client=assert(loadfile(base..'B1/SceneZOI/SimulationRoute.lua','t',route_env))()
+simulation=assert(loadfile(base..'B2/SceneZOI/SimulationRoute.lua','t',route_env))()
+client.boot()
+local actors={['7']=actor_for(7)}
+local zoi=actor_for(12)
+client.send(zoi,'Prepare','one')
+client.send(zoi,'Prepare','one')
+client.send(zoi,'Release','one')
+client.tick(.2,actors)
+assert(#deliveries==0)
+b2[7]=actor_for(7)
+simulation.tick(.2)
+client.tick(.2,actors)
+assert(#deliveries==0,'Delivery must wait for a loaded simulation actor')
+b2[12]=actor_for(12)
+client.tick(.2,actors)
+assert(table.concat(deliveries,',')=='12:Prepare:one,12:Release:one')
+client.forget('12')
+client.send(actor_for(12),'Prepare','replacement')
+client.ready(acknowledgement)
+assert(#deliveries==2,'A stale acknowledgement must not authorize a replacement actor')
+client.tick(.2,actors)
+assert(deliveries[3]=='12:Prepare:replacement')
+local delayed=actor_for(23)
+client.send(delayed,'Depart','cancelled')
+client.send(delayed,'Open','cancelled')
+client.send(delayed,'Release','unrelated')
+client.discard('Depart','cancelled')
+client.discard('Open','cancelled')
+b2[23]=actor_for(23)
+client.tick(.2,actors)
+assert(deliveries[4]=='23:Release:unrelated' and #deliveries==4,
+    'Cancelled commands must not reach a simulation actor after attachment')
+print('SceneZOI bindings passed: scoped simulation attachment, acknowledgement and lifecycle forwarding.')

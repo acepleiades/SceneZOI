@@ -84,7 +84,7 @@ local function remember(client, sequence, phase, code, actor, silent)
 end
 
 local function tell(participant, kind, content)
-    inzoi.message.send_to_sim(participant.actor:GetEntityId(), kind, content)
+    require("SceneZOI.SimulationRoute").send(participant.actor, kind, content)
 end
 
 local function notify(current, name, code)
@@ -502,6 +502,7 @@ function M.register(actor)
     -- A binding can begin before the native actor has its entity ID.
     local value=tonumber(id)
     if not value or value<0 then deferred_registrations=deferred_registrations+1;return nil end
+    if M.actors[id] ~= actor then require("SceneZOI.SimulationRoute").forget(id) end
     M.actors[id] = actor
     registered_actor_ids[actor]=id
     return id
@@ -534,7 +535,10 @@ function M.unregister(actor)
         if drop_unloaded(current, actor) then stop_session(current, "participant_unloaded") end
     end
     -- A late on_end from an older object must not remove its replacement.
-    if M.actors[id] == actor then M.actors[id] = nil end
+    if M.actors[id] == actor then
+        M.actors[id] = nil
+        require("SceneZOI.SimulationRoute").forget(id)
+    end
 end
 
 -- Capture only when requested, not every tick or lifecycle callback.

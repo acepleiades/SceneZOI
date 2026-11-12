@@ -112,24 +112,27 @@ references can require a game restart. Matching build markers alone are insuffic
 ### Hot-update readiness
 
 Check readiness after every Lua reload or temporary Lua mod mount/unmount,
-including when removing a probe at the end of a test. A Lua-only reload can
-start a new host and clear `selection_launcher_ready` while the old launcher UI
-is still loaded. API starts can work in that state while manual Start is hidden.
+including when removing a probe at the end of a test. The controls acknowledge
+the new Lua host with the same launcher identity when both UI apps stay loaded.
+A new UI instance completes its own handshake before exposing Start.
 
 1. Finish Exit and confirm the game is idle. After a mount/unmount, use
    `luamod_reload` with `Target: all` if actor registration is missing or the
    change affects both Lua environments.
-2. Once the Lua host is ready, remount the SceneZOI UI with `uimod_remount` for
-   `SceneZOI_93C44199`. Check that `ui_boot` changed, that
-   `selection_ui_ready` acknowledges the current `selection_host_ready` token,
-   and that `selection_launcher_ready` reports ready.
-3. Reopen the native interaction menu before checking the button. If it appears
-   but the picker fails, inspect `selection_error` and `actor_registration`.
-   Zero registered Zois after unmount calls for a full Lua reload followed by
-   a UI remount. Keep this recovery separate from clean-launch acceptance.
+2. Check that `selection_ui_ready` acknowledges the current
+   `selection_host_ready` token. `selection_launcher_ready` must report ready,
+   and both records must name the same controls and launcher instances. If
+   readiness does not recover, remount both SceneZOI UI apps with `uimod_remount`
+   for `SceneZOI_93C44199` and check that `ui_boot` changes.
+3. Reopen the native interaction menu and verify playback and Exit. If selection
+   fails, inspect `selection_error` and `actor_registration`. If selection
+   succeeds but preparation and restoration time out after a scoped remount,
+   check `last_stop`, `last_exit` and the save journal. In `lua_module_list`,
+   check for `SceneZOISimulationReceiver` on the controlled Zoi and each
+   addressed participant. Verify actual playback and Exit after any recovery.
 
 The [possession and API checkpoint](validation/api-possession-20261109.json)
-records the launcher flag clearing before any API request in the new host.
+records how the launcher lost readiness before this handshake change.
 
 ### Package location and persistent data
 

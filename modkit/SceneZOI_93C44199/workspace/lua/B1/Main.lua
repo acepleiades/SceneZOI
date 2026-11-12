@@ -1,5 +1,6 @@
 local Runtime = require("SceneZOI.Runtime")
 local Entry = require("SceneZOIStarter.Entry")
+local SimulationRoute = require("SceneZOI.SimulationRoute")
 local M = {}
 local discovery_elapsed = 0
 
@@ -9,6 +10,7 @@ function M.on_begin()
     require("SceneZOI.FacialPoseLibrary").refresh()
     require("SceneZOI.VoiceLibrary").refresh()
     require("SceneZOI.Catalog").refresh()
+    SimulationRoute.boot()
     Runtime.boot()
     Entry.boot()
 end
@@ -30,6 +32,7 @@ function M.on_tick(dt, module_dt)
         end
     end
     require("SceneZOIStarter.Menu").tick(Runtime.actors, Entry.is_ready(),module_dt or dt)
+    SimulationRoute.tick(module_dt or dt, Runtime.actors)
     Runtime.tick(module_dt or dt)
     require("SceneZOI.AddonAPI").tick(module_dt or dt)
     Entry.tick(module_dt or dt, Runtime.actors, Runtime.is_active())

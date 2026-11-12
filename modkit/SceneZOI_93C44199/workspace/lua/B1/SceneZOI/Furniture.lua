@@ -30,7 +30,7 @@ function M.tick(dt,actor)
  if not manager then return end
  for key,obj in pairs(manager.GameObjectMap:ToTable())do
   if profiles.objects[tostring(obj.ObjectDataTableId)]then
-   inzoi.message.send_to_sim(actor:GetEntityId(),'SceneZOI.Furniture',P.pack('status',tostring(key.Value)))
+   require('SceneZOI.SimulationRoute').send(actor,'SceneZOI.Furniture',P.pack('status',tostring(key.Value)))
   end
  end
 end

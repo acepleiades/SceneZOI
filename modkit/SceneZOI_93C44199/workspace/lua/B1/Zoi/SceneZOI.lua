@@ -22,6 +22,7 @@ end
 function M.on_lua_message(self, owner, kind, content)
     if kind=='SceneZOI.API.Request'then require('SceneZOI.AddonAPI').receive(owner,content)
     elseif kind=='SceneZOI.API.DepartReply'then require('SceneZOI.AddonAPI').departure_reply(owner,content)
+    elseif kind == "SceneZOI.RouteReady" then require("SceneZOI.SimulationRoute").ready(content)
     elseif kind == "SceneZOI.Reply" then Runtime.reply(owner, content)
     elseif kind == "SceneZOI.Save" then Runtime.save_reply(owner,content)end
 end

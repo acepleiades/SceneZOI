@@ -143,7 +143,7 @@ local function index_journal(raw)
  return result
 end
 local function send(actor,kind,record,value)
- pcall(function()inzoi.message.send_to_sim(actor:GetEntityId(),kind,P.pack(record.token,P.encode(J.encode(value))))end)
+ pcall(function()require('SceneZOI.SimulationRoute').send(actor,kind,P.pack(record.token,P.encode(J.encode(value))))end)
 end
 function M.tick(actors)
  local raw=read('save_restore')

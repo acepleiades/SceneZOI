@@ -1,7 +1,9 @@
 // This transient integration view owns no scene controls, focus or session timer.
 (function () {
     'use strict';
-    var writing = false;
+    var writing = false, ready = false;
+    var launcherId = 'launcher.' + Date.now() + '.' + Math.floor(Math.random() * 1000000);
+    var build = '20261112-launcher-handshake-1';
     function decode(result) {
         if (result && result.success === false) throw new Error(result.message);
         var value = result && result.data !== undefined ? result.data : result;
@@ -19,16 +21,28 @@
         inzoi.view.hide();
     }
     function waitReady(attempt) {
-        return Promise.all([cfg('uimod.cfg_load','selection_host_ready'),cfg('uimod.cfg_load','selection_ui_ready')]).then(function(values){
-            var h=values.map(function(v){return String(v && v.value!==undefined?v.value:v || '').split('|');});
-            if(h[0][0]==='SZ2' && h[0][2]==='ready' && h[1][1]===h[0][1] && h[1][2]==='ready')return;
+        return Promise.all([cfg('uimod.cfg_load','selection_host_ready'),cfg('uimod.cfg_load','selection_ui_ready')]).catch(function(){return [];}).then(function(values){
+            var packets=values.map(function(v){return String(v && v.value!==undefined?v.value:v || '').split('|');});
+            var host=packets[0]||[], receiver=packets[1]||[];
+            if(host[0]==='SZ2' && host[2]==='ready' && receiver[0]==='SZ2' && receiver[1]===host[1] &&
+                receiver[2]==='ready' && receiver[3] && receiver[4]===launcherId)return receiver[3];
             if(attempt>=50)throw new Error('Scene UI did not become ready');
             return new Promise(function(resolve){setTimeout(resolve,100);}).then(function(){return waitReady(attempt+1);});
         });
     }
-    function markReady(){return cfg('uimod.cfg_save','selection_launcher_ready','SZ2|launcher|ready|20261111-solo-launcher-1');}
+    function announce(){
+        // Get an acknowledgement from the current controls before hiding this view.
+        cfg('uimod.cfg_save','selection_launcher_ready',['SZ2',launcherId,'waiting',build].join('|')).then(function(){
+            return waitReady(0);
+        }).then(function(receiver){
+            return cfg('uimod.cfg_save','selection_launcher_ready',['SZ2',launcherId,'ready',receiver,build].join('|'));
+        }).then(function(){
+            ready=true;
+            if(!writing)close();
+        },function(){setTimeout(announce,500);});
+    }
     inzoi.trigger.onActivated(function (event) {
-        if(event && event.triggerId==='scenezoi_starter_lifetime'){if(!writing)close();markReady();return;}
+        if(event && event.triggerId==='scenezoi_starter_lifetime'){if(ready && !writing)close();return;}
         if (!event || event.triggerId !== 'scenezoi_demo' && event.triggerId !== 'scenezoi_furniture' || writing) return;
         writing = true;
         return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function (current) {
@@ -49,5 +63,5 @@
     });
     // Warm the callback at load, before exposing the menu; never cold-create it on the first click.
     window.SceneZOILocalization.refresh();
-    markReady().then(function(){if(!writing)close();});
+    announce();
 })();

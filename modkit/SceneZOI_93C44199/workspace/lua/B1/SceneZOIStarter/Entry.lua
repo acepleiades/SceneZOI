@@ -12,7 +12,7 @@ local function cfg(command,key,value)
     assert(ok,message);return data or message
 end
 local function publish(token,kind,detail,node,bindings) cfg("uimod.cfg_save","selection_state",Protocol.pack(token,kind,detail or "none",node or "none",bindings or "none",pending and pending.furniture or "none")) end
-local function tell(p,kind) inzoi.message.send_to_sim(p.actor:GetEntityId(),"SceneZOIStarter.Select",Protocol.pack(p.token,kind)) end
+local function tell(p,kind) require("SceneZOI.SimulationRoute").send(p.actor,"SceneZOIStarter.Select",Protocol.pack(p.token,kind)) end
 local function widget()
     local ui=inzoi.UB1System.Get().ManagerMap:Find(inzoi.EB1ManagerType.UI)
     for _,handler in pairs(ui.UIHandlerMap:ToTable()) do
@@ -82,7 +82,7 @@ function M.boot()
     end
     host_token="host."..os.time().."."..math.random(1,1073741823);ui_ready=false
     cfg("uimod.cfg_save","selection_ui_ready","none")
-    cfg("uimod.cfg_save","selection_launcher_ready","none")
+    -- The launcher view can outlive this Lua host. Its readiness belongs to the UI pair.
     cfg("uimod.cfg_save","selection_host_ready",Protocol.pack(host_token,"ready","none"))
 end
 function M.is_ready()return ui_ready==true end
@@ -94,7 +94,9 @@ function M.reply(actor,content)
 end
 function M.stop()
     local p=pending;if not p then return end
-    pending=nil;release(p,true);tell(p,"cancel")
+    pending=nil
+    require("SceneZOI.SimulationRoute").discard("SceneZOIStarter.Select",Protocol.pack(p.token,"open"))
+    release(p,true);tell(p,"cancel")
 end
 local function update(dt,actors,busy)
     elapsed=(elapsed or 0)+dt
@@ -103,7 +105,8 @@ local function update(dt,actors,busy)
         local frontend=Protocol.unpack(cfg("uimod.cfg_load","selection_ui_ready"))
         local launcher=Protocol.unpack(cfg("uimod.cfg_load","selection_launcher_ready"))
         ui_ready=frontend and frontend[1]==host_token and frontend[2]=="ready" and
-            launcher and launcher[1]=="launcher" and launcher[2]=="ready" or false
+            launcher and launcher[2]=="ready" and frontend[3]~=nil and
+            launcher[3]==frontend[3] and launcher[1]==frontend[4] or false
         local raw=cfg("uimod.cfg_load","selection_request")
         local fields=Protocol.unpack(raw)
         if raw~=last_request and fields then
