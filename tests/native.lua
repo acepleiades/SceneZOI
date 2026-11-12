@@ -50,6 +50,24 @@ UE={UObject={Load=function()return "carried"end},AStaticMeshActor={StaticClass=f
         NearlyEqual_TransformTransform=function(a,b) return a == b end}}
 inzoi={EB1UIInputMode={CursorMode=1},cli={execute=function()end}}
 local Native=require("SceneZOI.Native")
+do
+    local overlay = {}
+    local load, cli = UE.UObject.Load, inzoi.cli.execute
+    UE.UObject.Load=function(path)
+        assert(path=="/Game/Reading/ReadMontage.ReadMontage")
+        return overlay
+    end
+    inzoi.cli.execute=function(command)
+        assert(command=="data.table_get alias=AnimCharacter row=Read")
+        return true,"",[[{"characterAnimConfigList":[{"animInfoList":[{"animation":"/Game/Reading/ReadMontage.ReadMontage"}]}]}]]
+    end
+    active[overlay]=true
+    local record=Native.capture(actor)
+    assert(Native.cut_task_overlays(record,"Read:OtherMontage")==0 and active[overlay])
+    assert(Native.cut_task_overlays(record,"Read:ReadMontage")==1 and not active[overlay] and active[unrelated])
+    assert(Native.cut_task_overlays(record,"Read:ReadMontage")==0)
+    UE.UObject.Load, inzoi.cli.execute = load, cli
+end
 for _=1,20 do
     local record=Native.capture(actor)
     Native.enter(record,{}, {})

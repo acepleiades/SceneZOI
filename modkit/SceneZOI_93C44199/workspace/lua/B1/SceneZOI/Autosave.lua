@@ -13,18 +13,41 @@ end
 local function write(state,token)
  local ok,message=cfg('save',P.pack('autosave',token,state));assert(ok,message or 'Autosave lease write failed')
 end
+local function native_settings()
+ local ok,settings=pcall(function()
+  local settings=UE.UGameUserSettings.GetGameUserSettings()
+  if settings and type(settings.EnableAutoSave)=='boolean' and type(settings.SaveSettings)=='function' then return settings end
+ end)
+ if ok then return settings end
+end
+local function set_enabled(enabled,settings)
+ if settings then
+  -- Save the owned flag without reapplying rendering or other game settings.
+  settings.EnableAutoSave=enabled
+  assert(settings.EnableAutoSave==enabled,'Could not change autosave')
+  settings:SaveSettings()
+ else
+  local ok,message=inzoi.cli.execute('gameplay.set_autosave enable='..tostring(enabled))
+  assert(ok,message or 'Could not change autosave')
+ end
+end
 function M.acquire(token)
  assert(not lease,'Previous autosave restoration is pending')
- local ok,message,data=inzoi.cli.execute('gameplay.get_settings')
- assert(ok,message or 'Could not read autosave setting')
- local settings=J.decode(data or message)
- local enabled=settings.auto_save_enabled
- assert(enabled=='1'or enabled=='0','Unknown autosave setting')
- if enabled=='0'then return end
+ local settings=native_settings()
+ local enabled
+ if settings then
+  enabled=settings.EnableAutoSave
+ else
+  local ok,message,data=inzoi.cli.execute('gameplay.get_settings')
+  assert(ok,message or 'Could not read autosave setting')
+  local flag=J.decode(data or message).auto_save_enabled
+  assert(flag=='1'or flag=='0','Unknown autosave setting')
+  enabled=flag=='1'
+ end
+ if not enabled then return end
  write('held',token)
  lease=token
- local changed,err=inzoi.cli.execute('gameplay.set_autosave enable=false')
- assert(changed,err or 'Could not suspend autosave')
+ set_enabled(false,settings)
 end
 -- Hands the suspension to another eligible scene without touching the game setting.
 function M.transfer(token)
@@ -37,8 +60,7 @@ function M.restore()
  if not lease then return true end
  releasing=true
  local ok,err=pcall(function()
-  local changed,message=inzoi.cli.execute('gameplay.set_autosave enable=true')
-  assert(changed,message or 'Could not restore autosave')
+  set_enabled(true,native_settings())
   write('released',lease)
  end)
  if ok then lease,last_error,releasing=nil,nil,false

@@ -16,10 +16,14 @@ local function reply(owner, token, kind, detail, revision, diagnostic)
     inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", packet)
 end
 
-local function set_autonomy(owner, enable)
-    local ok, message = inzoi.cli.execute("autonomy.set_enable entity_id=" ..
-        Protocol.id(owner:GetEntityId()) .. " enable=" .. tostring(enable))
-    assert(ok, message or "Autonomy change failed")
+local function set_autonomy(owner, value, follow_parent)
+    local option = owner.AutonomyOption.AutonomyEnable
+    option.Value, option.bFollowParent = value, follow_parent
+    owner:RefreshAutonomyOptionCache()
+    local component = owner:GetComponent(inzoi.EB2ComponentType.Autonomy)
+    local enabled = owner:IsAutonomyEnable()
+    component:OnAutonomyOptionChanged(enabled)
+    component:SendAutonomyEnablePacket(enabled, false)
 end
 
 -- If this Zoi's client actor has unloaded, its own reply cannot arrive. Say so through the controlled Zoi.
@@ -67,7 +71,8 @@ local function release(self, owner, silent)
     restore("furniture", function() if lease.saved_furniture then require('SceneZOI.FurnitureLease').restore_saved(owner,lease.saved_furniture)end end)
     restore("outfit", function() Outfit.restore(owner, lease) end)
     restore("position", function()
-        if lease.stay then return end
+        -- Before the first anchor the simulation has not moved this Zoi.
+        if lease.stay or not (lease.location or lease.recovering) then return end
         owner:SetLocationAndRotationOnlySimul(lease.entry_location, lease.entry_rotation, false)
     end)
     restore("grab_poses", function()
@@ -82,15 +87,13 @@ local function release(self, owner, silent)
             lease.grab_poses[index] = nil
         end
     end)
-    restore("collision", function() owner:SetCollisionEnabled(lease.collision) end)
+    restore("collision", function()
+        if lease.tasks_settled or lease.recovering then owner:SetCollisionEnabled(lease.collision) end
+    end)
     restore("autonomy", function()
-        local option = owner.AutonomyOption.AutonomyEnable
+        if not (lease.committed or lease.recovering) then return end
         -- Restore inheritance too; an effective boolean alone would override household settings.
-        option.Value, option.bFollowParent = lease.local_value, lease.follow_parent
-        owner:RefreshAutonomyOptionCache()
-        local component = owner:GetComponent(inzoi.EB2ComponentType.Autonomy)
-        component:OnAutonomyOptionChanged(owner:IsAutonomyEnable())
-        component:SendAutonomyEnablePacket(owner:IsAutonomyEnable(), false)
+        set_autonomy(owner, lease.local_value, lease.follow_parent)
     end)
     if #errors == 0 then
         self.lease = nil
@@ -116,8 +119,7 @@ local function release(self, owner, silent)
     end
 end
 
-local function tasks_idle(owner, lease)
-    local interaction = assert(owner:GetComponent(inzoi.EB2ComponentType.Interaction), "Missing interaction component")
+local function clear_task_queue(owner, interaction)
     -- Autonomy does not stop user-queued tasks. Remove the backlog before cancel
     -- advances it, and keep new requests from taking over an already-ready lease.
     if not interaction:IsQueueEmpty() then
@@ -125,6 +127,9 @@ local function tasks_idle(owner, lease)
             Protocol.id(owner:GetEntityId()) .. " cancel_current=false")
         assert(ok, message or "Could not clear queued tasks")
     end
+end
+
+local function tasks_idle(owner, lease, interaction)
     if owner:IsPlayingInteraction() then
         lease.idle_ticks = 0
         local queue_id = tostring(interaction:GetCurrentInteractionQueueId())
@@ -144,20 +149,47 @@ end
 -- locomotion still belong to the game, as do unrelated protected motions.
 local task_overlay_groups = {UpperGroup = true, LeftArmGroup = true, RightArmGroup = true}
 
-local function stop_task_overlays(owner)
+local function task_overlays(owner)
     local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
     local ok, _, data = inzoi.cli.execute("motion.get_current" .. target)
-    if not ok or type(data) ~= "string" then return end
+    if not ok or type(data) ~= "string" then return {} end
     local decoded, state = pcall(Json.decode, data)
-    if not decoded or type(state) ~= "table" or type(state.motions) ~= "table" then return end
-
+    if not decoded or type(state) ~= "table" or type(state.motions) ~= "table" then return {} end
+    local result = {}
     for _, motion in ipairs(state.motions) do
-        local id = motion.anim_id
         if task_overlay_groups[motion.group] and motion.non_interruptible == false and
-            type(id) == "string" and id:match("^[%w_%-]+$") then
-            local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. id)
-            if not stopped then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
+            type(motion.anim_id) == "string" and motion.anim_id:match("^[%w_%-]+$") then
+            result[#result + 1] = motion
         end
+    end
+    return result
+end
+
+local function wait_for_overlay_cut(owner, lease)
+    if lease.overlay_cut_wait ~= nil then return lease.overlay_cut_wait > 0 end
+    lease.overlay_cut_wait = 0
+    local rows = {}
+    for _, motion in ipairs(task_overlays(owner)) do
+        local name = motion.montage_id
+        if type(name) == "string" and #name <= 128 and name:match("^[%w_%-]+$") then
+            rows[#rows + 1] = motion.anim_id .. ":" .. name
+            if #rows == 8 then break end
+        end
+    end
+    if #rows == 0 then return false end
+    -- The rendered montage is still active here. Native cancellation can start
+    -- blending it before a later presentation-side stop can find it.
+    lease.overlay_cut_wait = .3
+    local sent = pcall(reply, owner, lease.token, "overlay_cut", table.concat(rows, "+"), lease.revision)
+    if not sent then lease.overlay_cut_wait = 0 end
+    return lease.overlay_cut_wait > 0
+end
+
+local function stop_task_overlays(owner)
+    local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
+    for _, motion in ipairs(task_overlays(owner)) do
+        local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. motion.anim_id)
+        if not stopped then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
     end
 end
 
@@ -179,7 +211,10 @@ end
 local function advance_prepare(self, owner)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
-    if not tasks_idle(owner, lease) or lease.ready then return end
+    local interaction = assert(owner:GetComponent(inzoi.EB2ComponentType.Interaction), "Missing interaction component")
+    clear_task_queue(owner, interaction)
+    if wait_for_overlay_cut(owner, lease) or not tasks_idle(owner, lease, interaction) or lease.ready then return end
+    if owner:IsAutonomyEnable() then return end
     if not lease.tasks_settled then
         -- Gameplay can keep upper-body and grab loops alive after the task is idle.
         suspend_grab_poses(owner, lease)
@@ -187,8 +222,8 @@ local function advance_prepare(self, owner)
         local location, rotation = owner:GetLocation(), owner:GetRotation()
         lease.entry_location = UE.FVector(location.X, location.Y, location.Z)
         lease.entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll)
-        owner:SetCollisionEnabled(false)
         lease.tasks_settled = true
+        owner:SetCollisionEnabled(false)
     end
     local directive = lease.node.outfits and lease.node.outfits[lease.role]
     Outfit.apply(owner, lease, directive and directive.remove_slots or {})
@@ -278,12 +313,21 @@ local function receive(self, owner, kind, content)
         local lease=self.lease
         if not lease or lease.token~=token or lease.releasing then return end
         local ok,err=pcall(function()
-            if not lease.committed then lease.committed=true;set_autonomy(owner,false)end
+            if not lease.committed then
+                lease.committed = true
+                set_autonomy(owner, false, false)
+            end
             advance_prepare(self,owner)
         end)
         if not ok then
             release(self,owner,true)
             reply(owner,token,'rejected','prepare_error',0,err)
+        end
+    elseif kind == "SceneZOI.OverlayCut" then
+        local lease = self.lease
+        if lease and lease.token == token and not lease.releasing and lease.overlay_cut_wait and
+            lease.overlay_cut_wait > 0 and tonumber(fields[2]) == lease.revision then
+            lease.overlay_cut_wait = 0
         end
     elseif kind == 'SceneZOI.Recover' then
         self.recovery_done=self.recovery_done or {}
@@ -352,8 +396,17 @@ end
 local function update(self, owner, dt)
     local lease = self.lease
     if not lease then return end
-    lease.remaining = lease.remaining - math.max(tonumber(dt) or 0, 0)
+    dt = math.max(tonumber(dt) or 0, 0)
+    lease.remaining = lease.remaining - dt
+    if lease.overlay_cut_wait then lease.overlay_cut_wait = math.max(0, lease.overlay_cut_wait - dt) end
     if lease.releasing or lease.remaining <= 0 then release(self, owner); return end
+    -- The game can re-enable autonomy even after playback has started.
+    if lease.committed then
+        local option = owner.AutonomyOption.AutonomyEnable
+        if option.Value or option.bFollowParent or owner:IsAutonomyEnable() then
+            set_autonomy(owner, false, false)
+        end
+    end
     advance_prepare(self, owner)
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
     if lease.location then owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false) end

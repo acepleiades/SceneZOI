@@ -41,4 +41,22 @@ A.transfer('scene.b');assert(#sets==before)
 fail_set=true;assert(not A.restore()and A.restoring());A.tick(false);assert(enabled and not A.busy()and not A.restoring())
 A.transfer('scene.c');fail_set=true;assert(not A.restore()and A.restoring());A.transfer('scene.d');assert(A.owner()=='scene.d'and not A.restoring()and not enabled,'A new owner adopts a failed restoration')
 assert(A.restore()and enabled)
+-- The native path changes only the flag, persists it, and never reapplies settings.
+local settings={EnableAutoSave=true,AutoSaveInterval=interval}
+local saved,fail_save={},false
+function settings:SaveSettings()
+ if fail_save then fail_save=false;error('settings write failed')end
+ saved[#saved+1]=self.EnableAutoSave
+end
+UE={UGameUserSettings={GetGameUserSettings=function()return settings end}}
+before=#sets
+A.acquire('native');assert(not settings.EnableAutoSave and saved[1]==false and #sets==before)
+assert(P.unpack(cfg.lease)[3]=='held' and settings.AutoSaveInterval==interval)
+fail_save=true;assert(not A.restore()and A.busy()and settings.EnableAutoSave)
+assert(A.restore()and saved[2]==true and not A.busy()and #sets==before)
+settings.EnableAutoSave=false
+A.acquire('native-off');assert(not A.busy()and not settings.EnableAutoSave and #saved==2)
+A.boot();assert(not settings.EnableAutoSave,'A released lease still respects the native user preference')
+cfg.lease=P.pack('autosave','old-crash','held')
+A.boot();assert(settings.EnableAutoSave and saved[3]==true and #sets==before)
 print('Autosave lease passed: enabled/disabled originals, unchanged interval, no recapture, read/persist/partial-write failures, idle retries and crash/boot recovery.')

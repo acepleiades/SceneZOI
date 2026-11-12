@@ -293,18 +293,6 @@ local function prepare_packet(current, participant)
         Protocol.encode(Json.encode(Catalog.simulation(current.node,participant))))
 end
 
-local function refresh_libraries()
-    -- Native data packs can finish mounting after this Lua mod's boot callback.
-    -- Refresh before capturing a session; a library stays stable while any session runs.
-    if Sessions.count() > 0 then return end
-    require("SceneZOI.DataFiles").refresh()
-    require("SceneZOI.ExpressionLibrary").refresh()
-    require("SceneZOI.FacialPoseLibrary").refresh()
-    require("SceneZOI.VoiceLibrary").refresh()
-    Localization.refresh()
-    Catalog.refresh()
-end
-
 local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
     local node = Catalog.get(node_id)
     if addon then assert(Search.allowed(Catalog.get_snapshot().nodes,node,addon.restrictions),'Scene is restricted for this session')end
@@ -378,7 +366,6 @@ local function plan_placement(current, must_fit)
 end
 
 local function begin(fields)
-    refresh_libraries()
     local client, sequence, _, initiator, node_id, roster = table.unpack(fields)
     assert(initiator and roster, "Scene entry needs an initiator and explicit role assignments")
     local addon=Addons.context(fields[8],fields)
@@ -440,7 +427,6 @@ end
 function M.start_background(row)
     local npc_only = not row.has_household
     assert(not npc_only or M.npc_only_count() < Config.max_npc_sessions, "session_limit")
-    refresh_libraries()
     local entry = row.entry
     local assignments = {}
     for role, id in pairs(entry.bindings) do assignments[#assignments + 1] = role .. ":" .. id end
@@ -607,6 +593,23 @@ function M.reply(actor, content)
             end
         elseif current.placement_must_fit then
             stop_session(current, "placement_unavailable")
+        end
+        return
+    end
+    if kind == "overlay_cut" then
+        if current.stopping or current.started or not current.preparing or not current.save_ready or
+            tonumber(fields[4]) ~= current.revision or not detail then return end
+        for _, participant in ipairs(current.participants) do
+            if participant.actor == actor and not participant.node_ready and not participant.overlay_cut_handled then
+                participant.overlay_cut_handled = true
+                local ok, count = pcall(Native.cut_task_overlays, participant, detail)
+                tell(participant, "SceneZOI.OverlayCut", Protocol.pack(current.token, current.revision))
+                if ok and count > 0 then
+                    pcall(inzoi.cli.execute, command("uimod.cfg_save", "overlay_cut") .. " value=" ..
+                        Protocol.pack(current.token, participant.id, count))
+                end
+                break
+            end
         end
         return
     end

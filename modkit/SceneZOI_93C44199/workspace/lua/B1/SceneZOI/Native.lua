@@ -1,5 +1,6 @@
 -- Play through the existing game animation instance; keep its graph and references alive.
 local Config = require("SceneZOI.Config")
+local Json = require("SceneZOI.Json")
 local M = {}
 -- EAnimationMode::AnimationBlueprint; this enum is not exposed by the Lua binding.
 local ANIMATION_BLUEPRINT = 0
@@ -16,6 +17,39 @@ function M.capture(actor)
         collision = actor:GetActorEnableCollision(), movement = movement,
         movement_mode = movement.MovementMode, custom_movement_mode = movement.CustomMovementMode,
     }
+end
+
+local function cut_overlay(instance, anim_id, name)
+    local ok, message, raw = inzoi.cli.execute("data.table_get alias=AnimCharacter row=" .. anim_id)
+    if not ok then return false end
+    local row = Json.decode(raw or message)
+    for _, config in ipairs(row.characterAnimConfigList or {}) do
+        for _, entry in ipairs(config.animInfoList or {}) do
+            local path = entry.animation
+            if type(path) == "string" and path:match("%.([%w_%-]+)$") == name then
+                local montage = UE.UObject.Load(path)
+                if montage and instance:Montage_IsActive(montage) then
+                    instance:Montage_Stop(0, montage)
+                    return not instance:Montage_IsActive(montage)
+                end
+            end
+        end
+    end
+    return false
+end
+
+function M.cut_task_overlays(record, detail)
+    local instance = record.actor.Mesh:GetAnimInstance()
+    if not instance then return 0 end
+    local count = 0
+    for pair in detail:gmatch("[^+]+") do
+        local anim_id, name = pair:match("^([%w_%-]+):([%w_%-]+)$")
+        if anim_id then
+            local ok, cut = pcall(cut_overlay, instance, anim_id, name)
+            if ok and cut then count = count + 1 end
+        end
+    end
+    return count
 end
 
 function M.desired_transform(record, anchor)

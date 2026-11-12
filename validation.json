@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261109-concurrent-sessions-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.2.3 passed the framework and ModKit checks. The maintainer confirmed the task cleanup candidate after restarting the game. The release adds the version metadata and build marker.",
+  "release_status": "The maintainer restarted the game with the installed SceneZOI 1.2.4 candidate and confirmed the changes worked. The release adds version metadata and a diagnostic build marker. The restart used the existing local installation and preferences.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -304,7 +304,7 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261112-task-overlays-1",
+  "runtime_build": "20261112-scene-lifecycle-1",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.2.3",
+  "version": "1.2.4",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",
@@ -401,6 +401,35 @@
     "retail_readback": "In separate standing sessions, native reading and grip motions were absent during playback, the chair posture remained, and the original book was hidden. The original grip, carried entity and visibility returned after Exit. The sofa posture remained and its phone was hidden during playback, then visible at the original posture after Exit. Both sessions exited ok/ok. After diagnostic removal, launcher readiness matched and the save journal was empty.",
     "author_acceptance": "The maintainer restarted the game with the installed runtime changes and approved the candidate for release.",
     "verification_limits": "The game still owns the original posture and carried items after Exit. Grip recovery was exercised with an automated save record. The new candidate has not had a live save/load run."
+  },
+  "instant_overlay_stop_probe": {
+    "date": "2026-11-12",
+    "observation": "The native motion.stop command exposes an animation ID and uses the game's stop behavior. In the presentation animation instance, the current montage can be the chair idle while the exact reading montage is still playing in UpperBodySlot.",
+    "retail_readback": "On the same authored frame of the active reading montage, the zero-duration stop moved the wrist to within about 1.2 cm of its settled position at 22 ms and 0.12 cm at 44 ms. The 0.25-second control was still 7.6 cm away at 44 ms. The chair montage remained active. Active-state readbacks alone could not distinguish the two stops.",
+    "scene_entry_readback": "The installed update reported one zero-blend cut for the reading participant. The actual client montage stayed inactive across the first 24 standing scene render samples. Native chair posture remained, the simulation settled, and Exit completed ok/ok.",
+    "candidate_checks": "Framework tests and ModKit Lua validation passed. The isolated package retained only the four owned assets. Protected Lua was hash-verified after installation, preserving loaded cooked bytes.",
+    "residual_pose_blend": "The maintainer observed visible drift despite the montage cut. On a frozen scene pose, the pelvis reached its final position on the first evaluation while the wrists remained about 44 and 54 cm off. Repeated A/B tests showed a 450 ms readiness wait removed left-wrist drift and left about 2 cm on the right.",
+    "pose_settle_candidate": "Initial entries with an interrupted overlay or residual grip give native teardown 650 ms before the scene snap. The installed candidate matched both wrists to their settled positions on the first evaluated frame and the next six samples, to the 0.01 cm readback precision. Post-processing stayed active and Exit completed ok/ok. Framework checks and ModKit Lua validation passed, and the protected Lua hot update preserved cooked assets.",
+    "rollback": "The 650 ms buffer was reverted at the maintainer's request. The current implementation keeps the targeted zero-blend montage cut and uses the previous preparation timing.",
+    "verification_limits": "The separate native pose blend can still be visible after the targeted montage cut. The buffer measurements are historical."
+  },
+  "entry_exit_hitch_fix": {
+    "date": "2026-11-12",
+    "baseline": "Two native standing cycles measured autosave acquisition at 286-288 ms and restoration at 282-295 ms. Entry re-enumerated the native Text table in 34-35 ms. Largest observed frame samples were 359-360 ms on entry and 313-324 ms on Exit.",
+    "candidate": "Native reflected autosave flag writes and SaveSettings preserve the lease and avoid the full settings reapply. Idle discovery continues and entry uses the published catalog. In two repeated standing tests, measured autosave calls were under 5 ms and no recorded frame reached the 45 ms diagnostic threshold.",
+    "autosave": "The live game setting and settings file agreed before entry, while disabled in playback and after Exit. The 15-minute interval stayed unchanged. The acknowledged save journal contained both participants during playback, and the final journal was empty.",
+    "overlap": "A short background solo session started and ended beside the focused standing scene. The focused session kept playing and retained its autosave lease. No sampled frame reached 45 ms, and final Exit was ok/ok.",
+    "checks": "Full framework suite and ModKit Lua validation passed. Isolated packaging retained the four owned asset packages. Three protected Lua files and native integrity entries were hash-verified locally with cooked bytes preserved.",
+    "limits": "The tests exercised warm standing transitions and one overlapping background session. They did not force the scheduled autosave timer to expire or cover all content and asset streaming combinations."
+  },
+  "preparation_and_autonomy": {
+    "date": "2026-11-12",
+    "automated": "Task tests cover early Exit, queue clearing before the overlay acknowledgement, and autonomy rechecks during preparation and playback.",
+    "modkit": "Lua validation passed with zero errors and the two existing AddonAPI shadowing warnings.",
+    "live_candidate": "A retail readback found one participant's effective autonomy on during playback. Repeated attempts through the old command left autonomy unstable and preparation timed out. Direct native character-option writes resolved the timeout. Both participants stayed disabled during standing playback, an injected mid-scene enable was corrected, and Exit restored both enabled settings and their inheritance flags.",
+    "early_exit": "A normal standing scene in the candidate reached playback and exited cleanly. The following immediate cancellation crashed on the simulation thread before the cleanup acknowledgement. The revised candidate skips native restoration for position, collision and autonomy when the live lease never changed them, while retaining full journaled recovery.",
+    "installation": "The framework tests and ModKit Lua validation passed on the revised candidate. An isolated owned-payload build was filtered and its changed Lua bytes and integrity entry were verified in the local installation.",
+    "limits": "After a fresh retail launch, a normal standing start/Exit and a second start canceled during preparation both ended with clean cleanup and an empty journal. The maintainer observed that WASD could still move the controlled Zoi during preparation. The experimental locks were removed."
   },
   "ui_lifecycle_hardening": {
     "checkpoint": "docs/validation/ui-lifecycle-20261106.json",

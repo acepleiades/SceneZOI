@@ -80,5 +80,5 @@ Character.on_lua_message(script,owner,'SceneZOI.Prepare',Protocol.pack('t1','77'
 assert(script.lease and Members.has(77),'A held Zoi is listed from preparation')
 Character.on_lua_message(script,owner,'SceneZOI.Release',Protocol.pack('t1','restore'))
 assert(not script.lease and not Members.has(77),'A released Zoi is removed')
-assert(moved,'Release ran')
+assert(not moved,'A captured-only lease never moves its Zoi on release')
 print('Speech bubbles passed: participants withheld across scenes, bystanders untouched, per-owner targeting and lease membership.')
