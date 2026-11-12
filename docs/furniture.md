@@ -57,6 +57,33 @@ for retry; participant acknowledgements alone cannot finish Exit while furniture
 release remains outstanding. The save journal records the exact object/owner for
 recovery. See [lifecycle contracts](tier1-contracts.md).
 
+## Planned sofa authoring and placement
+
+Use one paired Maya reference rig and reuse the same animation on any validated
+pair of adjacent sitting spots on the same straight run of a sofa. This covers
+candidate two-seat and three-seat sofas, the Island Getaway Curtain Sofa and
+straight sections of three- and four-seat L-shaped sofas. Choose a pair with
+the same facing, place the animation root halfway between the two sitting
+spots and face it toward their shared front. Seats on opposite sides of an
+L-shaped corner are unsuitable as a pair.
+
+Replace the bed reference with one box from the floor to a representative
+sitting-surface height. Measure floor-to-cushion height and usable depth on the
+sample sofas. Use their native seated poses to cross-check contact and foot
+placement. The box represents the usable surface around one seat pair. Keep
+animation contacts independent of arms and backs. The Minimalist Sofa has no
+armrests, the Modern Chesterfield has a low back, and the Quilted Pattern
+Ottoman includes a seat without back or arm support. Check the Curtain Sofa
+separately before choosing dimensions. Final reference dimensions are pending.
+
+For future playback, clear the two selected sitting spots through the native
+interaction and posture paths, wait for confirmed vacancy and hold both spots
+for the session. Keep other seats available. Release only the occupancy reasons
+owned by the scene, including on failed starts and cleanup. Retail inspection
+found that a single Zoi can hold two sofa interaction slots at once and that
+some two-seat sofas expose more than two raw slot records. Map real sitting
+spots and their associated slots before choosing or reserving a pair.
+
 ## Verification boundary
 
 Source regressions cover data validation, placement, partial acquisition, delayed
