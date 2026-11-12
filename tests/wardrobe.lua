@@ -10,7 +10,7 @@ source.Outfit.Accessories:Add("Bag",{AccessoryId="hand_bag",AccessoryMeshId="bag
 source.Outfit.PrintedAccessories:Add({PrintedAccessoryName="canvas",bHasUnlockedItems=true,PrintedAccessoryData=C.map({
     hand_l={PrintedAccessoryId="canvas_bag",SaveData={scale=.8}},head={PrintedAccessoryId="canvas_hat",SaveData={scale=1.2}}})})
 local appearance={active="None",refreshes=0}
-function appearance:GetAppearanceSetting() return {FinalStyle=source} end
+function appearance:GetAppearanceSetting() return {FinalStyle=source,Outfit={ActiveStyleList={self.layer}}} end
 function appearance:GetActiveCostumeIdByReason() return self.active end
 function appearance:EmplaceActiveOutfit(style) self.active="SceneZOI_Demo_Outfit";self.layer=style end
 function appearance:RemoveCostumeByCostumeId() self.active="None";self.layer=nil end

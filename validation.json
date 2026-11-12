@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261109-concurrent-sessions-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.2.1 passed automated checks and native package validation. The maintainer accepted the compatibility fix with AFA 0.7.0 before the final cancellation hardening.",
+  "release_status": "SceneZOI 1.2.2 passed the framework and ModKit checks. The maintainer confirmed the exact release ZIP worked after a fresh launch with existing preferences.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -304,7 +304,7 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261112-simulation-receiver-3",
+  "runtime_build": "20261112-shared-script-outfits-1",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.2.1",
+  "version": "1.2.2",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",
@@ -383,6 +383,15 @@
     "automated_checks": "Passed framework suite including authored hair tint fallback, resolved hair color, and skin readiness.",
     "native_validation": "Lua and UI passed. Verified three protected Lua updates with cooked bytes and preferences preserved.",
     "author_acceptance": "Standing Rear Sex played with the bald Zoi. Standing Handjob played after a mesh hairstyle was equipped. Both recorded clean Exit. Live tint values were not captured."
+  },
+  "shared_script_outfits": {
+    "date": "2026-11-12",
+    "customer_diagnostics": "The two captured bed transitions stopped in participant preparation. The outfit check named Marriage_ExchangeRings in one and NZOI_Costume_NoneTopBottom in the other. The latter package's standing video is separate evidence.",
+    "automated_checks": "Catalog build and full framework checks passed. Outfit regressions cover stacking, exact-ID cleanup under newer Script layers, failed removal retries, and legacy recovery.",
+    "native_validation": "ModKit Lua passed with two pre-existing AddonAPI warnings. Prepared source bytes matched, the isolated package build and exact four-asset filter passed, and two protected Lua files and their native integrity entries were hot-installed with loaded containers preserved.",
+    "retail_readback": "Standing and queen bed idle-to-outfit transitions reached playback with an actual wedding-ring costume and a synthetic external layer. Native readback showed both remained active during playback and after Exit. Both Exits returned ok/ok, autosave was released, and launcher readiness recovered after probe removal.",
+    "exact_zip_update": "Installed and hash-verified while the game was closed. A fresh game process reported the new build marker and clean Exit after a standing transition. The maintainer confirmed the candidate worked.",
+    "verification_limits": "Native readback used an equivalent synthetic external layer. The reported third-party package and customer saves were not retested."
   },
   "ui_lifecycle_hardening": {
     "checkpoint": "docs/validation/ui-lifecycle-20261106.json",

@@ -1,40 +1,17 @@
 -- Session-owned sparse outfit layer. Never overwrite the original base styles.
 local State = require("SceneZOI.OutfitState")
 local Wardrobe = require("SceneZOI.Wardrobe")
-local Protocol = require("SceneZOI.Protocol")
 local M = {}
 local COSTUME = "SceneZOI_Demo_Outfit"
-local JOB_TAG = "Job"
 
--- The game's work uniforms and role outfits share the Script slot with other mods' outfits.
--- The game tags its own as Job, so only those are ours to borrow for a scene.
-local function wears_job_outfit(owner)
-    local id = owner:GetEntityId()
-    local context = inzoi.FB2ScriptContext(id, id, inzoi.EB1ScriptReason.Interaction)
-    local condition = inzoi.FB1Condition()
-    condition.BaseObject, condition.Command = inzoi.EB1BaseObject.Self, inzoi.EB1ConditionType.CostumeTag
-    condition.CompareType, condition.S1 = inzoi.EB1CompareType.Equal, JOB_TAG
-    return inzoi.FB2Script_Appearance.Condition_CostumeTag(context, condition) == true
-end
-
--- The tag check reads the newest layer, so that layer has to be the one in the Script slot.
-local function script_layer_on_top(appearance, active)
-    local top
-    -- BlueLua's native TArray supports ipairs but not Lua's length operator.
-    for _, style in ipairs(appearance:GetAppearanceSetting().Outfit.ActiveStyleList) do top = style end
-    return top ~= nil and top.Reason == inzoi.EB1ChangeOutfitReason.Script and tostring(top.Outfit.CostumeId) == active
-end
-
--- The work outfit a scene would have to borrow, if any. A failed check borrows nothing.
----@param owner FB2Character
-function M.borrowable(owner)
-    local ok, id = pcall(function()
-        local appearance = owner:GetComponent(inzoi.EB2ComponentType.Appearance)
-        local active = tostring(appearance:GetActiveCostumeIdByReason(inzoi.EB1ChangeOutfitReason.Script))
-        if active:match("^[%w_%-]+$") and active ~= "None" and active ~= COSTUME and
-            script_layer_on_top(appearance, active) and wears_job_outfit(owner) then return active end
-    end)
-    return ok and id or nil
+local function has_scene_layer(appearance)
+    -- Several outfits can share Script. A newer layer can hide ours from the reason lookup.
+    for _, style in ipairs(appearance:GetAppearanceSetting().Outfit.ActiveStyleList) do
+        if style.Reason == inzoi.EB1ChangeOutfitReason.Script and tostring(style.Outfit.CostumeId) == COSTUME then
+            return true
+        end
+    end
+    return false
 end
 
 -- Preserve the body's section layout at the source of appearance refreshes,
@@ -75,13 +52,10 @@ function M.recover(owner, legacy_layers)
     end
 end
 
-local function remove_layer(owner, lease)
-    if not lease.outfit then return end
-    local appearance = assert(owner:GetComponent(inzoi.EB2ComponentType.Appearance))
+local function remove_layer(appearance)
+    if not has_scene_layer(appearance) then return end
     appearance:RemoveCostumeByCostumeId(COSTUME, inzoi.EB1ChangeOutfitReason.Script)
-    assert(tostring(appearance:GetActiveCostumeIdByReason(inzoi.EB1ChangeOutfitReason.Script)) ~= COSTUME,
-        "The scene outfit layer has not been removed")
-    lease.outfit = false
+    assert(not has_scene_layer(appearance), "The scene outfit layer has not been removed")
 end
 
 ---@param owner FB2Character
@@ -92,33 +66,16 @@ function M.apply(owner, lease, slots)
     if signature == (lease.outfit_signature or ":manual0") then return end
     -- Expanding our sparse layer is the only node change that needs an appearance refresh.
     -- Omitted instructions keep the current layer and its already-built body mesh.
-    remove_layer(owner, lease)
+    local appearance = assert(owner:GetComponent(inzoi.EB2ComponentType.Appearance),
+        "Participant has no appearance component")
+    -- Drop only our previous revision or a leftover layer from an earlier scene.
+    remove_layer(appearance)
+    lease.outfit = false
     lease.removed_slots = removed
     if #slots == 0 and not (lease.wardrobe and lease.wardrobe.version > 0) then return end
-    local appearance = owner:GetComponent(inzoi.EB2ComponentType.Appearance)
-    assert(appearance, "Participant has no appearance component")
     local reason = inzoi.EB1ChangeOutfitReason.Script
-    local previous = tostring(appearance:GetActiveCostumeIdByReason(reason))
-    -- A leftover of ours from an earlier scene: this lease has no record of it, and nothing else uses the id.
-    if previous == COSTUME then
-        appearance:RemoveCostumeByCostumeId(COSTUME, reason)
-        previous = tostring(appearance:GetActiveCostumeIdByReason(reason))
-    end
-    if previous ~= "None" and previous ~= "" then
-        -- Script is a shared game reason. Refuse to replace another system's existing layer.
-        assert(M.borrowable(owner) == previous, "Another script already controls the participant's outfit: " .. previous)
-        if lease.removal_requested ~= previous then
-            -- Recorded first, so a failure from here on still puts the uniform back, including after a load.
-            lease.lent_costume, lease.removal_requested = previous, previous
-            pcall(inzoi.message.send_to_client, owner:GetEntityId(), "SceneZOI.Save", Protocol.pack(lease.token, "lent", previous))
-            appearance:RemoveCostumeByCostumeId(previous, reason)
-            previous = tostring(appearance:GetActiveCostumeIdByReason(reason))
-        end
-        -- The game queues this while a Zoi finishes an interaction. Preparation comes back next tick.
-        if previous ~= "None" and previous ~= "" then return false end
-    end
-    lease.removal_requested = nil
     local style = inzoi.FB1StyleSetting()
+    -- The game stacks Script layers by costume ID. This sparse layer leaves existing outfits in place.
     -- EmplaceActiveOutfit retains the struct's Reason; its separate argument does not assign it.
     style.Reason, style.Outfit.CostumeId = reason, COSTUME
     for _, kind in ipairs(slots) do
@@ -145,8 +102,8 @@ function M.restore(owner, lease)
     local appearance = owner:GetComponent(inzoi.EB2ComponentType.Appearance)
     local script = inzoi.EB1ChangeOutfitReason.Script
     lease.refresh_pending = lease.refresh_pending or lease.outfit or lease.body_merge or lease.lent_costume
-    -- After a load the record may name a uniform the scene never took: our own layer is the proof it did.
-    if lease.lent_costume and lease.recovering and tostring(appearance:GetActiveCostumeIdByReason(script)) == COSTUME then
+    -- Older saves may name a uniform the scene never took: our own layer is the proof it did.
+    if lease.lent_costume and lease.recovering and has_scene_layer(appearance) then
         lease.recovery_confirmed = true
     end
     if lease.body_merge then
@@ -155,7 +112,8 @@ function M.restore(owner, lease)
         appearance:SetAppearanceSetting(setting)
     end
     if lease.outfit then
-        remove_layer(owner, lease)
+        remove_layer(appearance)
+        lease.outfit = false
     end
     if lease.lent_costume then
         local now = tostring(appearance:GetActiveCostumeIdByReason(script))
