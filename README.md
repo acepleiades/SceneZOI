@@ -32,21 +32,21 @@ SceneZOI is free and works independently of other mods.
 
 The optional adult animation pack **HZoi** is available separately through the [public SceneZOI & HZoi Patreon post](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155). Both SceneZOI and HZoi are free; no Patreon subscription is required.
 
-### Quick installation
+### Installation and how to use
 
-1. Close inZOI.
-2. Download the latest SceneZOI ZIP from [GitHub Releases](https://github.com/acepleiades/SceneZOI/releases/latest).
-3. Extract the `SceneZOI_93C44199` folder into `Documents/inZOI/Mods`.
-4. Check that `mod_manifest.json` is directly inside `SceneZOI_93C44199`.
-5. Enable SceneZOI in the game's mod management menu.
+1. **Download:** Get the latest SceneZOI ZIP from [GitHub Releases](https://github.com/acepleiades/SceneZOI/releases/latest). The optional **HZoi** content pack is available in the attachments of the [public Patreon post](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155).
 
-If updating, replace the previous SceneZOI package folder.
+2. **Install:** Close inZOI and extract the ZIP files into `Documents\inZOI\Mods`. The resulting folders should be `SceneZOI_93C44199` and, if installing HZoi, `HZoi_660649D8`, each containing `mod_manifest.json` directly inside. Replace the previous folders when updating.
 
-To start a scene, select **Solo SceneZOI session** below **AI Emote** on the controlled Zoi. This opens a compatible solo scene and provides access to Scene Settings.
+3. **Enable:** Enable SceneZOI and, if installed, HZoi in the game's mod management menu.
 
-The unrestricted manual scene picker is available as an optional debug feature. Enable **SceneZOI manual start** under **Debug** in Scene Settings to restore the manual interaction on the controlled Zoi and supported furniture. It is disabled by default.
+4. **Play:** Load your save and select **Solo SceneZOI session** below **AI Emote** on your controlled Zoi. This starts a solo scene and gives you access to Scene Settings. If you reached this point, **SceneZOI is working on your mod list**. *You can press Exit now, or continue reading if you're not using SceneZOI gameplay mods.*
 
-HZoi and other compatible content packs can provide additional animations and scene configurations. Gameplay add-ons can initiate scenes independently through SceneZOI's public API.
+5. **If you're not using SceneZOI gameplay mods**, enable **SceneZOI manual start** under **Debug** in Scene Settings (the **cog icon**). This allows you to click your controlled Zoi and supported furniture to bring up a manual picker for starting SceneZOI sessions manually.
+
+6. **Gameplay mods**, such as VelvetZOI (on [Nexus Mods](https://www.nexusmods.com/inzoi/mods/1804) and [Patreon](https://www.patreon.com/VelvetZOI/posts/velvetzoi-public-174762693)), can start scenes through gameplay using SceneZOI's public API.
+
+Please report any errors or unexpected behavior, including what you were doing when the problem occurred.
 
 **Do not download the repository's source code ZIP to install SceneZOI.** Use the packaged files from GitHub Releases.
 
