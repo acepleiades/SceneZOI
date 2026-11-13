@@ -46,7 +46,7 @@ Please report any errors or unexpected behavior, including what you were doing w
 
 | Your project | SceneZOI provides | Start here |
 | --- | --- | --- |
-| Animation or scene pack | Declarative scenes, named roles, shared metadata and optional presentation systems | [Content authoring](docs/authoring.md) and [package structure](docs/package-split.md) |
+| Animation or scene pack | Declarative scenes, named roles, shared metadata and optional presentation systems | [Make your first animation](docs/first-animation.md) and [content authoring](docs/authoring.md) |
 | Gameplay integration | Scene queries, filtered starts, concurrent and autonomous sessions, restrictions, events and results | [Add-on authoring](docs/addon-authoring.md), [API](docs/addons.md) and [SDK](sdk/README.md) |
 | Scene enhancement | Temporary expression, voice, outfit, attachment, speed and task controls with independent ownership | [Add-on controls](docs/addon-controls.md) |
 
@@ -91,7 +91,7 @@ The [validation report](validation.json) distinguishes automated checks, native 
 
 ## Content and development
 
-If you're making an animation pack, I recommend using an AI agent to speed up ModKit imports, scene setup and packaging. I still review how the animation looks in-game myself. Start with the [agent handoff](docs/authoring.md#hand-an-animation-pack-to-an-ai-agent).
+If you're making an animation pack, I recommend using an AI agent to speed up ModKit imports, scene setup and packaging. I still review how the animation looks in-game myself. Start with [your first animation](docs/first-animation.md) or go straight to the [agent handoff](docs/authoring.md#hand-an-animation-pack-to-an-ai-agent).
 
 From the repository root, validate and stage the framework declarations, then run the source checks using your ModKit installation:
 

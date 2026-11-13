@@ -12,7 +12,17 @@ task, sound, expression or outfit instructions.
 SceneZOI supplies `packs/scenezoi/metadata/tags.json` and `actions.json`. They are
 native `tag_dictionary` and `action_dictionary` declarations contributed through
 the same enabled-package Text_UI/Text transport as other content. Third-party
-packages may contribute dictionaries through their own `data_files` entries.
+packages can register their own schema-1 dictionaries in the pack manifest.
+Paths in `data_files` are relative to that manifest and stay within its directory.
+
+```json
+"data_files": [
+  {"kind": "tag_dictionary", "file": "author/metadata/tags.json"},
+  {"kind": "action_dictionary", "file": "author/metadata/actions.json"}
+]
+```
+
+For a pack with ID `author`, the tag dictionary could look like this:
 
 ```json
 {
@@ -28,8 +38,25 @@ packages may contribute dictionaries through their own `data_files` entries.
 }
 ```
 
-An action dictionary uses an `actions` array. Each definition has `id`,
-`description`, `aliases` and `content_rating`. Optional `actor_description`,
+An action dictionary uses an `actions` array. Each action requires `id`,
+`description` and `content_rating`. Both dictionary types accept optional
+`aliases` and namespaced `addon_data`.
+
+```json
+{
+  "schema_version": 1,
+  "id": "author.actions",
+  "actions": [
+    {
+      "id": "author.hand_signal",
+      "description": "Gives a hand signal to another participant.",
+      "content_rating": "GENERAL"
+    }
+  ]
+}
+```
+
+Optional action fields `actor_description`,
 `target_description`, `performer_description`, `actor_requirements` and
 `target_requirements` explain semantic roles/capabilities. These capability names
 are descriptive metadata in v1; no new anatomy-detection system is introduced.
@@ -41,6 +68,13 @@ normalize to underscores. Canonical IDs are normalized identifiers. Unknown
 references fail validation. Ambiguous aliases/conflicting definitions are rejected
 by author builds; runtime isolates the conflicting definitions and dependent
 scenes, with warnings, independently of load order.
+
+At runtime, SceneZOI merges dictionaries from enabled packs. Scenes that
+reference a custom term need its provider enabled. The catalog builder
+validates terms against the core dictionaries and the dictionaries supplied
+to that build. A native `dependencies` entry alone does not import another
+pack's dictionary into a standalone build. For a standalone build, use core
+terms or register your own namespaced terms in your manifest.
 
 SceneZOI curates 85 actions using anatomical canonical names, full-word aliases
 and the author's reviewed content ratings. Tail-specific vocabulary is excluded.
@@ -131,7 +165,7 @@ traces the two directed hugs and separate scene/role scopes.
 | HZoi standing/kneeling fellatio | eye_contact | Male standing upright and pleased; female kneeling and looking up. Female performs fellatio and holds male penis at its base for positioning. No hug or handjob is inferred. |
 | HZoi standing rear | standing | Female facing away and bent forward; male behind her, energetic, performing vaginal penetration and holding her waist and wrist. |
 
-The idle/hub scenes, solo idles included, remain GENERAL; the three activity scenes remain EXPLICIT.
+In these examples, the idle and hub scenes are GENERAL and the activity scenes are EXPLICIT.
 `fellatio`, `spanking` and `gesture` are not core tags: the first two activities
 are represented by actions, and the last was too broad. Static contact such as
 `hand_on_partner_chest`, `head_on_partner_shoulder` or `leg_over_partner_leg`
@@ -214,7 +248,6 @@ assuming a female role name or player/NPC status. Missing facts do not match.
 
 `idle` does not imply GENERAL or a starting hub; `transition` does not set node
 kind; `undressing` does not change outfits. Tags do not determine content ratings.
-The current seven scenes were annotated from the author's explicit descriptions.
-Animation assets, gaze instructions, outfit behavior and runtime playback were
-not edited by this annotation pass. Other animations require their own accurate
-author annotations; registering a tag does not infer new scene facts.
+Describe what each animation depicts. Registering a tag makes the term
+available for authors and queries. To apply it to a scene, include it in
+`tags` or `participant_tags`.

@@ -69,7 +69,7 @@ def compile_packs(packs, link=True):
         check(isinstance(pack['nodes'], list) and isinstance(pack['extensions'], list), 'Expected pack arrays')
         for node in pack['nodes']:
             fields(node, ['id', 'label', 'kind', 'destination', 'hub', 'duration', 'fps', 'participants', 'anchor_participant',
-                          'tracks', 'outfits', 'attachments', 'gaze', 'expressions', 'voices', 'tasks', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
+                          'tracks', 'hide_if_tracks_missing', 'outfits', 'attachments', 'gaze', 'expressions', 'voices', 'tasks', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
                    ['id', 'label', 'kind', 'duration', 'fps', 'participants', 'anchor_participant', 'tracks', 'navigation'])
             from scene_metadata import validate_scene
             validate_scene(node)
@@ -85,7 +85,9 @@ def compile_packs(packs, link=True):
                 check(not node.get('starting_hub') and 'hub'not in node, 'Transitions cannot be starting scenes or hubs')
                 check(node['navigation']==[], 'Transition navigation must be empty')
             else:check('destination'not in node, 'Loop scene cannot declare a transition destination')
-            if 'starting_hub'in node:check(type(node['starting_hub'])is bool,'Invalid starting_hub flag')
+            for flag in ('starting_hub', 'hide_if_tracks_missing'):
+                if flag in node:
+                    check(type(node[flag]) is bool, f'Invalid {flag} flag')
             if 'hub' in node:
                 identifier(node['hub'])
             check(type(node['duration']) in (int, float) and math.isfinite(node['duration']) and node['duration'] > 0,

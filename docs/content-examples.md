@@ -16,6 +16,14 @@ The source links below are pinned to reference revision `4547286` so their
 line anchors and these explanations stay consistent. Current SceneZOI contracts
 remain authoritative. These examples do not require a private HZoi checkout.
 
+If your pack uses HZoi resources at runtime, declare the HZoi player pack as a
+dependency and reference its IDs and object paths. See
+[reusing HZoi resources](authoring.md#reuse-hzoi-resources-through-a-dependency)
+for setup, asset references and audio rights.
+
+If you are starting from a rig file, follow the [first animation guide](first-animation.md)
+through export, scene authoring and packaging.
+
 ## Find a complete example
 
 | What you want to author | Source to read | Fields and relationships to inspect |

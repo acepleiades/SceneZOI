@@ -6,6 +6,9 @@ framework hubs without editing framework source. Start with the public
 [framework manifest](../packs/scenezoi.json), [neutral scene files](../packs/scenezoi/scenes/)
 and [package/declaration guide](package-split.md).
 
+New to character animation? Start with [Make your first SceneZOI animation](first-animation.md)
+for the Maya and Blender rigs, exporters and a first in-game test.
+
 ## Hand an animation pack to an AI agent
 
 Give the agent this repository and the following inputs.
@@ -21,6 +24,11 @@ Give the agent this repository and the following inputs.
 - **How to enter the scene.** Say whether it should appear in a compatible hub
   or be selectable directly from the [debug picker](group-support.md#solo-launcher-and-debug-picker).
   Mention any required attachments, clothing behavior or other content dependencies.
+- **What the scene depicts.** Describe the beats, who does what to whom, and
+  each role's posture and contact points so the agent can choose accurate
+  actions and tags. Specify gaze targets, facial expression contexts, voice
+  contexts or silence, and any sound effects and their timing. Use the
+  [scene brief](first-animation.md#5-describe-the-scene-for-the-agent).
 
 For a first standing pair, point the agent to the
 [neutral standing scene](../packs/scenezoi/scenes/standing_idle.json) and the
@@ -42,10 +50,48 @@ audio; it is for study and has no repository-wide license. Each subsystem guide
 also links directly to relevant source sections. The neutral examples above
 remain suitable for all-ages content.
 
+## Reuse HZoi resources through a dependency
+
+If your pack supplies animations and needs voices, sound effects, facial
+expressions or a compatible attachment mesh, it can reference resources from
+the installed HZoi player pack. In your native ModKit project's
+`Meta/mod_manifest.json`, declare both dependencies:
+
+```json
+"dependencies": ["SceneZOI_93C44199", "HZoi_660649D8"]
+```
+
+Use the [package filter](development.md#isolated-packaging) to carry these
+entries into the exported manifest. Tell players to install and enable both
+mods. Keep your package inventory limited to your own payload. Use the HZoi
+player build for audible testing. [HZoi downloads](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155)
+
+| Resource | How to reference it |
+| --- | --- |
+| Voice sets | Set `voices[role].context` to a context HZoi supplies, such as `kiss`. SceneZOI looks up the context in the Zoi's selected compatible voice set. See [voice instructions](voices.md#scene-instructions). |
+| Sound effects | Set the emitter's `sound_set` to an HZoi ID such as `hzoi.kiss`, then configure the emitter for your scene. See [scene sounds](sfx.md#data) and the [HZoi sound sets](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L12). |
+| Expression sets | Set `expressions[role].context` to a context such as `Kiss`. HZoi's sets reference native inZOI facial animations. SceneZOI uses the Zoi's selected compatible set. For a standalone pack, define your own sets that reference native clips in place. See [expression authoring](expressions.md#responsibilities-and-data). |
+| Male anatomy mesh | Reference `/HZoi_660649D8/Attachments/HZoi_MaleAnatomy.HZoi_MaleAnatomy`. HZoi's coverage profile can already supply the mesh to compatible roles. Its attachment tracks are mapped by scene ID. For synchronized movement in a new scene, author a compatible attachment track and configure its binding. See [coverage profiles](package-split.md#presentation-and-compatibility-profiles). |
+
+**Audio rights.** HZoi's voice recordings and sound effects are proprietary.
+Referencing them through the dependency leaves the audio in HZoi. To ship
+those sounds in your own mod, buy the credited source assets under a license
+that permits including and distributing them in your mod. Import your licensed
+copies into your ModKit project and reference your own SoundWave paths. If you
+extract a copy from HZoi, you still need those rights and the license must
+permit reuse of that copy. Follow the creators' attribution terms. The
+installed `CREDITS.txt` identifies the sources. [HZoi audio credits](https://github.com/acepleiades/HZoi-Reference/blob/main/CREDITS.txt)
+
+Use one coverage replacement per participant. If HZoi's coverage rule
+already supplies the mesh, account for it before adding a scene-local
+replacement for the same region. [Standalone anatomy walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md#compare-with-hzois-profiles)
+
 ## Use the HZoi anatomy mesh in your own pack
 
 Get the optional adult [male anatomy authoring kit](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014)
-from the Blender rigs post. Move its editable assets into your own registered
+from the Blender rigs post. The kit is available free of charge. The source
+mesh is credited to Ryan Reos’s *The Vagrant* and is subject to its own license.
+Move the kit's editable assets into your own registered
 ModKit project, export your own synchronized tracks and adapt the kit's
 scene-local attachment example. The mesh and clips ship under your own mod's
 asset paths. Players need SceneZOI and your pack. Follow the
@@ -116,6 +162,34 @@ skeleton. `component` selects `body` or `head`; inverse-reference binding avoids
 double authored root offset. Resources have independent ownership and cleanup.
 See [head attachments and fixed facial poses](facial-poses.md) and
 [coverage/material profiles](package-split.md#presentation-and-compatibility-profiles).
+
+## Optional animation assets
+
+Content packs can use animations from independent libraries, including clips
+originally made for another Unreal project, when the license permits that use.
+This lets authors build scenes around existing animations without having to
+animate them. The clips can be cooked with stock Unreal Engine and distributed
+separately from the content pack. The game must be able to mount the cooked
+package for its engine build and platform, resolve the animation's dependencies,
+and play it on the target skeleton. [Unreal Engine content cooking](https://dev.epicgames.com/documentation/en-us/unreal-engine/cooking-content-in-unreal-engine)
+
+Reference each clip's Unreal object path in `tracks`. Add
+`"hide_if_tracks_missing": true` to a scene to make it conditional on those
+assets. On catalog discovery, SceneZOI checks every role track, named attachment
+mesh and animation, and any matching coverage attachment track declared for the
+scene. Clips must load and match the authored duration. If a check fails, the
+scene is omitted from the catalog, including API discovery and starts. Incoming
+navigation, task routes and transitions that depend on the scene are also
+removed. The catalog check is opt-in.
+
+Install the cooked library before launching the game. The game and its content
+loaders handle mounting. If archive signature checks block a compatible unsigned
+package, use a compatible signature bypasser such as UniversalSigBypasser where
+the game's terms permit it. [UniversalSigBypasser](https://github.com/rm-NoobInCoding/UniversalSigBypasser)
+
+Test playback on the target Zoi, including looping and Exit. Then launch with
+the library absent and verify that the scene disappears from navigation and API
+search results.
 
 ## Optional scene data
 

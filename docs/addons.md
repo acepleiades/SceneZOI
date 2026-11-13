@@ -112,6 +112,14 @@ appearance-body/life-stage compatibility and matching furniture context. Furnitu
 queries require participants and an available loaded object. Existing reservation
 checks run again when starting; a search result is not a reservation.
 
+Scenes marked `hide_if_tracks_missing` enter the catalog only when all required
+animation and attachment assets pass the catalog checks. Discovery and random
+selection use that catalog, as do preflight and all start modes, including
+autonomous starts. A start request that names a scene excluded by this check
+returns `no_matching_scenes`. Incoming navigation, task routes and dependent
+transitions are also removed. Install external libraries before launching the
+game. See [optional animation assets](authoring.md#optional-animation-assets).
+
 Standard API starts require the currently controlled Zoi as initiator and roster
 member. Background and autonomous starts can use any eligible loaded initiator
 in the roster. The add-on supplies the complete roster directly. API participants

@@ -11,10 +11,39 @@ local M = {}
 local Localization=require('SceneZOI.Localization')
 local Meta=require('SceneZOI.Metadata')
 local Search=require('SceneZOI.SceneSearch')
+local function load_track(path,duration)
+ local asset=assert(UE.UObject.Load(path),"Scene animation is unavailable: "..path)
+ local length=asset:GetPlayLength()
+ assert(length>0 and math.abs(length-duration)<=Config.max_duration_difference,
+  "Imported animation has unexpected duration: "..path)
+ return asset,length
+end
+
+local function check_tracks(node,rules)
+ M.load(node)
+ for _,spec in pairs(node.attachments or {})do
+  assert(UE.UObject.Load(spec.mesh),"Scene attachment mesh is unavailable: "..spec.mesh)
+  if spec.animation then load_track(spec.animation,node.duration)end
+ end
+ for _,rule in pairs(rules)do
+  local path=(rule.node_animations or {})[node.id]
+  if path then
+   for _,participant in pairs(node.participants)do
+    if participant.body==rule.body then
+     assert(UE.UObject.Load(rule.attachment.mesh),"Scene attachment mesh is unavailable: "..rule.attachment.mesh)
+     load_track(path,node.duration)
+     break
+    end
+   end
+  end
+ end
+end
+
 function M.refresh()
  local source=Files.get()
  if M.source==source and M.value then return M.value end
- local data=Data.compile(source.by_kind.scene_pack or {})
+ local profiles=ProfileData.compile(source)
+ local data=Data.compile(source.by_kind.scene_pack or {},function(node)check_tracks(node,profiles.rules)end)
  data.metadata=Meta.compile(source)
  for _,warning in ipairs(data.metadata.warnings)do data.warnings[#data.warnings+1]=warning end
  for id,node in pairs(data.nodes)do
@@ -46,7 +75,7 @@ function M.refresh()
  end end end
  data.furniture=require('SceneZOI.FurnitureData').compile(source)
  for _,warning in ipairs(data.furniture.warnings)do data.warnings[#data.warnings+1]=warning end
- data.profiles=ProfileData.compile(source)
+ data.profiles=profiles
  for _,warning in ipairs(data.profiles.warnings)do data.warnings[#data.warnings+1]=warning end
  for _,warning in ipairs(data.warnings)do print('[SceneZOI] Catalog warning: '..warning)end
  M.source,M.value=source,data;Profiles.set(data.profiles)
@@ -142,11 +171,9 @@ end
 function M.load(node)
     local assets, duration = {}, nil
     for role, path in pairs(node.tracks) do
-        local asset = UE.UObject.Load(path)
-        assert(asset, "Scene animation is unavailable: " .. path)
-        local length = asset:GetPlayLength()
-        assert(length > 0 and math.abs(length - node.duration) <= 0.0001, "Imported animation has unexpected duration")
-        if duration then assert(math.abs(length - duration) <= 0.0001, "Participant animation durations differ") end
+        local asset, length = load_track(path, node.duration)
+        if duration then assert(math.abs(length - duration) <= Config.max_duration_difference,
+            "Participant animation durations differ") end
         assets[role], duration = asset, length
     end
     return assets, duration

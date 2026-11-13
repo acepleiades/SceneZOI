@@ -11,7 +11,7 @@ These pages describe the active framework at the repository root. Dated investig
 | Participants and native picker | [Group support](group-support.md) |
 | Concurrent sessions and auto-mode | [Add-on API](addons.md#concurrent-and-background-sessions), [autonomous plans](addons.md#autonomous-scenes) |
 | Furniture | [Furniture](furniture.md) |
-| Animation authoring | [Authoring](authoring.md) and [worked content-pack examples](content-examples.md) |
+| Animation authoring | [Make your first animation](first-animation.md), [authoring reference](authoring.md) and [worked content-pack examples](content-examples.md) |
 | Scene tags, actions and ratings | [Metadata](scene-metadata.md) |
 | Independent add-ons | [Authoring guide](addon-authoring.md), [API](addons.md), [controls](addon-controls.md) and [SDK](../sdk/README.md) |
 | Gaze and expressions | [Gaze](gaze.md), [expressions](expressions.md), [facial poses/head attachments](facial-poses.md) |

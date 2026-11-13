@@ -38,6 +38,12 @@ class FrameworkCatalogTests(unittest.TestCase):
  def test_starting_hub_requires_boolean(self):
   self.pack['nodes'][0]['starting_hub']='true'
   with self.assertRaises(ValueError):compile_packs([self.pack])
+ def test_optional_track_gate_requires_boolean(self):
+  node=self.pack['nodes'][0]
+  node['hide_if_tracks_missing']=True
+  self.assertTrue(compile_packs([self.pack])['nodes'][node['id']]['hide_if_tracks_missing'])
+  node['hide_if_tracks_missing']='true'
+  with self.assertRaises(ValueError):compile_packs([self.pack])
  def test_roles_are_named_not_unique_bodies(self):
   node=self.pack['nodes'][0];node['participants']['female']['body']='male'
   self.assertEqual(len(compile_packs([self.pack])['nodes'][node['id']]['participants']),2)

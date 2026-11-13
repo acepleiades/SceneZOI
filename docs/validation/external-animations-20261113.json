@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-13",
+  "scope": "Stock Unreal 5.6.1 Windows animations in the local retail inZOI setup",
+  "catalog_tests": {
+    "framework_suite": "passed",
+    "optional_tracks": "Absent, partial, complete, incorrect duration and missing attachments. Hidden nodes, incoming navigation, automatic transitions and task routes were checked.",
+    "content_declarations": "passed",
+    "content_suite": "The pre-existing session fixture fails at capture_grab_poses because it omits EB1HandType. Reproduced on unchanged checkouts.",
+    "public_api": "The public API regression checks direct lookup, search, random choice, preflight and named, random, hub and autonomous starts against the filtered catalog."
+  },
+  "retail_probes": {
+    "original_stock_pak": "external object paths unresolved",
+    "game_content_path_pak": "external object paths unresolved",
+    "stock_cooked_packages_in_iostore": {
+      "skeletons_resolved": 2,
+      "animation_durations_seconds": [
+        10,
+        10,
+        10
+      ],
+      "body_playback": "Two native body montages remained active across a loop. Component-space hand transforms changed on both participants.",
+      "navigation_and_exit": "Switch to the built-in standing scene succeeded. Exit restored idle state with an empty save journal."
+    },
+    "installed_content": {
+      "fresh_launch_catalog": "Both bed variants published with links from their own HZoi hubs.",
+      "queen_bed": "Navigated from bed idle into the external scene and back. Both body montages stayed active through the loop, and sampled body and attachment bones moved. Attachment time wrapped with the scene.",
+      "exit": "Clean, with no recovery records remaining.",
+      "test_archive": "All three IoStore files in the test ZIP are byte-identical to the files used in the local retail test."
+    },
+    "original_stock_pak_retest": {
+      "setup": "Fresh launch with the existing inZOI Mod Enabler and only the byte-identical Pak extracted from the original release ZIP. Temporary IoStore files were removed from the game directory.",
+      "positive_controls": "The game skeleton and the built-in 3-second SceneZOI clip resolved.",
+      "external_assets": "Neither skeleton nor any of the three clips resolved.",
+      "catalog": "Both external bed variants and their incoming navigation were absent.",
+      "conclusion": "The tested loader configuration alone does not make the original Pak usable. This check does not establish whether the Pak was rejected or mounted with an unusable package path."
+    },
+    "neutral_iostore_izpl": {
+      "original_control": "With IZPL 1.0.1 and only the byte-identical AAL 1.0.0 Pak installed, the native skeleton and built-in clip resolved. Both AAL skeletons and all three clips were unavailable.",
+      "container": "The same five stock-cooked packages were staged to IoStore using the original AAL directory root. Package IDs and export-bundle hashes matched the prior game-targeted test. The companion Pak is empty.",
+      "archive": "The three container files are at the ZIP root. The internal content index uses the AAL project directory. The archive contains the exact tested files.",
+      "fresh_launch": "Both AAL skeletons resolved and all three clips reported 10 seconds. The single- and queen-bed variants appeared and were linked from their HZoi hubs.",
+      "playback": "Queen-bed playback looped with both body tracks and the attachment, returned to HZoi Bed Idle and exited cleanly.",
+      "limits": "This tested local retail with IZPL. Standalone Unreal runtime use and a clean retail setup were not tested. Single-bed playback and visual contact remain unverified."
+    }
+  },
+  "limitations": [
+    "The IoStore proof used the local retail configuration. Compatibility with an otherwise clean installation was not tested.",
+    "The original Pak-only prototype did not load directly in the tested setup. The later three-file IoStore release loaded locally.",
+    "Absent and partial asset sets were checked automatically. The fresh retail test used the complete asset set.",
+    "The household had no compatible single bed available. Single-bed placement and rendered contact were not visually verified."
+  ],
+  "standalone_unreal": {
+    "scope": "A separate stock Unreal Engine 5.6.1 Windows build loaded the unchanged three-file library release and played one body clip on its stock Manny character.",
+    "checks": "The clip was unavailable in the control run. With the library installed, the headless run recorded a loop and changing hand-bone transforms."
+  }
+}

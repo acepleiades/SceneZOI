@@ -54,7 +54,7 @@ function M.node(v,owner)
  local tracks=v.tracks;local placeholder={}
  for role in pairs(v.participants or {})do placeholder[#placeholder+1]=role end
  -- Run the remaining validation without treating dynamic track keys as schema fields.
- V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','outfits','attachments','gaze','expressions','voices','tasks','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
+ V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','attachments','gaze','expressions','voices','tasks','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
  require('SceneZOI.FurnitureData').scene(v.furniture)
  require('SceneZOI.MetadataShape').validate(v)
  V.id(v.id);assert(v.id:sub(1,#owner+1)==owner..'.','Node namespace mismatch');V.name(v.label);assert(v.kind=='loop'or v.kind=='transition','Unsupported scene kind')
@@ -67,6 +67,7 @@ function M.node(v,owner)
  if v.hub then V.id(v.hub)end;if v.starting_hub~=nil then V.boolean(v.starting_hub)end
  assert(v.participants[v.anchor_participant],'Unbound scene anchor')
  V.fields(tracks,placeholder,placeholder);for _,path in pairs(tracks)do V.asset(path)end
+ if v.hide_if_tracks_missing~=nil then V.boolean(v.hide_if_tracks_missing)end
  V.outfits(v.outfits or {},v.participants)
  assert(V.object(v.attachments or {}),'Expected named attachments');local profiled={}
  for id,spec in pairs(v.attachments or {})do
@@ -105,7 +106,7 @@ local function contribution(v)
  end
  return result
 end
-function M.compile(documents)
+function M.compile(documents,check_tracks)
  local result={nodes={},sound_sets={},warnings={}};local links={}
  for _,doc in ipairs(documents)do
   local ok,value=pcall(contribution,doc.data)
@@ -120,6 +121,17 @@ function M.compile(documents)
     for _,link in ipairs(value.extensions)do links[#links+1]=link end
    end
   else result.warnings[#result.warnings+1]=doc.source..': '..tostring(value)end
+ end
+ if check_tracks then
+  for id,node in pairs(result.nodes)do
+   if node.hide_if_tracks_missing then
+    local ok,reason=pcall(check_tracks,node)
+    if not ok then
+     result.nodes[id]=nil
+     result.warnings[#result.warnings+1]=id..': '..tostring(reason)
+    end
+   end
+  end
  end
  for _,link in ipairs(links)do
   local node=result.nodes[link.hub]
