@@ -20,11 +20,22 @@ local function ready(token,ids)
 end
 local function heartbeat(client,sequence)cfg.heartbeat=P.pack(client,sequence,'heartbeat','b'..tostring(sequence))end
 -- the mailbox still holds click number 3 of an earlier scene "ui|7"
-cfg.navigation=P.pack('ui','7','navigate','3','test.nowhere','4')
+cfg.navigation=P.pack('ui','7','navigate','3','test.nowhere','1','previous.session')
 cfg.request=P.pack('ui','7','start','1','test.node','first:1+second:2','none')
 heartbeat('ui','7');R.tick(.25)
 local token=assert(R.snapshot()).id
 offer(token,{1,2});R.tick(.05);ready(token,{1,2})
 for _=1,8 do R.tick(.25)end
-assert(not tostring(cfg.navigation_state):find('stale_navigation',1,true),'A leftover click is not answered "navigation changed": '..tostring(cfg.navigation_state))
+local calls=0
+package.loaded['SceneZOI.Catalog'].destination=function()
+ calls=calls+1
+ return F.node
+end
+R.tick(.25)
+assert(calls==0,'A persisted click from the previous session cannot navigate the current one')
+cfg.navigation=P.pack('ui','7','navigate','3','test.next','1',token)
+R.tick(.25)
+assert(calls==1,'A fresh click can reuse the previous session counter')
+R.tick(.25)
+assert(calls==1,'A retry must not replay the fresh click')
 print('Stale navigation passed: a click left by an earlier scene is not replayed into a new one.')

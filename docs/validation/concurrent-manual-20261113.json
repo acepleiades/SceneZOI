@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-13",
+  "runtime_build": "20261113-concurrent-manual-1",
+  "archive_sha256": "df1bb677e77fcb861a82587e6629ea68be753391401fcdd9ffe55e9cdcb3e727",
+  "automated": "Framework suite passed, including two manual starts and rejection of stale navigation packets with acceptance of a fresh click using the same counter.",
+  "package": "ModKit Lua and UI validation, isolated export, owned-payload filtering and installed hash verification passed.",
+  "native": "Two distinct solo sessions held recovery records concurrently. Switching to a free Zoi published idle while the paired session retained its record. The picker cancellation and a successful navigation acknowledgement were observed. Final Exit reported ok/ok with an empty recovery journal.",
+  "maintainer_acceptance": "Both solo starts worked, the first continued playing after at least one minute away, and both exited. The maintainer confirmed opening and cancelling the debug picker on a free Zoi, navigating after switching back and exiting the paired scene.",
+  "jacket_retest": "In Jaewoo Kwon's solo session, Jacket M_Jacket005_001 came off with Top M_Top_SW_Knit006_003 still on, and also after Top was switched off. Native garment scans confirmed removal and restoration of both original garments on Exit. Exit was ok/ok and the recovery journal was empty. The contributor's exact outfit and scene were not tested.",
+  "release": {
+    "version": "1.3.1",
+    "archive_sha256": "4134b5aa86ab6173af7cd5d4e653064f998dba14dd7df084a4188a1fb427dc66",
+    "parity": "All package files are byte-identical to the live-tested candidate except the plugin version and source reference."
+  }
+}

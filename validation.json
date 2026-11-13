@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261109-concurrent-sessions-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.3.0 adds optional external animation libraries. The feature was exercised in a local retail installation. See docs/validation/external-animations-20261113.json for evidence and scope.",
+  "release_status": "SceneZOI 1.3.1 fixes concurrent manual starts and stale navigation. See docs/validation/concurrent-manual-20261113.json for automated and live evidence.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -304,7 +304,7 @@
     }
   },
   "pending_author_acceptance": [],
-  "runtime_build": "20261113-external-animations-1",
+  "runtime_build": "20261113-concurrent-manual-1",
   "checkpoints": {
     "deferred_registration": "docs/validation/deferred-registration-20261105.json",
     "customer_body_layout": "docs/validation/customer-body-layout-20261105.json",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",

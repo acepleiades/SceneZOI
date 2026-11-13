@@ -270,7 +270,7 @@ end
 local function publish_node(current, code)
     if not has_panel(current) then return end
     local packet = Protocol.pack(current.client, current.sequence, current.revision,
-        current.node.id, current.last_navigation, code or "ok")
+        current.node.id, current.last_navigation, code or "ok", current.token)
     if current.node_state == packet then return end
     local ok, message = inzoi.cli.execute(command("uimod.cfg_save", "navigation_state") .. " value=" .. packet)
     assert(ok, message or "Could not publish scene navigation")
@@ -321,13 +321,6 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         initiator = initiator, participant_ids = participant_ids, participants = participants,
         assets = assets, node = node, duration = duration, require_resolved_outfit = true,furniture=furniture,anchor=furniture and furniture.anchor,
     })
-    -- A click left in the navigation mailbox by an earlier scene with the same client and sequence (background numbers
-    -- start again after a load) counts as already seen: replayed, it was answered "Scene navigation changed".
-    local left = Protocol.unpack(read("navigation") or "")
-    if left and left[1] == client and left[2] == tostring(sequence) and left[3] == "navigate" then
-        local count = tonumber(left[4])
-        if count and count % 1 == 0 and count > current.last_navigation then current.last_navigation = count end
-    end
     current.tasks = Tasks.new((Catalog.get_snapshot().tasks or {}).definitions or {}, participants)
     for _,person in ipairs(participants) do
         person.task_name = person.outfit_name and Protocol.decode(person.outfit_name) or person.id
@@ -379,11 +372,6 @@ local function begin(fields)
     assert(addon or not Addons.has_pending(),'Another scene start is pending')
     local furniture_id=fields[7]~='none'and fields[7]or nil
     local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
-    -- The Zoi the player controls is in it: it is theirs, and it may play on while they control someone else.
-    local known, controlled = pcall(Controller.controlled_id, M.actors)
-    if known and controlled then
-        for _, id in ipairs(current.participant_ids) do if id == controlled then current.player_held = true end end
-    end
     Sessions.add(current)
     Sessions.focus(current)
     Addons.created(addon,current)
@@ -728,7 +716,7 @@ local function navigate(raw)
     local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
     if not current or current.stopping or not fields or fields[1] ~= current.client or
-        fields[2] ~= current.sequence or fields[3] ~= "navigate" then return end
+        fields[2] ~= current.sequence or fields[3] ~= "navigate" or fields[7] ~= current.token then return end
     local count, revision = tonumber(fields[4]), tonumber(fields[6])
     if not count or count % 1 ~= 0 or count <= 0 then return end
     -- No new action can overtake an in-flight node change. Retries wait for readiness.
@@ -931,7 +919,7 @@ end
 
 -- The controls follow the Zoi the player controls.
 local function bind_panel(current)
-    current.ui_age, current.unfocused_age = 0, 0
+    current.ui_age = 0
     state_value = nil
     current.playback_state, current.node_state, current.outfit_state = nil, nil, nil
     current.last_task_payload, current.personality_state, current.voice_state = nil, nil, nil
@@ -951,7 +939,6 @@ local function update_focus()
     local old = Sessions.focused()
     if target == old then return end
     Sessions.focus(target)
-    if old then old.unfocused_age = 0 end
     publish_focus()
     if target then bind_panel(target)
     else
@@ -962,16 +949,9 @@ local function update_focus()
     reconcile_autosave()
 end
 
--- Every scene that can run without a panel has a finite life.
 local function background_limit_reached(current, dt)
     local lifetime = current.lifetime
-    if not lifetime then
-        -- Two of the player's own scenes side by side (switch Zoi, start another): the first one stays.
-        if current.player_held then return nil end
-        current.unfocused_age = (current.unfocused_age or 0) + dt
-        if current.unfocused_age >= Config.manual_background_seconds then return "lifetime_expired" end
-        return nil
-    end
+    if not lifetime then return nil end
     -- An add-on's scene adds up its time without a panel: visiting it restarts nothing.
     current.background_age = (current.background_age or 0) + dt
     if current.background_age >= Config.background_max_seconds then return "lifetime_expired" end

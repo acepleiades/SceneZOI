@@ -4,7 +4,7 @@
     var client = 'ui.' + Date.now() + '.' + Math.floor(Math.random() * 1000000);
     var sequence = 0;
     // The panel may show a session it did not start: these keep this panel's own identity for new starts.
-    var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null;
+    var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null, sessionToken = null;
     var hasPlan = false, autoMode = false, autoCount = 0, lastPlan = null, autoButton = null;
     var heartbeat = 0;
     var pendingCommand = null;
@@ -229,7 +229,7 @@
             checkingStart = true;
             return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function(data){
                 if (!initiator || entityId(data)!==initiator) {declineStart(initiator);return false;}
-                client=ownClient;sequence=++ownSequence;counterBase=0;
+                client=ownClient;sequence=++ownSequence;counterBase=0;sessionToken=null;
                 hasPlan=false;autoMode=false;lastPlan=null;
                 active=true;exiting=false;noticeInitiator=null;noticeToken=null;
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
@@ -328,6 +328,7 @@
     }, 250);
     // The panel follows the controlled Zoi: it shows that Zoi's scene, or nothing.
     function detachPanel() {
+        sessionToken = null;
         if (!active) return;
         active = false; exiting = false; playing = false; currentNode = null;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
@@ -357,7 +358,11 @@
     function applyFocus(f) {
         if (f[0] !== 'SZ2') return;
         if (f[2] === 'none') { detachPanel(); return; }
-        if (active && client === f[3] && String(sequence) === f[4]) return; // Already showing this scene.
+        if (active && client === f[3] && String(sequence) === f[4] && (!sessionToken || sessionToken === f[2])) {
+            sessionToken = f[2];
+            return;
+        }
+        sessionToken = f[2];
         attachPanel(f);
     }
     var readingFocus = false;
@@ -427,9 +432,9 @@
     }
     navigation.addEventListener('click', function (event) {
         var option = event.target && event.target.getAttribute('data-option');
-        if (!option || !active || !playing || exiting || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
+        if (!option || !sessionToken || !active || !playing || exiting || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
         if (!currentNode.navigation.some(function (edge) { return edge.id === option; })) return;
-        pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision)].join('|');
+        pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision), sessionToken].join('|');
         writePacket('navigation', pendingNavigation).catch(function () {});
         show(window.SceneZOILocalization.text('Changing scene…'));
     });
@@ -443,6 +448,7 @@
             if (typeof value !== 'string') return;
             var fields = value.split('|');
             if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
+            if (!sessionToken || fields[7] !== sessionToken) return;
             var nextRevision = Number(fields[3]), acknowledged = Number(fields[5]);
             if (nextRevision < revision || !window.SceneZOICatalog.nodes[fields[4]]) return;
             if (pendingNavigation && acknowledged < navigationCount) return;

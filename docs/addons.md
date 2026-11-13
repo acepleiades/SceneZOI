@@ -162,8 +162,7 @@ walkable floor, up to 6 metres away. If there is none, a background start ends w
 The panel, task tray, input and autosave suspension belong to the session of the
 **controlled Zoi**. Switching to a participant of another session switches them;
 switching to a Zoi outside every session hides the panel while the other sessions
-keep playing. A manual household session has 60 real seconds without the panel
-before it ends with `lifetime_expired`. Returning resets that interval.
+keep playing. Manual household sessions continue while unfocused.
 `get_session` without an ID returns the focused session. `list_sessions` returns
 all sessions.
 

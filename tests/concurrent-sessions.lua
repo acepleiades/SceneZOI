@@ -54,7 +54,7 @@ end
 local function playing(token,ids)offer(token,ids);R.tick(.05);ready(token,ids);assert(R.snapshot(token).phase=='playing')end
 local function panel_reaches_focused(count)
  local shown=Sessions.focused()
- cfg.navigation=P.pack(shown.client,shown.sequence,'navigate',tostring(count),'test.nowhere',tostring(shown.revision))
+ cfg.navigation=P.pack(shown.client,shown.sequence,'navigate',tostring(count),'test.nowhere',tostring(shown.revision),shown.token)
  R.tick(.25)
  assert(cfg.navigation_state:find('|'..count..'|',1,true),'The panel reaches the focused scene')
 end
@@ -103,8 +103,12 @@ assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','
 for _=1,300 do R.tick(.25)end
 assert(R.snapshot(player).phase=='playing','The own scene of the player plays on away from its panel')
 assert(cfg.state:find('|none|0|idle|',1,true),'A free Zoi leaves no scene phase for the starter to refuse on')
+F.controlled=9
+local other=player_scene(2,9,10)
+assert(R.snapshot().id==other and R.snapshot(player).phase=='playing','A second manual start leaves the first scene playing')
 F.controlled=1;heartbeat('ui',1);R.tick(.25);assert(R.snapshot().id==player)
-F.controlled=10;R.tick(.25)
+assert(R.snapshot(other).phase=='playing','Switching back leaves the second scene playing')
+R.stop('ok',other);release(other,{9,10})
 R.stop('ok',player);release(player,{1,2})
 assert(Sessions.holder('1')==nil,'Its roster is free again')
 -- An owner lease has to be renewed.

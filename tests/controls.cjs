@@ -58,7 +58,11 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/addon-bridge.js'),'utf8'),context);
   vm.runInNewContext(source,context);
 
-  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
+  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{
+      const [,client,sequence,revision,node]=s.split('|');
+      focusState=`SZ2|1|test.session|${client}|${sequence}|${revision}|${node}|playing`;
+      navigationState=s+'|test.session';
+    },setRawNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
     deferNavigation:()=>{deferNavigation=true;},resolveNavigation:value=>resolveNavigation({success:true,data:{value}}),
     setControlled:value=>{controlled=value;},setGender:(entity,value)=>{genders[entity]=value;},setCharacterFailure:value=>{characterFailure=value;},
     catalog:context.SceneZOICatalog,setCatalog:value=>{catalogState=value;},readCatalog:()=>context.SceneZOICatalog,refreshCatalog:()=>context.SceneZOIControls.refreshCatalog(),decline:(...args)=>context.SceneZOIControls.decline(...args),content:context.wf.content,hidden:()=>hidden,blurred:()=>blurred,failWrite:()=>{failWrite=true;},runDeferred:()=>deferred.splice(0).forEach(cb=>cb())};
@@ -162,21 +166,23 @@ async function run(){
   const nav=fixture();nav.start();await flush();
   const id=writes(nav,'request').at(-1).split('|')[1];
   nav.setState(`SZ2|${id}|1|playing|ok`);nav.timers[250]();await flush();
-  nav.setNavigation(`SZ2|${id}|1|1|scenezoi.standing_idle|0|ok`);nav.timers[300]();await flush();
+  nav.setNavigation(`SZ2|${id}|1|1|scenezoi.standing_idle|0|ok`);nav.timers[250]();await flush();nav.timers[300]();await flush();
   assert.match(nav.elements['scene-navigation'].innerHTML,/Example/);
   nav.elements['scene-navigation'].listeners.click({target:{getAttribute:()=> 'example.enter'}});await flush();
   const request=writes(nav,'navigation').at(-1);
-  assert.equal(request,`SZ2|${id}|1|navigate|1|example.enter|1`);
+  assert.equal(request,`SZ2|${id}|1|navigate|1|example.enter|1|test.session`);
   nav.timers[1000]();await flush();assert.equal(writes(nav,'navigation').at(-1),request);
   nav.setNavigation(`SZ2|${id}|1|1|scenezoi.standing_idle|0|ok`);nav.timers[300]();await flush();
   assert.equal(nav.elements['scene-navigation'].innerHTML,'','Old navigation state must not unlock a pending command');
+  nav.setRawNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok|old.session`);nav.timers[300]();await flush();
+  assert.equal(nav.elements['scene-navigation'].innerHTML,'','A reply from an old session cannot unlock a pending click');
   nav.setNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok`);nav.timers[300]();await flush();
   assert.match(nav.elements['scene-navigation'].innerHTML,/Bow/);
   nav.deferNavigation();nav.timers[300]();await flush();
   nav.elements['scene-exit'].listeners.click();await flush();
   const count=writes(nav,'navigation').length;nav.timers[1000]();await flush();
   assert.equal(writes(nav,'navigation').length,count,'Exit must cancel navigation retries');
-  nav.setState(`SZ2|${id}|1|idle|ok`);nav.timers[250]();await flush();
+  nav.setFocus('SZ2|2|none');nav.setState(`SZ2|${id}|1|idle|ok`);nav.timers[250]();await flush();
   assert.equal(nav.root.style.visibility,'hidden');
   nav.resolveNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok`);await flush();
   assert.equal(nav.root.style.visibility,'hidden','A delayed navigation reply cannot reopen the exited panel');
@@ -209,7 +215,7 @@ async function run(){
   captions.start();await flush();
   const captionClient=writes(captions,'request').at(-1).split('|')[1];
   captions.setState(`SZ2|${captionClient}|1|playing|ok`);captions.timers[250]();await flush();
-  captions.setNavigation(`SZ2|${captionClient}|1|1|example.standing_idle|0|ok`);captions.timers[300]();await flush();
+  captions.setNavigation(`SZ2|${captionClient}|1|1|example.standing_idle|0|ok`);captions.timers[250]();await flush();captions.timers[300]();await flush();
   assert.match(captions.elements['scene-navigation'].innerHTML,/Return\.\.\./);
   assert.match(captions.elements['scene-navigation'].innerHTML,/Wave/);
   assert.match(captions.elements['scene-navigation'].innerHTML,/Handshake/);
@@ -219,7 +225,7 @@ async function run(){
   wardrobe.start();await flush();
   const wardrobeClient=writes(wardrobe,'request').at(-1).split('|')[1];
   wardrobe.setState(`SZ2|${wardrobeClient}|1|playing|ok`);wardrobe.timers[250]();await flush();
-  wardrobe.setNavigation(`SZ2|${wardrobeClient}|1|1|example.standing_idle|0|ok`);wardrobe.timers[300]();await flush();
+  wardrobe.setNavigation(`SZ2|${wardrobeClient}|1|1|example.standing_idle|0|ok`);wardrobe.timers[250]();await flush();wardrobe.timers[300]();await flush();
   const hex=s=>Buffer.from(s,'utf8').toString('hex');
   const row=(on)=>`piece1:accessory:${hex('Bag')}:${hex('Bag: <Canvas> & "mod"')}:${on?1:0}:${hex('bag_id')}`;
   const inventory=(ack,on,status='ok',session=1)=>`SZ2|${wardrobeClient}|${session}|1|${ack}|${status}|20524:${hex('ZoÃ« Jang')}:${hex(row(on))}+20522:${hex('Jonovan Jang')}:${hex('none')}`;
@@ -278,7 +284,7 @@ async function run(){
   const personality=fixture();personality.start();await flush();
   const pc=writes(personality,'request').at(-1).split('|')[1];
   personality.setState(`SZ2|${pc}|1|playing|ok`);personality.timers[250]();await flush();
-  personality.setNavigation(`SZ2|${pc}|1|1|example.standing_idle|0|ok`);personality.timers[300]();await flush();
+  personality.setNavigation(`SZ2|${pc}|1|1|example.standing_idle|0|ok`);personality.timers[250]();await flush();personality.timers[300]();await flush();
   personality.setWardrobe(`SZ2|${pc}|1|1|0|ok|20524:${hex('ZoÃ«')}:${hex('none')}+20522:${hex('Jonovan')}:${hex('none')}`);
   personality.timers[400]();await flush();
   const metadata=[['example.pleasure_face','Pleasure face','female'],['example.downer','Downer','female'],['example.grinning_face','Grinning face','female'],['example.troubled_face','Troubled face','female'],['example.confident','Confident','male']].map(([id,label,body])=>`${hex(id)}:${hex(label)}:${body}`).join('+');
@@ -324,7 +330,7 @@ async function run(){
     const tasksUI=fixture();tasksUI.start();await flush();
     const tc=writes(tasksUI,'request').at(-1).split('|')[1];
     tasksUI.setState(`SZ2|${tc}|1|playing|ok`);tasksUI.timers[250]();await flush();
-    tasksUI.setNavigation(`SZ2|${tc}|1|1|scenezoi.standing_idle|0|ok`);tasksUI.timers[300]();await flush();
+    tasksUI.setNavigation(`SZ2|${tc}|1|1|scenezoi.standing_idle|0|ok`);tasksUI.timers[250]();await flush();tasksUI.timers[300]();await flush();
     tasksUI.elements['view-options'].listeners.click();
     const oldLeft=parseFloat(tasksUI.elements['outfit-panel'].style.left);
     const taskRow={participant_id:'1',participant_name:'Zoi',task_id:'spell',label:'Spell',percent:50,value:45,maximum:90,color:'#3185c3',track_color:'#bfbfbf',text_color:'#222222'};
@@ -344,12 +350,12 @@ async function run(){
   const trc=writes(transitionUI,'request').at(-1).split('|')[1];
   transitionUI.catalog.nodes['example.transition']={id:'example.transition',label:'Transition',kind:'transition',destination:'example.standing_idle',navigation:[{id:'should_not_show',target:'example.standing_idle'}]};
   transitionUI.setState(`SZ2|${trc}|1|playing|ok`);transitionUI.timers[250]();await flush();
-  transitionUI.setNavigation(`SZ2|${trc}|1|1|example.transition|0|ok`);transitionUI.timers[300]();await flush();
+  transitionUI.setNavigation(`SZ2|${trc}|1|1|example.transition|0|ok`);transitionUI.timers[250]();await flush();transitionUI.timers[300]();await flush();
   assert.equal(transitionUI.elements['scene-navigation'].innerHTML,'');assert.match(transitionUI.elements['scene-status'].textContent,/Transition in progress/);
   const attempts=writes(transitionUI,'navigation').length;
   transitionUI.elements['scene-navigation'].listeners.click({target:{getAttribute:()=> 'should_not_show'}});await flush();assert.equal(writes(transitionUI,'navigation').length,attempts);
   assert.equal(transitionUI.elements['speed-up'].disabled,false);transitionUI.elements['speed-up'].listeners.click();await flush();assert(writes(transitionUI,'playback').length>0);
-  transitionUI.setNavigation(`SZ2|${trc}|1|2|example.standing_idle|0|ok`);transitionUI.timers[300]();await flush();assert.match(transitionUI.elements['scene-navigation'].innerHTML,/Bow/);
+  transitionUI.setNavigation(`SZ2|${trc}|1|2|example.standing_idle|0|ok`);transitionUI.timers[250]();await flush();transitionUI.timers[300]();await flush();assert.match(transitionUI.elements['scene-navigation'].innerHTML,/Bow/);
   transitionUI.elements['scene-exit'].listeners.click();await flush();assert.equal(writes(transitionUI,'request').at(-1).split('|').at(-1),'exit');
   console.log('Transition UI passed: hidden/locked navigation, live speed controls, automatic destination reappearance and Exit.');
   console.log('Personality UI passed: exclusive panels, native participant selector, four female/one male options, absolute preference retries, stale acknowledgements, selection isolation and Exit closure.');

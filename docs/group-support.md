@@ -55,7 +55,7 @@ After changing native chunk hooks/bindings, reload both Lua environments while n
 
 Sessions can run side by side, each with its own roster. Starting a scene for a Zoi that is already in one, while that scene is preparing, playing or cleaning up, displays a native toast and leaves the active session and participant ownership untouched. The launcher handles ordinary clicks; native entry/runtime guards cover stale-state races without overwriting the current session's status.
 
-Switching control is allowed at any time. The panel follows the controlled Zoi: a participant of another session shows that session, and a Zoi outside every session hides the panel while the other sessions keep playing. A manual household session can play for 60 real seconds away from the panel, then ends with `lifetime_expired`. Returning to the session resets the interval. A picker-started NPC-only session uses the **Default NPC Scene Length** setting. An unknown or transient control lookup is not treated as a switch.
+Switching control is allowed at any time. The panel follows the controlled Zoi: a participant of another session shows that session, and a Zoi outside every session hides the panel while the other sessions keep playing. A picker-started NPC-only session uses the **Default NPC Scene Length** setting. An unknown or transient control lookup is not treated as a switch.
 
 The last_exit diagnostic stores client, sequence, final result and initiating exit reason. Restoration failures retain their own error result. Input restoration uses a currently registered world-context actor rather than an unloaded participant retained from session entry.
 
