@@ -42,33 +42,39 @@
       <img class="banner" src="site-assets/scenezoi-banner.webp" alt="SceneZOI logo and two characters posed together in inZOI" width="1280" height="720">
     </section>
 
-    <div class="player-grid">
-      <section class="panel installation" id="installation">
-        <h2>Install &amp; play</h2>
-        <p>SceneZOI requires inZOI and runs on its own. Choose the packaged ZIP from GitHub Releases and skip the source code archives.</p>
-        <ol class="steps">
-          <li><strong>Extract the ZIP.</strong> Close inZOI and extract it to <code>Documents\inZOI\Mods</code>. Open <code>SceneZOI_93C44199</code> and check that <code>mod_manifest.json</code> is directly inside. If you’re updating, replace the previous mod folder.</li>
-          <li><strong>Enable SceneZOI.</strong> Turn it on in the game’s mod management menu, then load your save.</li>
-          <li><strong>Start a solo scene.</strong> Click the controlled Zoi and choose <strong>Solo SceneZOI session</strong> below <strong>AI Emote</strong>. The panel gives you access to Scene Settings and <strong>Exit</strong>.</li>
-        </ol>
-        <details>
-          <summary>Manual picker and gameplay add-ons</summary>
-          <p>Open Scene Settings using the cog icon. Under <strong>Debug</strong>, turn on <strong>SceneZOI manual start</strong> and exit the solo session. The manual picker is available on the controlled Zoi and supported furniture. You can switch to a free Zoi and start another scene while a manual household scene continues.</p>
+    <section class="panel" id="installation">
+      <h2>Install &amp; play</h2>
+      <div class="install-grid">
+        <div>
+          <h3>Install SceneZOI</h3>
+          <p>SceneZOI requires inZOI and runs on its own. Choose the packaged ZIP from GitHub Releases.</p>
+          <ol class="steps">
+            <li><strong>Extract the ZIP.</strong> Close inZOI and extract it to <code>Documents\inZOI\Mods</code>. Check that <code>mod_manifest.json</code> is directly inside <code>SceneZOI_93C44199</code>. If you’re updating, replace the previous mod folder.</li>
+            <li><strong>Enable SceneZOI.</strong> Turn it on in the game’s mod management menu, then load your save.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>Start a scene</h3>
+          <ol class="steps">
+            <li><strong>Play solo.</strong> Click your controlled Zoi and choose <strong>Solo SceneZOI session</strong> below <strong>AI Emote</strong>.</li>
+            <li><strong>Use the manual picker.</strong> Open <strong>Scene Settings → Debug</strong> from the cog icon and enable <strong>SceneZOI manual start</strong>. Exit the solo session, then use the debug start on your controlled Zoi or supported furniture.</li>
+          </ol>
+          <p>To run two manual household scenes, switch to a free Zoi and start another from the picker.</p>
           <p>Gameplay add-ons such as VelvetZOI can start scenes through the public API. <a href="https://www.nexusmods.com/inzoi/mods/1804">VelvetZOI on Nexus Mods</a> · <a href="https://www.patreon.com/VelvetZOI/posts/velvetzoi-public-174762693">VelvetZOI on Patreon</a></p>
-        </details>
-        <details>
-          <summary>Optional HZoi content pack</summary>
-          <p>SceneZOI itself is all-ages. HZoi is a separate adult content pack. Extract HZoi into the same Mods directory, check that <code>HZoi_660649D8</code> contains its own <code>mod_manifest.json</code>, and enable both mods. <a href="https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155">Get HZoi</a></p>
-          <p>SceneZOI ships no nude body meshes. For adult content, a compatible body replacer such as Supponpon or ZoiBits is recommended. Jiggle physics are optional. SceneZOI supports compatible male body replacers automatically. <a href="https://github.com/acepleiades/SceneZOI/issues">Report a compatibility issue</a></p>
-        </details>
-      </section>
+        </div>
+      </div>
+      <details>
+        <summary>Optional HZoi content pack</summary>
+        <p>SceneZOI itself is all-ages. HZoi is a separate adult content pack. Extract HZoi into the same Mods directory, check that <code>HZoi_660649D8</code> contains its own <code>mod_manifest.json</code>, and enable both mods. <a href="https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155">Get HZoi</a></p>
+        <p>SceneZOI ships no nude body meshes. For adult content, a compatible body replacer such as Supponpon or ZoiBits is recommended. Jiggle physics are optional. SceneZOI supports compatible male body replacers automatically. <a href="https://github.com/acepleiades/SceneZOI/issues">Report a compatibility issue</a></p>
+      </details>
+    </section>
 
-      <section class="panel changes" id="changelog">
-        <h2>What’s new</h2>
-        <div id="release-notes"><p>Read the latest changelog on GitHub.</p></div>
-        <a class="text-link" id="release-link" href="https://github.com/acepleiades/SceneZOI/releases/latest">Full release notes ↗</a>
-      </section>
-    </div>
+    <section class="panel changes" id="changelog">
+      <h2>What’s new</h2>
+      <div id="release-notes"><p>Read the latest changelog on GitHub.</p></div>
+      <a class="text-link" id="release-link" href="https://github.com/acepleiades/SceneZOI/releases/latest">Full release notes ↗</a>
+    </section>
 
     <section class="section" id="features">
       <h2>What SceneZOI does</h2>
