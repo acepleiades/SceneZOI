@@ -120,9 +120,14 @@ local function roster(args)
  end
  return rows
 end
+local refreshed_at=nil
 local function refresh()
- -- Every running scene keeps the catalog it started with.
- if require('SceneZOI.Sessions').count()==0 and not pending and next(background_starts)==nil then
+ -- Every running scene keeps the catalog it started with. Main rescans the packs every 2 s while nothing runs, so a
+ -- request re-reads the whole declaration table (about 45 ms) at most once per REFRESH_SEC, not once per request.
+ local now=os.time()
+ if require('SceneZOI.Sessions').count()==0 and not pending and next(background_starts)==nil
+  and (not refreshed_at or now-refreshed_at>=5 or not Catalog.get_snapshot()) then
+  refreshed_at=now
   require('SceneZOI.DataFiles').refresh();Catalog.refresh()
  end
  return Catalog.get_snapshot()
