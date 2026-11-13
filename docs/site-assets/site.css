@@ -57,7 +57,7 @@ h1 span { display: block; }
 .install-grid > div { min-width: 0; }
 .install-grid h3 { font-size: 1.05rem; margin-bottom: .35rem; }
 .install-grid .steps { margin-top: .65rem; }
-.changes { margin-top: 1.25rem; }
+.changes { margin-block-start: 1.5rem; }
 .panel { background: var(--paper); border: 1px solid var(--line); border-radius: .85rem; padding: clamp(1.1rem, 3vw, 1.75rem); min-width: 0; }
 .panel > p, .section > p, .community p { margin-top: .7rem; }
 .steps { margin: 1.1rem 0 .8rem; padding-inline-start: 1.5rem; }
