@@ -321,6 +321,13 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         initiator = initiator, participant_ids = participant_ids, participants = participants,
         assets = assets, node = node, duration = duration, require_resolved_outfit = true,furniture=furniture,anchor=furniture and furniture.anchor,
     })
+    -- A click left in the navigation mailbox by an earlier scene with the same client and sequence (background numbers
+    -- start again after a load) counts as already seen: replayed, it was answered "Scene navigation changed".
+    local left = Protocol.unpack(read("navigation") or "")
+    if left and left[1] == client and left[2] == tostring(sequence) and left[3] == "navigate" then
+        local count = tonumber(left[4])
+        if count and count % 1 == 0 and count > current.last_navigation then current.last_navigation = count end
+    end
     current.tasks = Tasks.new((Catalog.get_snapshot().tasks or {}).definitions or {}, participants)
     for _,person in ipairs(participants) do
         person.task_name = person.outfit_name and Protocol.decode(person.outfit_name) or person.id
@@ -660,6 +667,8 @@ local function change_node(current, node, assets, duration, loaded_subsystems)
     Playback.leave_node(current)
     local subsystems = Subsystems.new(current, loaded_subsystems)
     Session.change_node(current, node, assets, duration, subsystems)
+    -- A verdict on an older node ("Scene navigation changed. Choose again.") must not come back with every later move.
+    current.navigation_code = nil
     notify(current, "node_preparing")
     publish_phase(current, "preparing", "ok")
     for _, participant in ipairs(current.participants) do tell(participant, "SceneZOI.Prepare", prepare_packet(current, participant)) end
