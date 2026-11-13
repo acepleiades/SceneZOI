@@ -34,3 +34,11 @@ inzoi.getB2Manager=function()return {FindGameObject=function()return nil end}end
 assert(pcall(M.restore_saved,owner,{'50'}),'Deleted furniture must not block loaded participant recovery')
 inzoi.getB2Manager=manager
 print('Saved furniture passed: no Lua lease required, exact native owner/reason, retry, duplicate and deleted-object recovery.')
+
+-- A reservation whose record was lost (no lease, no saved list): released once it has been stale for STALE_SEC.
+held=true;M.leases={};states[1].SlotOccupyingReasons={8};states[1].OccupyingEntityId={Value=1}
+assert(send('status','look')=='busy'and held,'First sight: still busy')
+now=now+M.STALE_SEC;assert(send('status','look')=='free'and not held,'Stale reservation released')
+assert(send('mine','acquire')=='held'and held);states[1].SlotOccupyingReasons={8}
+now=now+M.STALE_SEC*3;send('status','look');assert(held,'A live lease is never touched')
+print('Stale reservations passed: released after a while, a live lease kept.')
