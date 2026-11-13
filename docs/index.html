@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Download SceneZOI, the free, open-source animation framework for inZOI. Find release notes, installation instructions and authoring guides.">
+  <title>SceneZOI — Download for inZOI</title>
+  <link rel="icon" href="site-assets/icon.png">
+  <link rel="stylesheet" href="site-assets/site.css">
+  <script src="site-assets/releases.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#download">Skip to download</a>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="./">Scene<span>ZOI</span></a>
+      <nav aria-label="Main">
+        <a href="#download">Download</a>
+        <a href="#installation">Install</a>
+        <a href="#contributors">Contributors</a>
+        <a href="https://github.com/acepleiades/SceneZOI">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" id="download" aria-labelledby="download-title">
+      <div class="hero-copy">
+        <h1 id="download-title">Download <span>SceneZOI</span></h1>
+        <p class="intro">A free, open-source animation framework for inZOI. Play synchronized scenes, add animation packs, or build your own.</p>
+        <div class="release">
+          <div class="release-meta">
+            <strong id="version">Latest stable release</strong>
+            <span id="asset-info"></span>
+          </div>
+          <a id="download-link" class="button" href="https://github.com/acepleiades/SceneZOI/releases/latest"><span aria-hidden="true">↓</span> <span id="download-label">Get SceneZOI on GitHub</span></a>
+          <div id="extra-downloads" class="extra-downloads" hidden></div>
+          <a class="text-link" href="https://github.com/acepleiades/SceneZOI/releases">Older releases ↗</a>
+          <p class="release-status" id="release-status" role="status"></p>
+        </div>
+      </div>
+      <img class="banner" src="site-assets/scenezoi-banner.webp" alt="SceneZOI logo and two characters posed together in inZOI" width="1280" height="720">
+    </section>
+
+    <div class="player-grid">
+      <section class="panel installation" id="installation">
+        <h2>Install &amp; play</h2>
+        <p>SceneZOI requires inZOI and runs on its own. Choose the packaged ZIP from GitHub Releases and skip the source code archives.</p>
+        <ol class="steps">
+          <li><strong>Extract the ZIP.</strong> Close inZOI and extract it to <code>Documents\inZOI\Mods</code>. Open <code>SceneZOI_93C44199</code> and check that <code>mod_manifest.json</code> is directly inside. If you’re updating, replace the previous mod folder.</li>
+          <li><strong>Enable SceneZOI.</strong> Turn it on in the game’s mod management menu, then load your save.</li>
+          <li><strong>Start a solo scene.</strong> Click the controlled Zoi and choose <strong>Solo SceneZOI session</strong> below <strong>AI Emote</strong>. The panel gives you access to Scene Settings and <strong>Exit</strong>.</li>
+        </ol>
+        <details>
+          <summary>Manual picker and gameplay add-ons</summary>
+          <p>Open Scene Settings using the cog icon. Under <strong>Debug</strong>, turn on <strong>SceneZOI manual start</strong> and exit the solo session. The manual picker is available on the controlled Zoi and supported furniture. You can switch to a free Zoi and start another scene while a manual household scene continues.</p>
+          <p>Gameplay add-ons such as VelvetZOI can start scenes through the public API. <a href="https://www.nexusmods.com/inzoi/mods/1804">VelvetZOI on Nexus Mods</a> · <a href="https://www.patreon.com/VelvetZOI/posts/velvetzoi-public-174762693">VelvetZOI on Patreon</a></p>
+        </details>
+        <details>
+          <summary>Optional HZoi content pack</summary>
+          <p>SceneZOI itself is all-ages. HZoi is a separate adult content pack. Extract HZoi into the same Mods directory, check that <code>HZoi_660649D8</code> contains its own <code>mod_manifest.json</code>, and enable both mods. <a href="https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155">Get HZoi</a></p>
+          <p>SceneZOI ships no nude body meshes. For adult content, a compatible body replacer such as Supponpon or ZoiBits is recommended. Jiggle physics are optional. SceneZOI supports compatible male body replacers automatically. <a href="https://github.com/acepleiades/SceneZOI/issues">Report a compatibility issue</a></p>
+        </details>
+      </section>
+
+      <section class="panel changes" id="changelog">
+        <h2>What’s new</h2>
+        <div id="release-notes"><p>Read the latest changelog on GitHub.</p></div>
+        <a class="text-link" id="release-link" href="https://github.com/acepleiades/SceneZOI/releases/latest">Full release notes ↗</a>
+      </section>
+    </div>
+
+    <section class="section" id="features">
+      <h2>What SceneZOI does</h2>
+      <p>SceneZOI is a modular, data-driven framework. Animation packs describe what plays and how it’s presented. Gameplay add-ons decide when a scene starts and what happens afterward.</p>
+      <dl class="features">
+        <div><dt>Playback &amp; placement</dt><dd>Synchronized body and attachment tracks, including supported furniture, with navigation, playback speed and pause.</dd></div>
+        <div><dt>Solo &amp; group scenes</dt><dd>Explicit roles and configurable metadata. Multiple sessions can run side by side, including background and autonomous scenes started by add-ons.</dd></div>
+        <div><dt>Presentation</dt><dd>Facial expressions, gaze, voices, sound effects, outfits and animated attachments.</dd></div>
+        <div><dt>Tasks &amp; progress</dt><dd>Configurable progress rates and completion responses. HZoi uses these systems for its own scene progression.</dd></div>
+        <div><dt>Player settings</dt><dd>Saved sound-effect, voice and task-rate controls, with separate female and male settings where applicable. The interface supports 15 languages.</dd></div>
+        <div><dt>Authoring &amp; integrations</dt><dd>Use compatible tracks from independent Unreal animation libraries. The public API lets add-ons find and start scenes, manage sessions, restrict navigation and respond to events.</dd></div>
+      </dl>
+    </section>
+
+    <div class="community section">
+      <section id="contributors">
+        <h2>Contributors</h2>
+        <ul class="people">
+          <li><a href="https://github.com/acepleiades">acenetizen</a><span>Maintainer and lead developer</span></li>
+          <li><a href="https://github.com/SephirothValentine">SephirothValentine</a><span>Concurrent scenes and VelvetZOI</span></li>
+        </ul>
+        <a class="text-link" href="https://github.com/acepleiades/SceneZOI/graphs/contributors">All contributors ↗</a>
+      </section>
+      <section id="support">
+        <h2>Support developers</h2>
+        <p>SceneZOI is free. You can support individual contributors through their own pages.</p>
+        <ul class="support-links">
+          <li><a href="https://www.patreon.com/skyrimaceanimations">acenetizen on Patreon ↗</a></li>
+          <li><a href="https://www.patreon.com/cw/VelvetZOI">SephirothValentine on Patreon ↗</a></li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="section" id="authoring">
+      <h2>Source code &amp; authoring tools</h2>
+      <p>Build your own animation packs and gameplay add-ons with the guides and SDK. Maya and Blender rigs and exporters are linked from the first-animation guide. SceneZOI is licensed under GPL-3.0-only. The applicable inZOI ModKit terms also apply when using the ModKit.</p>
+      <ul class="resource-links">
+        <li><a href="https://github.com/acepleiades/SceneZOI/blob/main/docs/first-animation.md">Animation authoring</a></li>
+        <li><a href="https://github.com/acepleiades/SceneZOI/blob/main/docs/addon-authoring.md">Gameplay add-ons</a></li>
+        <li><a href="https://github.com/acepleiades/SceneZOI/blob/main/docs/addons.md">Public API</a></li>
+        <li><a href="https://github.com/acepleiades/SceneZOI/blob/main/CONTRIBUTING.md">Contributing</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>SceneZOI · <a href="https://github.com/acepleiades/SceneZOI/blob/main/LICENSE">GPL-3.0-only</a></span>
+      <nav aria-label="Repository">
+        <a href="https://github.com/acepleiades/SceneZOI">Source</a>
+        <a href="https://github.com/acepleiades/SceneZOI/issues">Report an issue</a>
+        <a href="https://github.com/acepleiades/SceneZOI/releases">Release history</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

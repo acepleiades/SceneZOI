@@ -24,23 +24,18 @@ SceneZOI contributor responsible for implementing concurrent multi-scene support
 
 ## Player downloads
 
-### Installation and how to use
+Visit the [SceneZOI download site](https://acepleiades.github.io/SceneZOI/) for
+the latest stable release, changelog, installation steps and optional content.
+Packaged ZIPs and older versions are on [GitHub Releases](https://github.com/acepleiades/SceneZOI/releases).
+Choose the SceneZOI ZIP under Assets for a ready-to-install build.
 
-1. **Download:** Get the latest SceneZOI ZIP from [GitHub Releases](https://github.com/acepleiades/SceneZOI/releases/latest). The optional **HZoi** content pack is available in the attachments of the [public Patreon post](https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155).
+### GitHub Pages setup
 
-2. **Install:** Close inZOI and extract the ZIP files into `Documents\inZOI\Mods`. The resulting folders should be `SceneZOI_93C44199` and, if installing HZoi, `HZoi_660649D8`, each containing `mod_manifest.json` directly inside. Replace the previous folders when updating.
-
-3. **Enable:** Enable SceneZOI and, if installed, HZoi in the game's mod management menu.
-
-4. **Play:** Load your save and select **Solo SceneZOI session** below **AI Emote** on your controlled Zoi. This starts a solo scene and gives you access to Scene Settings. If you reached this point, **SceneZOI is working on your mod list**. *You can press Exit now, or continue reading if you're not using SceneZOI gameplay mods.*
-
-5. **If you're not using SceneZOI gameplay mods**, enable **SceneZOI manual start** under **Debug** in Scene Settings (the **cog icon**). This allows you to click your controlled Zoi and supported furniture to bring up a manual picker for starting SceneZOI sessions manually.
-
-6. **Gameplay mods**, such as VelvetZOI (on [Nexus Mods](https://www.nexusmods.com/inzoi/mods/1804) and [Patreon](https://www.patreon.com/VelvetZOI/posts/velvetzoi-public-174762693)), can start scenes through gameplay using SceneZOI's public API.
-
-Please report any errors or unexpected behavior, including what you were doing when the problem occurred.
-
-**Do not download the repository's source code ZIP to install SceneZOI.** Use the packaged files from GitHub Releases.
+In the repository’s **Settings → Pages**, select **Deploy from a branch**,
+choose **main** and **/docs**, and save. The page uses plain HTML, CSS and
+JavaScript. It reads the latest stable release from the public GitHub API.
+To add a contributor and their optional support link, edit the relevant
+sections of [docs/index.html](docs/index.html).
 
 ## What you can build
 
