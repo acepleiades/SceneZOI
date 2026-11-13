@@ -372,6 +372,11 @@ local function begin(fields)
     assert(addon or not Addons.has_pending(),'Another scene start is pending')
     local furniture_id=fields[7]~='none'and fields[7]or nil
     local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
+    -- The Zoi the player controls is in it: it is theirs, and it may play on while they control someone else.
+    local known, controlled = pcall(Controller.controlled_id, M.actors)
+    if known and controlled then
+        for _, id in ipairs(current.participant_ids) do if id == controlled then current.player_held = true end end
+    end
     Sessions.add(current)
     Sessions.focus(current)
     Addons.created(addon,current)
@@ -941,6 +946,7 @@ local function update_focus()
     publish_focus()
     if target then bind_panel(target)
     else
+        publish("none", 0, "idle", "ok")
         if Catalog.publish then pcall(Catalog.publish) end
         if old and M.actors[id] then pending_focus = {actor = M.actors[id], age = 0, client = old.client, sequence = old.sequence} end
     end
@@ -951,6 +957,8 @@ end
 local function background_limit_reached(current, dt)
     local lifetime = current.lifetime
     if not lifetime then
+        -- Two of the player's own scenes side by side (switch Zoi, start another): the first one stays.
+        if current.player_held then return nil end
         current.unfocused_age = (current.unfocused_age or 0) + dt
         if current.unfocused_age >= Config.manual_background_seconds then return "lifetime_expired" end
         return nil

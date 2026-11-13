@@ -99,17 +99,13 @@ assert(not cfg.state:find('error',1,true),'The mailbox keeps a Start packet: it 
 assert(R.snapshot(player).phase=='playing','Leaving a scene does not end it')
 assert(F.autosave.enabled==true,'With no eligible owner the autosave setting is restored')
 assert(R.snapshot(player).phase=='playing'and R.snapshot(npc).phase=='playing','Scenes keep playing without the panel')
--- Returning before the manual timeout gives a fresh interval on the next switch away.
-for _=1,160 do R.tick(.25)end
-assert(R.snapshot(player).phase=='playing')
+-- The player's own scene plays on while they control someone else (scenes side by side), however long it takes.
+for _=1,300 do R.tick(.25)end
+assert(R.snapshot(player).phase=='playing','The own scene of the player plays on away from its panel')
+assert(cfg.state:find('|none|0|idle|',1,true),'A free Zoi leaves no scene phase for the starter to refuse on')
 F.controlled=1;heartbeat('ui',1);R.tick(.25);assert(R.snapshot().id==player)
 F.controlled=10;R.tick(.25)
-for _=1,238 do R.tick(.25)end
-assert(R.snapshot(player).phase=='playing','Returning resets the manual off-panel timer')
-R.tick(.25)
-assert(R.snapshot(player).phase=='exiting'and R.snapshot(npc).phase=='playing','Expiry is scoped to the manual scene')
-release(player,{1,2});assert(ended[player].code=='lifetime_expired')
-for _,participant in ipairs(ended[player].participants)do assert(participant.restoration=='restored')end
+R.stop('ok',player);release(player,{1,2})
 assert(Sessions.holder('1')==nil,'Its roster is free again')
 -- An owner lease has to be renewed.
 local leased=background(7,8,true,{lifetime={lease_seconds=4}})
