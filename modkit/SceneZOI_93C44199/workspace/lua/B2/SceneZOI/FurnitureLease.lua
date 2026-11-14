@@ -15,10 +15,35 @@ function M.release(bed,l)
  end
  M.leases[bed]=nil;M.retired[l.token]=os.time()
 end
+-- A Restricted reservation no lease explains (its record was lost: a crash or a Lua reload during the scene, then a
+-- save) kept a bed "in use" with nobody on it, for good. Seen stale for STALE_SEC on status checks, it is released.
+M.STALE_SEC=10
+local stale={}
+function M.clear_stale(bed,o)
+ local s=slot(o);if not s then return end
+ local owners={};for _,l in pairs(M.leases)do owners[l.owner]=true end
+ local found=false
+ for _,state in ipairs(s.SlotStateInfos)do
+  local restricted=false
+  for _,r in ipairs(state.SlotOccupyingReasons or {})do if r==inzoi.EB1SlotOccupyingReason.Restricted then restricted=true end end
+  local who=state.OccupyingEntityId and tostring(state.OccupyingEntityId.Value)or nil
+  if restricted and who and not owners[who]then
+   found=true
+   if stale[bed]and os.time()-stale[bed]>=M.STALE_SEC then
+    s:RemoveOccupyingReasonByEntityId(state.OccupyingEntityId,inzoi.EB1SlotOccupyingReason.Restricted)
+    print('[SceneZOI] Furniture '..bed..': a reservation by '..who..' with no lease was released')
+   end
+  end
+ end
+ if found then stale[bed]=stale[bed]or os.time()else stale[bed]=nil end
+end
 function M.message(owner,content)
  local f=P.unpack(content);if not f then return end
  local token,bed,action=f[1],f[2],f[3];local o=object(bed);local l=M.leases[bed];local who=id(owner:GetEntityId())
- if token=='status'then reply(owner,token,bed,o and not o:IsInUse()and not l and 'free'or'busy');return end
+ if token=='status'then
+  if o and not l and o:IsInUse()then pcall(M.clear_stale,bed,o)end
+  reply(owner,token,bed,o and not o:IsInUse()and not l and 'free'or'busy');return
+ end
  if action=='release'then
   if l and l.token==token and l.owner==who then M.release(bed,l)end
   M.retired[token]=os.time();reply(owner,token,bed,'released');return
