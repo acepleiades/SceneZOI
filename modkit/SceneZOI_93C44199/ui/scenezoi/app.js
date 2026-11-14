@@ -5,7 +5,7 @@
     var sequence = 0;
     // The panel may show a session it did not start: these keep this panel's own identity for new starts.
     var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null, sessionToken = null;
-    var hasPlan = false, autoMode = false, autoCount = 0, lastPlan = null, autoButton = null;
+    var hasPlan = false, autoMode = false, autoSpeed = false, autoCount = 0, lastPlan = null, autoButton = null;
     var heartbeat = 0;
     var pendingCommand = null;
     var active = false;
@@ -169,7 +169,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261112-launcher-handshake-ui-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261114-autonomous-presets-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         root.style.visibility = 'hidden';
@@ -230,7 +230,7 @@
             return window.SceneZOILocalization.refresh().then(function(){return inzoi.cli.execute('entity.get_possessed');}).then(decode).then(function(data){
                 if (!initiator || entityId(data)!==initiator) {declineStart(initiator);return false;}
                 client=ownClient;sequence=++ownSequence;counterBase=0;sessionToken=null;
-                hasPlan=false;autoMode=false;lastPlan=null;
+                hasPlan=false;autoMode=false;autoSpeed=false;lastPlan=null;
                 active=true;exiting=false;noticeInitiator=null;noticeToken=null;
                 pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
@@ -333,7 +333,7 @@
         active = false; exiting = false; playing = false; currentNode = null;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
         client = ownClient; sequence = ownSequence; counterBase = 0;
-        hasPlan = false; autoMode = false; lastPlan = null;
+        hasPlan = false; autoMode = false; autoSpeed = false; lastPlan = null;
         renderAutoMode();
         closePanel();
     }
@@ -342,7 +342,7 @@
         active = true; exiting = f[7] === 'exiting'; playing = f[7] === 'playing'; heartbeat = 0;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
         noticeInitiator = null; noticeToken = null; lastState = ''; gameScale = 1;
-        hasPlan = false; autoMode = false; lastPlan = null;
+        hasPlan = false; autoMode = false; autoSpeed = false; lastPlan = null;
         // Counters must beat anything this session has already acknowledged from an earlier binding.
         counterBase = Math.floor(Date.now() / 1000);
         navigationCount = counterBase; playbackCounter = counterBase; acknowledgedPlayback = 0;
@@ -390,7 +390,8 @@
         var fields = value.split('|');
         if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
         hasPlan = fields[3] === '1'; autoMode = hasPlan && fields[4] === '1';
-        renderAutoMode(); renderNavigation();
+        autoSpeed = autoMode && fields[7] === '1';
+        renderAutoMode(); renderNavigation(); renderPlayback();
     }
     function ensureAutoButton() {
         if (autoButton || !navigation || !navigation.parentNode || !navigation.parentNode.insertBefore) return;
@@ -467,14 +468,14 @@
     }
     function renderPlayback() {
         speedLabel.textContent = 'x' + speeds[speedIndex - 1].toFixed(2);
-        speedDown.disabled = !active || !playing || exiting || speedIndex === 1;
-        speedUp.disabled = !active || !playing || exiting || speedIndex === speeds.length;
+        speedDown.disabled = !active || !playing || exiting || autoSpeed || speedIndex === 1;
+        speedUp.disabled = !active || !playing || exiting || autoSpeed || speedIndex === speeds.length;
         speedDots.innerHTML = speeds.map(function (_, index) {
             return '<span class="speed-dot' + (index + 1 === speedIndex ? ' selected' : '') + '"></span>';
         }).join('');
     }
     function selectSpeed(index) {
-        if (!active || !playing || exiting || index < 1 || index > speeds.length || index === speedIndex) return;
+        if (!active || !playing || exiting || autoSpeed || index < 1 || index > speeds.length || index === speedIndex) return;
         speedIndex = index;
         pendingPlayback = ['SZ2', client, String(sequence), 'speed', String(++playbackCounter), String(index)].join('|');
         writePacket('playback', pendingPlayback).catch(function () {});

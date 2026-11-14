@@ -145,7 +145,7 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime','goals','restrictions','end_policy','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime','goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
  local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
  if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
@@ -205,7 +205,7 @@ local function execute(actor,req,row)
   if runtime().api_control_event and not op:match('^get_')and op~='renew_integration'and op~='register_integration'then runtime().api_control_event(req)end
   return result
  end
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
@@ -281,7 +281,7 @@ function M.receive(actor,content)
  if success then response.result=value;response.code='ok'
  else
   local message=tostring(value);response.message=message
-  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,session_has_no_plan=true,
+  local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,speed_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,session_has_no_plan=true,
    no_matching_scenes=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
    unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')

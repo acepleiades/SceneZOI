@@ -31,14 +31,28 @@ fail=false;M.restore_saved(owner,{'50'});assert(not held)
 M.restore_saved(owner,{'50'});assert(not held,'Already-removed native occupancy is idempotent')
 local manager=inzoi.getB2Manager
 inzoi.getB2Manager=function()return {FindGameObject=function()return nil end}end
-assert(pcall(M.restore_saved,owner,{'50'}),'Deleted furniture must not block loaded participant recovery')
+assert(not pcall(M.restore_saved,owner,{'50'}),'An unloaded bed must retain its own recovery record')
 inzoi.getB2Manager=manager
 print('Saved furniture passed: no Lua lease required, exact native owner/reason, retry, duplicate and deleted-object recovery.')
 
--- A reservation whose record was lost (no lease, no saved list): released once it has been stale for STALE_SEC.
-held=true;M.leases={};states[1].SlotOccupyingReasons={8};states[1].OccupyingEntityId={Value=1}
-assert(send('status','look')=='busy'and held,'First sight: still busy')
-now=now+M.STALE_SEC;assert(send('status','look')=='free'and not held,'Stale reservation released')
-assert(send('mine','acquire')=='held'and held);states[1].SlotOccupyingReasons={8}
-now=now+M.STALE_SEC*3;send('status','look');assert(held,'A live lease is never touched')
-print('Stale reservations passed: released after a while, a live lease kept.')
+-- Busy status is read-only. An unrecognized native restriction has no SceneZOI owner.
+held=true;states[1].SlotOccupyingReasons={8};states[1].OccupyingEntityId={Value=1}
+assert(send('status','look')=='busy');now=now+20
+assert(send('status','look')=='busy'and held)
+held=false
+-- Streaming loss must not acknowledge release or forget who owns the native reservation.
+assert(send('streamed','acquire')=='held')
+inzoi.getB2Manager=function()return {FindGameObject=function()return nil end}end
+local count=#replies
+send('streamed','release')
+assert(#replies==count and held and M.leases['50'].releasing)
+M.tick();assert(held and M.leases['50'])
+inzoi.getB2Manager=manager
+M.tick();assert(not held and not M.leases['50'])
+assert(send('streamed','release')=='released')
+-- Scoped B2 reload loses the lease. B1's acknowledged reservation can still be released.
+assert(send('b2reload','acquire')=='held');M.leases={}
+assert(send('b2reload','heartbeat')=='missing')
+M.message(owner,Protocol.pack('b2reload','50','release','held'))
+assert(not held and replies[#replies][3]=='released')
+print('Furniture recovery passed: foreign occupancy is preserved, streaming loss keeps release pending, and B1 may release its acknowledged reservation after a B2 reload.')

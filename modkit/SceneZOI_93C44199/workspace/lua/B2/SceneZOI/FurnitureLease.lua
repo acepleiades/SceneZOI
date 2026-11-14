@@ -8,47 +8,37 @@ local function object(v)return inzoi.getB2Manager('FB2EntityManager'):FindGameOb
 local function slot(o)return o:GetComponent(inzoi.EB2ComponentType.Slot)end
 local function reply(owner,token,bed,code)inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.FurnitureReply',P.pack(token,bed,code))end
 function M.blocked(component)local l=M.leases[id(component:GetOwnerEntityId())];return l~=nil and not l.acquiring end
-function M.release(bed,l)
- if l.acquired then
-  local o=object(bed)
-  if o then slot(o):RemoveOccupyingReasonByEntityId(entity(l.owner),inzoi.EB1SlotOccupyingReason.Restricted)end
- end
- M.leases[bed]=nil;M.retired[l.token]=os.time()
+local function clear_restriction(bed,owner)
+ local o=object(bed)
+ if not o then return false end
+ slot(o):RemoveOccupyingReasonByEntityId(owner,inzoi.EB1SlotOccupyingReason.Restricted)
+ return true
 end
--- A Restricted reservation no lease explains (its record was lost: a crash or a Lua reload during the scene, then a
--- save) kept a bed "in use" with nobody on it, for good. Seen stale for STALE_SEC on status checks, it is released.
-M.STALE_SEC=10
-local stale={}
-function M.clear_stale(bed,o)
- local s=slot(o);if not s then return end
- local owners={};for _,l in pairs(M.leases)do owners[l.owner]=true end
- local found=false
- for _,state in ipairs(s.SlotStateInfos)do
-  local restricted=false
-  for _,r in ipairs(state.SlotOccupyingReasons or {})do if r==inzoi.EB1SlotOccupyingReason.Restricted then restricted=true end end
-  local who=state.OccupyingEntityId and tostring(state.OccupyingEntityId.Value)or nil
-  if restricted and who and not owners[who]then
-   found=true
-   if stale[bed]and os.time()-stale[bed]>=M.STALE_SEC then
-    s:RemoveOccupyingReasonByEntityId(state.OccupyingEntityId,inzoi.EB1SlotOccupyingReason.Restricted)
-    print('[SceneZOI] Furniture '..bed..': a reservation by '..who..' with no lease was released')
-   end
-  end
- end
- if found then stale[bed]=stale[bed]or os.time()else stale[bed]=nil end
+function M.release(bed,l)
+ l.releasing=true
+ if l.acquired and not clear_restriction(bed,entity(l.owner))then return false end
+ M.leases[bed]=nil;M.retired[l.token]=os.time()
+ return true
 end
 function M.message(owner,content)
  local f=P.unpack(content);if not f then return end
  local token,bed,action=f[1],f[2],f[3];local o=object(bed);local l=M.leases[bed];local who=id(owner:GetEntityId())
- if token=='status'then
-  if o and not l and o:IsInUse()then pcall(M.clear_stale,bed,o)end
-  reply(owner,token,bed,o and not o:IsInUse()and not l and 'free'or'busy');return
- end
+ if token=='status'then reply(owner,token,bed,o and not o:IsInUse()and not l and 'free'or'busy');return end
  if action=='release'then
-  if l and l.token==token and l.owner==who then M.release(bed,l)end
+  if l and l.token==token and l.owner==who then
+   if not M.release(bed,l)then return end
+  elseif not l and not M.retired[token]and f[4]=='held'then
+   -- B2 may have reloaded since B1 received the acquisition acknowledgement.
+   if not clear_restriction(bed,owner:GetEntityId())then return end
+  end
   M.retired[token]=os.time();reply(owner,token,bed,'released');return
  end
- if action=='heartbeat'then if l and l.token==token and l.owner==who then l.time=os.time();reply(owner,token,bed,'held')end;return end
+ if action=='heartbeat'then
+  if l and l.token==token and l.owner==who and not l.releasing then
+   l.time=os.time();reply(owner,token,bed,'held')
+  else reply(owner,token,bed,'missing')end
+  return
+ end
  if action~='acquire'then return end
  if l then reply(owner,token,bed,l.token==token and l.owner==who and 'held'or'busy');return end
  if M.retired[token]or not M.hooks or not o or o:IsInUse()then reply(owner,token,bed,'busy');return end
@@ -77,7 +67,7 @@ function M.message(owner,content)
  reply(owner,token,bed,'held')
 end
 function M.tick()
- for bed,l in pairs(M.leases)do if os.time()-l.time>8 or not object(bed)then
+ for bed,l in pairs(M.leases)do if l.releasing or os.time()-l.time>8 or not object(bed)then
   local ok,err=pcall(M.release,bed,l);if not ok then print('[SceneZOI] Furniture release will retry: '..tostring(err))end
  end end
  for token,time in pairs(M.retired)do if os.time()-time>60 then M.retired[token]=nil end end
@@ -86,12 +76,17 @@ function M.release_owner(owner)
  local who=id(owner:GetEntityId())
  for bed,l in pairs(M.leases)do if l.owner==who then M.release(bed,l)end end
 end
-function M.restore_saved(owner,beds)
+function M.restore_saved(owner,beds,token)
  local errors={}
  for _,bed in ipairs(beds)do
   local ok,err=pcall(function()
-   local o=object(bed)
-   if o then slot(o):RemoveOccupyingReasonByEntityId(owner:GetEntityId(),inzoi.EB1SlotOccupyingReason.Restricted)end
+   local l=M.leases[bed]
+   if l then
+    assert(l.token==token and l.owner==id(owner:GetEntityId()),'Furniture held by another lease')
+    assert(M.release(bed,l),'Furniture not loaded')
+   else
+    assert(clear_restriction(bed,owner:GetEntityId()),'Furniture not loaded')
+   end
   end)
   if not ok then errors[#errors+1]=tostring(err)end
  end

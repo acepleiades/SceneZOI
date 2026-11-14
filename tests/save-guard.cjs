@@ -64,6 +64,22 @@ const record={token:'scene.1',serial:1,participants:{'1':{collision:true}},furni
  r.load({scenezoiSaveJournal:snapshot(10,[old])});r.cfg.save_restore_state='SZ2|client|1|ready|ok';await r.guard.poll();
  assert(r.guard.restoring(),'The later load is still restoring');assert(r.cfg.save_restore.startsWith('SZ2|client|2|restore|'),'with its own request');
  r.cfg.save_restore_state='SZ2|client|2|ready|ok';await r.guard.poll();assert(r.guard.available(),'Its own answer ends it');
+ // Lua restarts while the UI and its current world survive.
+ const hot=fixture();
+ hot.cfg.save_snapshot=JSON.stringify(snapshot(5,[record]));await hot.guard.poll();
+ hot.cfg.save_snapshot=JSON.stringify({version:2,host:'host.2',revision:1,records:[]});
+ await hot.guard.poll();
+ assert(hot.guard.restoring(),'The Lua host changed with outstanding recovery');
+ assert.deepEqual(hot.save().scenezoiSaveJournal,snapshot(5,[record]));
+ assert.equal(hot.cfg.save_ready,'SZ2|host.1|5|ready','Do not acknowledge the empty boot snapshot');
+ await hot.guard.poll();
+ assert(hot.cfg.save_restore.includes('scene.1'),'Send the previous world journal in a fresh request');
+ hot.cfg.save_restore_state='SZ2|client|1|ready|ok';await hot.guard.poll();assert(hot.guard.available());
+ hot.cfg.save_snapshot=JSON.stringify({version:2,host:'host.2',revision:2,records:[record]});
+ await hot.guard.poll();assert.equal(hot.cfg.save_ready,'SZ2|host.2|2|ready');
+ // Another save load outranks recovery of the world that was just left.
+ hot.load({});await hot.guard.poll();
+ assert(hot.cfg.save_restore.includes('"records":[]'));
  const no=fixture(false);assert(!no.guard.available());
  console.log('Save guard passed: cache-before-ack, per-revision acknowledgement, save requests every Exit, loaded journal indexing, empty loads and reads started before a load.');
 })().catch(e=>{console.error(e);process.exit(1);});

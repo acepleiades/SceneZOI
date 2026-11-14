@@ -201,3 +201,12 @@ assert(not loaded.lease and o.collision and not o.AutonomyOption.AutonomyEnable.
 local count=restored;M.on_lua_message(loaded,o,'SceneZOI.Recover',P.pack('restore.1',P.encode(Json.encode(record))))
 assert(restored==count,'Duplicate recovery must not replay completed restoration')
 print('Save leases passed: no mutation before UI cache, original false/inherited flags, body layout, stale-field recovery and duplicate acknowledgement.')
+
+-- A B2-only reload loses the participant lease but the live B1 host still owns the original.
+local reloaded={};M.on_begin(reloaded,o)
+o.collision=false;o.AutonomyOption.AutonomyEnable.bFollowParent=false
+M.on_lua_message(reloaded,o,'SceneZOI.Release',P.pack('captured','restore',P.encode(Json.encode(record))))
+assert(not reloaded.lease and o.collision and o.AutonomyOption.AutonomyEnable.bFollowParent, tostring(reloaded.lease)..':'..tostring(o.collision)..':'..tostring(o.AutonomyOption.AutonomyEnable.bFollowParent))
+local release_writes=o.position_writes
+M.on_lua_message(reloaded,o,'SceneZOI.Release',P.pack('captured','restore',P.encode(Json.encode(record))))
+assert(o.position_writes==release_writes,'A duplicate Exit cannot restore the same position twice')

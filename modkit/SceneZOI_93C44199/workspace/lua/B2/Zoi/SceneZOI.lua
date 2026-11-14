@@ -68,7 +68,7 @@ local function release(self, owner, silent)
         local ok, err = pcall(fn)
         if ok then lease.restored[key] = true else errors[#errors + 1] = tostring(err) end
     end
-    restore("furniture", function() if lease.saved_furniture then require('SceneZOI.FurnitureLease').restore_saved(owner,lease.saved_furniture)end end)
+    restore("furniture", function() if lease.saved_furniture then require('SceneZOI.FurnitureLease').restore_saved(owner,lease.saved_furniture,lease.token)end end)
     restore("outfit", function() Outfit.restore(owner, lease) end)
     restore("position", function()
         -- Before the first anchor the simulation has not moved this Zoi.
@@ -335,7 +335,7 @@ local function receive(self, owner, kind, content)
         local data=Json.decode((assert(Protocol.decode(fields[2]),'Invalid recovery packet')))
         -- This lease already released itself; restoring again would move a Zoi that has since walked away.
         if self.retired[data.token]then Save.reply(owner,token,'recovered');return end
-        if self.lease and (not self.lease.releasing or self.lease.token~=data.token)then return end
+        if self.lease and self.lease.token~=data.token then return end
         if not self.lease then self.lease=assert(Recovery.lease(data),'Missing recovery record')end
         self.lease.recovery_request=token
         release(self,owner,true)
@@ -356,9 +356,14 @@ local function receive(self, owner, kind, content)
         if not ok then print("[SceneZOI] Floor search failed: " .. tostring(x)) end
         reply(owner, token, "placement", ok and x or "none", ok and y or 0, ok and z and tostring(z) or nil)
     elseif kind == "SceneZOI.Release" then
+        if not self.lease and not self.retired[token] and fields[3] and fields[3] ~= "none" then
+            local data = Json.decode((assert(Protocol.decode(fields[3]), "Invalid release snapshot")))
+            assert(data.token == token, "Release snapshot does not match this session")
+            self.lease = assert(Recovery.lease(data), "Missing release snapshot")
+        end
         if self.lease and self.lease.token == token then
             -- Only stay if the game agrees this floor is walkable; otherwise go back as usual.
-            self.lease.stay = fields[2] == "stay" and require("SceneZOI.Placement").walkable(owner)
+            self.lease.stay = not self.lease.recovering and fields[2] == "stay" and require("SceneZOI.Placement").walkable(owner)
             self.lease.stay_refused = fields[2] == "stay" and not self.lease.stay
             release(self, owner)
         else

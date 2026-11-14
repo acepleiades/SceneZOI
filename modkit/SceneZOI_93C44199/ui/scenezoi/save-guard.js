@@ -2,7 +2,7 @@
  'use strict';
  var key='scenezoiSaveJournal';
  function create(options){
-  var state=options.state, restored=null, restorePacket=null, restoring=false, reading=false, counter=0, acknowledged=null;
+  var state=options.state, restored=null, restorePacket=null, restoring=false, reading=false, counter=0, acknowledged=null, host=null;
   // Every load starts a new generation: a read or acknowledgement begun before it belongs to the previous world.
   var generation=0;
   var supported=options.sdk&&typeof options.sdk.register==='function';
@@ -42,6 +42,14 @@
      if(!current()||!raw||raw===acknowledged)return;
      var data=options.decode(raw);
      if(!data||data.version!==2||typeof data.host!=='string'||!Array.isArray(data.records))return;
+     var previousHost=host;
+     host=data.host;
+     // A Lua reload replaces the host while the UI still has this world's journal.
+     // Send it to the new host before acknowledging or caching its empty boot snapshot.
+     if(previousHost&&previousHost!==host&&state[key]&&state[key].records.length){
+      adopt(state[key]);
+      return;
+     }
      state[key]=data.records.length?clone(data):null;
      return options.write('save_ready',['SZ2',data.host,String(data.revision),'ready'].join('|')).then(function(){if(current())acknowledged=raw;});
     });

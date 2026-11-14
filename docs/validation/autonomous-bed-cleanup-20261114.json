@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-14",
+  "source_commit": "dcabfa0",
+  "runtime_build": "20261113-concurrent-manual-1",
+  "package_sha256": "dc10a19bb821031ee2a982f28a9ec6a3674e77bfc9d5ec23dc68198977259ec6",
+  "retail": {
+    "method": "Temporary independent add-on using the public B2 SDK in a disposable household. The controlled Zoi stayed outside the two-participant roster. Tested the bundled queen-bed idle with the merged PR #4 package.",
+    "cases": [
+      {
+        "end": "five-second real playback duration",
+        "playback_seconds": 5.0,
+        "reservation_seconds_approx": 5.16,
+        "stop_reason": "ok",
+        "stop_source": "framework"
+      },
+      {
+        "end": "creator stop_session",
+        "playback_seconds": 2.61,
+        "reservation_seconds_approx": 2.61,
+        "stop_reason": "ok",
+        "stop_source": "creator_stop"
+      },
+      {
+        "end": "12-second owner lease without renewals",
+        "playback_seconds": 11.58,
+        "reservation_seconds_approx": 11.87,
+        "stop_reason": "owner_expired",
+        "stop_source": "framework"
+      }
+    ],
+    "readback": "Each case acquired a native Restricted slot reservation, released it at exit, reported cleanup_complete, retired its save journal and returned the bed as available. Existing sleeping-side assignments stayed intact. The temporary test add-on was unmounted and launcher readiness and idle state were verified.",
+    "safeguard": "The reservation remained associated with a live lease during playback. Cleanup completed before the 10-second orphan window could account for the release."
+  },
+  "targeted_lua_reproduction": [
+    "If FindGameObject returns nil during ordinary release, the native restriction may remain while the B2 lease is discarded and the client receives released.",
+    "Saved furniture recovery also treats a missing bed as complete. The simulation cannot distinguish streaming from permanent deletion through this lookup."
+  ],
+  "verification_gaps": [
+    "The original VelvetZOI trigger sequence and save were unavailable. The missing-bed failure was reproduced using a Lua fixture. Native streaming of the furniture during the reported session is unverified."
+  ],
+  "goal_and_reload_followup": {
+    "hzoi_version": "1.2.2",
+    "public_api": {
+      "preflight": "A cap-limited route returned goal_unreachable without acquiring the bed or roster. A viable plan preflight also left both unreserved.",
+      "manual_takeover": "The maintainer possessed a participant and saw Auto-mode. Turning it off paused both plan clocks and unlocked manual navigation. Turning it on and returning to a third Zoi resumed the background plan. The API blocked navigation while Auto-mode was on and rejected an overlapping roster.",
+      "addon_end": {
+        "goal_satisfied": true,
+        "milestone_count": 1,
+        "cleanup_complete": true
+      },
+      "goals_end": {
+        "outcome": "goals_met",
+        "required_stages": [
+          {
+            "met": true,
+            "stage": 2
+          }
+        ],
+        "cleanup_complete": true
+      },
+      "concurrent": "A background goal-driven bed session and a focused timed standing session played together. Ending the bed plan freed its reservation and retired only its journal. The standing session kept playing until its own timer elapsed."
+    },
+    "runtime_build": "20261114-furniture-recovery-1",
+    "package_sha256": "c0c555d2efd24b64860473028339bb8e90366eb128dbac5c57e0aa80deddcc11",
+    "before_fix_all_lua": {
+      "native_trace": [
+        {
+          "seconds": 0.0,
+          "scenezoi_reserved": true,
+          "journal_records": 1
+        },
+        {
+          "seconds": 0.09,
+          "scenezoi_reserved": true,
+          "journal_records": 0
+        },
+        {
+          "seconds": 10.39,
+          "scenezoi_reserved": false,
+          "journal_records": 0
+        }
+      ],
+      "local_autonomy_restored": false,
+      "remaining_sessions": 0,
+      "sleeping_side_assignments_preserved": true,
+      "bed_available": true
+    },
+    "after_fix_all_lua": {
+      "native_trace": [
+        {
+          "seconds": 0.0,
+          "scenezoi_reserved": true,
+          "journal_records": 1
+        },
+        {
+          "seconds": 0.06,
+          "scenezoi_reserved": true,
+          "journal_records": 1
+        },
+        {
+          "seconds": 0.92,
+          "scenezoi_reserved": false,
+          "journal_records": 0
+        }
+      ],
+      "local_autonomy_restored": true,
+      "remaining_sessions": 0,
+      "sleeping_side_assignments_preserved": true,
+      "bed_available": true
+    },
+    "after_fix_simulation_lua": {
+      "native_trace": [
+        {
+          "seconds": 0.0,
+          "scenezoi_reserved": true,
+          "journal_records": 1
+        },
+        {
+          "seconds": 0.66,
+          "scenezoi_reserved": false,
+          "journal_records": 0
+        }
+      ],
+      "local_autonomy_restored": true,
+      "remaining_sessions": 0,
+      "sleeping_side_assignments_preserved": true,
+      "bed_available": true
+    },
+    "after_fix_client_lua": {
+      "native_trace": [
+        {
+          "seconds": 0.0,
+          "scenezoi_reserved": true,
+          "journal_records": 1
+        },
+        {
+          "seconds": 0.06,
+          "scenezoi_reserved": true,
+          "journal_records": 0
+        },
+        {
+          "seconds": 0.67,
+          "scenezoi_reserved": true,
+          "journal_records": 1
+        },
+        {
+          "seconds": 0.98,
+          "scenezoi_reserved": false,
+          "journal_records": 0
+        }
+      ],
+      "local_autonomy_restored": true,
+      "remaining_sessions": 0,
+      "sleeping_side_assignments_preserved": true,
+      "bed_available": true
+    },
+    "streaming_regression": "Lua fixtures verify that a missing bed leaves the SceneZOI release pending until it returns. Status polling leaves unowned native restrictions intact.",
+    "limits": "Used disposable retail gameplay and an independent SDK client. A deliberate crash, the contributor’s original save and the original club-bed trigger sequence were outside this test.",
+    "autonomous_playback_speed": {
+      "method": "Read effective_speed from the public get_session API during stable playback in each stage of a three-stage HZoi excitement plan. Player preset and game speed stayed at 1.0×. Repeated with auto_speed disabled.",
+      "trials": {
+        "enabled": {
+          "samples": [
+            {
+              "stage": 1,
+              "goal_progress": 0,
+              "player_preset": 1,
+              "speed_index": 2,
+              "game_scale": 1,
+              "effective_speed": 1,
+              "effective_at_normal_game_speed": 1.0,
+              "plan_seconds": 0.24444540217518806
+            },
+            {
+              "stage": 2,
+              "goal_progress": 0.32999758885966407,
+              "player_preset": 1,
+              "speed_index": 2,
+              "game_scale": 1,
+              "effective_speed": 1.125,
+              "effective_at_normal_game_speed": 1.125,
+              "plan_seconds": 14.320529598742723
+            },
+            {
+              "stage": 3,
+              "goal_progress": 0.6619546699855062,
+              "player_preset": 1,
+              "speed_index": 2,
+              "game_scale": 1,
+              "effective_speed": 1.25,
+              "effective_at_normal_game_speed": 1.25,
+              "plan_seconds": 29.820003498345613
+            }
+          ],
+          "cleanup_complete": true
+        },
+        "disabled": {
+          "samples": [
+            {
+              "stage": 1,
+              "goal_progress": 0,
+              "player_preset": 1,
+              "speed_index": 2,
+              "game_scale": 1,
+              "effective_speed": 1,
+              "effective_at_normal_game_speed": 1.0,
+              "plan_seconds": 0.2696559987962246
+            },
+            {
+              "stage": 2,
+              "goal_progress": 0.3266695588827133,
+              "player_preset": 1,
+              "speed_index": 2,
+              "game_scale": 1,
+              "effective_speed": 1,
+              "effective_at_normal_game_speed": 1.0,
+              "plan_seconds": 14.60638140141964
+            },
+            {
+              "stage": 3,
+              "goal_progress": 0.6580572299659252,
+              "player_preset": 1,
+              "speed_index": 2,
+              "game_scale": 1,
+              "effective_speed": 1,
+              "effective_at_normal_game_speed": 1.0,
+              "plan_seconds": 30.11840420216322
+            }
+          ],
+          "cleanup_complete": true
+        }
+      },
+      "scope": "Historical multiplier build. Runtime clock readback without visual timing. Superseded by autonomous_presets."
+    }
+  },
+  "autonomous_presets": {
+    "runtime_build": "20261114-autonomous-presets-1",
+    "ui_build": "20261114-autonomous-presets-ui-1",
+    "samples": [
+      {
+        "stage": 1,
+        "goal_progress": 0,
+        "speed_index": 1,
+        "effective_speed": 0.5,
+        "panel_speed_index": 1,
+        "panel_effective_speed": 0.5
+      },
+      {
+        "stage": 2,
+        "goal_progress": 0.23544896996269624,
+        "speed_index": 2,
+        "effective_speed": 1,
+        "panel_speed_index": 2,
+        "panel_effective_speed": 1.0
+      },
+      {
+        "stage": 3,
+        "goal_progress": 0.48322771831105155,
+        "speed_index": 3,
+        "effective_speed": 1.5,
+        "panel_speed_index": 3,
+        "panel_effective_speed": 1.5
+      },
+      {
+        "stage": 4,
+        "goal_progress": 0.730990397826665,
+        "speed_index": 4,
+        "effective_speed": 2,
+        "panel_speed_index": 4,
+        "panel_effective_speed": 2.0
+      }
+    ],
+    "manual_speed_index": 2,
+    "resumed_speed_index": 4,
+    "cleanup_complete": true,
+    "package_sha256": "045e4cb64b6437f5060dda6b7fa6098075034e14de94fe2a494c899249a8f433",
+    "method": "Four-stage HZoi excitement plan at normal game speed. Public get_session and the focused panel playback mailbox agreed at each stage. The UI regression verified that the label and selected dot come from the reported index and that manual buttons unlock when Auto-mode is off."
+  },
+  "post_completion_stay": {
+    "runtime_build": "20261114-post-completion-stay-1",
+    "requested_stay_seconds": 6,
+    "session_completed": true,
+    "elapsed_after_goal_seconds": 9.44211009889841,
+    "during": {
+      "plan": {
+        "auto_mode": true,
+        "end_policy": {
+          "type": "goals"
+        },
+        "game_seconds": 18.15637620165944,
+        "goals": [
+          {
+            "completed": 1,
+            "participant_id": "20526",
+            "progress": 1,
+            "requested": 1,
+            "satisfied": true,
+            "task_id": "excitement"
+          }
+        ],
+        "post_completion_stay_seconds": 6,
+        "real_seconds": 18.15637620165944,
+        "required_stages": [],
+        "route_uncertain": false,
+        "stage": 1,
+        "stage_count": 1,
+        "state": "resolving",
+        "task_progress_multiplier": 5
+      },
+      "effects": {
+        "shaking_participants": [
+          "20524",
+          "20526"
+        ],
+        "source": "20524|excitement",
+        "stage": "waiting",
+        "starts": 2
+      },
+      "bed_held": true,
+      "journal_present": true
+    },
+    "cleanup_complete": true,
+    "scope": "Public API and native occupancy readback. Audible and visual acceptance were not assessed.",
+    "maintainer_replay": {
+      "furniture": "Visible household Modern Classic Queen Bed",
+      "elapsed_after_goal_seconds": 9.422,
+      "cleanup_complete": true,
+      "acceptance": "The maintainer confirmed the completion animations, sound effects and voice clips played as expected before Exit."
+    }
+  },
+  "release": {
+    "version": "1.3.2",
+    "candidate_sha256": "99a607ab4fe7512c92a3b9416b6ce95d288a894354838cfec0a8db5568f426a2",
+    "archive_sha256": "7f5b3ce46ee2c78c4f9b7ea690769fd772de8485afc96231b850bccc865fca7d",
+    "parity": "All package bytes match the maintainer-confirmed test candidate except the plugin version and source reference.",
+    "maintainer_acceptance": "The maintainer confirmed a fresh package replacement worked after reopening the game. Existing preferences were retained.",
+    "cfg_free_restart": "Not repeated for this release."
+  }
+}

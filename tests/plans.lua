@@ -172,6 +172,29 @@ s.node=nodes.still;step(s,1,1);assert(actions.stop=='ok','It ends once the trans
 s=session({goals={goal_lead}},'both');s.completion_effects={motion={}};step(s,12,1);assert(not actions.stop,'Waits for the response')
 s.completion_effects=nil;step(s,1,1);assert(actions.stop=='ok')
 
+-- A fractional stay overlaps the response and uses real playback time.
+s=session({goals={goal_lead},post_completion_stay_seconds=2.5},'both')
+s.completion_effects={motion={}}
+while not s.plan.goals_reached_at and s.plan.real_used<20 do step(s,1,1)end
+assert(s.plan.state=='resolving' and not actions.stop)
+assert(Plan.snapshot(s).post_completion_stay_seconds==2.5)
+local reached=s.plan.goals_reached_at
+assert(reached)
+assert(not Plan.tick(s,5,0),'Pause does not consume the stay')
+Plan.set_auto(s,false)
+assert(not Plan.tick(s,5,1),'Manual takeover does not consume the stay')
+Plan.set_auto(s,true)
+s.completion_effects=nil
+assert(not Plan.tick(s,2,3),'Faster game time does not shorten the stay')
+assert(Plan.tick(s,.5,1).stop=='ok' and s.plan.outcome=='goals_met')
+assert(s.plan.real_used-reached==2.5 and s.tasks.participants['1'].charge.completions==1)
+s=session({goals={goal_lead},post_completion_stay_seconds=2.5},'both');s.completion_effects={motion={}}
+step(s,16,1);assert(s.plan.state=='resolving' and not actions.stop,'A longer response still finishes')
+s.completion_effects=nil;assert(Plan.tick(s,.1,1).stop=='ok')
+refused({goals={goal_lead},post_completion_stay_seconds=-1},'Invalid')
+refused({goals={goal_lead},post_completion_stay_seconds=1,end_policy={type='addon'}},'Post-completion stay')
+refused({goals={goal_lead},post_completion_stay_seconds=1,end_policy={type='duration',seconds=5}},'Post-completion stay')
+
 -- The overall playback budget is separate from the stall timer.
 s=session({end_policy={type='addon'}},'still');step(s,1,C.plan_max_playback_seconds+1);assert(actions.stop=='playback_budget_exceeded')
 -- While a finished scene resolves its completion response, a fulfilled task must not complete again.
@@ -264,18 +287,21 @@ s.plan.dwell=dwell;step(s,1,.1);assert(s.node.id=='y','On to the different loop,
 -- A timed plan with no goals divides its duration evenly across stages.
 s=session({end_policy={type='duration',seconds=8},stages=4},'a');s.plan.stage_count=4
 step(s,3,1);assert(s.plan.stage==2);step(s,2,1);assert(s.plan.stage==3,'Even division of the duration')
--- The speed ramp follows the stage, stays within limits, and leaves with manual play.
+-- Each stage selects a player preset, including for older fractional profiles.
+s=session({end_policy={type='addon'},stages=4},'still');s.plan.stage_count=4
+for stage=1,4 do s.plan.stage=stage;assert(Plan.speed_index(s)==stage)end
+s=session({end_policy={type='addon'}},'still');assert(Plan.speed_index(s)==2,'A single stage defaults to normal speed')
 s=session({end_policy={type='addon'},stages=4,auto_speed={start=1,finish=1.3}},'still');s.plan.stage_count=4
-assert(Plan.speed(s)==1);s.plan.stage=4;assert(math.abs(Plan.speed(s)-1.3)<.001);s.plan.stage=2;assert(math.abs(Plan.speed(s)-1.1)<.001)
+assert(Plan.speed_index(s)==2);s.plan.stage=4;assert(Plan.speed_index(s)==3)
 refused({end_policy={type='addon'},auto_speed={start=.1,finish=1}},'Invalid')
-s=session({end_policy={type='addon'},auto_speed=false},'still');assert(Plan.speed(s)==1,'The ramp can be turned off')
+s=session({end_policy={type='addon'},auto_speed=false},'still');assert(Plan.speed_index(s)==nil,'The player can keep speed control')
 -- Manual takeover: nothing automatic happens, the clock stops, and turning it back on re-evaluates.
 s=session({goals={goal_lead},task_progress_multiplier=2,end_policy={type='duration',seconds=100}},'hub')
 assert(Plan.set_auto(s,false)and not Plan.locked(s),'Off frees manual navigation')
 assert(not Plan.set_auto(s,false),'A repeat changes nothing')
 step(s,1,dwell+1);assert(s.node.id=='hub'and actions.navigations==0 and s.plan.game_used==0,'No automatic navigation and a stopped clock')
 s.node=nodes.both;step(s,1,1);assert(s.tasks.participants['1'].charge.value==10,'No plan multiplier while manual')
-assert(Plan.speed(s)==1)
+assert(Plan.speed_index(s)==nil)
 assert(Plan.set_auto(s,true)and Plan.locked(s));step(s,1,1);assert(s.tasks.participants['1'].charge.value==30 and s.plan.game_used==1,'Back on, the plan resumes')
 -- Manual play can still finish a goal: resuming then applies the end policy.
 s=session({goals={goal_lead}},'both');Plan.set_auto(s,false)

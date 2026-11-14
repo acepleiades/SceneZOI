@@ -5,7 +5,7 @@ local J=require('SceneZOI.Json')
 local C=require('SceneZOI.Config')
 local Control=require('SceneZOI.AddonControl')
 local M={}
-M.fields={'goals','restrictions','end_policy','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'}
+M.fields={'goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'}
 local function search()return require('SceneZOI.SceneSearch')end
 
 local function end_policy(value,has_goals)
@@ -61,10 +61,11 @@ local function stage_preferences(value,metadata)
 end
 
 local function auto_speed(value)
- if value==nil or value==true then return {start=1,finish=C.plan_ramp_finish}end
- if value==false then return false end
+ if value==nil then return true end
+ if type(value)=='boolean'then return value end
  V.fields(value,{'start','finish'},{'start','finish'})
- V.number(value.start,C.plan_min_speed,C.plan_max_speed);V.number(value.finish,C.plan_min_speed,C.plan_max_speed)
+ local speeds=C.playback_speeds
+ V.number(value.start,speeds[1],speeds[#speeds]);V.number(value.finish,speeds[1],speeds[#speeds])
  return {start=value.start,finish=value.finish}
 end
 
@@ -88,12 +89,17 @@ function M.parse(args,definitions,ids,metadata)
  V.number(multiplier,C.plan_min_multiplier,C.plan_max_multiplier)
  local least,most=stage_range(args.stages)
  local policy=end_policy(args.end_policy,#goals>0)
+ local stay=args.post_completion_stay_seconds
+ if stay~=nil then
+  assert(policy.type=='goals','Post-completion stay requires a goals end policy')
+  V.number(stay,0,C.plan_max_seconds)
+ end
  local required=required_stages(args.required_stages,metadata,least)
  -- Neither goals nor a timer can move this plan past its first stage.
  if #goals==0 and policy.type=='addon'then
   for _,row in ipairs(required)do assert(row.stage==nil or row.stage==1,'required_stage_unavailable')end
  end
- return {goals=goals,end_policy=policy,task_progress_multiplier=multiplier,
+ return {goals=goals,end_policy=policy,post_completion_stay_seconds=stay,task_progress_multiplier=multiplier,
   stage_min=least,stage_max=most,required_stages=required,
   stage_preferences=stage_preferences(args.stage_preferences,metadata),auto_speed=auto_speed(args.auto_speed)}
 end
@@ -472,8 +478,15 @@ function M.tick(session,dt,scale)
  local has_targets=#plan.goals>0 or #plan.required_stages>0
  if done and has_targets then
   if timed then return nil end
+  if policy.type=='goals'then
+   local stay=plan.post_completion_stay_seconds or 0
+   if not plan.goals_reached_at then plan.goals_reached_at=plan.real_used end
+   -- The stay and authored effects can run together. Both must finish before Exit.
+   if settled(session) and plan.real_used-plan.goals_reached_at>=stay then return finish(plan,'ok','goals_met')end
+   plan.state='resolving'
+   return nil
+  end
   if not settled(session)then plan.state='resolving';return nil end
-  if policy.type=='goals'then return finish(plan,'ok','goals_met')end
   if plan.state~='waiting'then plan.state='waiting';return {event='plan_goals_met'}end
   plan.wait_age=plan.wait_age+dt
   if plan.wait_age>=C.plan_wait_seconds then return finish(plan,'owner_expired','wait_expired')end
@@ -542,11 +555,24 @@ end
 function M.locked(session)return session.plan~=nil and session.plan.auto_mode==true and session.plan.state~='finished'end
 
 -- The animation ramp for this stage. Task rates stay on game time.
-function M.speed(session)
+function M.speed_index(session)
  local plan=session.plan
- if not plan or not plan.auto_mode or not plan.auto_speed then return 1 end
- local profile=plan.auto_speed
- return profile.start+(profile.finish-profile.start)*fraction(plan)
+ if not plan or not plan.auto_mode or not plan.auto_speed then return end
+ local speeds=C.playback_speeds
+ local start,finish
+ if plan.auto_speed==true then
+  if plan.stage_count==1 then return 2 end
+  start,finish=speeds[1],speeds[#speeds]
+ else
+  start,finish=plan.auto_speed.start,plan.auto_speed.finish
+ end
+ local target=start+(finish-start)*fraction(plan)
+ local closest=1
+ for index=2,#speeds do
+  if target<(speeds[index-1]+speeds[index])/2 then break end
+  closest=index
+ end
+ return closest
 end
 
 -- Manual takeover keeps everything; turning it back on re-evaluates from the current state.
@@ -574,6 +600,6 @@ function M.snapshot(session)
  for _,requirement in ipairs(plan.required_stages)do required[#required+1]={stage=requirement.stage,met=requirement.met}end
  return {auto_mode=plan.auto_mode,state=plan.state,outcome=plan.outcome,end_policy=V.copy(plan.end_policy),goals=goals,
   required_stages=required,stage=plan.stage,stage_count=plan.stage_count,task_progress_multiplier=plan.task_progress_multiplier,
-  real_seconds=plan.real_used,game_seconds=plan.game_used,route_uncertain=plan.route_uncertain==true}
+  real_seconds=plan.real_used,game_seconds=plan.game_used,post_completion_stay_seconds=plan.post_completion_stay_seconds,route_uncertain=plan.route_uncertain==true}
 end
 return M

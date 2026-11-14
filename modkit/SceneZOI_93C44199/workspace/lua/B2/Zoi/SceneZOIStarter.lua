@@ -31,7 +31,7 @@ function M.on_lua_message(self,owner,kind,content)
             local f=Protocol.unpack(content)
             if f then
                 local leases=require('SceneZOI.FurnitureLease');local l=leases.leases[f[2]]
-                if l and l.token==f[1]then pcall(leases.release,f[2],l)end
+                if f[3]=='acquire' and l and l.token==f[1]then pcall(leases.release,f[2],l)end
             end
             if f then inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.FurnitureReply',Protocol.pack(f[1],f[2],'error'))end
             print('[SceneZOI] Furniture request failed: '..tostring(err))
@@ -55,7 +55,7 @@ end
 ---@param dt number
 function M.on_tick(self,owner,dt)
     if not self.saved_beds then return end
-    local ok=pcall(require('SceneZOI.FurnitureLease').restore_saved,owner,self.saved_beds)
+    local ok=pcall(require('SceneZOI.FurnitureLease').restore_saved,owner,self.saved_beds,self.recovery_request)
     if ok then
         local request=self.recovery_request;self.saved_beds=nil;self.recovery_request=nil
         self.recovery_done=self.recovery_done or {};self.recovery_done[request]=true

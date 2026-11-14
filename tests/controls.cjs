@@ -97,14 +97,24 @@ async function run(){
   // A scene with a plan shows the Auto-mode toggle, and the toggle sends one counted command.
   const planned=fixture();await flush();
   planned.setFocus('SZ2|1|host.5.6|host|6|3|scenezoi.standing_idle|playing');planned.timers[250]();await flush();
-  planned.setPlan('SZ2|host|6|1|1|1|3');planned.timers[250]();await flush();
+  planned.setPlan('SZ2|host|6|1|1|1|3|1');planned.timers[250]();await flush();
   const toggle=planned.elements['scene-auto-mode'];
   assert(toggle,'The toggle exists for a planned scene');
   assert.equal(toggle.style.display,'block','It is shown while the scene has a plan');
   assert.doesNotMatch(planned.elements['scene-navigation'].innerHTML||'',/data-option/,'Manual choices are hidden while Auto-mode drives');
+  planned.setPlayback('SZ2|host|6|0|1|1.0000|0.5000');planned.timers[350]();await flush();
+  assert.equal(planned.elements['speed-label'].textContent,'x0.50');
+  planned.setPlayback('SZ2|host|6|0|3|1.0000|1.5000');planned.timers[350]();await flush();
+  assert.equal(planned.elements['speed-label'].textContent,'x1.50');
+  assert.equal(planned.elements['speed-up'].disabled,true);
+  planned.elements['speed-up'].listeners.click();await flush();
+  assert.equal(writes(planned,'playback').length,0);
   toggle.listeners.click();await flush();
   assert.match(writes(planned,'auto_mode').at(-1),/^SZ2\|host\|6\|auto_mode\|\d+\|0\|\d+$/,'Turning it off names the scene it controls');
-  planned.setPlan('SZ2|host|6|1|0|1|3');planned.timers[250]();await flush();
+  planned.setPlan('SZ2|host|6|1|0|1|3|0');planned.timers[250]();await flush();
+  assert.equal(planned.elements['speed-up'].disabled,false);
+  planned.elements['speed-up'].listeners.click();await flush();
+  assert.equal(planned.elements['speed-label'].textContent,'x2.00');
   toggle.listeners.click();await flush();
   assert.match(writes(planned,'auto_mode').at(-1),/\|1\|\d+$/,'And back on');
   const counts=writes(planned,'auto_mode').map(v=>Number(v.split('|')[4]));assert(counts[1]>counts[0],'Each command is newer than the last');

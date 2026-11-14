@@ -40,12 +40,6 @@ end
 local function retire_if_empty(record)
  if next(record.people)==nil and #record.beds==0 then records[record.token]=nil end
 end
-function M.boot()
- records,revision,serial={},0,0
- host='host.'..os.time()..'.'..math.random(1,1073741823)
- seen=read('save_restore')
- pcall(publish)
-end
 function M.offer(current,actor,fields)
  local id=P.id(actor:GetEntityId())
  if fields[2]=='snapshot'then
@@ -141,6 +135,17 @@ local function index_journal(raw)
   else print('[SceneZOI] Skipped an unreadable saved record: '..tostring(record))end
  end
  return result
+end
+function M.boot()
+ records,revision,serial={},0,0
+ host='host.'..os.time()..'.'..math.random(1,1073741823)
+ seen=read('save_restore')
+ local request,response=P.unpack(seen),P.unpack(read('save_restore_state'))
+ if request and request[3]=='restore'and request[1]==read('ui_boot')and
+    (not response or response[1]~=request[1]or response[2]~=request[2])then
+  seen=nil
+ end
+ pcall(publish)
 end
 local function send(actor,kind,record,value)
  pcall(function()require('SceneZOI.SimulationRoute').send(actor,kind,P.pack(record.token,P.encode(J.encode(value))))end)

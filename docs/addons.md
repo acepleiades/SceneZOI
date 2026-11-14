@@ -198,11 +198,12 @@ completion routes and manual takeover. `placement` and `lifetime` use the
 | --- | --- |
 | `goals` | Up to 16 `{participant_id, task_id, completions}` entries. Use an installed task ID from `get_definitions` and a roster member's ID. Each participant/task pair can appear once. `completions` is an integer from 1 to 100, defaults to 1, and counts new completions in this session. |
 | `end_policy` | `{type:'goals'}` (default with goals), `{type:'duration', seconds, clock}` with 1–7,200 seconds and `clock` set to `game` (default) or `real`, or `{type:'addon'}`. Required without goals. |
+| `post_completion_stay_seconds` | Optional fractional seconds from 0 to 7,200 for the `goals` end policy. Default 0. Once all goals and required stages are met, the scene stays active for at least this long. The timer runs alongside authored completion responses and pauses with the game or when Auto-mode is off. |
 | `task_progress_multiplier` | 0.1-5, default 1. Scales positive task rates under the plan. |
 | `stages` | A positive integer or `{min, max}`, up to 16. Default 1. Chosen once and returned in the accepted response. |
 | `required_stages` | Up to 16 `{stage?, match}` entries. Each scene query in `match` must match a loop that actually plays under Auto-mode. Omit `stage` to match any stage. A numbered stage must exist for every possible count. |
 | `stage_preferences` | Up to 16 ordered `{from?, to?, match}` entries that rank eligible loops. `from` defaults to 0 and `to` defaults to 1. The first stage is at fraction 0 and the last at 1, evenly spaced. A one-stage plan is at 0. |
-| `auto_speed` | `true` or omitted uses the 1 to 1.25 ramp across stages. Use `false` to disable it or `{start, finish}` with values from 0.5 to 1.5. The ramp affects animation speed. Task rates use game time. |
+| `auto_speed` | `true` or omitted uses 1.0× in a one-stage plan and steps from 0.5× to 2.0× across multiple stages. Set `false` to keep manual speed control, or supply `{start, finish}` from 0.5 to 2.0. Each stage selects the nearest player preset to its interpolated speed. Ties select the faster preset. Task rates use game time. |
 
 ### Timed start with bundled content
 
@@ -255,7 +256,7 @@ Background deadlines and owner leases run independently of the plan clocks.
 
 | Ending | Stop reason | `plan.outcome` |
 | --- | --- | --- |
-| Goals and required stages met, responses resolved | `ok` | `goals_met` |
+| Goals and required stages met, responses resolved, and any stay elapsed | `ok` | `goals_met` |
 | Duration elapsed (unmet goals stay reported) | `ok` | `duration_elapsed` |
 | Add-on plan: goals met | none yet | Publishes `plan_goals_met` once, holds the loop and freezes fulfilled tasks until `stop_session`. |
 | Add-on stays at the milestone without stopping | `owner_expired` | `wait_expired` after 300 seconds of active waiting |
@@ -275,13 +276,13 @@ call `renew_session` before it lapses. The SDK's automatic integration renewal
 covers `register_integration` only.
 
 A timed plan runs out its duration even if nothing is advancing, and reports what it did not reach.
-Authored completion responses finish before the plan moves on, publishes `plan_goals_met` or ends.
+Authored completion responses finish before the plan moves on, publishes `plan_goals_met` or ends. For a goal-driven exit, set `"post_completion_stay_seconds": 6` to give completion audio and animation at least six seconds from the point when the plan meets its goals and required stages. Responses tracked by the plan can keep it active longer. Check `get_version.features.autonomous_post_completion_stay` before sending this field to an older framework. Explicit stops and lifetime limits still take effect during the stay.
 
 A session with a plan shows an **Auto-mode** toggle in its panel, and an owner can
 call `set_auto_mode` with `session_id` and `enabled`. While it is on, manual and
 `navigate_to_scene` navigation is refused with `navigation_locked`. Off keeps the
-node, tasks, goals and restrictions, and suspends automatic navigation, the ramp,
-the plan multiplier, the plan clock and planned Exit. Stage credit is earned only
+node, tasks, goals and restrictions, and suspends automatic navigation, automatic preset selection,
+the task progress multiplier, the plan clock and planned Exit. The current speed preset carries over and the speed buttons become available. While the plan selects the speed, the panel shows that preset and `set_speed` returns `speed_locked`. Stage credit is earned only
 under Auto-mode. Turning it back on re-evaluates from the current state.
 
 SceneZOI verifies technical eligibility. The add-on that starts an autonomous scene

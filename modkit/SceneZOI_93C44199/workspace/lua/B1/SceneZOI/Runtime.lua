@@ -125,6 +125,16 @@ local function publish_playback(current)
     else M.diagnostic("Playback status will retry: " .. tostring(message)) end
 end
 
+local function select_playback_speed(current, index)
+    if current.clock:select(index) then notify(current, "playback_speed_changed") end
+    publish_playback(current)
+end
+
+local function apply_plan_speed(current)
+    local index = Plan.speed_index(current)
+    if index and index ~= current.clock.index then select_playback_speed(current, index) end
+end
+
 local function playback_request(raw)
     local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
@@ -135,7 +145,7 @@ local function playback_request(raw)
         not Config.playback_speeds[index] then return end
     if count > current.last_speed_command then
         current.last_speed_command = count
-        if current.clock:select(index) then notify(current, "playback_speed_changed") end
+        if not Plan.speed_index(current) then select_playback_speed(current, index); return end
     end
     publish_playback(current)
 end
@@ -201,7 +211,7 @@ end
 
 local function request_release(old)
     if old.furniture and not old.furniture_released then
-        local ok,err=pcall(tell,old.furniture_owner,'SceneZOI.Furniture',Protocol.pack(old.token,old.furniture.id,'release'))
+        local ok,err=pcall(tell,old.furniture_owner,'SceneZOI.Furniture',Protocol.pack(old.token,old.furniture.id,'release',old.furniture_ready and 'held' or 'unconfirmed'))
         if not ok then M.diagnostic('Furniture release delivery will retry: '..tostring(err))end
     end
     if not old.addon_effects_restored then
@@ -225,7 +235,9 @@ local function request_release(old)
             end
         end
         if not participant.released then
-            local ok, err = pcall(tell, participant, "SceneZOI.Release", Protocol.pack(old.token, stay and "stay" or "restore"))
+            local snapshot = old.save_ready and old.save_records and old.save_records[participant.id]
+            local ok, err = pcall(tell, participant, "SceneZOI.Release", Protocol.pack(old.token,
+                stay and "stay" or "restore", snapshot and Protocol.encode(Json.encode(snapshot)) or "none"))
             if not ok then M.diagnostic("Release delivery failed: " .. tostring(err)) end
         end
     end
@@ -280,8 +292,8 @@ end
 local function publish_plan(current)
     if not has_panel(current) then return end
     local plan = current.plan
-    local packet = plan and Protocol.pack(current.client, current.sequence, 1, plan.auto_mode and 1 or 0, plan.stage, plan.stage_count)
-        or Protocol.pack(current.client, current.sequence, 0, 0, 0, 0)
+    local packet = plan and Protocol.pack(current.client, current.sequence, 1, plan.auto_mode and 1 or 0, plan.stage, plan.stage_count, Plan.speed_index(current) and 1 or 0)
+        or Protocol.pack(current.client, current.sequence, 0, 0, 0, 0, 0)
     if current.plan_state == packet then return end
     pcall(inzoi.cli.execute, command("uimod.cfg_save", "plan_state") .. " value=" .. packet)
     current.plan_state = packet
@@ -442,6 +454,7 @@ function M.start_background(row)
     current.max_start_distance_cm = row.placement.max_start_distance_cm
     Sessions.add(current)
     Addons.created(row, current)
+    apply_plan_speed(current)
     plan_placement(current, true)
     notify(current, "session_preparing")
     M.diagnostic("Preparing background " .. current.token)
@@ -792,6 +805,14 @@ local function finish_outfit(current)
     publish_phase(current, "playing", "ok")
 end
 
+local function set_auto_mode(current, enabled)
+    if Plan.set_auto(current, enabled) then
+        apply_plan_speed(current)
+        notify(current, "plan_auto_mode_changed")
+        publish_plan(current)
+    end
+end
+
 local function auto_mode_request(raw)
     local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
@@ -801,10 +822,7 @@ local function auto_mode_request(raw)
     if not count or count % 1 ~= 0 or count <= (current.last_auto_mode or 0) then return end
     current.last_auto_mode = count
     if tonumber(fields[6]) ~= current.revision then return end -- Sent before a scene change it could not see.
-    if Plan.set_auto(current, fields[5] == "1") then
-        notify(current, "plan_auto_mode_changed")
-        publish_plan(current)
-    end
+    set_auto_mode(current, fields[5] == "1")
 end
 
 -- Every control carries its own session identity, so it can be read whatever the request mailbox holds.
@@ -1014,6 +1032,7 @@ end
 
 -- Carries out what a plan asked for. Every automatic move goes through the same validated handoff.
 local function apply_plan(current, action)
+    if action.event == "plan_stage_changed" then apply_plan_speed(current) end
     if action.event then notify(current, action.event); publish_plan(current) end
     if action.stop then stop_session(current, action.stop); return end
     if not action.navigate then return end
@@ -1124,7 +1143,7 @@ local function advance(current, dt)
     end)
     if not current.preparing then
         Control.sample(current,dt,game_scale)
-        current.clock:advance(dt, game_scale, math.min(2, CompletionEffects.multiplier(current.completion_effects,dt,game_scale)*Control.speed(current)*Plan.speed(current)))
+        current.clock:advance(dt, game_scale, math.min(2, CompletionEffects.multiplier(current.completion_effects,dt,game_scale)*Control.speed(current)))
         Playback.sample(current, current.clock:position(current.duration, current.node.kind))
         local completion_routes,completion_payloads={},{}
         if current.tasks then Tasks.update(current.tasks, current, dt * game_scale, function(payload)
@@ -1246,10 +1265,7 @@ function M.set_auto_mode(id, enabled)
     local current = assert(Sessions.get(id), "session_not_found")
     assert(current.plan, "session_has_no_plan")
     assert(not current.stopping, "session_not_ready")
-    if Plan.set_auto(current, enabled) then
-        notify(current, "plan_auto_mode_changed")
-        publish_plan(current)
-    end
+    set_auto_mode(current, enabled)
     return {auto_mode = current.plan.auto_mode}
 end
 function M.api_session(id)
@@ -1260,8 +1276,8 @@ function M.release_integration(key)
     for _,current in ipairs(Sessions.list())do Effects.release(current,key);Control.release(current,key)end
 end
 function M.api_speed(current,index)
-    if current.clock:select(index)then notify(current,'playback_speed_changed')end
-    publish_playback(current)
+    assert(not Plan.speed_index(current), "speed_locked")
+    select_playback_speed(current, index)
 end
 function M.api_navigation(current)
     local rows=Json.array({})

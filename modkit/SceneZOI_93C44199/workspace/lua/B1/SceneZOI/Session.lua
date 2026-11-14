@@ -33,7 +33,7 @@ end
 function M.cleanup_complete(current)
     return current.addon_effects_restored and current.subsystems_restored and
         M.all(current,'released')and M.all(current,'client_restored')and
-        (not current.furniture or current.furniture_released)or false
+        (not current.furniture or current.furniture_released and not current.furniture_deferred)or false
 end
 
 function M.controlled(current)

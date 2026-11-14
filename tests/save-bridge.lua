@@ -85,3 +85,12 @@ B.offer(nil,actor('101'),{'r1','furniture_recovered'});assert(not record('r1') a
 load_rows({{token='worn',participants={['61']={token='worn'}},furniture={}}},'worn',8)
 B.offer(nil,actor('61'),{'worn','lent','Uniform01'});assert(record('worn').participants['61'].lent_costume=='Uniform01')
 print('Save bridge passed: one journal for every scene, host and revision acknowledgements, per-resource recovery, unrelated starts during recovery, overflow retention and old-format migration.')
+
+
+-- A restore sent by the current UI but interrupted by a Lua restart is still pending.
+cfg.ui_boot='live'
+cfg.save_restore=P.pack('live',12,'restore',P.encode(J.encode({version=2,records={{token='reload',participants={['6']={token='reload'}},furniture={}}}})))
+B.boot()
+assert(B.restore_waiting())
+B.tick({})
+assert(B.overlaps({'6'})and not B.restore_waiting())
