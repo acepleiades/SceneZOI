@@ -17,7 +17,7 @@ Choose one animation editor. Both have ready-made inZOI rigs and exporters.
 
 | Editor | Download and setup |
 | --- | --- |
-| **Blender** | Download Blender 4.1, the version used to make the rigs. Open a supplied `.blend` file, save a working copy, and install and enable `inzoi_motion_export.py` from Blender's Add-ons preferences. [Blender releases](https://www.blender.org/releases/) · [inZOI Blender rigs and exporter](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014) |
+| **Blender** | Download Blender (any version should be compatible), the version used to make the rigs. Open a supplied `.blend` file, save a working copy, and install and enable `inzoi_motion_export.py` from Blender's Add-ons preferences. [Blender releases](https://www.blender.org/releases/) · [inZOI Blender rigs and exporter](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014) |
 | **Maya** | Get Maya from Autodesk. The rigs were authored in Maya 2026. Open the paired `.ma` file and save a working copy. Extract the exporter ZIP and drag `inzoi_animation_export.py` into the viewport to add the **inZOI Export** button to the **SceneZOI** shelf. Use Display Layers to show the controls and meshes you need. [Autodesk Maya](https://www.autodesk.com/products/maya/free-trial) · [inZOI Maya rigs, exporter and linking tool](https://www.patreon.com/skyrimaceanimations/posts/inzoi-maya-rigs-173172317) |
 
 For import and packaging, install the inZOI ModKit on Windows. Get the packaged
