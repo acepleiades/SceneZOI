@@ -10,6 +10,9 @@ local elapsed, inventory_elapsed = 0, 15
 local run_id, environment_id, inventory_signature, inventory_revision, record_index = nil, nil, nil, 0, 0
 local inventory_pending
 local api_addons = {}
+local exit_watches = {}
+local prepare_phases = {awaiting_commit = true, overlay_cut = true, interaction_cancelling = true,
+    confirming_idle = true, autonomy_enabled = true}
 local scene_events = {
     session_preparing = true, session_started = true, node_preparing = true, node_entered = true,
     plan_auto_mode_changed = true, plan_stage_changed = true, playback_speed_changed = true,
@@ -101,6 +104,113 @@ function M.record(name, fields)
         fields.event = name
         append(history, M.format(M.stamp(fields)))
     end)
+end
+
+local function identifier(value)
+    return type(value) == "string" and #value <= 96 and value ~= "none" and value:match("^[%w_.:+%-]+$") and value or nil
+end
+
+function M.prepare_wait(current, participant, fields)
+    local phase = fields[3]
+    if not prepare_phases[phase] then return end
+    local wait = {phase = phase, queue_id = identifier(fields[5]), action_type = identifier(fields[6]),
+        interaction_bag_id = identifier(fields[7]), reported_at_seconds = math.floor(current.age * 1000) / 1000}
+    participant.preparation_wait = {revision = current.revision, state = wait}
+    if phase == "awaiting_commit" or phase == "confirming_idle" then return end
+    local previous = participant.preparation_log
+    if previous and previous.revision == current.revision and current.age - previous.age < 1 then return end
+    participant.preparation_log = {revision = current.revision, age = current.age}
+    M.record("participant_prepare_wait", {session_id = current.token, scene_id = current.node.id,
+        revision = current.revision, participant_id = participant.id, role = participant.role, wait = wait})
+end
+
+function M.wait_status(current, participant)
+    if not current.save_records or not current.save_records[participant.id] then return {phase = "awaiting_snapshot"} end
+    if not current.save_ready then return {phase = "awaiting_save_ack"} end
+    if current.furniture and not current.furniture_ready then return {phase = "awaiting_furniture"} end
+    local latest = participant.preparation_wait
+    if latest and latest.revision == current.revision then return latest.state end
+    return {phase = "awaiting_simulation_status"}
+end
+
+local function read_movement(actor)
+    local position = actor:K2_GetActorLocation()
+    local movement = actor.CharacterMovement
+    assert(type(position.X) == "number" and type(position.Y) == "number", "Movement position unavailable")
+    return {x = position.X, y = position.Y, mode = tostring(movement.MovementMode),
+        custom_mode = movement.CustomMovementMode, collision = actor:GetActorEnableCollision()}
+end
+
+local function current_montage(actor)
+    local instance = actor.Mesh:GetAnimInstance()
+    local montage = instance and instance:GetCurrentActiveMontage()
+    return montage and identifier(montage:GetName()) or "none"
+end
+
+local function finish_watch(watch, status)
+    local sample, first = watch.sample, watch.first
+    local moved = watch.distance >= 10
+    if not status then
+        if not sample then status = "reading_unavailable"
+        elseif sample.mode == "0" or sample.mode == "MOVE_None" then status = "movement_disabled"
+        elseif watch.samples < 2 then status = "insufficient_samples"
+        else status = moved and "movement_observed" or "no_movement_observed" end
+    end
+    local montage_ok, montage = false, nil
+    if sample and status ~= "participant_unavailable" and status ~= "participant_reserved" then
+        montage_ok, montage = pcall(current_montage, watch.actor)
+    end
+    M.record("participant_post_exit", {session_id = watch.token, scene_id = watch.scene_id,
+        participant_id = watch.id, role = watch.role, control_at_exit = watch.control,
+        cleanup_complete = watch.cleanup_complete, restoration = watch.restoration,
+        status = status, samples = watch.samples, expected_movement_mode = watch.expected_mode,
+        first_movement_mode = first and first.mode, movement_mode = sample and sample.mode,
+        custom_movement_mode = sample and sample.custom_mode,
+        expected_collision = watch.expected_collision, collision = sample and sample.collision,
+        active_montage = montage_ok and montage or nil,
+        movement_observed = moved, horizontal_displacement_cm = math.floor(watch.distance + 0.5)})
+end
+
+local function watch_participant(session, participant, status)
+    local watch = {actor = participant.actor, id = participant.id, role = participant.role,
+        token = session.token, scene_id = session.node.id, control = participant.control,
+        cleanup_complete = session.cleanup_complete, restoration = participant.restoration,
+        expected_mode = participant.movement_mode ~= nil and tostring(participant.movement_mode) or nil,
+        expected_collision = participant.collision, elapsed = 0, next_sample = .4, distance = 0, samples = 0}
+    if status then finish_watch(watch, status); return end
+    local existing = exit_watches[participant.id]
+    if existing then finish_watch(existing, "participant_reserved") end
+    exit_watches[participant.id] = watch
+end
+
+function M.watch_exit(session)
+    for _, participant in ipairs(session.participants) do watch_participant(session, participant) end
+    for _, participant in ipairs(session.unloaded or {}) do
+        watch_participant(session, participant, "participant_unavailable")
+    end
+end
+
+function M.tick_exit(dt, actors, holder)
+    for id, watch in pairs(exit_watches) do
+        watch.elapsed = watch.elapsed + dt
+        local status
+        if actors[id] ~= watch.actor then status = "participant_unavailable"
+        elseif holder(id) then status = "participant_reserved" end
+        if not status and watch.elapsed >= watch.next_sample then
+            watch.next_sample = watch.elapsed + .5
+            local ok, sample = pcall(read_movement, watch.actor)
+            if ok then
+                watch.samples = watch.samples + 1
+                watch.first, watch.sample = watch.first or sample, sample
+                local dx, dy = sample.x - watch.first.x, sample.y - watch.first.y
+                watch.distance = math.max(watch.distance, math.sqrt(dx * dx + dy * dy))
+            end
+        end
+        if status or watch.elapsed >= 3 then
+            exit_watches[id] = nil
+            finish_watch(watch, status)
+        end
+    end
 end
 
 function M.session(snapshot, name, code, context)

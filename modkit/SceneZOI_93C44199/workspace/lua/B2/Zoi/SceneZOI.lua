@@ -129,10 +129,42 @@ local function clear_task_queue(owner, interaction)
     end
 end
 
+local function report_prepare_wait(owner, lease, phase, queue_id, interaction)
+    if lease.ready then return end
+    local key = phase .. ":" .. (queue_id or "") .. ":" .. lease.revision
+    if lease.reported_wait == key then return end
+    lease.reported_wait = key
+    -- Diagnostic reads and delivery must never affect readiness or cleanup.
+    pcall(function()
+        local function identifier(value)
+            return type(value) == "string" and #value <= 96 and value:match("^[%w_.:+%-]+$") and value or "none"
+        end
+        local action, interaction_id
+        if interaction then
+            local ok, action_value = pcall(function() return interaction:GetCurrentActionType() end)
+            if ok then
+                action = tostring(action_value)
+                if type(inzoi.EB1ActionType) == "table" then
+                    for name, value in pairs(inzoi.EB1ActionType) do
+                        if value == action_value then action = name; break end
+                    end
+                end
+            end
+            local found, bag = pcall(function() return interaction:GetCurrentInteractionBagId() end)
+            if found then interaction_id = bag end
+        end
+        local message = Protocol.pack(lease.token, "prepare_wait", phase, lease.revision,
+            identifier(queue_id), identifier(action), identifier(interaction_id))
+        inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", message)
+    end)
+end
+
 local function tasks_idle(owner, lease, interaction)
     if owner:IsPlayingInteraction() then
         lease.idle_ticks = 0
         local queue_id = tostring(interaction:GetCurrentInteractionQueueId())
+        -- Read the task before cancellation can clear the native interaction.
+        report_prepare_wait(owner, lease, "interaction_cancelling", queue_id, interaction)
         if lease.cancel_queue_id ~= queue_id then
             local ok, message = inzoi.cli.execute("interaction.cancel entity_id=" .. Protocol.id(owner:GetEntityId()))
             assert(ok, message or "Could not interrupt the current task")
@@ -142,7 +174,11 @@ local function tasks_idle(owner, lease, interaction)
     end
     lease.cancel_queue_id = nil
     lease.idle_ticks = math.min(lease.idle_ticks + 1, 2)
-    return lease.idle_ticks >= 2
+    if lease.idle_ticks < 2 then
+        report_prepare_wait(owner, lease, "confirming_idle")
+        return false
+    end
+    return true
 end
 
 -- Only layer motions that can conflict with the scene pose. Posture and
@@ -213,8 +249,15 @@ local function advance_prepare(self, owner)
     if not lease or lease.releasing or not lease.committed then return end
     local interaction = assert(owner:GetComponent(inzoi.EB2ComponentType.Interaction), "Missing interaction component")
     clear_task_queue(owner, interaction)
-    if wait_for_overlay_cut(owner, lease) or not tasks_idle(owner, lease, interaction) or lease.ready then return end
-    if owner:IsAutonomyEnable() then return end
+    if wait_for_overlay_cut(owner, lease) then
+        report_prepare_wait(owner, lease, "overlay_cut")
+        return
+    end
+    if not tasks_idle(owner, lease, interaction) or lease.ready then return end
+    if owner:IsAutonomyEnable() then
+        report_prepare_wait(owner, lease, "autonomy_enabled")
+        return
+    end
     if not lease.tasks_settled then
         -- Gameplay can keep upper-body and grab loops alive after the task is idle.
         suspend_grab_poses(owner, lease)
@@ -290,6 +333,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     Wardrobe.capture(owner, self.lease)
     -- Capture only. The UI must cache this save record before any native mutation.
     Save.offer(owner,self.lease)
+    report_prepare_wait(owner, self.lease, "awaiting_commit")
 end
 
 ---@param self table

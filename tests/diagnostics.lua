@@ -95,3 +95,60 @@ includes(cfg.scene_history, "run_id=host.test", "environment_id=host.test.1", "e
 includes(cfg.environment_history, "environment_id=host.test.1", "event=environment_snapshot")
 includes(cfg.environment_history, "observed_api_addons=[third.party]")
 print("Runtime diagnostics passed: native apostrophe escapes, retained history across reload and storage retries, bounded retention, and labeled mod inventory.")
+
+local actor = {x = 0, CharacterMovement = {MovementMode = 1, CustomMovementMode = 0},
+    Mesh = {GetAnimInstance = function()
+        return {GetCurrentActiveMontage = function() return nil end}
+    end}}
+function actor:K2_GetActorLocation() return {X = self.x, Y = 0} end
+function actor:GetActorEnableCollision() return true end
+local p = {id = "1", role = "lead", actor = actor, control = "controlled", movement_mode = 1,
+    collision = false, restoration = "restored"}
+local session = {token = "scene.diagnostic", node = {id = "test.idle"}, age = 2, revision = 1,
+    participants = {p}, save_records = {}, furniture = {}, cleanup_complete = true}
+assert(diagnostics.wait_status(session, p).phase == "awaiting_snapshot")
+session.save_records[p.id] = {}
+assert(diagnostics.wait_status(session, p).phase == "awaiting_save_ack")
+session.save_ready = true
+assert(diagnostics.wait_status(session, p).phase == "awaiting_furniture")
+session.furniture_ready = true
+assert(diagnostics.wait_status(session, p).phase == "awaiting_simulation_status")
+diagnostics.prepare_wait(session, p, {session.token, "prepare_wait", "interaction_cancelling", "1", "456", "BookRead", "ReadBook"})
+assert(diagnostics.wait_status(session, p).queue_id == "456")
+assert(diagnostics.wait_status(session, p).action_type == "BookRead")
+session.revision = 2
+assert(diagnostics.wait_status(session, p).phase == "awaiting_simulation_status", "An earlier node's wait must not leak into the next node")
+
+local occupied = false
+local actors = {["1"] = actor}
+local function sample(dt) diagnostics.tick_exit(dt, actors, function() return occupied end) end
+local function after(status)
+    diagnostics.flush()
+    includes(read_history()[#read_history()], "event=participant_post_exit", "status=" .. status)
+    return read_history()[#read_history()]
+end
+diagnostics.watch_exit(session)
+actor.x = 500 -- A restoration or teleport before the first read is not evidence of walking.
+sample(.5)
+actor.x = 550
+sample(1)
+sample(1.5)
+includes(after("movement_observed"), "horizontal_displacement_cm=50", "expected_movement_mode=1",
+    "expected_collision=false", "collision=true", "active_montage=none")
+diagnostics.watch_exit(session)
+sample(.5); sample(2.5)
+includes(after("no_movement_observed"), "movement_observed=false")
+actor.CharacterMovement.MovementMode = 0
+diagnostics.watch_exit(session)
+sample(.5); sample(2.5)
+includes(after("movement_disabled"), "movement_mode=0")
+diagnostics.watch_exit(session)
+occupied = true
+sample(1)
+includes(after("participant_reserved"), "samples=0")
+occupied = false
+diagnostics.watch_exit(session)
+actors["1"] = {}
+sample(1)
+includes(after("participant_unavailable"), "samples=0")
+print("Participant diagnostics passed: preparation waits, post-exit changes, idle/disabled movement, reservations and replaced actor isolation.")

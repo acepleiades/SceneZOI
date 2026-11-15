@@ -190,6 +190,7 @@ local function finish_stop(old, code)
     old.cleanup_complete=Session.cleanup_complete(old) and confirmed
     Effects.retain(old)
     notify(old, "session_ended", code)
+    Diagnostics.watch_exit(old)
     Control.ended(old,Session.snapshot(old))
     local controlled = Session.controlled(old)
     local normal = {ok = true, saving = true, character_editor = true, addon_requested = true, lifetime_expired = true, owner_expired = true,
@@ -632,6 +633,17 @@ function M.reply(actor, content)
         end
         return
     end
+    if kind == "prepare_wait" then
+        if not current.stopping and current.preparing and tonumber(fields[4]) == current.revision then
+            for _, participant in ipairs(current.participants) do
+                if participant.actor == actor and not participant.node_ready then
+                    Diagnostics.prepare_wait(current, participant, fields)
+                    break
+                end
+            end
+        end
+        return
+    end
     if fields[5] and kind ~= "outfit" then M.diagnostic("Participant preparation failed: " .. fields[5]) end
     if current.stopping then
         if kind ~= "released" then return end
@@ -652,7 +664,7 @@ function M.reply(actor, content)
     if kind == "rejected" then
         Diagnostics.record("participant_rejected", {session_id=current.token, scene_id=current.node.id,
             revision=current.revision, participant_id=Protocol.id(actor:GetEntityId()), code=detail or "prepare_error",
-            simulation_diagnostic=fields[5]})
+                simulation_diagnostic=fields[5]})
         stop_session(current, detail or "prepare_error"); return
     end
     if kind == "released" then stop_session(current, detail == "ok" and "interrupted" or detail); return end
@@ -664,7 +676,7 @@ function M.reply(actor, content)
             if not participant.node_ready then
                 Diagnostics.record("participant_ready", {session_id=current.token, scene_id=current.node.id,
                     revision=current.revision, participant_id=participant.id, role=participant.role,
-                    body=body, control=control, elapsed=current.age})
+                    body=body, control=control, elapsed=current.age, wait=Diagnostics.wait_status(current, participant)})
             end
             participant.body, participant.control, participant.node_ready = body, control, true
         end
@@ -1135,7 +1147,8 @@ local function advance(current, dt)
         for _, participant in ipairs(current.participants) do
             waiting[#waiting + 1] = {id = participant.id, role = participant.role, acknowledged = participant.node_ready == true,
                 snapshot_received = current.save_records and current.save_records[participant.id] ~= nil or false,
-                registered = M.actors[participant.id] == participant.actor}
+                registered = M.actors[participant.id] == participant.actor,
+                wait = participant.node_ready and {phase = "ready"} or Diagnostics.wait_status(current, participant)}
         end
         Diagnostics.record("preparation_timeout", {session_id = current.token, scene_id = current.node.id,
             revision = current.revision, code = code, elapsed = current.age, participants_ready = current.participants_ready == true,
@@ -1289,6 +1302,7 @@ function M.tick(dt)
             if visual_active then pcall(inzoi.cli.execute,command('uimod.cfg_save','overhead_visuals_active')..' value='..packet)end
         end
     end
+    Diagnostics.tick_exit(step, M.actors, Sessions.holder)
     Events.flush()
 end
 

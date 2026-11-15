@@ -6,9 +6,9 @@ package.loaded['SceneZOI.Outfit']={borrowable=function()end,recover=function()en
 package.loaded['SceneZOI.Wardrobe']={capture=function()end,inventory=function()return 'inventory'end}
 package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
-local replies,owners={},{}
+local replies,owners,waits={},{},{}
 local clear_failure,cancel_failure=false,false
-inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},
+inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},EB1ActionType={PlayLoopAnim=20},
  cli={execute=function(c)
   local o=owners[c:match('entity_id=(%d+)')]
   if c=='entity.get_possessed'then return true,'','{"entity_id":1}'end
@@ -31,14 +31,25 @@ inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1Han
    return true
   end
   error('Unexpected command '..c)
- end},message={send_to_client=function(id,kind,packet)if kind=='SceneZOI.Reply'then replies[id.Value]=packet end end}}
+ end},message={send_to_client=function(id,kind,packet)
+    if kind~='SceneZOI.Reply' then return end
+    if P.unpack(packet) and P.unpack(packet)[2]=='prepare_wait' then
+        waits[#waits+1]=P.unpack(packet)
+    else replies[id.Value]=packet end
+ end}}
 local function owner(id)
  local o={id=id,queued=0,playing=false,current=1,clears=0,cancels=0,collision=true,motions={},stopped={},grabs={},stopped_grabs={},restored_grabs={},grab_ids={},
   AutonomyOption={AutonomyEnable={Value=true,bFollowParent=true}}}
  function o:GetEntityId()return {Value=self.id}end
  function o:GetComponent(t)
   if t==1 then return {GetAppearanceSetting=function()return {Gender=1,Body={bUseMeshMerge=true},FinalBody={bUseMeshMerge=false}}end}end
-  if t==3 then return {IsQueueEmpty=function()return self.queued==0 end,GetCurrentInteractionQueueId=function()return self.current end}end
+  if t==3 then return {IsQueueEmpty=function()return self.queued==0 end,GetCurrentInteractionQueueId=function()return self.current end,
+    GetCurrentActionType=function()
+        self.current_reads=(self.current_reads or 0)+1
+        assert(not self.cancel_delay, 'Capture the action before native cancellation')
+        return 20
+    end,
+    GetCurrentInteractionBagId=function()return 'HasBook_Book_Read'end}end
   if t==4 then return {
     GetCurrentGrabObject=function(_,hand)return self.grabs[hand]end,
     GetGrabState=function(_,hand)return {EntityId={Value=self.grabs[hand]},GrabId=self.grab_ids[hand] or "Hold"}end,
@@ -88,13 +99,20 @@ assert(not o.position_writes and not o.collision_writes and not o.autonomy_refre
  'Abort before commit must not restore unmodified native properties')
 start(s,o,'abort-commit')
 assert(not s.lease.ready)
+assert(waits[#waits][3]=='confirming_idle')
 release(s,o,'abort-commit')
 assert(not o.position_writes and not o.collision_writes and o.autonomy_refreshes==2,
  'Abort after commit restores autonomy while leaving unowned position and collision alone')
 o.playing=true;o.queued=30;start(s,o,'backlog')
 assert(o.queued==0 and o.cancels==1,'A backlog must be cleared before interruption, not drained one task at a time')
 assert(s.lease and not s.lease.ready and not o.AutonomyOption.AutonomyEnable.Value)
+assert(waits[#waits-1][3]=='awaiting_commit')
+local waiting=waits[#waits]
+assert(waiting[1]=='backlog' and waiting[3]=='interaction_cancelling' and waiting[5]=='1')
+assert(waiting[6]=='PlayLoopAnim' and waiting[7]=='HasBook_Book_Read')
+local wait_count=#waits
 tick(s,o);assert(not s.lease.ready and o.cancels==1,'Do not mark ready during asynchronous cancellation or spam cancel')
+assert(#waits==wait_count and o.current_reads==1,'Do not poll or send the same diagnostic every tick')
 for _=1,4 do tick(s,o)end
 assert(s.lease.ready and not o.playing and not o.collision)
 -- New commands and autonomy changes during playback must not escape scene ownership.

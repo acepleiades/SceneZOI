@@ -386,6 +386,15 @@ extraction.
   It tracks startup and unload, manual and add-on scene lifecycles, participant
   acknowledgements, furniture reservations, Auto-mode decisions, and cleanup
   and save recovery outcomes.
+  Preparation entries identify the wait for each participant, such as the saved
+  snapshot, furniture, the overlay cut, a pending interaction cancellation
+  or confirmation that tasks are idle. When available, an interaction wait includes the native queue
+  and action identifiers. `participant_post_exit` compares the captured and
+  observed movement modes and collision settings and samples horizontal
+  displacement for up to three seconds. `no_movement_observed` means the Zoi
+  stayed within the measurement threshold with no movement-disabled mode read
+  at the end. A stationary Zoi may simply be idle. A new reservation or an
+  unloaded actor ends the observation early.
 - `mod_inventory.cfg` reports mounted UI mods, disabled UI-only mods, loaded
   packs, declared and playable scene counts, sampled scene exclusion reasons,
   and add-on IDs seen by the API. A missing content namespace can mean that
