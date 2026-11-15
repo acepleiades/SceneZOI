@@ -37,6 +37,14 @@ JavaScript. It reads the latest stable release from the public GitHub API.
 To add a contributor and their optional support link, edit the relevant
 sections of [docs/index.html](docs/index.html).
 
+The download page uses the browser’s preferred language on first visit and
+remembers changes made in the header. English text lives in the page and
+[release script](docs/site-assets/releases.js). Update each matching translation
+in [docs/site-assets/locales](docs/site-assets/locales) when changing copy. Keep
+numbered placeholders for links, paths and emphasis, and use the game’s
+[localized menu labels](packs/scenezoi/localization/text.json) in the start
+instructions. GitHub release notes are displayed in English.
+
 ## What you can build
 
 | Your project | SceneZOI provides | Start here |

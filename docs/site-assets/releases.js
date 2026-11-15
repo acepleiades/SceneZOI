@@ -2,14 +2,25 @@
 
 const repository = "https://github.com/acepleiades/SceneZOI";
 const releaseApi = "https://api.github.com/repos/acepleiades/SceneZOI/releases/latest";
-const version = document.getElementById("version");
+const releaseTag = document.getElementById("release-tag");
 const assetInfo = document.getElementById("asset-info");
 const download = document.getElementById("download-link");
 const label = document.getElementById("download-label");
 const status = document.getElementById("release-status");
 const releaseLink = document.getElementById("release-link");
 const notes = document.getElementById("release-notes");
+const releaseLanguage = document.getElementById("release-language");
 const extraDownloads = document.getElementById("extra-downloads");
+let assetSize;
+
+function showAssetSize() {
+  if (assetSize === undefined) return;
+  assetInfo.textContent = new Intl.NumberFormat(document.documentElement.lang, {
+    style: "unit", unit: "megabyte", unitDisplay: "short", maximumFractionDigits: 1
+  }).format(assetSize / 1000000);
+}
+
+document.addEventListener("site-language-change", showAssetSize);
 
 // Render the Markdown used in release notes without inserting remote HTML.
 function addInline(element, text) {
@@ -28,6 +39,8 @@ function addInline(element, text) {
 
 function showNotes(body) {
   if (!body?.trim()) return;
+  notes.lang = "en";
+  releaseLanguage.hidden = false;
   notes.replaceChildren();
   let block;
   for (const line of body.trim().split(/\r?\n/)) {
@@ -69,14 +82,14 @@ async function loadRelease() {
       signal: AbortSignal.timeout(8000)
     });
     if (response.status === 404) {
-      status.textContent = "No stable release is available yet.";
+      setSiteMessage(status, "noStable", "No stable release is available yet.");
       return;
     }
     if (!response.ok) throw new Error("Release request failed");
     const release = await response.json();
     if (!release.tag_name || release.draft || release.prerelease) throw new Error("No stable release data");
 
-    version.textContent = release.tag_name + " · Latest stable release";
+    releaseTag.textContent = release.tag_name + " · ";
     const details = repository + "/releases/tag/" + encodeURIComponent(release.tag_name);
     releaseLink.href = details;
     download.href = details;
@@ -89,12 +102,12 @@ async function loadRelease() {
 
     if (primary) {
       download.href = primary.browser_download_url;
-      label.textContent = "Download SceneZOI ZIP";
-      assetInfo.textContent = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 })
-        .format(primary.size / 1000000) + " MB";
+      setSiteMessage(label, "downloadZip", "Download SceneZOI ZIP");
+      assetSize = primary.size;
+      showAssetSize();
     } else {
-      label.textContent = "View release on GitHub";
-      status.textContent = "The latest release has no SceneZOI ZIP.";
+      setSiteMessage(label, "viewRelease", "View release on GitHub");
+      setSiteMessage(status, "noZip", "The latest release has no SceneZOI ZIP.");
     }
     for (const asset of assets.filter(asset => asset !== primary)) {
       const link = document.createElement("a");
@@ -105,7 +118,7 @@ async function loadRelease() {
     extraDownloads.hidden = !extraDownloads.childElementCount;
     showNotes(release.body);
   } catch {
-    status.textContent = "Live release details are unavailable. Open GitHub to find the latest ZIP.";
+    setSiteMessage(status, "releaseUnavailable", "Live release details are unavailable. Open GitHub to find the latest ZIP.");
   }
 }
 
