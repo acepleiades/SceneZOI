@@ -439,5 +439,13 @@
     "installation": "verified hot update with cooked bytes/settings preserved",
     "author_acceptance": "passed: Esc, repeated entry, CAZ return and subsequent navigation/Exit; final idle/ok, cleanup ok/ok and input restored",
     "customer_acceptance": "pending"
+  },
+  "maya_rig_3_0_animations": {
+    "date": "2026-11-15",
+    "owner_track_count": 4,
+    "body_tracks_per_clip": 150,
+    "package_validation": "passed",
+    "native_import_evidence": "import-validation.json",
+    "retail_visual_acceptance": "pending"
   }
 }

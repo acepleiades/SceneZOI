@@ -1,7 +1,65 @@
 {
-  "historical": true,
-  "date": "2026-11-01",
-  "build": "20261101-animation-refresh-1",
   "ok": true,
-  "scope": "Historical standing-animation refresh; current owner-specific import plans and inventories are authoritative. No imports were performed during the source-layout migration."
+  "assets": [
+    {
+      "source": "HZOI_Standing_idle_F.fbx",
+      "asset": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Standing_idle_F.SceneZOI_Standing_idle_F",
+      "imported": false,
+      "reimported": true,
+      "source_sha256": "50d72e5169464d330ff10c97fc80e8ae7380f237dc531dcfb221c86e3ef59dc1",
+      "duration": 3.0,
+      "skeleton": "/Game/Characters/Skeletons/SK_Base.SK_Base",
+      "tracks": 150,
+      "fps": 60
+    },
+    {
+      "source": "HZOI_Standing_idle_M.fbx",
+      "asset": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Standing_idle_M.SceneZOI_Standing_idle_M",
+      "imported": false,
+      "reimported": true,
+      "source_sha256": "ec12f54bcffbc9159b29b6c4a15d49963ed0c71bfdca93d8efd39c64891d6678",
+      "duration": 3.0,
+      "skeleton": "/Game/Characters/Skeletons/SK_Base.SK_Base",
+      "tracks": 150,
+      "fps": 60
+    },
+    {
+      "source": "HZoi_bed_idle_F.fbx",
+      "asset": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Bed_idle_F.SceneZOI_Bed_idle_F",
+      "imported": false,
+      "reimported": true,
+      "source_sha256": "197319b48b3dabce444b4274139fa21c74def402fb5506f4f63981c35c645995",
+      "duration": 4.0,
+      "skeleton": "/Game/Characters/Skeletons/SK_Base.SK_Base",
+      "tracks": 150,
+      "fps": 60
+    },
+    {
+      "source": "HZoi_bed_idle_M.fbx",
+      "asset": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Bed_idle_M.SceneZOI_Bed_idle_M",
+      "imported": false,
+      "reimported": true,
+      "source_sha256": "ba6613038a41112858e4be5a13e46d05090f5516fbbf4fdb7e8e117309f36d8a",
+      "duration": 4.0,
+      "skeleton": "/Game/Characters/Skeletons/SK_Base.SK_Base",
+      "tracks": 150,
+      "fps": 60
+    }
+  ],
+  "engine": "5.6.1-0+UE5",
+  "date": "2026-11-15",
+  "scope": "Maya rig 3.0 refresh of all 4 owned animation tracks at their existing package paths.",
+  "native_asset_sha256": {
+    "SceneZOI_Bed_idle_F.uasset": "e2ce598a05f816800106595c63e523935a7ed33196d0981008e89cf75a639f89",
+    "SceneZOI_Bed_idle_M.uasset": "4e270d47bf939fe59a7331c48d780f4c468eea4d13e236e3e42f9740713a2939",
+    "SceneZOI_Standing_idle_F.uasset": "25cfeb07835167fb8ad9c27af58c772c2a058aec162fc60cba4f478e4c2d4257",
+    "SceneZOI_Standing_idle_M.uasset": "d726ad26a423f47e38d53bfcddab63c4fa0a216c4d444b3a4306bf022f54faf9"
+  },
+  "verified": {
+    "timing": "Imported durations match the previous clips. Source exports were sampled at 60 fps.",
+    "tracks": "Each body clip contains 150 named tracks. Each attachment clip, where present, contains eight tracks including its root.",
+    "isolated_packaging_and_owned_payload_filter": true,
+    "framework_suite": "passed",
+    "retail_visual_acceptance": "pending"
+  }
 }
