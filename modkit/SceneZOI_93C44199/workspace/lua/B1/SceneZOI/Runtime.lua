@@ -1192,7 +1192,10 @@ local function advance(current, dt)
     end)
     if not current.preparing then
         Control.sample(current,dt,game_scale)
-        current.clock:advance(dt, game_scale, math.min(2, CompletionEffects.multiplier(current.completion_effects,dt,game_scale)*Control.speed(current)))
+        local modifier = Control.speed(current)
+        local response_rate, responding = CompletionEffects.multiplier(current.completion_effects, dt, game_scale,
+            current.clock:normal_rate(modifier))
+        current.clock:advance(dt, game_scale, modifier, responding and response_rate or nil)
         Playback.sample(current, current.clock:position(current.duration, current.node.kind))
         local completion_routes,completion_payloads={},{}
         if current.tasks then Tasks.update(current.tasks, current, dt * game_scale, function(payload)

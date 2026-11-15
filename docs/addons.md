@@ -386,12 +386,10 @@ extraction.
   It tracks startup and unload, manual and add-on scene lifecycles, participant
   acknowledgements, furniture reservations, Auto-mode decisions, and cleanup
   and save recovery outcomes.
-- `mod_inventory.cfg` lists the installed mod IDs when the game's Mod
-  Management list is available. It also reports mounted UI mods, disabled
-  UI-only mods, loaded packs, declared and playable scene counts, sampled scene
-  exclusion reasons, and add-on IDs seen by the API. When the full installed
-  list is unavailable, a missing content namespace can mean that the pack is
-  absent, disabled, or failed to load.
+- `mod_inventory.cfg` reports mounted UI mods, disabled UI-only mods, loaded
+  packs, declared and playable scene counts, sampled scene exclusion reasons,
+  and add-on IDs seen by the API. A missing content namespace can mean that
+  the pack is absent, disabled, or failed to load.
 - `environment_history.cfg` keeps the last 16 inventory snapshots, up to
   128 KiB. Match the `environment_id` on a failure to the inventory from when it
   happened. For early startup events, match the `run_id` and timestamp.

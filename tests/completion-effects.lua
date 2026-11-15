@@ -45,6 +45,38 @@ package.loaded['SceneZOI.BoneOscillation']={
  apply=function(o,spec,angle)if fail then fail=false;error('optional body rebuild')end;calls.apply[o.participant.id]=angle end,
  restore=function(o)calls.restore[o.participant.id]=true end}
 local E=require('SceneZOI.CompletionEffects')
+local function step_effect(ctx,dt,scale,modifier)
+ modifier=modifier or 1
+ local clock=ctx.session.clock
+ local rate,active=E.multiplier(ctx,dt,scale,clock:normal_rate(modifier))
+ clock:advance(dt,scale,modifier,active and rate or nil)
+end
+local function timed_profile(index,scale,modifier)
+ local clock=C.new();clock:select(index);clock.elapsed=.25
+ local ctx={session={clock=clock,node={id='example.timing'}},motion=Motion.new(profile,timing,10,clock.elapsed)}
+ local samples={}
+ for i=1,183 do
+  step_effect(ctx,.05/scale,scale,modifier)
+  samples[i]=clock.elapsed
+ end
+ assert(not ctx.motion and clock.index==index)
+ close(clock.game_elapsed,9.15)
+ step_effect(ctx,.25,1,modifier)
+ close(clock.elapsed,samples[183]+.25*clock:normal_rate(modifier))
+ return samples
+end
+local baseline=timed_profile(2,1,1)
+for index=1,4 do
+ for _,scale in ipairs({1,2,3})do
+  local samples=timed_profile(index,scale,.7)
+  for i,value in ipairs(samples)do close(value,baseline[i])end
+ end
+end
+local boundary_clock=C.new();boundary_clock:select(1);boundary_clock.elapsed=.25
+local boundary_ctx={session={clock=boundary_clock,node={id='example.boundary'}},motion=Motion.new(profile,timing,10,.25)}
+step_effect(boundary_ctx,9.4,1,1.4)
+close(boundary_clock.elapsed,baseline[183]+.25*.5*1.4)
+assert(boundary_clock.index==1 and not boundary_ctx.motion,'Resume the selected speed in the remainder of the completion frame')
 local people={{id='1',role='a'},{id='2',role='b'},{id='3',role='c'}}
 local session={token='test',revision=1,clock=C.new(),duration=10,participants=people,bindings={},node={id='example.loop',kind='loop',movement_timing=timing,completion_responses={}}}
 local shake={delay=.5,duration=6,bursts=3,duty_cycle=.7,frequency_hz=18,amplitude_degrees=1.25,bones={{bone='thigh_l',child='calf_l'}}}
@@ -55,21 +87,25 @@ E.trigger(ctx,{payload(3),payload(2),payload(1)})
 assert(ctx.source=='1|charge'and ctx.starts==3 and ctx.shakes['1']and ctx.shakes['2']and ctx.shakes['3'],'Shared arbitration with independent 3+ owners')
 local original=ctx.motion;E.trigger(ctx,{payload(1)});assert(ctx.motion==original and ctx.starts==3,'No duplicate completion effects')
 local game=0
--- Scene speed changes modify the baseline, without losing synchronized clip phase.
-for i=1,400 do
+-- Preset changes retain the selector without changing the active motion rate.
+for i=1,450 do
  local dt=.01;local scale=i<=20 and 0 or 2
- if i==120 then session.clock:select(4)end
- local modifier=E.multiplier(ctx,dt,scale);session.clock:advance(dt,scale,modifier);E.sample(ctx)
+ if i==120 then
+  local speed=session.clock.effective
+  session.clock:select(4)
+  close(session.clock.effective,speed)
+ end
+ step_effect(ctx,dt,scale);E.sample(ctx)
  game=game+dt*scale
 end
 close(session.clock.game_elapsed,game);assert(session.clock.index==4 and not ctx.motion)
 assert(next(ctx.shakes)==nil and calls.restore['1']and calls.restore['2']and calls.restore['3'])
 E.trigger(ctx,{payload(2,2)});assert(ctx.motion and ctx.source=='2|charge')
 local age=ctx.motion.age;local elapsed=session.clock.elapsed
-local modifier=E.multiplier(ctx,10,0);session.clock:advance(10,0,modifier);E.sample(ctx)
+step_effect(ctx,10,0);E.sample(ctx)
 close(ctx.motion.age,age);close(session.clock.elapsed,elapsed)
 session.preparing=true;E.trigger(ctx,{payload(3,2)});assert(ctx.starts==4,'No effects during preparation')
-session.preparing=false;E.leave_node(ctx);assert(not ctx.motion and next(ctx.shakes)==nil and session.clock.modifier==1)
+session.preparing=false;E.leave_node(ctx);assert(not ctx.motion and next(ctx.shakes)==nil and not session.clock.motion_rate)
 session.node.kind='transition';E.trigger(ctx,{payload(3,2)});assert(ctx.starts==4)
 session.node.kind='loop';E.trigger(ctx,{payload(3,2)});assert(ctx.starts==5)
 session.clock.game_elapsed=session.clock.game_elapsed+1;fail=true;E.sample(ctx);E.sample(ctx)

@@ -41,24 +41,14 @@ diagnostics.record("start_requested", {client = "player", scene_id = "hzoi.idle"
 diagnostics.note_addon("third.party")
 diagnostics.tick(1)
 local inventory = cfg.mod_inventory
-includes(inventory, "installed_list_available=false", "hzoi={scene_pack=1}",
+includes(inventory, "hzoi={scene_pack=1}",
     "playable_scenes_by_namespace={hzoi=1", "catalog_warning_count=1", "mounted_ui_mod_ids=[test]",
     "disabled_ui_only_mod_ids=[disabled-ui]", "observed_api_addons=[third.party]",
     "declared_scenes_by_namespace={hzoi=2}", "hzoi.optional={asset='/Game/Optional.Asset', code=asset_unavailable}")
-assert(not inventory:find("installed_mod_ids=", 1, true))
 local initial = read_history()
 assert(#initial == 2)
 includes(initial[1], "event=legacy_start")
 includes(initial[2], "event=start_requested", "name \\u0022example\\u0022\\nnew line")
-local handler = {IsA = function() return true end, ModManagementWidget = {
-    TotalModItemMap = {ToTable = function() return {["HZoi_660649D8"] = true, ["SceneZOI_93C44199"] = true} end},
-}}
-local manager = {UIHandlerMap = {ToTable = function() return {handler} end}}
-inzoi.UB1System = {Get = function() return {ManagerMap = {Find = function() return manager end}} end}
-inzoi.EB1ManagerType = {UI = 1}
-inzoi.UB1ModManagementUIHandler = {StaticClass = function() return 1 end}
-diagnostics.tick(15)
-includes(cfg.mod_inventory, "installed_list_available=true", "installed_mod_ids=[HZoi_660649D8")
 
 package.loaded[mod] = nil
 diagnostics = require(mod)

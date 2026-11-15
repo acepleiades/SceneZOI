@@ -21,7 +21,7 @@ function fixture(options = {}) {
   let deferNavigation = false, resolveNavigation;
   const context = {
     wf: {root, state:{}, content:{}, MOD_ID:'SceneZOI_93C44199'},
-    document:{addEventListener(name,fn){(documentListeners[name]??=[]).push(fn);},createElement(){return {style:{},listeners:{},addEventListener(k,cb){this.listeners[k]=cb;},classList:{add(){},remove(){},toggle(){}},setAttribute(){},innerHTML:""};},getElementById:id=>id==='app-root'?root:elements[id],activeElement:{blur(){blurred++;}}},
+    document:{addEventListener(name,fn){(documentListeners[name]??=[]).push(fn);},createElement(){return {style:{},listeners:{},addEventListener(k,cb){this.listeners[k]=cb;},classList:{add(){},remove(){},toggle(){}},setAttribute(k,v){this[k]=v;},innerHTML:""};},getElementById:id=>id==='app-root'?root:elements[id],activeElement:{blur(){blurred++;}}},
     window:{addEventListener(){}},
     inzoi:{
       saveState:{register(cb){context.saveProvider=cb;}},
@@ -101,6 +101,9 @@ async function run(){
   const toggle=planned.elements['scene-auto-mode'];
   assert(toggle,'The toggle exists for a planned scene');
   assert.equal(toggle.style.display,'block','It is shown while the scene has a plan');
+  assert.equal(toggle.textContent,'Auto-mode (ON)');
+  assert.equal(toggle['aria-label'],'Auto-mode');
+  assert.equal(toggle['aria-pressed'],'true');
   assert.doesNotMatch(planned.elements['scene-navigation'].innerHTML||'',/data-option/,'Manual choices are hidden while Auto-mode drives');
   planned.setPlayback('SZ2|host|6|0|1|1.0000|0.5000');planned.timers[350]();await flush();
   assert.equal(planned.elements['speed-label'].textContent,'x0.50');
@@ -111,7 +114,11 @@ async function run(){
   assert.equal(writes(planned,'playback').length,0);
   toggle.listeners.click();await flush();
   assert.match(writes(planned,'auto_mode').at(-1),/^SZ2\|host\|6\|auto_mode\|\d+\|0\|\d+$/,'Turning it off names the scene it controls');
+  assert.equal(toggle.textContent,'Auto-mode (ON)','The label follows the runtime acknowledgement');
   planned.setPlan('SZ2|host|6|1|0|1|3|0');planned.timers[250]();await flush();
+  assert.equal(toggle.textContent,'Auto-mode (OFF)');
+  assert.equal(toggle['aria-label'],'Auto-mode');
+  assert.equal(toggle['aria-pressed'],'false');
   assert.equal(planned.elements['speed-up'].disabled,false);
   planned.elements['speed-up'].listeners.click();await flush();
   assert.equal(planned.elements['speed-label'].textContent,'x2.00');

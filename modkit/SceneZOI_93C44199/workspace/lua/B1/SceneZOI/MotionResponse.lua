@@ -50,7 +50,7 @@ local function fallback_integral(s,t)
  return ramp(s.high,s.low,math.min(t,a),a)+math.min(math.max(0,t-a),h)*s.low+
   ramp(s.low,s.high,math.max(0,t-a-h),a)
 end
-function M.advance(s,delta)
+function M.advance(s,delta,normal_rate)
  local total=0;local remaining=math.max(0,delta)
  while remaining>EPS and s.stage~='done'do
   local limit,old,new
@@ -79,7 +79,9 @@ function M.advance(s,delta)
    end
   end
  end
- total=total+remaining;s.position=s.position+total
+ -- A frame can cross the end of the profile. Resume ordinary playback for the
+ -- leftover game time without altering the response's 1x envelope.
+ total=total+remaining*(normal_rate or 1);s.position=s.position+total
  return total
 end
 M.cycle=cycle

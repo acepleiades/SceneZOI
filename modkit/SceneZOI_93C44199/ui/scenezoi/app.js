@@ -382,8 +382,9 @@
     function renderAutoMode() {
         if (!autoButton) return;
         autoButton.style.display = hasPlan && active && !exiting ? 'block' : 'none';
-        autoButton.textContent = window.SceneZOILocalization.text('Auto-mode');
-        if (autoButton.classList.toggle) autoButton.classList.toggle('selected', autoMode);
+        var caption = window.SceneZOILocalization.text(autoMode ? 'Auto-mode (ON)' : 'Auto-mode (OFF)');
+        if (autoButton.textContent !== caption) autoButton.textContent = caption;
+        autoButton.setAttribute('aria-label', window.SceneZOILocalization.text('Auto-mode'));
         autoButton.setAttribute('aria-pressed', autoMode ? 'true' : 'false');
     }
     function applyPlan(value) {
@@ -391,7 +392,7 @@
         if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
         hasPlan = fields[3] === '1'; autoMode = hasPlan && fields[4] === '1';
         autoSpeed = autoMode && fields[7] === '1';
-        renderAutoMode(); renderNavigation(); renderPlayback();
+        renderNavigation(); renderPlayback();
     }
     function ensureAutoButton() {
         if (autoButton || !navigation || !navigation.parentNode || !navigation.parentNode.insertBefore) return;
@@ -419,6 +420,7 @@
     function renderNavigation() {
         var html = '';
         ensureAutoButton();
+        renderAutoMode();
         if (active && playing && !exiting && !pendingNavigation && !autoMode && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
             html = currentNode.navigation.map(function (edge) {
                 var target = window.SceneZOICatalog.nodes[edge.target];

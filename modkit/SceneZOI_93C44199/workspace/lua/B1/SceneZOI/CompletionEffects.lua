@@ -1,7 +1,6 @@
 -- Scene-local visual task responses. The existing task engine owns progress/events/audio.
 local Motion=require('SceneZOI.MotionResponse')
 local Bones=require('SceneZOI.BoneOscillation')
-local Config=require('SceneZOI.Config')
 local M={}
 local function warning(ctx,err)
  local message=tostring(err)
@@ -42,17 +41,19 @@ function M.trigger(ctx,payloads)
   end
  end
 end
-function M.multiplier(ctx,real_dt,scale)
+-- Return the rate relative to the 1x authored animation and whether the
+-- response owns this frame. The selected preset remains owned by the scene.
+function M.multiplier(ctx,real_dt,scale,normal_rate)
  if not ctx or not ctx.motion then return 1 end
- local delta=real_dt*scale*Config.playback_speeds[ctx.session.clock.index]
- if delta<=0 then return ctx.session.clock.modifier or 1 end
- local ok,value=pcall(Motion.advance,ctx.motion,delta)
+ local delta=real_dt*scale
+ if delta<=0 then return ctx.session.clock.motion_rate or 1,true end
+ local ok,value=pcall(Motion.advance,ctx.motion,delta,normal_rate)
  if not ok then warning(ctx,value);ctx.motion=nil;return 1 end
  if ctx.motion.stage=='done'then
   print('[SceneZOI] Completion slowdown finished: node='..ctx.session.node.id..' owner_task='..tostring(ctx.source))
   ctx.motion=nil
  end
- return value/delta
+ return value/delta,true
 end
 function M.angle(spec,elapsed)
  local duration=spec.duration or 6;local delay=spec.delay or .5;local t=elapsed-delay
@@ -82,7 +83,10 @@ function M.guard(ctx)
 end
 local function release(ctx,strict)
  ctx.motion=nil
- if ctx.session and ctx.session.clock then ctx.session.clock.modifier=1 end
+ if ctx.session and ctx.session.clock then
+  local clock=ctx.session.clock
+  clock:advance(0,clock.scale,clock.modifier or 1)
+ end
  local errors={}
  for id,o in pairs(ctx.shakes or {})do
   local ok,err=pcall(Bones.restore,o);if ok then ctx.shakes[id]=nil else o.failed=true;errors[#errors+1]=tostring(err)end
@@ -103,6 +107,6 @@ end
 function M.status(ctx)
  local count=0;for _ in pairs(ctx.shakes or {})do count=count+1 end
  return 'completion_effects:starts='..(ctx.starts or 0)..':motion='..(ctx.motion and ctx.motion.stage or 'none')..
-  ':factor='..string.format('%.4f',ctx.session and ctx.session.clock and ctx.session.clock.modifier or 1)..':shakes='..count..(ctx.error and ':error='..ctx.error or '')
+  ':motion_rate='..string.format('%.4f',ctx.session and ctx.session.clock and ctx.session.clock.motion_rate or 1)..':shakes='..count..(ctx.error and ':error='..ctx.error or '')
 end
 return M

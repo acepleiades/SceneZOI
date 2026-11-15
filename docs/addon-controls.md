@@ -115,7 +115,7 @@ playing readiness; reads may inspect preparation/cleanup.
 | Operation | Additional arguments and behavior |
 | --- | --- |
 | `set_speed` | `speed_index` 1–4 selects 0.5, 1, 1.5, 2. Explicit last command wins with player controls. Requires `speed`. |
-| `set_speed_multiplier` | `multiplier` 0.1–2. Per-caller temporary factor; combined factors clamp to 0.1–2 before existing completion slowdown. Does not overwrite the player's selector. Requires `speed`. |
+| `set_speed_multiplier` | `multiplier` 0.1–2. Per-caller temporary factor for ordinary playback. Combined factors clamp to 0.1–2 and apply again after a completion motion response. The player's selector keeps its preset. Requires `speed`. |
 | `get_task_state` | Complete copied `definitions` and participant rows, including `base_rate`, combined `rate_multiplier`, `player_rate_multiplier`, `addon_rate_multiplier`, `effective_rate` and completion hold. The player factor applies only to positive base rates; see [settings](settings.md#task-progress). `get_definitions` also includes task definitions. |
 | `set_task_progress` | `participant_id`, `task_id`, `value` within 0–maximum. Requires `tasks`. |
 | `modify_task_progress` | `participant_id`, `task_id`, `amount` within ±maximum; resulting progress clamps to 0–maximum. Requires `tasks`. |

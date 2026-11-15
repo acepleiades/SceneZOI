@@ -55,7 +55,7 @@ Bone names in this example are rig-specific. The role and task must be declared 
 
 `cycles_per_second` describes the consistent underlying movement in the exported clip at default playback speed, even when slower gestures or pose changes are layered into that clip. It is within 0.001–60; clip duration times frequency must be a positive whole number, so the uniform rhythm repeats at the clip seam.
 
-`peak_phase` defaults to 0.5, within 0–1. It names the pose around which the lowest-speed hold is centered. For a one-second cycle authored at 60 fps, phase 0.5 is frame 30; phase 0 and 1 describe the same repeating endpoint. Cycle response boundaries are half a period before/after each peak. The engine waits for the next response boundary at normal selected playback speed before starting its envelope. It does not seek or jump the clip.
+`peak_phase` defaults to 0.5, within 0–1. It names the pose around which the lowest-speed hold is centered. For a one-second cycle authored at 60 fps, phase 0.5 is frame 30; phase 0 and 1 describe the same repeating endpoint. Cycle response boundaries are half a period before/after each peak. The engine plays at the authored 1× baseline until it reaches the next response boundary, so synchronization preserves clip phase.
 
 Slowdown uses linear speed ramps in effect time. With default high/low values, a one-second authored cycle takes four effect seconds: 1.6 seconds to slow from 0.5 to 1/12, 0.8 seconds at 1/12, and 1.6 seconds to return to 0.5. The central pose is reached halfway through the low-speed hold. Two repeats therefore traverse two authored seconds over eight effect seconds, followed by recovery. This reproduces the reference envelope while avoiding frame-step drift through exact integration. No animation assets are generated.
 
@@ -71,7 +71,7 @@ For a four-second clip, these are three authored peak moments. Markers must stri
 
 ## General fallback and settings
 
-Omit `movement_timing` while supplying `enabled: true` and `slowdown` to permit the fallback. It uses 40% of `fallback_duration` to ramp high-to-low, 20% to hold and 40% to ramp back, then recovers to normal selected speed. It cannot promise alignment to a pose. `repeats` is used only for synchronized cycles; fallback duration is the complete envelope duration.
+Omit `movement_timing` while supplying `enabled: true` and `slowdown` to permit the fallback. It uses 40% of `fallback_duration` to ramp high-to-low, 20% to hold and 40% to ramp back, then recovers to the authored baseline. It cannot promise alignment to a pose. `repeats` is used only for synchronized cycles; fallback duration is the complete envelope duration.
 
 | Slowdown property | Default | Valid range |
 | --- | --- | --- |
@@ -81,7 +81,9 @@ Omit `movement_timing` while supplying `enabled: true` and `slowdown` to permit 
 | `recovery` | 0.4 seconds | 0.001–30 |
 | `fallback_duration` | 6 seconds | 0.01–300 |
 
-The multiplier applies over the user's selected scene speed. Effect time advances by native game time times that selected speed, without multiplying by the effect's own slowdown. Thus a speed change during the effect changes its remaining duration while preserving its authored phase. At scene speed 1 and native scale 1, the example two-repeat envelope lasts eight seconds plus synchronization wait and 0.4 recovery; scene speed 2 traverses that envelope twice as fast. Game pause freezes it; native fast-forward scales it. Body and independently owned attachment tracks keep the same shared sampled time. Task progression and audio remain on their existing native-game clocks and are not slowed by this animation multiplier.
+The motion response advances on native simulation time from the authored 1× baseline. At normal simulation speed, the example two-repeat envelope lasts eight seconds plus synchronization wait and 0.4 seconds of recovery at every scene playback preset. The game's pause and fast-forward controls also apply to the response. Body and attachment tracks share its sampled time. Task progression and audio follow their own clocks.
+
+Auto-mode and the player retain control of the selected preset under their usual rules. The response temporarily supplies the animation sampling rate, and ordinary playback resumes at the selected preset and any active add-on speed factor once the profile finishes.
 
 ## Generic shaking
 

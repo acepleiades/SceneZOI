@@ -76,6 +76,26 @@ local function hide_hand_props(record)
     end
 end
 
+local function suppress_hand_props(record)
+    local ok, err = pcall(hide_hand_props, record)
+    if not ok and record.hand_props_error ~= tostring(err) then
+        record.hand_props_error = tostring(err)
+        print("[SceneZOI] Could not hide held props: " .. record.hand_props_error)
+    end
+end
+
+local function guard_hand_props(record)
+    if not record.hidden_hand_props then return end
+    for prop in pairs(record.hidden_hand_props) do
+        local alive, hidden = pcall(function() return prop.bHidden end)
+        if alive and hidden == false then
+            -- Confirm it is still in this Zoi's hand before taking visibility back.
+            suppress_hand_props(record)
+            return
+        end
+    end
+end
+
 local function restore_hand_props(record)
     for prop in pairs(record.hidden_hand_props or {}) do
         local alive, hidden = pcall(function() return prop.bHidden end)
@@ -95,11 +115,7 @@ function M.enter(record, asset, transform, position)
     end
     record.changed, record.desired = true, transform
     record.between_nodes = false
-    local props_ok, props_error = pcall(hide_hand_props, record)
-    if not props_ok and record.hand_props_error ~= tostring(props_error) then
-        record.hand_props_error = tostring(props_error)
-        print("[SceneZOI] Could not hide held props: " .. record.hand_props_error)
-    end
+    suppress_hand_props(record)
     record.actor:SetActorEnableCollision(false)
     record.movement:StopMovementImmediately()
     record.movement:DisableMovement()
@@ -167,6 +183,7 @@ local function incoming_name(instance)
 end
 
 function M.sample(record, position)
+    guard_hand_props(record)
     assert(record.mesh:GetAnimationMode() == ANIMATION_BLUEPRINT and record.mesh:GetAnimInstance() == record.instance,
         "The game replaced the participant's animation instance")
     if not record.instance:Montage_IsActive(record.montage) then
@@ -190,6 +207,9 @@ end
 -- without replacing it ourselves or recapturing the session restoration state.
 function M.hold(record, anchor)
     record.between_nodes = true
+    -- Appearance can re-show hand props or attach a replacement with the same
+    -- montage still active. Scan during the handoff and guard owned props afterward.
+    suppress_hand_props(record)
     local mesh = record.actor.Mesh
     if not mesh or mesh:GetAnimationMode() ~= ANIMATION_BLUEPRINT or not mesh:GetAnimInstance() then return false end
     if mesh ~= record.mesh or mesh:GetAnimInstance() ~= record.instance or

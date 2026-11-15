@@ -33,25 +33,39 @@ function M.new()
     return setmetatable({index = 2, elapsed = 0, session_elapsed = 0, game_elapsed = 0, scale = 0, effective = 0}, M)
 end
 
+function M:normal_rate(modifier)
+    return Config.playback_speeds[self.index] * (modifier or self.modifier or 1)
+end
+
+local function update_effective(clock)
+    clock.effective = clock.scale * (clock.motion_rate or clock:normal_rate())
+end
+
 function M:select(index)
     assert(type(index) == "number" and index % 1 == 0 and Config.playback_speeds[index], "Invalid playback speed")
     local changed = self.index ~= index
     self.index = index
-    self.effective = self.scale * Config.playback_speeds[index] * (self.modifier or 1)
+    update_effective(self)
     return changed
 end
 
 function M:reset_node()
     self.elapsed = 0
     self.modifier = 1
+    self.motion_rate = nil
+    update_effective(self)
 end
 
-function M:advance(real_dt, game_scale, modifier)
+function M:advance(real_dt, game_scale, modifier, motion_rate)
     assert(finite(game_scale) and game_scale >= 0, "Invalid game time scale")
-    self.modifier = modifier or self.modifier or 1
-    assert(finite(self.modifier) and self.modifier > 0 and self.modifier <= 2.000001, "Invalid playback modifier")
+    if modifier ~= nil then
+        assert(finite(modifier) and modifier > 0 and modifier <= 2.000001, "Invalid playback modifier")
+        assert(motion_rate == nil or (finite(motion_rate) and motion_rate > 0 and motion_rate <= 4.000001),
+            "Invalid completion motion rate")
+        self.modifier, self.motion_rate = modifier, motion_rate
+    end
     self.scale = game_scale
-    self.effective = game_scale * Config.playback_speeds[self.index] * self.modifier
+    update_effective(self)
     local elapsed = M.delta(real_dt) * self.effective
     self.game_elapsed = self.game_elapsed + M.delta(real_dt) * game_scale
     self.elapsed = self.elapsed + elapsed

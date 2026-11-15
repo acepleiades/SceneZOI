@@ -49,8 +49,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
 #scene-status { flex: 0 0 auto; min-height: 22px; padding: 4px 12px; font-size: 12px;
     line-height: 1.35; color: #6f6f6f; word-break: normal; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
 #scene-auto-mode { display: none; width: calc(100% - 28px); cursor: pointer; margin: 0 12px 7px; padding: 8px; font-family: var(--inzoi-font-ui);
-    border: 1px solid #bfbfbf; border-radius: 4px; background: #eeeeee; color: #333333; }
-#scene-auto-mode.selected { background: #3185c3; color: #ffffff; }
+    border: 1px solid #bfbfbf; border-radius: 4px; font-size: 16px; line-height: 1.25; overflow-wrap: break-word; }
+#scene-auto-mode, #scene-exit { background: #a1d4fd; color: #474747; }
+#scene-auto-mode[aria-pressed="true"] { background: #3185c3; color: #ffffff; }
 #scene-navigation { flex: 1 1 auto; min-height: 0; overflow-y: scroll; overflow-x: hidden;
     margin: 0 8px 10px 12px; padding-right: 8px; overscroll-behavior: contain; }
 #scene-navigation::-webkit-scrollbar { width: 5px; }
@@ -73,7 +74,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
 #scene-footer { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto;
     gap: 12px; min-height: 62px; padding: 10px 12px; background: #d0d0d0; }
 #scene-exit { cursor: pointer; flex: 0 0 auto; min-width: 78px; padding: 8px 14px;
-    border: 0; border-radius: 4px; background: #a1d4fd; color: #474747; font-size: 17px; font-weight: 600; }
+    border: 0; border-radius: 4px; font-size: 17px; font-weight: 600; }
 #scene-speed { display: flex; align-items: center; gap: 10px; }
 #speed-down, #speed-up { width: 27px; height: 27px; padding: 0; cursor: pointer;
     border: 0; border-radius: 50%; background: #a1d4fd; color: #474747; line-height: 24px; font-size: 26px; }

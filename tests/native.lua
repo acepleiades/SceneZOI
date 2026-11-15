@@ -111,6 +111,21 @@ attached={book,phone,already_hidden,child,backpack}
 local held_record=Native.capture(actor)
 Native.enter(held_record,{}, {})
 assert(book.bHidden and phone.bHidden and already_hidden.bHidden and not child.bHidden and not backpack.bHidden)
+book.bHidden=false
+local original_book_montage=held_record.montage
+local replacement=prop("mesh","SOC_catch_l_FX",false)
+attached[#attached+1]=replacement
+assert(Native.hold(held_record,held_record.desired) and held_record.montage==original_book_montage)
+assert(book.bHidden and replacement.bHidden,"An outfit rebuild can re-show or replace a prop without replacing the montage")
+book.bHidden=false
+local detached=prop("mesh","SOC_catch_r_FX",false)
+attached[#attached+1]=detached
+Native.hold(held_record,held_record.desired)
+attached[#attached]=nil
+book.bHidden,detached.bHidden=false,false
+Native.sample(held_record,1)
+assert(book.bHidden and not detached.bHidden and not child.bHidden and not backpack.bHidden,
+    "Playing must re-hide only props still on the participant's hand")
 local hidden_before_destruction=phone.bHidden
 phone.bHidden=nil
 setmetatable(phone,{__index=function()error("destroyed actor")end})
@@ -118,7 +133,7 @@ book.fail_restore=true
 assert(not pcall(Native.restore,held_record) and actor.collision,"A failed prop restore must leave other restoration independent")
 book.fail_restore=false
 Native.restore(held_record)
-assert(not book.bHidden and already_hidden.bHidden and hidden_before_destruction and next(held_record.hidden_hand_props)==nil)
+assert(not book.bHidden and not replacement.bHidden and already_hidden.bHidden and hidden_before_destruction and next(held_record.hidden_hand_props)==nil)
 attached={}
 -- Exit after an outfit rebuild but before the next node has begun playback.
 local record=Native.capture(actor)

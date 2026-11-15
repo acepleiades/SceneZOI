@@ -146,19 +146,6 @@ local function ui_mods(operation)
     return keys(ids)
 end
 
-local function manager_mods()
-    local ui = inzoi.UB1System.Get().ManagerMap:Find(inzoi.EB1ManagerType.UI)
-    for _, handler in pairs(ui.UIHandlerMap:ToTable()) do
-        if handler:IsA(inzoi.UB1ModManagementUIHandler:StaticClass()) then
-            local widget = handler.ModManagementWidget
-            if not widget or not widget.TotalModItemMap then return nil end
-            local ids = {}
-            for id in pairs(widget.TotalModItemMap:ToTable()) do ids[tostring(id)] = true end
-            if next(ids) then return keys(ids) end
-        end
-    end
-end
-
 local function query(fn, ...)
     local ok, value = pcall(fn, ...)
     return ok and value or nil
@@ -170,7 +157,6 @@ local function game_state()
 end
 
 local function inventory()
-    local manager_ids = query(manager_mods)
     local declarations = require("SceneZOI.DataFiles").get()
     local catalog = require("SceneZOI.Catalog").get_snapshot()
     local content, declared, playable, blocked = {}, {}, {}, {}
@@ -198,7 +184,7 @@ local function inventory()
     end
     local game = query(game_state) or {}
     local report = {
-        build = Config.build, installed_list_available = manager_ids ~= nil, installed_mod_ids = manager_ids,
+        build = Config.build,
         mounted_ui_mod_ids = query(ui_mods, "uimod.list"), disabled_ui_only_mod_ids = query(ui_mods, "uimod.list_disabled"),
         content_declarations_by_owner = content, declared_scenes_by_namespace = declared,
         playable_scenes_by_namespace = playable, excluded_scene_count = #excluded_ids,
