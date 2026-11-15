@@ -57,4 +57,11 @@ r=request('none','start_scene',{initiator='1',participants={'1','2'},scene_id='t
 request('cancelled','start_at_hub',{initiator='1',participants={'1','2'}});assert(API.has_pending())
 request('cancel','cancel_start',{start_request_id='cancelled'});assert(not API.has_pending()and events[#events].event.name=='session_start_failed')
 request('timeout','start_at_hub',{initiator='1',participants={'1','2'}});API.tick(16);assert(not API.has_pending())
+-- One participant: a solo scene starts through the API like the menu's Solo start.
+local solo=Meta.resolve_scene(registry,{id='test.solo',label='Solo',kind='loop',starting_hub=true,participants={only={body='male'}},actions={{type='penile_masturbation',actor='only',target='only'}}})
+solo.content_rating='EXPLICIT';data.nodes[solo.id]=solo
+r=request('solofind','find_scenes',{participants={'1'},search={allowed_content_ratings={'EXPLICIT'},any_actions={'penile_masturbation'}}});assert(r.ok and r.result.count==1 and r.result.scenes[1].bindings.only=='1')
+r=request('solo','start_random_scene',{initiator='1',participants={'1'},search={allowed_content_ratings={'EXPLICIT'},any_actions={'penile_masturbation'}}});assert(r.ok and r.result.accepted and r.result.scene_id=='test.solo'and API.has_pending())
+request('solocancel','cancel_start',{start_request_id='solo'});assert(not API.has_pending())
+r=request('nobody','start_random_scene',{initiator='1',participants={}});assert(not r.ok)
 print('Public API passed: versioning, replay/conflict handling, shared matching, real startup context, independent group acknowledgements, ownership, copied events, status, no-match, cancellation and timeout.')

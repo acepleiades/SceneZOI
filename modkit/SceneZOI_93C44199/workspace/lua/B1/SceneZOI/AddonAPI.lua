@@ -112,7 +112,7 @@ local function owned(req)
 end
 local function roster(args)
  if args.participants==nil then return nil end
- V.array(args.participants,32);assert(#args.participants>=2,'At least two participants are required')
+ V.array(args.participants,32);assert(#args.participants>=1,'At least one participant is required')
  local rows,seen={},{}
  for _,id in ipairs(args.participants)do
   assert(type(id)=='string'and id:match('^%d+$')and not seen[id],'Invalid/duplicate participant ID');seen[id]=true
