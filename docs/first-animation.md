@@ -84,10 +84,14 @@ debug-picker entry. [Participant setup](group-support.md) · [Scene entry and hu
 ## 4. Export each participant
 
 - **Blender.** Select a character's original Zoi armature, press **F3**, and
-  choose **Export inZOI Motion Animation (80 Bones)**. Repeat for each role.
-- **Maya.** Open **SceneZOI → inZOI Export**, choose **Zoi — 80 motion bones**,
+  choose **Export inZOI Motion Animation (150 Bones)**. Repeat for each role.
+- **Maya.** Open **SceneZOI → inZOI Export**, choose **Zoi — 150 body bones**,
   select the character's skeleton, confirm the start and end frames, and click
   **Export animation FBX…**. Repeat for each role.
+
+Use the current exporter for the 150-bone body profile. It captures the evaluated
+motion and corrective joints. Corrective motion comes from the rig or the source
+clip, and the exported FBX preserves that motion.
 
 Keep one FBX per role and export every track with the same frame range and FPS.
 Use clear filenames such as `wave_greeter.fbx` and `wave_partner.fbx`. Export any
