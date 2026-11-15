@@ -1,5 +1,18 @@
-"""Preserve author dependencies omitted by ModKit's PackageUGC exporter."""
+"""SceneZOI version metadata and author dependencies for native packaging."""
 import copy
+import json
+import re
+from pathlib import Path
+
+
+RELEASE_MODULE = Path('B1/SceneZOI/ReleaseVersion.lua')
+
+
+def release_module_source(descriptor):
+    version = json.loads(descriptor.read_text(encoding='utf-8-sig')).get('VersionName')
+    if not isinstance(version, str) or not re.fullmatch(r'[0-9A-Za-z][0-9A-Za-z._+-]*', version):
+        raise ValueError(f'Invalid VersionName in {descriptor}')
+    return f'-- Generated from the plugin descriptor by tools/build_catalog.py.\nreturn "{version}"\n'
 
 
 def apply_dependencies(manifest, metadata, plugin):

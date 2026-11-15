@@ -11,6 +11,7 @@ import math
 import re
 from pathlib import Path
 import sound_data
+from package_metadata import RELEASE_MODULE, release_module_source
 from pack_sources import load_pack
 
 ID = re.compile(r'^[a-z][a-z0-9_.-]*$')
@@ -344,9 +345,18 @@ def build(pack_paths, project, expression_paths=None, expression_project=None, p
     targets=[mapping[owner].resolve()for owner in selected]
     if len(set(targets))!=len(targets):raise ValueError('Content owners require distinct projects')
     plans={owner:prepare_documents([d for d in documents if d[0]==owner])for owner in selected}
+    release_source = None
+    if 'scenezoi' in selected:
+        descriptor = mapping['scenezoi'] / 'SceneZOI_93C44199.uplugin'
+        if descriptor.is_file():
+            release_source = release_module_source(descriptor)
     # Source validation and all ownership decisions precede output changes.
     for owner in sorted(selected):
         target=mapping[owner];retire_shared(target);write(target,plans[owner])
+    if release_source is not None:
+        module = mapping['scenezoi'] / 'workspace/lua' / RELEASE_MODULE
+        module.parent.mkdir(parents=True, exist_ok=True)
+        module.write_text(release_source, encoding='utf-8', newline='\n')
     return catalog
 
 

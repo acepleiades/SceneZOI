@@ -50,6 +50,11 @@ acceptance are separate forms of evidence.
 
 ## Isolated packaging
 
+For a new SceneZOI release, set `VersionName` in the plugin descriptor before
+running `tools/build_catalog.py`. This generates the Lua release number that
+the runtime writes to the diagnostics. Synchronize it along with the Lua source
+and prepare Lua before exporting the package.
+
 Use supported `PackageUGC` with an explicit, fresh export directory outside the
 checkout. The default packaging action can also export a raw duplicate into the
 game's Mods directory; an isolated `-ExportToGameMods` avoids that side effect.

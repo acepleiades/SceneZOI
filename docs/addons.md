@@ -382,6 +382,9 @@ Ask players for their existing `scenezoi_runtime` ZIP and a description of
 what happened. The files survive a restart and can be read directly after
 extraction.
 
+- `release_version.cfg` contains the SceneZOI release number written by the
+  runtime on startup. New history and API trace entries include the release
+  number for their own run.
 - `scene_history.cfg` retains the most recent 256 entries, up to 128 KiB.
   It tracks startup and unload, manual and add-on scene lifecycles, participant
   acknowledgements, furniture reservations, Auto-mode decisions, and cleanup

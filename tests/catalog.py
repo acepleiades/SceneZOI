@@ -4,12 +4,19 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 from build_catalog import build,compile_packs
+from package_metadata import RELEASE_MODULE,release_module_source
 from pack_sources import load_pack
 def standing_pack():
  pack=load_pack(ROOT/'packs/scenezoi.json');pack['nodes']=[n for n in pack['nodes']if n['id']=='scenezoi.standing_idle'];pack.pop('data_files',None)
  return pack
 
 class FrameworkCatalogTests(unittest.TestCase):
+ def test_release_module_matches_descriptor(self):
+  project=ROOT/'modkit/SceneZOI_93C44199'
+  expected=release_module_source(project/'SceneZOI_93C44199.uplugin')
+  self.assertEqual((project/'workspace/lua'/RELEASE_MODULE).read_text(encoding='utf-8'),expected,
+                   'Run tools/build_catalog.py after changing the package version')
+
  def test_generic_pose_schema(self):
   from facial_pose_data import validate
   pose=json.loads((ROOT/'packs/scenezoi/facial_poses/open_o.json').read_text(encoding='utf-8'))

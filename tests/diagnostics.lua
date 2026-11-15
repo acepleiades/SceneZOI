@@ -1,8 +1,9 @@
 package.path = "modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;" .. package.path
 local Json = require("SceneZOI.Json")
 local Protocol = require("SceneZOI.Protocol")
-local cfg = {scene_history = Protocol.encode('{"event":"legacy_start","timestamp":1}\n')}
-local fail_read, fail_write = false, false
+local release_version = require("SceneZOI.ReleaseVersion")
+local cfg = {scene_history = Protocol.encode('{"event":"legacy_start","timestamp":1}\n'), release_version = "old"}
+local fail_read, fail_write, fail_version_write = false, false, false
 local snapshot = {nodes = {["hzoi.idle"] = {}, ["scenezoi.idle"] = {}}, warnings = {"one"},
     excluded = {["hzoi.optional"] = {code = "asset_unavailable", asset = "/Game/Optional.Asset"}}}
 package.loaded["SceneZOI.DataFiles"] = {get = function()
@@ -18,6 +19,7 @@ inzoi = {cli = {execute = function(line)
     local key = assert(line:match(" key=([%w_]+)"))
     if line:find("cfg_save", 1, true) then
         if fail_write and key == "scene_history" then return false, "Write failed" end
+        if fail_version_write and key == "release_version" then return false, "Write failed" end
         cfg[key] = assert(line:match(' value="([^"]*)"$'))
         return true
     end
@@ -87,12 +89,19 @@ rows = read_history()
 assert(#rows == 256)
 includes(rows[1], "sequence=45 ")
 includes(rows[#rows], "sequence=300 ")
+fail_version_write = true
 diagnostics.boot("host.test")
+assert(cfg.release_version == "old")
+fail_version_write = false
 diagnostics.tick(1)
+assert(cfg.release_version == release_version, "Publish the loaded package version after a temporary write failure")
 diagnostics.record("start_requested", {scene_id = "hzoi.idle"})
 diagnostics.shutdown()
 includes(cfg.scene_history, "run_id=host.test", "environment_id=host.test.1", "event=runtime_boot", "event=runtime_unloaded")
 includes(cfg.environment_history, "environment_id=host.test.1", "event=environment_snapshot")
+includes(cfg.scene_history, "release_version=" .. release_version)
+includes(cfg.environment_history, "release_version=" .. release_version)
+includes(cfg.mod_inventory, "release_version=" .. release_version)
 includes(cfg.environment_history, "observed_api_addons=[third.party]")
 print("Runtime diagnostics passed: native apostrophe escapes, retained history across reload and storage retries, bounded retention, and labeled mod inventory.")
 

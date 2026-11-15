@@ -1,7 +1,7 @@
 """Filter a native package to the exact assets declared by its author inventory."""
 from pathlib import Path
 import shutil,subprocess,re,csv,json,argparse
-from package_metadata import apply_dependencies
+from package_metadata import RELEASE_MODULE, apply_dependencies, release_module_source
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('package',type=Path,help='Raw packaged mod folder, containing mod_manifest.json')
@@ -26,6 +26,17 @@ assert (original/'mod_manifest.json').is_file()
 # Validate before creating output and carry them into the filtered package.
 author_metadata=json.loads((mod/'Meta/mod_manifest.json').read_text(encoding='utf-8-sig'))
 package_manifest=apply_dependencies(json.loads((original/'mod_manifest.json').read_text(encoding='utf-8-sig')),author_metadata,plugin)
+if plugin == 'SceneZOI_93C44199':
+    descriptor_name = plugin + '.uplugin'
+    expected_release = release_module_source(original / descriptor_name)
+    assert release_module_source(mod / descriptor_name) == expected_release, 'Exported release version differs from source'
+    for directory in ('workspace/lua', 'lua'):
+        assert (mod / directory / RELEASE_MODULE).read_text(encoding='utf-8-sig') == expected_release, \
+            'Regenerate and prepare the version module after changing VersionName'
+    packaged_module = (Path('lua') / RELEASE_MODULE).as_posix()
+    assert (original / packaged_module).is_file() and packaged_module in {
+        path.lstrip('/') for path in package_manifest['NonAssets']
+    }, 'Release version module missing from native package'
 shutil.copytree(original,final,dirs_exist_ok=True)
 # Each package ships its own native declaration patch.
 # Native runtime discovery never reads the retired shared cfg directory.

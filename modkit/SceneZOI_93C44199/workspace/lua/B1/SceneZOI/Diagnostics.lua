@@ -1,6 +1,7 @@
 local Config = require("SceneZOI.Config")
 local Json = require("SceneZOI.Json")
 local Protocol = require("SceneZOI.Protocol")
+local release_version = require("SceneZOI.ReleaseVersion")
 local M = {}
 
 local command = " mod_id=" .. Config.mod_id .. " section=" .. Config.section
@@ -8,7 +9,7 @@ local history = {key = "scene_history", max_records = 256, max_bytes = 131072, l
 local environments = {key = "environment_history", max_records = 16, max_bytes = 131072, lines = {}, size = 0}
 local elapsed, inventory_elapsed = 0, 15
 local run_id, environment_id, inventory_signature, inventory_revision, record_index = nil, nil, nil, 0, 0
-local inventory_pending
+local inventory_pending, release_version_pending
 local api_addons = {}
 local exit_watches = {}
 local prepare_phases = {awaiting_commit = true, overlay_cut = true, interaction_cancelling = true,
@@ -87,6 +88,7 @@ end
 function M.stamp(fields)
     record_index = record_index + 1
     fields.build, fields.run_id, fields.environment_id = Config.build, run_id, environment_id
+    fields.release_version = release_version
     fields.record_index, fields.timestamp = record_index, os.time()
     if os.date then fields.time_utc = os.date("!%Y-%m-%dT%H:%M:%SZ", fields.timestamp) end
     return fields
@@ -370,6 +372,7 @@ local function flush(journal)
 end
 
 function M.flush()
+    if release_version_pending then release_version_pending = not M.save("release_version", release_version) end
     flush(history)
     flush(environments)
 end
@@ -377,6 +380,7 @@ end
 function M.boot(id)
     run_id, environment_id, inventory_signature, inventory_revision, record_index = id, nil, nil, 0, 0
     inventory_elapsed, api_addons, inventory_pending = 15, {}, nil
+    release_version_pending = not M.save("release_version", release_version)
     M.record("runtime_boot", {schema = 2})
 end
 

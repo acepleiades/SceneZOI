@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261114-autonomous-presets-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.3.7 fixes Back timing out for an already anchored participant whose individual autonomy is off while the native query still reports it enabled. The regression, framework checks, ModKit validation, packaging, and a local bed navigation and Exit replay passed.",
+  "release_status": "SceneZOI 1.3.8 records its release version in diagnostics. Framework checks, ModKit validation and isolated packaging passed. The maintainer confirmed startup wrote 1.3.8 after loading a household.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.3.7",
+  "version": "1.3.8",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",
@@ -517,5 +517,13 @@
       "version": "1.3.7",
       "cfg_free_startup": "Not repeated for this patch."
     }
+  },
+  "release_version_diagnostics": {
+    "version": "1.3.8",
+    "source": "The native descriptor VersionName generates the protected Lua release module.",
+    "framework_tests": "Passed, including retry of the startup write and a check for a stale generated version.",
+    "modkit_validation": "Lua and UI passed. The isolated package filter verified the version module and owned payload.",
+    "retail": "After a restart with the installed candidate, the runtime wrote 1.3.8 to release_version.cfg, the startup history, and mod_inventory.cfg.",
+    "release_payload": "Matches the tested installation except for the source attribution link."
   }
 }
