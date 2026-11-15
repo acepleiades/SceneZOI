@@ -252,10 +252,12 @@ end
 local function advance_prepare(self, owner, first_commit)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
-    -- Prepare and Commit can arrive between character ticks. Reassert autonomy
-    -- on the same path that checks readiness, including during playback.
+    -- A Zoi already anchored by this lease is still under the task and placement
+    -- guards. The native autonomy query can disagree with the individual option,
+    -- so only require that query to be off before acquiring the Zoi.
     local option = owner.AutonomyOption.AutonomyEnable
-    if first_commit or option.Value or option.bFollowParent or owner:IsAutonomyEnable() then
+    local anchored = lease.tasks_settled and lease.location ~= nil
+    if first_commit or option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then
         lease.autonomy_disable_attempts = (lease.autonomy_disable_attempts or 0) + 1
         set_autonomy(owner, false, false)
     end
@@ -266,7 +268,7 @@ local function advance_prepare(self, owner, first_commit)
         return
     end
     if not tasks_idle(owner, lease, interaction) or lease.ready then return end
-    if owner:IsAutonomyEnable() then
+    if option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then
         report_prepare_wait(owner, lease, "autonomy_enabled")
         return
     end

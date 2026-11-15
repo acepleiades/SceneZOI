@@ -10,5 +10,5 @@ return {
     plan_max_stages = 16,
     heartbeat_interval = 1.0, slot = "DefaultSlot", max_duration_difference = 0.0001,
     playback_speeds = {0.50, 1.00, 1.50, 2.00},
-    build = "20261115-autonomy-transition-1",
+    build = "20261115-anchored-navigation-1",
 }

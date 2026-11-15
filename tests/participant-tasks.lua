@@ -268,4 +268,33 @@ M.on_lua_message(changing, actor, "SceneZOI.Commit", P.pack(token))
 assert(changing.lease.ready and not actor:IsAutonomyEnable(),
     "A commit retry must restore suppression on its own")
 release(changing, actor, token)
-print("Scene transitions reassert autonomy suppression from Prepare and Commit and restore original settings on Exit.")
+
+-- The reporter's Zoi was already playing, with both option fields off and the
+-- native query still on. Back must wait for actual tasks to settle on that lease.
+token = "anchored-native-override"
+start(changing, actor, token)
+tick(changing, actor)
+assert(changing.lease.ready)
+M.on_lua_message(changing, actor, "SceneZOI.Anchor", P.pack(token, 1, 2, 3, 0, 0, 0))
+actor.force_autonomy = true
+local refreshes_before_back = actor.autonomy_refreshes
+prepare_node(token, 2)
+assert(changing.lease.ready and changing.lease.revision == 2 and actor:IsAutonomyEnable(),
+    "A conflicting native autonomy query must not stall Back for an anchored idle Zoi")
+assert(actor.autonomy_refreshes == refreshes_before_back,
+    "Do not repeatedly rewrite an individual setting that is already off during the scene")
+
+enable_autonomy()
+actor.playing, actor.queued = true, 3
+local cancels_before_back = actor.cancels
+prepare_node(token, 3)
+assert(not changing.lease.ready and actor.queued == 0 and actor.cancels == cancels_before_back + 1)
+assert(not actor.AutonomyOption.AutonomyEnable.Value and not actor.AutonomyOption.AutonomyEnable.bFollowParent)
+tick(changing, actor)
+assert(not changing.lease.ready, "Keep waiting while an anchored participant is cancelling a task")
+tick(changing, actor)
+tick(changing, actor)
+assert(changing.lease.ready and not actor.playing)
+release(changing, actor, token)
+actor.force_autonomy = false
+print("Scene transitions preserve participant suppression, wait for tasks, and restore original settings on Exit.")
