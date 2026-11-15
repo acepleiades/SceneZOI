@@ -61,7 +61,14 @@ local function load(key)
     end
     local raw = data or message
     if not raw or raw == "" then return "" end
-    if raw:sub(1, 1) == "{" then raw = Json.decode(raw).value end
+    if raw:sub(1, 1) == "{" then
+        -- cfg_load escapes apostrophes as \' inside its JSON response.
+        -- Match whole escape pairs so that a literal backslash stays intact.
+        raw = raw:gsub("\\(.)", function(char)
+            return char == "'" and "'" or "\\" .. char
+        end)
+        return Json.decode(raw).value
+    end
     return raw
 end
 
@@ -215,7 +222,13 @@ local function flush(journal)
     if not journal.dirty then return end
     if not journal.loaded then
         local previous = query(load, journal.key)
-        if previous == nil then return end
+        if previous == nil then
+            if not journal.read_failed then
+                print("[SceneZOI] Could not read " .. journal.key .. ". Will retry.")
+                journal.read_failed = true
+            end
+            return
+        end
         local legacy = previous:match("^%x+$") and Protocol.decode(previous)
         local pending = journal.lines
         journal.lines, journal.size = {}, 0
@@ -232,7 +245,13 @@ local function flush(journal)
         for _, line in ipairs(pending) do append(journal, line) end
         journal.loaded = true
     end
-    if M.save(journal.key, table.concat(journal.lines, "\n") .. "\n") then journal.dirty = false end
+    if M.save(journal.key, table.concat(journal.lines, "\n") .. "\n") then
+        journal.dirty = false
+        journal.write_failed = false
+    elseif not journal.write_failed then
+        print("[SceneZOI] Could not save " .. journal.key .. ". Will retry.")
+        journal.write_failed = true
+    end
 end
 
 function M.flush()

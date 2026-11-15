@@ -113,6 +113,7 @@ In-game acceptance of the new task controls is pending.
 | A catalog asset was unavailable in retail. | Read actual readiness and retained errors; optional effects fail independently. A catalog listing is not proof of an installed asset. [Add-on effects](../../tests/addon-effects.lua). |
 | Releasing one caller's effects could interfere with another. | Caller-scoped leases, combined holds/mutes and independent retries remain mandatory. [Controls](../../tests/addon-controls.lua). |
 | A GENERAL final hub could conceal earlier EXPLICIT playback. | Use bounded played history and peak rating for gameplay outcomes; current node alone is insufficient. |
+| A saved scene history containing apostrophes stopped advancing after a restart or Lua reload. | The native cfg read response escaped apostrophes in its JSON wrapper, causing strict parsing to fail and leaving new records queued. Normalize that escape at the read boundary and keep the plain-text cfg and original records. [Diagnostics regression](../../tests/diagnostics.lua). |
 
 Keep raw probes out of this file. For a new issue, record the reproducible trigger,
 observed evidence, smallest fix, retained regression and unverified boundary.

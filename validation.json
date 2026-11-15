@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261114-autonomous-presets-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.3.3 passed the framework suite, ModKit Lua and UI validation, and isolated packaging with the owned-payload filter. A simulated one-participant autonomous task reached goals_met and released the roster. In-game solo task completion and cfg-free startup of this package are pending.",
+  "release_status": "SceneZOI 1.3.4 passed framework tests, ModKit validation and isolated packaging. Retail verified an existing history and two sessions across a Lua reload. The release ZIP carries the tested runtime payload with updated version and source metadata.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.3.3",
+  "version": "1.3.4",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",
@@ -466,5 +466,18 @@
     "retail_acceptance": "The maintainer confirmed both Auto-mode states, their colors and labels, and translations after a full package replacement and restart with existing settings.",
     "diagnostics": "The API trace and environment snapshot recorded the add-on request and discovery counts. The latest stop and exit records confirmed clean exit. The rolling scene history lacked this run.",
     "limits": "Cfg-free startup was not repeated for this update."
+  },
+  "scene_history_persistence": {
+    "source": "Retail cfg_load returns a JSON wrapper with a nonstandard apostrophe escape.",
+    "disk_records_before_fix": 84,
+    "largest_independent_payload_roundtrip_bytes": 131072,
+    "framework_regression": "The prior reader fails the retail-format fixture. The fixed reader preserves quoted records, escapes and pending entries during read and write retries.",
+    "modkit_validation": "Lua and UI passed.",
+    "retail_acceptance": "Both solo idle sessions recorded preparation, playback and clean exit. The second session followed a Lua host reload and the existing history was retained byte-for-byte.",
+    "release": {
+      "version": "1.3.4",
+      "tested_diagnostics_sha256": "b6c033b3b579296bdfce3f81b7f282510ac600a89f159a0bce160f65d919083c",
+      "cfg_free_startup": "Not repeated for this patch."
+    }
   }
 }
