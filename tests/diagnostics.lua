@@ -118,6 +118,10 @@ assert(diagnostics.wait_status(session, p).queue_id == "456")
 assert(diagnostics.wait_status(session, p).action_type == "BookRead")
 session.revision = 2
 assert(diagnostics.wait_status(session, p).phase == "awaiting_simulation_status", "An earlier node's wait must not leak into the next node")
+diagnostics.prepare_wait(session, p, {session.token, "prepare_wait", "autonomy_enabled", "2",
+    "none", "none", "none", "0", "0", "2"})
+local wait = diagnostics.wait_status(session, p)
+assert(wait.autonomy_option == false and wait.autonomy_follows_parent == false and wait.autonomy_disable_attempts == 2)
 
 local occupied = false
 local actors = {["1"] = actor}

@@ -115,6 +115,11 @@ function M.prepare_wait(current, participant, fields)
     if not prepare_phases[phase] then return end
     local wait = {phase = phase, queue_id = identifier(fields[5]), action_type = identifier(fields[6]),
         interaction_bag_id = identifier(fields[7]), reported_at_seconds = math.floor(current.age * 1000) / 1000}
+    if phase == "autonomy_enabled" then
+        if fields[8] == "1" or fields[8] == "0" then wait.autonomy_option = fields[8] == "1" end
+        if fields[9] == "1" or fields[9] == "0" then wait.autonomy_follows_parent = fields[9] == "1" end
+        wait.autonomy_disable_attempts = tonumber(fields[10])
+    end
     participant.preparation_wait = {revision = current.revision, state = wait}
     if phase == "awaiting_commit" or phase == "confirming_idle" then return end
     local previous = participant.preparation_log

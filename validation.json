@@ -4,7 +4,7 @@
   "build": "20261109-concurrent-sessions-1",
   "ui_build": "20261114-autonomous-presets-ui-1",
   "content_build": "20261105-localization-1",
-  "release_status": "SceneZOI 1.3.5 adds preparation and post-exit observations. Framework tests, ModKit validation, isolated packaging and retail diagnostics in solo and paired scenes passed. The release ZIP carries the tested runtime payload with updated version and source metadata.",
+  "release_status": "SceneZOI 1.3.6 reasserts character autonomy suppression in scene transitions. Framework tests, ModKit validation, isolated packaging and retail replay with a native autonomy change before Back passed. The release ZIP carries the tested runtime payload with updated version and source metadata.",
   "repository_purpose": "Developer source, SDK, content-authoring contracts and ModKit build workflow. HZoi production is private and optional; the separate public HZoi-Reference provides muted content-authoring examples.",
   "source_layout": [
     "modkit/SceneZOI_93C44199/workspace/lua/",
@@ -327,7 +327,7 @@
     "eating_overlay": "docs/validation/eating-overlay-20261109.json",
     "release_1_1_7": "docs/validation/release-1.1.7-20261109.json"
   },
-  "version": "1.3.5",
+  "version": "1.3.6",
   "compatibility_release_1_2_1": {
     "date": "2026-11-12",
     "runtime_build": "20261112-simulation-receiver-3",
@@ -489,6 +489,19 @@
     "limits": "Movement observation is passive and lasts three seconds. The original reporter's stalled preparation and stuck Exit were not reproduced.",
     "release": {
       "version": "1.3.5",
+      "cfg_free_startup": "Not repeated for this patch."
+    }
+  },
+  "autonomy_during_scene_transition": {
+    "runtime_build": "20261115-autonomy-transition-1",
+    "report": "The reporter's 1.3.5 timeout showed the controlled participant waiting for native autonomy to turn off after Back.",
+    "regression": "With an autonomy change between character ticks, the released code leaves the new node waiting. Prepare and Commit now reassert suppression through the readiness path, preserving the original settings for Exit.",
+    "framework_tests": "Passed. The regression fails under the released implementation.",
+    "modkit_validation": "Lua and UI passed. Isolated package preserved all other published payload files.",
+    "retail": "A temporary probe switched a participant's individual option and effective autonomy on during playback. Back and subsequent navigation passed. The option and effective value were off after Back, and Exit restored captured autonomy and inheritance for both Zois.",
+    "limits": "The original save-dependent effective-autonomy timeout was not reproduced locally.",
+    "release": {
+      "version": "1.3.6",
       "cfg_free_startup": "Not repeated for this patch."
     }
   }

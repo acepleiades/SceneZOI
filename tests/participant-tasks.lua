@@ -68,7 +68,7 @@ local function owner(id)
  function o:SetCollisionEnabled(v)self.collision=v;self.collision_writes=(self.collision_writes or 0)+1 end
  function o:SetLocationAndRotationOnlySimul()self.position_writes=(self.position_writes or 0)+1 end
  function o:IsPlayingInteraction()return self.playing end
- function o:IsAutonomyEnable()return self.AutonomyOption.AutonomyEnable.Value end
+ function o:IsAutonomyEnable()return self.force_autonomy or self.AutonomyOption.AutonomyEnable.Value end
  function o:RefreshAutonomyOptionCache()self.autonomy_refreshes=(self.autonomy_refreshes or 0)+1 end
  owners[tostring(id)]=o;return o
 end
@@ -228,3 +228,44 @@ assert(not reloaded.lease and o.collision and o.AutonomyOption.AutonomyEnable.bF
 local release_writes=o.position_writes
 M.on_lua_message(reloaded,o,'SceneZOI.Release',P.pack('captured','restore',P.encode(Json.encode(record))))
 assert(o.position_writes==release_writes,'A duplicate Exit cannot restore the same position twice')
+
+-- Message callbacks must own the same suppression as the simulation tick.
+local changing, actor = {}, owner(2)
+M.on_begin(changing, actor)
+local function prepare_node(token, revision)
+    M.on_lua_message(changing, actor, "SceneZOI.Prepare",
+        P.pack(token, "2", node.id, revision, "0", "lead", P.encode(Json.encode(node))))
+end
+local function enable_autonomy()
+    actor.AutonomyOption.AutonomyEnable.Value = true
+    actor.AutonomyOption.AutonomyEnable.bFollowParent = true
+end
+local token = "back"
+start(changing, actor, token)
+tick(changing, actor)
+assert(changing.lease.ready)
+enable_autonomy()
+prepare_node(token, 2)
+assert(changing.lease.ready and changing.lease.revision == 2
+    and not actor:IsAutonomyEnable() and not actor.AutonomyOption.AutonomyEnable.bFollowParent,
+    "A Back transition must restore suppression before acknowledging the next scene, even without a character tick")
+release(changing, actor, token)
+
+token = "back-native-override"
+start(changing, actor, token)
+tick(changing, actor)
+actor.force_autonomy = true
+prepare_node(token, 2)
+assert(not changing.lease.ready and actor:IsAutonomyEnable(),
+    "Do not acknowledge readiness if the native effective value remains enabled")
+local autonomy_wait = waits[#waits]
+assert(autonomy_wait[3] == "autonomy_enabled" and autonomy_wait[8] == "0"
+    and autonomy_wait[9] == "0" and autonomy_wait[10] == "2",
+    "Make the remaining native override visible in preparation diagnostics")
+actor.force_autonomy = false
+enable_autonomy()
+M.on_lua_message(changing, actor, "SceneZOI.Commit", P.pack(token))
+assert(changing.lease.ready and not actor:IsAutonomyEnable(),
+    "A commit retry must restore suppression on its own")
+release(changing, actor, token)
+print("Scene transitions reassert autonomy suppression from Prepare and Commit and restore original settings on Exit.")

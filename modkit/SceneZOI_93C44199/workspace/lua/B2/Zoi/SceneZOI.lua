@@ -153,9 +153,14 @@ local function report_prepare_wait(owner, lease, phase, queue_id, interaction)
             local found, bag = pcall(function() return interaction:GetCurrentInteractionBagId() end)
             if found then interaction_id = bag end
         end
-        local message = Protocol.pack(lease.token, "prepare_wait", phase, lease.revision,
-            identifier(queue_id), identifier(action), identifier(interaction_id))
-        inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", message)
+        local fields = {lease.token, "prepare_wait", phase, lease.revision,
+            identifier(queue_id), identifier(action), identifier(interaction_id)}
+        if phase == "autonomy_enabled" then
+            local option = owner.AutonomyOption.AutonomyEnable
+            fields[8], fields[9], fields[10] = option.Value and "1" or "0", option.bFollowParent and "1" or "0",
+                lease.autonomy_disable_attempts or 0
+        end
+        inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Protocol.pack(table.unpack(fields)))
     end)
 end
 
@@ -244,9 +249,16 @@ local function suspend_grab_poses(owner, lease)
     end
 end
 
-local function advance_prepare(self, owner)
+local function advance_prepare(self, owner, first_commit)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
+    -- Prepare and Commit can arrive between character ticks. Reassert autonomy
+    -- on the same path that checks readiness, including during playback.
+    local option = owner.AutonomyOption.AutonomyEnable
+    if first_commit or option.Value or option.bFollowParent or owner:IsAutonomyEnable() then
+        lease.autonomy_disable_attempts = (lease.autonomy_disable_attempts or 0) + 1
+        set_autonomy(owner, false, false)
+    end
     local interaction = assert(owner:GetComponent(inzoi.EB2ComponentType.Interaction), "Missing interaction component")
     clear_task_queue(owner, interaction)
     if wait_for_overlay_cut(owner, lease) then
@@ -357,11 +369,9 @@ local function receive(self, owner, kind, content)
         local lease=self.lease
         if not lease or lease.token~=token or lease.releasing then return end
         local ok,err=pcall(function()
-            if not lease.committed then
-                lease.committed = true
-                set_autonomy(owner, false, false)
-            end
-            advance_prepare(self,owner)
+            local first_commit = not lease.committed
+            lease.committed = true
+            advance_prepare(self,owner,first_commit)
         end)
         if not ok then
             release(self,owner,true)
@@ -449,13 +459,6 @@ local function update(self, owner, dt)
     lease.remaining = lease.remaining - dt
     if lease.overlay_cut_wait then lease.overlay_cut_wait = math.max(0, lease.overlay_cut_wait - dt) end
     if lease.releasing or lease.remaining <= 0 then release(self, owner); return end
-    -- The game can re-enable autonomy even after playback has started.
-    if lease.committed then
-        local option = owner.AutonomyOption.AutonomyEnable
-        if option.Value or option.bFollowParent or owner:IsAutonomyEnable() then
-            set_autonomy(owner, false, false)
-        end
-    end
     advance_prepare(self, owner)
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
     if lease.location then owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false) end
