@@ -122,7 +122,8 @@ game. See [optional animation assets](authoring.md#optional-animation-assets).
 
 Standard API starts require the currently controlled Zoi as initiator and roster
 member. Background and autonomous starts can use any eligible loaded initiator
-in the roster. The add-on supplies the complete roster directly. API participants
+in the roster. The add-on supplies the complete roster directly. A roster of one
+Zoi starts a solo scene, the same way as the menu's Solo start. API participants
 leave gameplay groups through the same native departure helper as manual entry.
 Cancellation does not rebuild those groups.
 
