@@ -15,6 +15,12 @@ packs/add-ons, exact steps, expected behavior and actual behavior. Add focused
 diagnostics or a minimal JSON/Lua example where available. State whether evidence
 comes from an isolated test, native readback or something seen/heard in game.
 
+For in-game issues, zip the `scenezoi_runtime` folder under
+`Documents\inZOI\Mods\InGame\SceneZOI_93C44199` and attach it to your report.
+SceneZOI saves recent scene history, API calls, and mod discovery information
+automatically. Send the existing diagnostics even after restarting the game.
+[Runtime diagnostics reference](docs/addons.md#runtime-diagnostics)
+
 Larger proposals should be discussed before implementation. SceneZOI runs
 concurrent sessions with fixed participants, and add-ons can start autonomous
 scenes. Predetermined watch-only sequences are deferred.

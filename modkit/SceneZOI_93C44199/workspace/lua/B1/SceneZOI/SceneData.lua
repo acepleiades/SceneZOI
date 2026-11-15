@@ -107,7 +107,7 @@ local function contribution(v)
  return result
 end
 function M.compile(documents,check_tracks)
- local result={nodes={},sound_sets={},warnings={}};local links={}
+ local result={nodes={},sound_sets={},warnings={},excluded={}};local links={}
  for _,doc in ipairs(documents)do
   local ok,value=pcall(contribution,doc.data)
   if ok then
@@ -128,6 +128,11 @@ function M.compile(documents,check_tracks)
     local ok,reason=pcall(check_tracks,node)
     if not ok then
      result.nodes[id]=nil
+     local detail=tostring(reason)
+     local path=detail:match('unavailable: (/[A-Za-z0-9_./]+)') or detail:match('duration: (/[A-Za-z0-9_./]+)')
+     local code=detail:find('unavailable:',1,true) and 'asset_unavailable'
+      or detail:find('unexpected duration:',1,true) and 'asset_duration_mismatch' or 'asset_check_failed'
+     result.excluded[id]={code=code,asset=path}
      result.warnings[#result.warnings+1]=id..': '..tostring(reason)
     end
    end
@@ -153,6 +158,7 @@ function M.compile(documents,check_tracks)
  local invalid={}
  for id,node in pairs(result.nodes)do if node.kind=='transition'and not reachable(id)then invalid[#invalid+1]=id end end
  for _,id in ipairs(invalid)do
+  result.excluded[id]={code='transition_destination_invalid',destination=result.nodes[id].destination}
   result.warnings[#result.warnings+1]='Unavailable, incompatible or cyclic transition destination from '..id
   result.nodes[id]=nil
  end

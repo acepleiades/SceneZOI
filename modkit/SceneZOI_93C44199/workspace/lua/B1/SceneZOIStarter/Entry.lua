@@ -1,5 +1,6 @@
 -- Solo entry and the debug picker adapter share the existing session start handshake.
 local Config=require("SceneZOI.Config")
+local Diagnostics=require("SceneZOI.Diagnostics")
 local Protocol=require("SceneZOI.Protocol")
 local Settings=require("SceneZOI.Settings")
 local M={}
@@ -11,7 +12,14 @@ local function cfg(command,key,value)
     if command=="uimod.cfg_load" and not ok then return nil end
     assert(ok,message);return data or message
 end
-local function publish(token,kind,detail,node,bindings) cfg("uimod.cfg_save","selection_state",Protocol.pack(token,kind,detail or "none",node or "none",bindings or "none",pending and pending.furniture or "none")) end
+local function publish(token,kind,detail,node,bindings)
+    local furniture = pending and pending.furniture
+    cfg("uimod.cfg_save","selection_state",Protocol.pack(token,kind,detail or "none",node or "none",bindings or "none",furniture or "none"))
+    if kind=="selected" or kind=="unavailable" or kind=="error" then
+        Diagnostics.record("picker_"..kind, {picker_id=token, scene_id=node, bindings=bindings, furniture_id=furniture,
+            code=kind=="unavailable" and detail or kind=="error" and "selection_error" or "ok"})
+    end
+end
 local function tell(p,kind) require("SceneZOI.SimulationRoute").send(p.actor,"SceneZOIStarter.Select",Protocol.pack(p.token,kind)) end
 local function widget()
     local ui=inzoi.UB1System.Get().ManagerMap:Find(inzoi.EB1ManagerType.UI)
@@ -25,10 +33,9 @@ local function restore_cap(p)
 end
 -- A lone Zoi can start only where a one-role starting scene fits its body and the clicked furniture.
 local function solo_start(actor,furniture,ratings)
-    require("SceneZOI.DataFiles").refresh()
-    local Catalog=require("SceneZOI.Catalog");Catalog.refresh()
     local profile=furniture and require("SceneZOI.Furniture").available(furniture) or nil
-    return require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,{require("SceneZOI.Traits").capture(actor)},nil,profile,ratings)
+    return require("SceneZOI.StartingScenes").choose(require("SceneZOI.Catalog").get_snapshot().nodes,
+        {require("SceneZOI.Traits").capture(actor)},nil,profile,ratings)
 end
 local function caption(p,solo)
     if p.solo_caption==solo then return end
@@ -195,8 +202,7 @@ local function update(dt,actors,busy)
             require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
         end
         if p.result[2]=="selected"then
-            local Files=require("SceneZOI.DataFiles");Files.refresh()
-            local Catalog=require("SceneZOI.Catalog");Catalog.refresh()
+            local Catalog=require("SceneZOI.Catalog")
             local roster,ids,loaded,with_self,held={},{},true,false,false
             local self_id=Protocol.id(p.actor:GetEntityId())
             for id in p.result[3]:gmatch("[^+]+")do

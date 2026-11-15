@@ -10,7 +10,7 @@ local data={metadata={tags={},actions={}},nodes={[node.id]=node}}
 local started,stopped,renewed,count,too_far,limit,API=nil,{},{},0,false,false,nil
 started={}
 package.loaded['SceneZOI.Traits']={capture=function(x)return {id=x.id,body=x.body}end}
-package.loaded['SceneZOI.DataFiles']={refresh=function()end}
+package.loaded['SceneZOI.DataFiles']={refresh=function()error('Add-on requests must reuse the startup declarations')end}
 package.loaded['SceneZOI.Catalog']={refresh=function()return data end,get_snapshot=function()return data end}
 package.loaded['SceneZOI.SceneSearch']={criteria=function(_,v)return v or {}end,allowed=function()return true end,
  find=function(_,_,people)return {{scene_id='test.hub',bindings={first=people[1].id,second=people[2].id}}}end,random=function(rows)return rows[1]end}
@@ -32,7 +32,7 @@ package.loaded['SceneZOI.Runtime']={actors=actors,
 local cfg,responses,events,departs={}, {}, {}, {}
 inzoi={cli={execute=function(line)
  local key=line:match(' key=([%w_]+)')
- if line:find('cfg_save',1,true)then cfg[key]=line:match(' value=(.*)');return true end
+ if line:find('cfg_save',1,true)then cfg[key]=line:match(' value="([^"]*)"$') or line:match(' value=(.*)');return true end
  return true,'',cfg[key]
 end},message={send_to_sim=function(id,kind,content)
  if kind=='SceneZOI.API.Response'then responses[#responses+1]=J.decode(content)
@@ -170,4 +170,81 @@ local _,asked=request('list_sessions',{})
 serial=serial+1
 API.receive(b,J.encode({api_version=1,addon_id='test.addon',client_id='test.client',request_id='r'..serial,operation='get_request_status',arguments={request_id=asked}}))
 assert(responses[#responses].ok,'A request is found whichever Zoi asks')
+-- Read the same plain-text diagnostics that are included in a player's runtime ZIP.
+local Trace=require('SceneZOI.AddonTrace')
+local function read_trace(skip)
+ local keys,rows={},{}
+ for key in pairs(cfg)do if key:match('^api_trace_host_%d+_%d+_%d+$')then keys[#keys+1]=key end end
+ table.sort(keys)
+ local count=0
+ for _,key in ipairs(keys)do
+  for line in cfg[key]:gmatch('[^\n]+')do
+   count=count+1
+   if count>skip then rows[#rows+1]=line end
+  end
+ end
+ return rows,#keys
+end
+local function includes(row,...)
+ for _,field in ipairs({...})do assert(row:find(field,1,true),field)end
+end
+local function trace_sequence(row)return tonumber(row:match(' sequence=(%d+)'))end
+Trace.flush()
+local skip=#read_trace(0)
+assert(request('get_session',{}).ok and #read_trace(skip)==0,'Calls queue writes outside the API handler')
+API.tick(1)
+local traces=read_trace(skip)
+assert(#traces==1)
+includes(traces[1],'addon_id=test.addon','operation=get_session','endpoint_id=1')
+assert(request('get_version',{},'other.addon').ok)
+local reply=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',
+ context={note='private-note'},end_policy={type='duration',clock='game',seconds=2700}})
+assert(reply.ok and reply.result.valid)
+assert(not request('get_session',{session_id='missing'}).ok)
+local retry={api_version=1,addon_id='test.addon',client_id='test.client',request_id='trace.retry',operation='get_version'}
+local raw=J.encode(retry)
+API.receive(a,raw);API.receive(a,raw)
+retry.operation='get_session';API.receive(a,J.encode(retry))
+API.receive(a,'invalid-private-payload')
+API.receive(a,J.encode({addon_id='broken.addon',operation='get_version',private='private-note'}))
+local Events=require('SceneZOI.Events')
+Events.emit('playback_speed_changed',{id='test.session',addon_id='test.addon',addon_client_id='test.client',
+ request_id=reply.request_id,speed_index=3,effective_speed=1.5,plan={stage=2,auto_mode=true},
+ addon_context={note='private-note'}})
+Events.flush()
+local native_execute=inzoi.cli.execute
+inzoi.cli.execute=function(line)
+ if line:find(' key=api_trace_',1,true)then return false end
+ return native_execute(line)
+end
+Trace.flush()
+assert(#read_trace(skip)==1,'A storage failure leaves previous trace pages intact')
+inzoi.cli.execute=native_execute
+Trace.flush()
+traces=read_trace(skip)
+assert(#traces==9,'Pending calls survive a storage failure')
+includes(traces[2],'addon_id=other.addon')
+assert(trace_sequence(traces[2])==trace_sequence(traces[1])+1)
+assert(traces[2]:match('timestamp=%d+') and traces[2]:match('time_utc=[^ ]+Z'))
+includes(traces[3],'request_id='..reply.request_id,'valid=true','dispatched=true','seconds=2700')
+assert(not traces[3]:find('private-note',1,true))
+includes(traces[4],'code=session_not_found')
+assert(not traces[4]:find('message=',1,true))
+includes(traces[5],'replayed=false','request_id=trace.retry')
+includes(traces[6],'replayed=true','request_id=trace.retry')
+includes(traces[7],'code=request_id_reused','replayed=false')
+includes(traces[8],'kind=rejected','code=invalid_json','payload_bytes=23')
+includes(traces[9],'code=invalid_envelope','addon_id=broken.addon')
+assert(not traces[9]:find('private-note',1,true))
+require('SceneZOI.Diagnostics').flush()
+includes(cfg.scene_history,'event=playback_speed_changed','session_id=test.session','stage=2','effective_speed=1.5')
+assert(not cfg.scene_history:find('private-note',1,true))
+for _=1,302 do assert(request('get_session',{},'other.addon').ok)end
+Trace.flush()
+local pages
+traces,pages=read_trace(skip)
+assert(pages>1 and #traces==311)
+includes(traces[311],'addon_id=other.addon','operation=get_session')
+for index=2,#traces do assert(trace_sequence(traces[index])==trace_sequence(traces[index-1])+1)end
+
 print('Background API passed: opt-in flag, old contract unchanged, reservations, departures, household detection, placement and lifetime validation, distance, cap, timeouts and addressing by id.')

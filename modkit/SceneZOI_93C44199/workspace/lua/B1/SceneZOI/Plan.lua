@@ -407,6 +407,10 @@ end
 
 local function clock_seconds(plan,clock)return clock=='real'and plan.real_used or plan.game_used end
 
+local function waiting(plan,reason)
+ plan.wait_reason=reason
+end
+
 -- A stage is earned by its loop actually playing. A later visit to the same stage earns nothing.
 local function credit_stage(session,plan)
  plan.stage_played=true
@@ -462,8 +466,9 @@ end
 function M.tick(session,dt,scale)
  local plan=session.plan
  if not plan or plan.state=='finished'or not plan.auto_mode or session.preparing or session.stopping or scale<=0 or dt<=0 then return nil end
+ plan.wait_reason=nil
  plan.real_used=plan.real_used+dt;plan.game_used=plan.game_used+dt*scale
- if session.node.kind=='transition'then return nil end
+ if session.node.kind=='transition'then return waiting(plan,'transition_playing')end
  plan.dwell=plan.dwell+dt
  local earned=credit_stage(session,plan)
  if earned then plan.stall_age=0 end
@@ -477,27 +482,27 @@ function M.tick(session,dt,scale)
  local done=goals_done and requirements_done
  local has_targets=#plan.goals>0 or #plan.required_stages>0
  if done and has_targets then
-  if timed then return nil end
+  if timed then return waiting(plan,'duration_remaining')end
   if policy.type=='goals'then
    local stay=plan.post_completion_stay_seconds or 0
    if not plan.goals_reached_at then plan.goals_reached_at=plan.real_used end
    -- The stay and authored effects can run together. Both must finish before Exit.
    if settled(session) and plan.real_used-plan.goals_reached_at>=stay then return finish(plan,'ok','goals_met')end
    plan.state='resolving'
-   return nil
+   return waiting(plan,'completion_response_or_stay')
   end
-  if not settled(session)then plan.state='resolving';return nil end
-  if plan.state~='waiting'then plan.state='waiting';return {event='plan_goals_met'}end
+  if not settled(session)then plan.state='resolving';return waiting(plan,'completion_response')end
+  if plan.state~='waiting'then plan.state='waiting';return {event='plan_goals_met',reason='goals_satisfied'}end
   plan.wait_age=plan.wait_age+dt
   if plan.wait_age>=C.plan_wait_seconds then return finish(plan,'owner_expired','wait_expired')end
-  return nil
+  return waiting(plan,'waiting_for_addon')
  end
  if not timed then
   for _,requirement in ipairs(plan.required_stages)do
    if not requirement.met and requirement.stage and requirement.stage<plan.stage then return finish(plan,'required_stage_unavailable')end
   end
  end
- if not settled(session)then return nil end
+ if not settled(session)then return waiting(plan,'completion_response')end
  local rested=plan.dwell>=C.plan_min_dwell_seconds
  -- One decision at a time: a route through a hub reaches its destination before anything else is decided.
  if plan.heading then
@@ -505,8 +510,8 @@ function M.tick(session,dt,scale)
   else
    local edge=edge_toward(session,plan.heading)
    if edge then
-    if plan.stage_played and rested then plan.dwell=0;return {navigate=edge}end
-    return nil
+    if plan.stage_played and rested then plan.dwell=0;return {navigate=edge,reason='follow_planned_route'}end
+    return waiting(plan,'route_waiting_for_loop')
    end
    plan.heading=nil
   end
@@ -515,10 +520,11 @@ function M.tick(session,dt,scale)
   plan.stage,plan.stage_played=plan.stage+1,false
   local edge,target=M.route(session,plan)
   plan.heading=target
-  if edge and rested then plan.dwell=0;return {event='plan_stage_changed',navigate=edge}end
-  return {event='plan_stage_changed'}
+  local reason=#plan.goals>0 and 'goal_progress_threshold' or 'duration_threshold'
+  if edge and rested then plan.dwell=0;return {event='plan_stage_changed',navigate=edge,reason=reason}end
+  return {event='plan_stage_changed',reason=reason}
  end
- if not has_targets then return nil end
+ if not has_targets then return waiting(plan,timed and 'duration_or_stage_remaining' or 'waiting_for_addon')end
  local moved=false
  each_open(session,plan,function(goal,progress)
   local key=goal.participant_id..'|'..goal.task_id
@@ -526,15 +532,19 @@ function M.tick(session,dt,scale)
  end)
  plan.stall_age=moved and 0 or plan.stall_age+dt
  if plan.stall_age>=C.plan_no_progress_seconds and not timed then return finish(plan,'no_progress')end
- if not rested then return nil end
+ if not rested then return waiting(plan,'minimum_loop_time')end
  local stuck=not advancing(session,plan,session.node)
- if not stuck and not wants_move(session,plan,session.node)then return nil end
+ if not stuck and not wants_move(session,plan,session.node)then return waiting(plan,'goal_progress')end
  local edge,target,value=M.route(session,plan)
  local here=node_value(session,plan,session.node)
  plan.dwell=0
- if edge and(stuck or not here or value>here)then plan.heading=target;return {navigate=edge}end
+ if edge and(stuck or not here or value>here)then
+  plan.heading=target;return {navigate=edge,reason=stuck and 'goal_cannot_progress_here' or 'better_goal_route'}
+ end
  -- A timed plan runs its time and reports what it did not reach.
- if not stuck or timed or held(session,plan,session.node)then return nil end
+ if not stuck then return waiting(plan,'goal_progress')end
+ if timed then return waiting(plan,'duration_remaining_without_goal_route')end
+ if held(session,plan,session.node)then return waiting(plan,'task_rate_or_completion_on_hold')end
  if not goals_done then return finish(plan,'goal_unreachable')end
  return finish(plan,'required_stage_unavailable')
 end

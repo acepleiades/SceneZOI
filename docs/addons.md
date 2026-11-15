@@ -376,6 +376,49 @@ Stable error codes include `unsupported_api_version`, `unknown_operation`,
 not branching. Starting/playing does not imply consent: the integration owns its
 gameplay decision while framework technical checks remain mandatory.
 
+## Runtime diagnostics
+
+Ask players for their existing `scenezoi_runtime` ZIP and a description of
+what happened. The files survive a restart and can be read directly after
+extraction.
+
+- `scene_history.cfg` retains the most recent 256 entries, up to 128 KiB.
+  It tracks startup and unload, manual and add-on scene lifecycles, participant
+  acknowledgements, furniture reservations, Auto-mode decisions, and cleanup
+  and save recovery outcomes.
+- `mod_inventory.cfg` lists the installed mod IDs when the game's Mod
+  Management list is available. It also reports mounted UI mods, disabled
+  UI-only mods, loaded packs, declared and playable scene counts, sampled scene
+  exclusion reasons, and add-on IDs seen by the API. When the full installed
+  list is unavailable, a missing content namespace can mean that the pack is
+  absent, disabled, or failed to load.
+- `environment_history.cfg` keeps the last 16 inventory snapshots, up to
+  128 KiB. Match the `environment_id` on a failure to the inventory from when it
+  happened. For early startup events, match the `run_id` and timestamp.
+- `api_trace_*.cfg` preserves every incoming add-on API call, including
+  successful polls, lease renewals, retries, and rejected messages.
+
+The diagnostics folder is
+`Documents\inZOI\Mods\InGame\SceneZOI_93C44199\scenezoi_runtime`.
+SceneZOI saves queued entries about once per second and flushes them on normal
+unload. A crash can lose entries still in memory.
+
+Scene history, environment history, and API traces use one plain-text record
+per line. The current mod inventory uses one field per line.
+
+API trace entries include a timestamp and sequence number. Call entries record
+the add-on ID, client ID, request ID, host instance, receiving Zoi's game ID,
+operation, selected arguments, and reply status. `replayed` marks a cached
+retry. `dispatched` records whether the host's reply dispatch succeeded locally.
+Rejected messages include a reason and the decoded IDs when available.
+
+Start with the first refusal or failure in the scene history. Use the run ID,
+add-on ID, and request ID to find the originating call. Follow the session ID
+through cleanup and any later recovery. The `record_index` orders records from
+the same run across files. API entries include selected fields and samples of
+large result lists. The files can contain participant, furniture, and scene
+IDs. Arbitrary add-on context and raw rejected payloads are omitted.
+
 ## Compatibility and examples
 
 API version 1 is the public native-message contract. Internal Lua module paths,

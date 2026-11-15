@@ -6,6 +6,7 @@ local Session = require("SceneZOI.Session")
 local Playback = require("SceneZOI.Playback")
 local Clock = require("SceneZOI.Clock")
 local Events = require("SceneZOI.Events")
+local Diagnostics = require("SceneZOI.Diagnostics")
 local Catalog = require("SceneZOI.Catalog")
 local Appearance = require("SceneZOI.Appearance")
 local OutfitControl = require("SceneZOI.OutfitControl")
@@ -87,11 +88,11 @@ local function tell(participant, kind, content)
     require("SceneZOI.SimulationRoute").send(participant.actor, kind, content)
 end
 
-local function notify(current, name, code)
+local function notify(current, name, code, source)
     current.event_index = (current.event_index or 0) + 1
     local snapshot = Session.snapshot(current)
     snapshot.event_index = current.event_index
-    Events.emit(name, snapshot, code)
+    Events.emit(name, snapshot, code, {client = current.client, sequence = current.sequence, source = source})
 end
 
 -- Only the session the controls are bound to writes the controls' mailboxes.
@@ -125,14 +126,14 @@ local function publish_playback(current)
     else M.diagnostic("Playback status will retry: " .. tostring(message)) end
 end
 
-local function select_playback_speed(current, index)
-    if current.clock:select(index) then notify(current, "playback_speed_changed") end
+local function select_playback_speed(current, index, source)
+    if current.clock:select(index) then notify(current, "playback_speed_changed", nil, source) end
     publish_playback(current)
 end
 
 local function apply_plan_speed(current)
     local index = Plan.speed_index(current)
-    if index and index ~= current.clock.index then select_playback_speed(current, index) end
+    if index and index ~= current.clock.index then select_playback_speed(current, index, "auto_plan") end
 end
 
 local function playback_request(raw)
@@ -145,7 +146,8 @@ local function playback_request(raw)
         not Config.playback_speeds[index] then return end
     if count > current.last_speed_command then
         current.last_speed_command = count
-        if not Plan.speed_index(current) then select_playback_speed(current, index); return end
+        if not Plan.speed_index(current) then select_playback_speed(current, index, "player"); return end
+        Diagnostics.record("playback_speed_refused", {session_id = current.token, code = "speed_locked", requested_index = index})
     end
     publish_playback(current)
 end
@@ -469,6 +471,10 @@ end
 function M.furniture_reply(actor,fields)
     local c=Sessions.get(fields[1])
     if not c or not c.furniture or fields[2]~=c.furniture.id or actor~=c.furniture_owner.actor then return end
+    if (not c.furniture_ready or fields[3]~='held') and not (c.stopping and c.furniture_released) then
+        Diagnostics.record('furniture_reply', {session_id=c.token, furniture_id=fields[2], owner_id=c.furniture_owner.id,
+            code=fields[3], reason=fields[4], component=fields[5], slot=fields[6], stopping=c.stopping==true})
+    end
     if c.stopping then if fields[3]=='released'then c.furniture_released=true end;return end
     if fields[3]~='held'then stop_session(c,'furniture_unavailable');return end
     if not c.furniture_ready then
@@ -643,13 +649,23 @@ function M.reply(actor, content)
     end
     if kind == "outfit" then OutfitControl.receive(current, actor, fields); return end
     if current.outfit_change and kind == "ready" then return end
-    if kind == "rejected" then stop_session(current, detail or "prepare_error"); return end
+    if kind == "rejected" then
+        Diagnostics.record("participant_rejected", {session_id=current.token, scene_id=current.node.id,
+            revision=current.revision, participant_id=Protocol.id(actor:GetEntityId()), code=detail or "prepare_error",
+            simulation_diagnostic=fields[5]})
+        stop_session(current, detail or "prepare_error"); return
+    end
     if kind == "released" then stop_session(current, detail == "ok" and "interrupted" or detail); return end
     if kind ~= "ready" or not current.preparing or tonumber(fields[4]) ~= current.revision then return end
     for _, participant in ipairs(current.participants) do
         if participant.actor == actor then
             local body, control = detail:match("^(%a+):(%a+)$")
             assert(body and (control=="controlled" or control=="npc"), "Invalid participant identity reply")
+            if not participant.node_ready then
+                Diagnostics.record("participant_ready", {session_id=current.token, scene_id=current.node.id,
+                    revision=current.revision, participant_id=participant.id, role=participant.role,
+                    body=body, control=control, elapsed=current.age})
+            end
             participant.body, participant.control, participant.node_ready = body, control, true
         end
     end
@@ -738,11 +754,15 @@ local function navigate(raw)
     current.last_navigation = count
     if revision ~= current.revision then
         current.navigation_code = "stale_navigation"
+        Diagnostics.record("navigation_refused", {session_id=current.token, code=current.navigation_code,
+            edge_id=fields[5], requested_revision=revision, revision=current.revision})
         publish_node(current, current.navigation_code)
         return
     end
     if current.node.kind == "transition" or Plan.locked(current) then
         current.navigation_code = "navigation_locked"
+        Diagnostics.record("navigation_refused", {session_id=current.token, code=current.navigation_code,
+            edge_id=fields[5], scene_id=current.node.id, auto_mode=Plan.locked(current)})
         publish_node(current, current.navigation_code)
         return
     end
@@ -755,6 +775,8 @@ local function navigate(raw)
     end)
     if not ok then
         current.navigation_code = "navigation_error"
+        Diagnostics.record("navigation_refused", {session_id=current.token, code=current.navigation_code,
+            edge_id=fields[5], scene_id=current.node.id, detail=Diagnostics.detail(node)})
         M.diagnostic("Navigation rejected: " .. tostring(node))
         publish_node(current, current.navigation_code)
         return
@@ -893,6 +915,7 @@ local function poll()
     if focused then
         if client ~= focused.client or sequence ~= focused.sequence then
             if action == "start" then
+                Diagnostics.record("start_rejected", {client = client, sequence = sequence, scene_id = fields[5], code = "busy"})
                 remember(client,sequence,"error","busy",nil,true)
                 pcall(require('SceneZOI.Localization').toast,'A SceneZOI scene is already in progress. End it before starting another.')
             end
@@ -902,15 +925,28 @@ local function poll()
         return
     end
     if action == "start" then
-        if Autosave.restoring()then remember(client,sequence,"error","restore_pending");return end
+        local request = {client = client, sequence = sequence, initiator_id = fields[4], scene_id = fields[5],
+            bindings = fields[6], furniture_id = fields[7], api_start_id = fields[8],
+            initiator_registered = fields[4] ~= nil and M.actors[fields[4]] ~= nil}
+        if Autosave.restoring() then
+            request.code = "restore_pending"
+            Diagnostics.record("start_rejected", request)
+            remember(client,sequence,"error","restore_pending");return
+        end
         if raw == last_start_packet then return end -- The mailbox keeps it after its scene has gone.
         last_start_packet = raw
+        Diagnostics.record("start_requested", request)
         local ok, err = pcall(begin, fields)
         if not ok then
             Addons.fail_start(fields[8],err)
             M.diagnostic("Entry failed: " .. tostring(err))
+            request.code = tostring(err):find("already in a scene", 1, true) and "busy" or "entry_error"
+            request.detail = Diagnostics.detail(err)
+            Diagnostics.record("start_rejected", request)
             if Sessions.focused() then M.stop("entry_error")
-            else remember(client, sequence, "error", tostring(err):find("already in a scene", 1, true) and "busy" or "entry_error") end
+            else
+                remember(client, sequence, "error", request.code)
+            end
         end
     elseif action == "exit" or action == "save" then
         -- An Exit arriving before Start also retires this request ID.
@@ -1033,7 +1069,11 @@ end
 -- Carries out what a plan asked for. Every automatic move goes through the same validated handoff.
 local function apply_plan(current, action)
     if action.event == "plan_stage_changed" then apply_plan_speed(current) end
-    if action.event then notify(current, action.event); publish_plan(current) end
+    if action.event then notify(current, action.event, nil, action.reason); publish_plan(current) end
+    if action.navigate then
+        Diagnostics.record("plan_navigation", {session_id = current.token, scene_id = current.node.id,
+            edge_id = action.navigate, destination = current.plan.heading, reason = action.reason, stage = current.plan.stage})
+    end
     if action.stop then stop_session(current, action.stop); return end
     if not action.navigate then return end
     local ok, node, assets, duration, loaded = pcall(function()
@@ -1064,6 +1104,8 @@ local function advance(current, dt)
     if not current.save_committed and Save.ready(current)then
         current.save_committed=true
         if current.furniture and current.save_ready then
+            Diagnostics.record("furniture_acquire_requested", {session_id = current.token, furniture_id = current.furniture.id,
+                owner_id = current.furniture_owner.id})
             tell(current.furniture_owner,'SceneZOI.Furniture',Protocol.pack(current.token,current.furniture.id,'acquire',Protocol.encode(Json.encode(current.furniture.profile))))
         else for _,p in ipairs(current.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(current.token))end end
     end
@@ -1089,6 +1131,18 @@ local function advance(current, dt)
         local operation = change and (" outfit=" .. change.participant.id .. ":" .. change.item .. ":enabled=" .. change.enabled ..
             ":count=" .. change.counter .. ":ack=" .. tostring(change.acknowledged)) or ""
         local ok, status = pcall(current.subsystems.status, current.subsystems)
+        local waiting = Json.array({})
+        for _, participant in ipairs(current.participants) do
+            waiting[#waiting + 1] = {id = participant.id, role = participant.role, acknowledged = participant.node_ready == true,
+                snapshot_received = current.save_records and current.save_records[participant.id] ~= nil or false,
+                registered = M.actors[participant.id] == participant.actor}
+        end
+        Diagnostics.record("preparation_timeout", {session_id = current.token, scene_id = current.node.id,
+            revision = current.revision, code = code, elapsed = current.age, participants_ready = current.participants_ready == true,
+            stage = current.preparation_stage, participants = waiting, placement_pending = current.placement_pending ~= nil,
+            furniture_id = current.furniture and current.furniture.id, furniture_ready = current.furniture_ready == true,
+            save_ready = current.save_ready == true, journal_revision = current.journal_revision,
+            appearance = Appearance.status(current), subsystems = ok and status or nil})
         M.diagnostic("Preparation failed: node=" .. current.node.id .. " stage=" .. code .. operation
             .. " " .. Appearance.status(current) .. (ok and " " .. status or " subsystem_status_unavailable"))
         stop_session(current, code)
@@ -1096,11 +1150,6 @@ local function advance(current, dt)
     end
     if current.heartbeat >= Config.heartbeat_interval then
         current.heartbeat = 0
-        if current.preparing then
-            M.diagnostic("Preparing " .. current.token .. " node=" .. current.node.id .. " " .. Appearance.status(current) .. " " .. current.subsystems:status())
-        elseif has_panel(current) then
-            M.diagnostic("Playing " .. current.token .. " " .. current.subsystems:status())
-        end
         if current.furniture and current.save_ready then
             tell(current.furniture_owner,'SceneZOI.Furniture',Protocol.pack(current.token,current.furniture.id,
                 current.furniture_ready and 'heartbeat'or'acquire',Protocol.encode(Json.encode(current.furniture.profile))))
@@ -1168,6 +1217,15 @@ local function advance(current, dt)
             if not finish_transition(current) then return end
         end
         local action = Plan.tick(current, dt, game_scale)
+        local plan = current.plan
+        if plan and plan.wait_reason ~= plan.logged_wait_reason then
+            plan.logged_wait_reason = plan.wait_reason
+            if plan.wait_reason then
+                Diagnostics.record("plan_wait_changed", {session_id = current.token, scene_id = current.node.id,
+                    reason = plan.wait_reason, stage = plan.stage, auto_mode = plan.auto_mode, speed_index = current.clock.index,
+                    end_policy = plan.end_policy, real_seconds = plan.real_used, game_seconds = plan.game_used})
+            end
+        end
         if action then apply_plan(current, action) end
     end
     if not has_panel(current) then return end
@@ -1202,6 +1260,8 @@ function M.tick(dt)
         local ok, err = pcall(advance, current, step)
         if not ok then
             M.diagnostic("Runtime update failed: " .. tostring(err))
+            Diagnostics.record("runtime_update_failed", {session_id=current.token, scene_id=current.node.id,
+                revision=current.revision, detail=Diagnostics.detail(err)})
             local restored, restore_err = pcall(stop_session, current, "runtime_error")
             if not restored then
                 M.diagnostic("Emergency cleanup failed: " .. tostring(restore_err))
@@ -1277,7 +1337,7 @@ function M.release_integration(key)
 end
 function M.api_speed(current,index)
     assert(not Plan.speed_index(current), "speed_locked")
-    select_playback_speed(current, index)
+    select_playback_speed(current, index, "api")
 end
 function M.api_navigation(current)
     local rows=Json.array({})

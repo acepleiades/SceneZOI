@@ -4,7 +4,9 @@ SceneZOI is a reusable animation framework. HZoi is an optional assets/declarati
 
 ## Data and ownership
 
-Enabled native packages contribute inert, independently owned JSON through Text_UI patches, read via retail Text. Source builds collect one scene per file. No author whitelist, content callbacks or compiled runtime scene catalog is required. SceneZOI captures enabled libraries/graphs/profiles for each session; idle refresh does not mutate an active session's contract.
+Enabled native packages contribute inert, independently owned JSON through Text_UI patches, read via retail Text. Source builds collect one scene per file. No author whitelist, content callbacks or compiled runtime scene catalog is required.
+
+SceneZOI discovers the mounted packs when its client Lua runtime starts. The manual picker and add-on API share that catalog, and each session captures its libraries, graph, and profiles. Restart inZOI after installing or changing content packs so the game mounts the new set and SceneZOI discovers it on startup.
 
 Runtime coordinates a fixed roster with explicit named roles. Session owns original appearance/restoration snapshots, participant leases, placement/furniture context and selected speed. Playback samples body and attachment tracks from one shared clock on the game's existing animation instances. Optional engines own their resources independently and retain partial cleanup work for retry. Node preparation holds the outgoing pose until the arriving node is ready.
 

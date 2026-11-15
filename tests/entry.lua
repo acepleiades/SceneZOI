@@ -66,7 +66,7 @@ debug_start=false
 local possessed='1'
 package.loaded['SceneZOI.Controller']={controlled_id=function()return possessed end}
 package.loaded['SceneZOI.Localization']={refresh=function()end,toast=function()end}
-package.loaded['SceneZOI.DataFiles']={refresh=function()end}
+package.loaded['SceneZOI.DataFiles']={refresh=function()error('The debug picker must reuse the startup declarations')end}
 package.loaded['SceneZOI.Catalog']={refresh=function()end,get_snapshot=function()return {nodes={}}end}
 package.loaded['SceneZOI.Traits']={capture=function()return {id='1'}end}
 local owner,eligible=nil,true

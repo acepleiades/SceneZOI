@@ -1,5 +1,6 @@
 -- Runtime observers receive plain snapshots, never mutable session/native objects.
 local M = {}
+local Diagnostics = require("SceneZOI.Diagnostics")
 local listeners, next_handle, history, pending = {}, 0, {}, {}
 
 local function copy(value)
@@ -28,12 +29,13 @@ end
 function M.unsubscribe(handle) listeners[handle] = nil end
 function M.history() return copy(history) end
 
-function M.emit(name, snapshot, code)
+function M.emit(name, snapshot, code, diagnostic_context)
     local event = copy(snapshot)
     event.name, event.code = name, code or "ok"
     history[#history + 1] = event
     if #history > 32 then table.remove(history, 1) end
     pending[#pending + 1] = event
+    pcall(Diagnostics.session, event, name, code, diagnostic_context)
 end
 
 -- Dispatch after the runtime update, so observers cannot interrupt half-prepared state.

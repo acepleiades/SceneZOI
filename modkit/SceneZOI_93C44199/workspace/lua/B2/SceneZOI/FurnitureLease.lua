@@ -6,7 +6,13 @@ local function id(v)return tostring(v.Value)end
 local function entity(v)local e=inzoi.FB1EntityId();e.Value=tonumber(v);return e end
 local function object(v)return inzoi.getB2Manager('FB2EntityManager'):FindGameObject(entity(v))end
 local function slot(o)return o:GetComponent(inzoi.EB2ComponentType.Slot)end
-local function reply(owner,token,bed,code)inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.FurnitureReply',P.pack(token,bed,code))end
+local function reply(owner,token,bed,code,reason,lease)
+ local component=lease and lease.component
+ local name=lease and lease.slot
+ local packet=reason and P.pack(token,bed,code,reason,component and component~='' and component or 'none',
+  name and name~='' and name or 'none')or P.pack(token,bed,code)
+ inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.FurnitureReply',packet)
+end
 function M.blocked(component)local l=M.leases[id(component:GetOwnerEntityId())];return l~=nil and not l.acquiring end
 local function clear_restriction(bed,owner)
  local o=object(bed)
@@ -25,23 +31,33 @@ function M.message(owner,content)
  local token,bed,action=f[1],f[2],f[3];local o=object(bed);local l=M.leases[bed];local who=id(owner:GetEntityId())
  if token=='status'then reply(owner,token,bed,o and not o:IsInUse()and not l and 'free'or'busy');return end
  if action=='release'then
+  local reason='already_released'
   if l and l.token==token and l.owner==who then
    if not M.release(bed,l)then return end
+   reason='native_restriction_cleared'
   elseif not l and not M.retired[token]and f[4]=='held'then
    -- B2 may have reloaded since B1 received the acquisition acknowledgement.
    if not clear_restriction(bed,owner:GetEntityId())then return end
+   reason='cleared_after_lease_lost'
+  elseif l then
+   reason='different_lease_present'
   end
-  M.retired[token]=os.time();reply(owner,token,bed,'released');return
+  M.retired[token]=os.time();reply(owner,token,bed,'released',reason,l);return
  end
  if action=='heartbeat'then
   if l and l.token==token and l.owner==who and not l.releasing then
    l.time=os.time();reply(owner,token,bed,'held')
-  else reply(owner,token,bed,'missing')end
+  else reply(owner,token,bed,'missing','lease_missing')end
   return
  end
  if action~='acquire'then return end
- if l then reply(owner,token,bed,l.token==token and l.owner==who and 'held'or'busy');return end
- if M.retired[token]or not M.hooks or not o or o:IsInUse()then reply(owner,token,bed,'busy');return end
+ if l then
+  local same=l.token==token and l.owner==who
+  reply(owner,token,bed,same and 'held'or'busy',same and 'lease_already_held' or 'held_by_other_scene',l);return
+ end
+ local unavailable=M.retired[token]and 'retired_session' or not M.hooks and 'guards_unavailable'
+  or not o and 'furniture_unloaded' or o:IsInUse() and 'native_occupied'
+ if unavailable then reply(owner,token,bed,'busy',unavailable);return end
  local profile=require('SceneZOI.FurnitureData').profile(Json.decode(P.decode(f[4])))
  local matched=false;for _,name in ipairs(profile.objects)do if name==tostring(o.ObjectTableId)then matched=true end end
  assert(matched,'Furniture profile does not match native object')
@@ -57,14 +73,19 @@ function M.message(owner,content)
    param.OccupyEntityId=owner:GetEntityId();param.OccupyingReason=inzoi.EB1SlotOccupyingReason.Restricted
    param.bCheckCanMove=false;param.bCheckOwnershipSlot=false
    tentative.acquired=true
-   if s:TryOccupySlot(inzoi.EB1SlotType.Interaction,param)then acquired=true;break end
+   if s:TryOccupySlot(inzoi.EB1SlotType.Interaction,param)then
+    tentative.component=tostring(state.ComponentName):gsub('[^%w_.:+%-]','_')
+    tentative.slot=tostring(state.SlotName):gsub('[^%w_.:+%-]','_')
+    acquired=true;break
+   end
    tentative.acquired=false
   end
  end
- if not acquired then M.leases[bed]=nil;reply(owner,token,bed,'busy');return end
+ if not acquired then M.leases[bed]=nil;reply(owner,token,bed,'busy','no_slot_available');return end
  -- Once a native slot is held, guards exclude other slots across this whole surface.
- M.leases[bed]={token=token,owner=who,time=os.time(),acquired=true}
- reply(owner,token,bed,'held')
+ tentative.acquiring=nil;tentative.time=os.time()
+ M.leases[bed]=tentative
+ reply(owner,token,bed,'held','native_slot_reserved',tentative)
 end
 function M.tick()
  for bed,l in pairs(M.leases)do if l.releasing or os.time()-l.time>8 or not object(bed)then

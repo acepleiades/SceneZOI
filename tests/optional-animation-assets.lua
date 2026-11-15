@@ -123,4 +123,7 @@ check(false)
 assets[named_mesh] = true
 assets[named_track] = nil
 check(false)
+assets[named_track] = 10
+assert(not Catalog.get_snapshot().nodes[target.id], 'Ongoing requests use the cached catalog')
+assert(Catalog.refresh(true).nodes[target.id], 'Startup rechecks mounted assets even when declarations are unchanged')
 print('Optional tracks passed: no tracks, partial tracks, all tracks, invalid duration, attachment assets and catalog graph pruning.')

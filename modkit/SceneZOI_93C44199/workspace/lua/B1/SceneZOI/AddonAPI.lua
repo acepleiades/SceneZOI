@@ -9,6 +9,8 @@ local Events=require('SceneZOI.Events')
 local Services=require('SceneZOI.AddonServices')
 local Control=require('SceneZOI.AddonControl')
 local Plan=require('SceneZOI.Plan')
+local Trace=require('SceneZOI.AddonTrace')
+local Diagnostics=require('SceneZOI.Diagnostics')
 local M={version=1}
 local cursor=0
 local cache,order,subscribers,pending,serial,handle,instance={},{},{},nil,0,nil,nil
@@ -58,7 +60,7 @@ function M.in_scope(sub,event)
  if sub.scope=='owned'then return false end
  return event.focused~=false
 end
-local function key(req,actor)return req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())..'|'..req.request_id end
+local function key(req,endpoint_id)return req.addon_id..'|'..req.client_id..'|'..endpoint_id..'|'..req.request_id end
 -- An add-on that reconnects through another Zoi can still ask about its own request.
 local latest={}
 local function request_key(req)return req.addon_id..'|'..req.client_id..'|'..req.request_id end
@@ -67,6 +69,8 @@ local function emit_failure(row,code,message)
  local event={name='session_start_failed',request_id=row.req.request_id,addon_id=row.req.addon_id,code=code,message=message}
  local endpoint=alive(row.actor)and row.actor or stable_endpoint()or row.actor
  deliver(endpoint,'SceneZOI.API.Event',{api_version=1,instance_id=instance,addon_id=row.req.addon_id,client_id=row.req.client_id,event=event})
+ Diagnostics.record(event.name,{request_id=event.request_id,addon_id=event.addon_id,code=code,
+  scene_id=row.entry.node,furniture_id=row.entry.furniture,bindings=row.entry.bindings})
 end
 function M.fail_start(token,reason)
  require('SceneZOI.SimulationRoute').discard('SceneZOI.API.Depart',P.pack(token))
@@ -119,18 +123,6 @@ local function roster(args)
   rows[#rows+1]=require('SceneZOI.Traits').capture(assert(runtime().actors[id],'Participant is not loaded'))
  end
  return rows
-end
-local refreshed_at=nil
-local function refresh()
- -- Every running scene keeps the catalog it started with. Main rescans the packs every 2 s while nothing runs, so a
- -- request re-reads the whole declaration table (about 45 ms) at most once per REFRESH_SEC, not once per request.
- local now=os.time()
- if require('SceneZOI.Sessions').count()==0 and not pending and next(background_starts)==nil
-  and (not refreshed_at or now-refreshed_at>=5 or not Catalog.get_snapshot()) then
-  refreshed_at=now
-  require('SceneZOI.DataFiles').refresh();Catalog.refresh()
- end
- return Catalog.get_snapshot()
 end
 local function profile(args)
  if args.furniture_id then
@@ -225,7 +217,7 @@ local function execute(actor,req,row)
   V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().renew_session(args.session_id);return {renewed=true}
  end
  if op=='get_request_status'then
-  V.fields(args,{'request_id'},{'request_id'});local k=V.copy(req);k.request_id=args.request_id;local r=assert(cache[key(k,actor)]or latest[request_key(k)],'request_not_found');return V.copy(r.status or {phase='completed',response=r.response})
+  V.fields(args,{'request_id'},{'request_id'});local k=V.copy(req);k.request_id=args.request_id;local r=assert(cache[key(k,P.id(actor:GetEntityId()))]or latest[request_key(k)],'request_not_found');return V.copy(r.status or {phase='completed',response=r.response})
  end
  if op=='stop_session'then V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().api_session(args.session_id).stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason='creator_stop'};runtime().stop('ok',args.session_id);return {accepted=true}end
  if op=='navigate_to_scene'then
@@ -241,7 +233,7 @@ local function execute(actor,req,row)
   assert(target,'request_not_found')
   M.fail_start(target.token,'Cancelled by its add-on');return {accepted=true}
  end
- local data=refresh()
+ local data=Catalog.get_snapshot()
  if op=='find_furniture'then
   V.fields(args,{'origin_id','radius_m','scene_id','include_unavailable'},{'origin_id'})
   return require('SceneZOI.Furniture').find(args,runtime().actors,data)
@@ -264,17 +256,25 @@ local function execute(actor,req,row)
  error('unknown_operation')
 end
 function M.receive(actor,content)
- local ok,req=pcall(J.decode,content,65536);if not ok or type(req)~='table'then return end
+ local ok,req=pcall(J.decode,content,65536)
+ if not ok then Trace.rejected(actor,nil,instance,'invalid_json',content);return end
  local valid=pcall(function()
   V.fields(req,{'api_version','addon_id','client_id','request_id','operation','arguments','expected_instance_id'},{'api_version','addon_id','client_id','request_id','operation'})
   for _,k in ipairs({'addon_id','client_id','request_id','operation'})do V.id(req[k])end
   assert(V.object(req.arguments or {}),'Invalid arguments')
  end)
- if not valid then return end
- local k=key(req,actor);local old=cache[k]
- if old and old.raw==content then deliver(actor,'SceneZOI.API.Response',old.response);return end
+ if not valid then Trace.rejected(actor,req,instance,'invalid_envelope',content);return end
+ Diagnostics.note_addon(req.addon_id)
+ local endpoint_id=P.id(actor:GetEntityId())
+ local k=key(req,endpoint_id);local old=cache[k]
+ if old and old.raw==content then
+  Trace.response(req,old.response,endpoint_id,deliver(actor,'SceneZOI.API.Response',old.response),true);return
+ end
  local response={api_version=1,instance_id=instance,addon_id=req.addon_id,client_id=req.client_id,request_id=req.request_id}
- if old then response.ok=false;response.code='request_id_reused';deliver(actor,'SceneZOI.API.Response',response);return end
+ if old then
+  response.ok=false;response.code='request_id_reused'
+  Trace.response(req,response,endpoint_id,deliver(actor,'SceneZOI.API.Response',response));return
+ end
  local row={req=req,actor=actor,raw=content};req.arguments=req.arguments or {}
  local success,value=pcall(function()assert(req.api_version==1,'unsupported_api_version');assert(not req.expected_instance_id or req.expected_instance_id==instance,'host_changed');return execute(actor,req,row)end)
  response.ok=success
@@ -296,14 +296,14 @@ function M.receive(actor,content)
    if latest[request_key(gone.req)]==gone then latest[request_key(gone.req)]=nil end
   end
  end
- deliver(actor,'SceneZOI.API.Response',response)
+ Trace.response(req,response,endpoint_id,deliver(actor,'SceneZOI.API.Response',response))
 end
 -- Bounded on purpose: anything without a player panel needs a finite life.
 -- The picker with the controlled Zoi unselected: the background path an add-on uses, nobody to answer to.
 function M.start_from_picker(actor,ids,chosen,furniture)
  local req={api_version=1,addon_id='scenezoi.picker',client_id='picker',request_id='picker.'..os.time()..'.'..math.random(1,1073741823),operation='start_scene',
   arguments={participants=J.array(ids),initiator=ids[1],background=true,scene_id=chosen.node,furniture_id=furniture,placement={max_start_distance_m=100}}}
- return start(actor,req,{req=req,actor=actor,origin_id=ids[1]},refresh())
+ return start(actor,req,{req=req,actor=actor,origin_id=ids[1]},Catalog.get_snapshot())
 end
 function M.placement(value)
  local out={max_start_distance_cm=C.background_max_start_distance_cm,exit='restore'}
@@ -330,6 +330,7 @@ function M.boot()
  background_starts={}
  Control.reset()
  instance='host.'..os.time()..'.'..math.random(1,1073741823)
+ Diagnostics.boot(instance)
  cfg('api_start','none');cfg('api_start_result','none')
  if handle then Events.unsubscribe(handle)end
  handle=Events.subscribe('*',function(event)
@@ -387,5 +388,6 @@ end
 function M.tick(dt)
  local ok,err=pcall(update,dt)
  if not ok and pending then M.fail_start(pending.token,tostring(err))end
+ Trace.tick(dt)
 end
 return M

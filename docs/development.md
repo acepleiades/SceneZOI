@@ -109,6 +109,10 @@ reload. A fresh process launch establishes automatic package/declaration loading
 manual mounting and diagnostic patching do not. Released native appearance
 references can require a game restart. Matching build markers alone are insufficient.
 
+SceneZOI reads the complete declaration table when B1 starts. Once a
+developer has mounted a content pack in a running process, a B1 Lua reload
+while idle rebuilds the catalog from the packs the game has already loaded.
+
 ### Hot-update readiness
 
 Check readiness after every Lua reload or temporary Lua mod mount/unmount,

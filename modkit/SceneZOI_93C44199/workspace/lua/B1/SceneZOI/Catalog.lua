@@ -39,16 +39,19 @@ local function check_tracks(node,rules)
  end
 end
 
-function M.refresh()
+function M.refresh(force)
  local source=Files.get()
- if M.source==source and M.value then return M.value end
+ if not force and M.source==source and M.value then return M.value end
  local profiles=ProfileData.compile(source)
  local data=Data.compile(source.by_kind.scene_pack or {},function(node)check_tracks(node,profiles.rules)end)
  data.metadata=Meta.compile(source)
  for _,warning in ipairs(data.metadata.warnings)do data.warnings[#data.warnings+1]=warning end
  for id,node in pairs(data.nodes)do
   local ok,value=pcall(Meta.resolve_scene,data.metadata,node)
-  if ok then data.nodes[id]=value else data.nodes[id]=nil;data.warnings[#data.warnings+1]=id..': '..tostring(value)end
+  if ok then data.nodes[id]=value else
+   data.nodes[id]=nil;data.excluded[id]={code='metadata_invalid'}
+   data.warnings[#data.warnings+1]=id..': '..tostring(value)
+  end
  end
  data.tasks=require('SceneZOI.TaskData').compile(source)
  for _,warning in ipairs(data.tasks.warnings)do data.warnings[#data.warnings+1]=warning end
@@ -79,6 +82,7 @@ function M.refresh()
  for _,warning in ipairs(data.profiles.warnings)do data.warnings[#data.warnings+1]=warning end
  for _,warning in ipairs(data.warnings)do print('[SceneZOI] Catalog warning: '..warning)end
  M.source,M.value=source,data;Profiles.set(data.profiles)
+ require('SceneZOI.Diagnostics').catalog_changed()
  M.publish()
  local count=0;for _ in pairs(data.nodes)do count=count+1 end
  pcall(inzoi.cli.execute,'uimod.cfg_save mod_id='..Config.mod_id..' section='..Config.section..' key=catalog_discovery value=nodes:'..count..'+warnings:'..#data.warnings)

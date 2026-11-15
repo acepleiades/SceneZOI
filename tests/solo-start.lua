@@ -15,7 +15,7 @@ local widget={BW_WBP_GroupOption={GetVisibility=function()return 0 end,SetVisibi
 local handler={SelectWidget=widget,IsA=function()return true end}
 local noop=function()end
 package.loaded["SceneZOI.Runtime"]={authorize_rejected_focus=function(_,t)authorized=t end}
-package.loaded["SceneZOI.DataFiles"]={refresh=noop}
+package.loaded["SceneZOI.DataFiles"]={refresh=function() error("Solo Start must reuse the startup declarations") end}
 package.loaded["SceneZOI.Sessions"]={holder=function(id)return id=="8"and"other"or nil end}
 package.loaded["SceneZOI.Catalog"]={refresh=noop,get_snapshot=function()return {nodes={}}end}
 package.loaded["SceneZOI.Traits"]={capture=function(a)return {id=tostring(a:GetEntityId().Value)}end}

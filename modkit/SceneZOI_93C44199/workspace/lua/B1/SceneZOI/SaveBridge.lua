@@ -4,6 +4,7 @@
 local C=require('SceneZOI.Config')
 local P=require('SceneZOI.Protocol')
 local J=require('SceneZOI.Json')
+local Diagnostics=require('SceneZOI.Diagnostics')
 local M={}
 local RETRY_SECONDS=1
 local records,revision,serial,host,seen={},0,0,nil,nil
@@ -18,6 +19,12 @@ end
 local function decoded(value)
  local text=P.decode(value);if not text then return nil end
  local ok,result=pcall(J.decode,text);if ok then return result end
+end
+local function resources(record)
+ local people,beds=J.array({}),J.array({})
+ for id in pairs(record.people)do people[#people+1]=id end;table.sort(people)
+ for _,bed in ipairs(record.beds)do beds[#beds+1]={id=bed.id,owner=bed.owner}end
+ return {session_id=record.token,participants=people,furniture=beds}
 end
 local function ordered()
  local rows={}
@@ -68,9 +75,15 @@ function M.offer(current,actor,fields)
  else
   local record=records[fields[1]];if not record then return end
   if fields[2]=='lent'and record.people[id]then record.people[id].lent_costume=fields[3]
-  elseif fields[2]=='recovered'and record.people[id]then record.people[id]=nil
+  elseif fields[2]=='recovered'and record.people[id]then
+   record.people[id]=nil
+   Diagnostics.record('participant_recovered',{session_id=record.token,participant_id=id})
   elseif fields[2]=='furniture_recovered'then
-   local beds={};for _,bed in ipairs(record.beds)do if bed.owner~=id then beds[#beds+1]=bed end end
+   local beds={}
+   for _,bed in ipairs(record.beds)do
+    if bed.owner~=id then beds[#beds+1]=bed
+    else Diagnostics.record('furniture_recovered',{session_id=record.token,furniture_id=bed.id,owner_id=id})end
+   end
    record.beds=beds
   else return end
   retire_if_empty(record);publish()
@@ -92,12 +105,14 @@ function M.finish(token,people,furniture)
  record.people=kept
  record.beds=furniture and record.beds or {}
  record.deferred=true
+ if next(record.people) or #record.beds>0 then Diagnostics.record('recovery_deferred',resources(record))end
  retire_if_empty(record);publish()
 end
 -- The simulation side confirmed its release after the client actor was gone.
 function M.resolve(token,id)
  local record=records[token];if not record or not record.people[id]then return false end
  record.people[id]=nil
+ Diagnostics.record('participant_recovered',{session_id=token,participant_id=id,source='late_release'})
  retire_if_empty(record);publish()
  return true
 end
@@ -139,6 +154,19 @@ end
 function M.boot()
  records,revision,serial={},0,0
  host='host.'..os.time()..'.'..math.random(1,1073741823)
+ -- Diagnostics only. The actual recovery source remains the loaded game's save journal.
+ pcall(function()
+  local previous=read('save_snapshot')
+  if not previous then return end
+  if previous:sub(1,1)=='{'then previous=J.decode(previous).value end
+  local journal=decoded(previous)
+  if not journal or type(journal.records)~='table'or #journal.records==0 then return end
+  local sessions=J.array({})
+  for _,row in ipairs(journal.records)do
+   if type(row)=='table'and type(row.token)=='string'then sessions[#sessions+1]=row.token end
+  end
+  Diagnostics.record('previous_journal_found',{previous_journal=journal.host,sessions=sessions,count=#journal.records})
+ end)
  seen=read('save_restore')
  local request,response=P.unpack(seen),P.unpack(read('save_restore_state'))
  if request and request[3]=='restore'and request[1]==read('ui_boot')and
@@ -160,7 +188,11 @@ function M.tick(actors)
    if ok then
     records=result;publish()
     write('save_restore_state',P.pack(f[1],f[2],'ready','ok'))
-   else write('save_restore_state',P.pack(f[1],f[2],'error','invalid_recovery'))end
+    for _,record in ipairs(ordered())do Diagnostics.record('recovery_loaded',resources(record))end
+   else
+    Diagnostics.record('recovery_rejected',{code='invalid_recovery'})
+    write('save_restore_state',P.pack(f[1],f[2],'error','invalid_recovery'))
+   end
   end
  end
  -- Each resource recovers when it is loaded, however long that takes.
