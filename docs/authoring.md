@@ -50,10 +50,11 @@ refer to the internal ID.
 
 Two packs that declare the same ID can interfere even when their JSON files
 and native rows have different names. A conflicting task can use a different
-maximum, decay or completion effect when players navigate between packs. A
-scene that relies on an ambiguous task can lose its progress meter. An overlapping
-voice or expression ID can also affect a Zoi's saved selection. Check the
-rules for [tasks](scene-tasks.md#register-a-definition), [voices](voices.md#independent-declarations)
+maximum, decay or completion effect when players navigate between packs.
+Scenes that rely on the final task fallback will use the first provider by
+pack ID. An overlapping voice or expression ID can also affect a Zoi's saved
+selection. Check the rules for [tasks](scene-tasks.md#choose-which-definition-a-scene-uses),
+[voices](voices.md#independent-declarations)
 and [expressions](expressions.md#responsibilities-and-data).
 
 If another pack already defines something you want to share, contact its

@@ -242,7 +242,7 @@ local function execute(actor,req,row)
   local ok,value=pcall(start,actor,req,row,data,true)
   if ok then return value end
   local message=tostring(value);local code=message:match('([a-z_]+)$')or 'invalid_request'
-  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,participant_not_found=true,task_not_found=true,task_ambiguous=true,task_provider_unavailable=true}
+  local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,participant_not_found=true,task_not_found=true,task_provider_unavailable=true}
   return {valid=false,code=known[code]and code or 'invalid_request',message=message,reservation=false}
  end
  if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy((data.tasks or {}).definitions or {}),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
@@ -283,7 +283,7 @@ function M.receive(actor,content)
   local message=tostring(value);response.message=message
   local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,speed_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,session_has_no_plan=true,
    no_matching_scenes=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
-   unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,task_ambiguous=true,task_provider_unavailable=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
+   unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,task_provider_unavailable=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')
   response.code=known[candidate]and candidate or 'invalid_request'
   if message:find('Scene is restricted for this session',1,true)then response.code='scene_restricted'end

@@ -60,10 +60,12 @@ Definitions use the existing independent native declaration discovery: envelope 
 SceneZOI first looks for the task in the scene's pack, then in the framework.
 The mod that started the scene can be a different pack. When neither provider
 declares the task, the scene can name a dependency with
-`"task_providers": {"training.focus": "training"}`. Otherwise, SceneZOI uses
-the sole definition if the available copies agree. If different definitions
-remain, the scene still plays and the task is unavailable. Check
-`scenezoi_runtime/mod_inventory.cfg` for conflicts between packs.
+`"task_providers": {"training.focus": "training"}`. If that dependency is
+missing, SceneZOI reports it and leaves the task unavailable in that scene.
+
+With no named dependency, the first pack ID in alphabetical order supplies
+the definition. This is independent of load order. When definitions disagree,
+`scenezoi_runtime/mod_inventory.cfg` lists the packs and the fallback winner.
 
 Identical definitions share progress across navigation. For tasks outside an
 autonomous plan's goals, different definitions with the same ID keep separate

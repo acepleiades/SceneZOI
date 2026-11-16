@@ -24,10 +24,25 @@ local shared=node('gamma','gamma.loop',task)
 assert(registry.variants[a._task_keys.charge].maximum==10 and registry.variants[b._task_keys.charge].maximum==20)
 assert(registry.variants[c._task_keys.charge].maximum==30 and c._task_keys.charge==registry.defaults.charge)
 assert(a._task_keys.charge==shared._task_keys.charge,'Equal copies share progress')
+for _, definitions in ipairs({{docs[2],docs[1]}, {docs[1],docs[2]}}) do
+ local conflicts=Data.compile({by_kind={scene_task=definitions}})
+ assert(Data.resolve(conflicts,c,'charge')=='alpha:charge','Pack ID order decides the fallback')
+ assert(conflicts.definitions.charge==conflicts.variants['alpha:charge'],'Discovery and the final fallback agree')
+ assert(V.equal(conflicts.conflicts,{{id='charge',owners={'alpha','beta'},fallback='alpha'}}))
+end
 local no_core=Data.compile({by_kind={scene_task={docs[2],docs[1]}}})
-local unresolved,reason=Data.resolve(no_core,c,'charge')
-assert(not unresolved and reason=='task_ambiguous')
-assert(Data.resolve(no_core,{_owner='extra',task_providers={charge='beta'}},'charge')=='beta:charge')
+local explicit={_owner='extra',task_providers={charge='beta'}}
+local missing={_owner='extra',task_providers={charge='missing'}}
+local key,reason=Data.resolve(no_core,explicit,'charge')
+assert(key=='beta:charge' and not reason,'An available dependency takes precedence over the final fallback')
+key,reason=Data.resolve(no_core,missing,'charge')
+assert(not key and reason=='task_provider_unavailable','A missing explicit dependency is reported')
+assert(Data.resolve(registry,explicit,'charge')==registry.defaults.charge,'SceneZOI takes precedence over an explicit provider')
+assert(Data.resolve(no_core,b,'charge')=='beta:charge','A pack keeps using its own definition')
+key,reason=Data.resolve(no_core,c,'absent')
+assert(not key and reason=='task_not_found')
+local same=Data.compile({by_kind={scene_task={docs[4],docs[1]}}})
+assert(Data.resolve(same,c,'charge')=='charge' and #same.conflicts==0,'Equivalent definitions share one meter')
 local people={{id='1',role='lead',body='male'}}
 local session={token='scoped',participants=people,node=a,clock={},addon_controls={}}
 session.tasks=Tasks.new(registry.variants,people,registry)
@@ -49,7 +64,7 @@ end
 local nodes={}
 local function entry(n)return {scene_id=n.id,bindings={lead='1'}}end
 
--- Cap the first pack below completion and make the hub ambiguous without core.
+-- Cap the entry and use an explicit missing dependency to exercise a parked goal.
 local function scene(owner,id,rate,cap,edges)
  local n=node(owner,id,rate and {lead={charge={rate=rate,cap_percent=cap}}},edges)
  n._task_keys.charge=rate and Data.resolve(no_core,n,'charge') or nil
@@ -58,16 +73,20 @@ local function scene(owner,id,rate,cap,edges)
 end
 local first=scene('alpha','alpha.capped',4,50,{{id='forward',target='extra.hub'}})
 local neutral=scene('extra','extra.hub',nil,nil,{{id='left',target='alpha.full'},{id='right',target='beta.full'}})
+neutral.task_providers=missing.task_providers
 local left=scene('alpha','alpha.full',5,100,{{id='back',target=neutral.id}})
 local right=scene('beta','beta.full',2,100,{{id='back',target=neutral.id}})
 local capped=scene('beta','beta.capped',2,50,{{id='finish',target=right.id}})
+local fallback=scene('extra','extra.fallback',5,100)
 local bad=scene('extra','extra.unresolved',5,100)
+bad.task_providers,bad._task_keys.charge=missing.task_providers,nil
 local data={nodes=nodes,tasks=no_core}
 local spec=spec_for(2)
 assert(Plan.pick_entry(data,spec,{entry(first)},people,{}).scene_id==first.id,'Another provider can finish a capped entry goal')
 assert(Plan.pick_entry(data,spec,{entry(neutral)},people,{}).scene_id==neutral.id,'Separate providers at a hub are valid routes')
+assert(Plan.pick_entry(data,spec,{entry(fallback)},people,{}).scene_id==fallback.id,'A third pack can start a goal with the fallback definition')
 local ok,err=pcall(Plan.pick_entry,data,spec,{entry(bad)},people,{})
-assert(not ok and tostring(err):find('task_ambiguous',1,true),'An unresolved-only route reports the collision')
+assert(not ok and tostring(err):find('task_provider_unavailable',1,true),'An unresolved-only route reports its missing dependency')
 neutral.navigation={{id='right',target=right.id}}
 package.loaded['SceneZOI.Catalog']={get_snapshot=function()return data end}
 
@@ -139,6 +158,14 @@ assert(progress().value==15,'The framework definition is the fallback and receiv
 tick(3)
 assert(#completed==1 and completed[1].task_key==registry.defaults.charge and goal().satisfied)
 
+start(right,1)
+tick(1)
+local fraction=progress().value/20
+visit(fallback)
+near(progress().value,10*fraction)
+tick(2)
+assert(#completed==1 and completed[1].task_key=='alpha:charge' and goal().satisfied)
+
 -- Public task controls use the goal ID while values and limits use the active definition.
 start(left,1)
 package.loaded['SceneZOI.Runtime']={api_session=function()return session end,is_addon_owner=function()return false end}
@@ -163,4 +190,4 @@ visit(right)
 assert(#completed==0)
 tick(1)
 assert(#completed==1 and completed[1].task.completion_event=='beta_done' and goal().satisfied)
-print('Task providers passed: pack precedence, cross-pack route feasibility, normalized carry, isolated manual tasks, unresolved hubs, caps, live controls, and single completion credit.')
+print('Task providers passed: pack precedence, deterministic fallback, cross-pack route feasibility, normalized carry, isolated manual tasks, unresolved hubs, caps, live controls, and single completion credit.')

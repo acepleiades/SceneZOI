@@ -144,7 +144,7 @@ local function explore(data,entry,spec,people,restrictions,with_completion_route
      if directive then
       local candidates=finishable[goal]or {};finishable[goal]=candidates
       candidates[id]=true
-     elseif reason=='task_ambiguous'or reason=='task_provider_unavailable'then unresolved[goal]=reason end
+     elseif reason=='task_provider_unavailable'then unresolved[goal]=reason end
     end
    end
    for index,requirement in ipairs(spec.required_stages or {})do
@@ -202,7 +202,7 @@ local function route_check(data,entry,spec,people,restrictions)
  -- A completion route may open a path that automatic navigation cannot take: possible, not provable.
  local possible,_,fallback_reason=explore(data,entry,spec,people,restrictions,true)
  if possible then return true,true end
- if fallback_reason=='task_ambiguous'or fallback_reason=='task_provider_unavailable'then why=fallback_reason end
+ if fallback_reason=='task_provider_unavailable'then why=fallback_reason end
  return false,false,why
 end
 
@@ -245,7 +245,7 @@ function M.pick_entry(data,spec,rows,people,restrictions)
   if viable then
    local score=entry_score(data,row,spec,spec.seed)
    if not best or score>best_score then best,best_score,best_uncertain=row,score,uncertain end
-  elseif not reason or why=='task_ambiguous'or why=='task_provider_unavailable'then reason=why end
+  elseif not reason or why=='task_provider_unavailable'then reason=why end
  end
  assert(best,reason or'goal_unreachable')
  spec.route_uncertain=best_uncertain==true

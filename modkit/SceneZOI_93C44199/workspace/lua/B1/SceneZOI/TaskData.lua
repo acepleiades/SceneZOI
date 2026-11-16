@@ -101,13 +101,14 @@ function M.compile(source)
     result.by_owner[owner][id]=key;keys[owner]=key
    end
   end
-  result.defaults[id]=keys.scenezoi or (#groups==1 and id or nil)
-  -- Retain the legacy global API entry for discovery; scene and goal lookups use the bindings.
-  result.definitions[id]=rows.scenezoi or groups[1].definition
+  -- Match API discovery and keep the fallback independent of load order.
+  local fallback_owner=keys.scenezoi and 'scenezoi' or owners[1]
+  result.defaults[id]=keys[fallback_owner]
+  result.definitions[id]=result.variants[result.defaults[id]]
   result.providers[id]=keys
   if #groups>1 then
-   result.conflicts[#result.conflicts+1]={id=id,owners=owners,fallback=keys.scenezoi and 'scenezoi' or 'ambiguous'}
-   result.warnings[#result.warnings+1]='Conflicting task ID '..id..' from '..table.concat(owners,', ')
+   result.conflicts[#result.conflicts+1]={id=id,owners=owners,fallback=fallback_owner}
+   result.warnings[#result.warnings+1]='Conflicting task ID '..id..' from '..table.concat(owners,', ')..' (fallback: '..fallback_owner..')'
   end
  end
  return result
@@ -121,8 +122,11 @@ function M.resolve(registry,node,id)
  local key=providers[owner] or providers.scenezoi
  if key then return key end
  local requested=node and (node.task_providers or {})[id]
- if requested then return providers[requested], 'task_provider_unavailable' end
- return registry.defaults[id], 'task_ambiguous'
+ if requested then
+  if providers[requested] then return providers[requested] end
+  return nil,'task_provider_unavailable'
+ end
+ return registry.defaults[id]
 end
 
 function M.can_finish(directive)
