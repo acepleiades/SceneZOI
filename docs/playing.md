@@ -7,13 +7,29 @@
 - **With a gameplay mod**, use the interactions it adds. Leave debug start off unless you also want to pick scenes yourself.
 - **Without a gameplay mod**, open **Solo SceneZOI session** below **AI Emote** on your controlled Zoi. Click the cog, turn on **Debug → SceneZOI manual start**, and exit. Use the new picker interaction on your controlled Zoi or on supported furniture. Choose whoever should take part and start the scene.
 
-The framework includes solo and paired idle scenes. What appears next depends on the installed animation packs, the Zois you chose, and where the scene is taking place. For example, a bed scene needs a supported bed and clips made for that placement.
+Animation packs can add choices to the built-in solo and paired idle hubs. What you see depends on which packs are installed, which Zois you chose, and where the scene is taking place. For example, a bed scene needs a supported bed and clips made for that placement.
 
 ## While a scene is playing
 
 - Use the scene panel to pick another animation, adjust playback speed, or **Exit**. Pausing inZOI pauses the scene. If an add-on started a scene with **Auto-mode**, turn it off to take manual control when the add-on permits it.
 - You can switch to a free Zoi and start a second household scene. Switch back to a participant to see the first scene's panel and use **Exit**.
 - Use the cog for sound, voices, task progress rates and other options. [Scene Settings](settings.md)
+
+## Voice and expression choices
+
+Open **Personality Management** from the person icon in the scene panel and
+select a Zoi. Choose an expression set, then pick a voice archetype and its
+voice set for each context. You can choose **None** for a voice context.
+
+For example, give one Zoi a soft voice and subtle expressions. Give another
+Zoi a more animated voice and expression set. When a scene asks both for the
+same kind of reaction, each uses their own sets. Those choices follow each Zoi
+into later scenes and into other save files containing them.
+
+SceneZOI stores these choices in its local settings by the game's Zoi ID.
+Loading an earlier save with the same Zoi keeps your current choices. A copy
+of the character with a different ID has its own choices. Keep the content
+packs with those sets enabled to use them. [Settings storage](settings.md#storage-location)
 
 ## Optional HZoi pack
 

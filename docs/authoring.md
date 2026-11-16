@@ -130,7 +130,8 @@ which checks it ran. Review contact, clipping and the loop seam in-game yourself
 | Scene/participant tags, directed actions, calculated ratings | [Metadata](scene-metadata.md) |
 | Expressions and fixed partial-face poses | [Expressions](expressions.md), [facial poses](facial-poses.md) |
 | Eye targets | [Gaze](gaze.md) |
-| Spatial sounds and voices | [SFX](sfx.md), [voices](voices.md) |
+| A Zoi's voice | [Make a voice set](voice-set-authoring.md), [scene instructions and responses](voices.md) |
+| Props, contact sounds and ambience | [Sound effects](sfx.md) |
 | Numerical tasks, completion routes and one-shot actions | [Scene tasks](scene-tasks.md) |
 | Authored one-shot transition nodes | [Transitions](transitions.md) |
 | Procedural completion effects and timing | [Completion responses](completion-effects.md) |

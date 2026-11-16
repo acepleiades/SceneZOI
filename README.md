@@ -24,12 +24,16 @@ SceneZOI is a free, open-source animation framework for **inZOI**. It keeps Zois
 
 **Without a gameplay mod**, click your controlled Zoi and choose **Solo SceneZOI session** below **AI Emote**. Open the cog menu, go to **Debug**, and enable **SceneZOI manual start**. Exit the solo session. You can now open the scene picker from your controlled Zoi or supported furniture.
 
-SceneZOI runs on its own and includes idle scenes for testing. Install a compatible content pack for more animations. For more help with play, settings or reporting a problem, see the [player guide](docs/playing.md).
+SceneZOI runs on its own. Animation packs can add new scenes to its built-in idle hubs. For more help with play, settings or reporting a problem, see the [player guide](docs/playing.md).
 
 ## Make a mod for SceneZOI
 
 - **Animation packs.** Get the Maya or Blender rig and exporter, then take a short loop from your editor into the game. [Make your first animation](docs/first-animation.md) · [Write and package a content pack](docs/authoring.md)
+- **Voice sets.** Give Zois their own voices for existing scenes or new ones. [Make a voice set](docs/voice-set-authoring.md)
+- **Expression sets.** Give Zois different facial reactions in the same scene. You can use the game's facial animation clips. [Make an expression set](docs/expressions.md#authoring-your-own-sets)
 - **Gameplay mods.** Find compatible scenes, start one for the player or NPCs, and react to what happens in it. [Make a gameplay add-on](docs/addon-authoring.md) · [API reference](docs/addons.md)
+
+Each Zoi can have their own voice and expression choices, which carry over across scenes and save files. [Personality Management](docs/playing.md#voice-and-expression-choices)
 
 ## Contribute to SceneZOI
 

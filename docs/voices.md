@@ -4,6 +4,9 @@ Choose a voice context for each speaking role. For example, a scene can ask
 for a breath or conversation context, and the Zoi's selected set supplies the
 clips. A pack can also add a one-shot reaction to a task completion.
 
+For a first pack, follow [Make a voice set](voice-set-authoring.md). It covers
+import, setup and how to check that vocal clips use the correct volume slider.
+
 ## Independent declarations
 
 Use the existing native declaration transport and pack `data_files` entries with kinds `voice_archetype`, `voice_context` and `voice_set`. Each declaration has `schema_version: 1`. IDs and context references are case-insensitive, trimmed printable ASCII strings (up to 96 characters), separate from display labels. Labels are plain text. A malformed/conflicting declaration is isolated with a warning; unresolved or body-incompatible set references are omitted. Independent authors can reference an existing archetype/context or supply new ones. Build-time malformed declarations fail before generated output changes.
@@ -46,7 +49,9 @@ not audible quality or balance. See [the worked trace](content-examples.md#conne
 
 [Scene Settings](settings.md) provides separate persistent 0–200% gains for female
 and male voice sets. They scale both normal clips and responses after authored
-volume/fades, without changing assignments or clearing add-on mutes.
+volume/fades, without changing assignments or clearing add-on mutes. A vocal
+clip authored as a scene sound uses the **Sound Effects** slider. To use a Zoi's
+assigned set and voice gain, route it through the voice engine.
 
 ## Scene instructions
 
@@ -59,6 +64,11 @@ The role must belong to the fixed roster. Missing role instructions, absent assi
 ## Personality and persistence
 
 Voice controls appear below expressions in Personality Management. Select an archetype, then a set for each context. Choosing a different archetype atomically replaces all context mappings with the first compatible set in sorted ID order; unavailable contexts remain silent. A context can also be set to None. Every persisted mapping is checked against that one archetype, context and body. Cross-archetype requests never save.
+
+The Zoi keeps these choices when switching scenes, starting a new session, or
+loading another save with the same native entity ID. The scene requests a
+context, and the Zoi's saved profile determines which set supplies the clips.
+[Voice and expression choices in game](playing.md#voice-and-expression-choices)
 
 Preferences use the native entity ID under `scenezoi_voice/zoi_<id>.cfg` in the
 game-selected framework cfg directory, independently of save serialization and

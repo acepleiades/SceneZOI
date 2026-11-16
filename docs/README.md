@@ -14,10 +14,17 @@
 | --- | --- |
 | Another role, furniture placement or a link from a hub | [Participants](group-support.md) · [Furniture](furniture.md) · [Pack declarations and hub extensions](package-split.md) |
 | Tags, actions or translated names | [Metadata and ratings](scene-metadata.md) · [Localization](localization.md) |
-| Where Zois look and how they react | [Gaze](gaze.md) · [Expressions](expressions.md) · [Facial poses](facial-poses.md) |
-| Voices and sound effects | [Voices](voices.md) · [Sound effects](sfx.md) |
+| Where Zois look and how they react | [Gaze](gaze.md) · [Expression contexts](expressions.md#responsibilities-and-data) · [Facial poses](facial-poses.md) |
+| Voice and sound in a scene | [Voice instructions](voices.md#scene-instructions) · [Sound effects](sfx.md) |
 | A progress meter, an effect at completion or a transition | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
 | Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
+
+## Make a voice or expression set
+
+- [Make a voice set](voice-set-authoring.md). Import vocal clips, give them a context, and check the in-game voice volume controls. The [voice reference](voices.md) covers the full schema and one-shot responses.
+- [Make an expression set](expressions.md#authoring-your-own-sets). Group facial clips by context so Zois in the same scene can react differently.
+
+[Voice and expression choices](playing.md#voice-and-expression-choices) shows how players assign sets to individual Zois.
 
 ## Make a gameplay mod
 

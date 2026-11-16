@@ -6,6 +6,10 @@ emitters. There is no sound-type enum, pair-size restriction, content callback,
 or separate SFX extension mechanism. Sound assets and scene choices belong to
 the content pack; playback and cleanup belong to SceneZOI.
 
+Use this engine for things like footsteps, props and room ambience. For a Zoi's
+vocal clips, [make a voice set](voice-set-authoring.md#voices-and-sound-effects)
+so the clips follow that Zoi's voice choice and the matching voice volume slider.
+
 ## Data
 
 A pack declares reusable `sound_sets`. Each set has a `default` clip group and/or

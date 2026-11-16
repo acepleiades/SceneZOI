@@ -79,6 +79,11 @@ SceneZOI's default build stages its own neutral scene pack and furniture profile
 
 ## Authoring your own sets
 
+An expression pack can offer a new look for existing scenes by supplying the
+contexts they already ask for. Players choose a set for each Zoi in
+[Personality Management](playing.md#voice-and-expression-choices). The choice
+follows that Zoi across scenes and save files with the same native entity ID.
+
 Use the schema example above to author your own set, referencing facial clips available to your project. The framework has no built-in families or family IDs. The [public declaration workflow](package-split.md) and [facial-pose examples](facial-poses.md) demonstrate the authoring boundary. The public [Pleasure face definition](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/expressions/pleasure_face.json) now provides the corresponding
 HZoi-Reference example: `default`, body compatibility, weighted Idle/Pleasure
 clips and a Kiss option with an explicit `sample`. Its
