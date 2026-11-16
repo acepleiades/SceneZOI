@@ -53,7 +53,7 @@ are the author's role IDs. Each role declares its body requirements separately.
 3. The same rear scene shows a third path in `task_completion_voices`. The Zoi
    who speaks can be different from the one whose task completed.
 
-[Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Voice responses](voices.md#task-triggered-one-shot-voice-responses)
+[Task definitions and provider order](scene-tasks.md#choose-which-definition-a-scene-uses) · [Completion effects](completion-effects.md) · [Voice responses](voices.md#task-triggered-one-shot-voice-responses)
 
 ## Trace an attachment through its profiles
 

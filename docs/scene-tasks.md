@@ -57,15 +57,24 @@ Definitions use the existing independent native declaration discovery: envelope 
 
 ### Choose which definition a scene uses
 
-SceneZOI first looks for the task in the scene's pack, then in the framework.
-The mod that started the scene can be a different pack. When neither provider
-declares the task, the scene can name a dependency with
-`"task_providers": {"training.focus": "training"}`. If that dependency is
-missing, SceneZOI reports it and leaves the task unavailable in that scene.
+SceneZOI resolves each task ID in this order.
 
-With no named dependency, the first pack ID in alphabetical order supplies
-the definition. This is independent of load order. When definitions disagree,
-`scenezoi_runtime/mod_inventory.cfg` lists the packs and the fallback winner.
+1. The current scene’s content pack, if it defines the task ID.
+2. SceneZOI’s shared definition, if it has one.
+3. The provider named by the scene in `task_providers`.
+4. If no provider is named, the first pack ID alphabetically among the packs
+   that define the task.
+
+The pack ID is the internal identifier, independent of load order or the
+mod that started the session. If the lookup reaches a named provider and it
+is missing, the task is unavailable in that scene. When definitions disagree,
+`scenezoi_runtime/mod_inventory.cfg` lists the providers and the fallback winner.
+
+For example, suppose the `alpha` and `beta` packs both define `training.focus`.
+Their own scenes each use their own definition. If SceneZOI has no definition
+for that ID, a third pack’s scene can select Beta with
+`"task_providers": {"training.focus": "beta"}`. With no named provider it uses
+Alpha because `alpha` sorts first.
 
 Each participant keeps one meter and completion count per task ID for the
 session. This applies to manually started sessions and sessions started
