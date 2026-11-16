@@ -23,10 +23,11 @@ function M.trigger(ctx,payloads)
   local person=(s.bindings or {})[p.participant_role]
   local spec=((s.node.completion_responses or {})[p.participant_role]or {})[p.task.id]
   local id=p.participant_id..'|'..p.task.id
+  local seen_key=p.participant_id..'|'..(p.task_key or p.task.id)
   local index=p.task.completion_index
   if person and person.id==p.participant_id and p.task.completed and spec and spec.enabled and
-   type(index)=='number'and index>(ctx.seen[id]or 0)then
-   ctx.seen[id]=index;ctx.starts=ctx.starts+1
+   type(index)=='number'and index>(ctx.seen[seen_key]or 0)then
+   ctx.seen[seen_key]=index;ctx.starts=ctx.starts+1
    if spec.shake then
     local old=ctx.shakes[person.id]
     if old then local ok,err=pcall(Bones.restore,old);if not ok then warning(ctx,err)else ctx.shakes[person.id]=nil end end

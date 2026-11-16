@@ -4,6 +4,7 @@ local J=require('SceneZOI.Json')
 local Control=require('SceneZOI.AddonControl')
 local Effects=require('SceneZOI.AddonEffects')
 local M={}
+local Tasks=require('SceneZOI.Tasks')
 local function runtime()return require('SceneZOI.Runtime')end
 local operations={register_integration=true,renew_integration=true,release_integration=true,request_stop=true,
  get_session_result=true,get_navigation=true,get_task_state=true,set_speed=true,set_speed_multiplier=true,
@@ -38,7 +39,7 @@ function M.execute(actor,req)
   s.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason=args.reason};runtime().stop('addon_requested',s.token);return true,{accepted=true}
  end
  if op=='get_navigation'then fields({});return true,runtime().api_navigation(s)end
- if op=='get_task_state'then fields({});return true,{definitions=V.copy(s.tasks.definitions),participants=require('SceneZOI.Tasks').inspect(s.tasks,s)}end
+ if op=='get_task_state'then fields({});return true,{definitions=Tasks.public_definitions(s.tasks,s),participants=Tasks.inspect(s.tasks,s)}end
  if op=='get_overrides'then fields({});return true,Effects.snapshot(s,key)end
  if op=='get_outfit_state'then
   fields({});local people=J.array({})
@@ -52,13 +53,16 @@ function M.execute(actor,req)
  if op=='set_speed_multiplier'then fields({'multiplier'},{'multiplier'});authorize('speed');ready();V.number(args.multiplier,.1,2);Control.layer(s,key).speed_multiplier=args.multiplier;return true,{multiplier=args.multiplier}end
  if op=='modify_task_progress'or op=='set_task_progress'or op=='set_task_controls'then
   fields({'participant_id','task_id','amount','value','rate_multiplier','completion_hold'},{'participant_id','task_id'});authorize('tasks');ready()
-  local p=participant();V.id(args.task_id);local d=assert(s.tasks.definitions[args.task_id],'task_not_found')
-  local entry=s.tasks.participants[p.id][args.task_id]
+  local p=participant();V.id(args.task_id)
+  local task_key,reason=Tasks.key(s.tasks,s.node,args.task_id)
+  assert(task_key,reason or 'task_not_found')
+  local d=s.tasks.definitions[task_key]
+  local entry=s.tasks.participants[p.id][task_key]
   if op=='set_task_controls'then
    assert(args.amount==nil and args.value==nil and(args.rate_multiplier~=nil or args.completion_hold~=nil),'Invalid task controls')
    if args.rate_multiplier~=nil then V.number(args.rate_multiplier,0,10)end
    if args.completion_hold~=nil then V.boolean(args.completion_hold)end
-   local layer=Control.layer(s,key);local k=p.id..'|'..args.task_id;layer.tasks[k]=layer.tasks[k]or {}
+   local layer=Control.layer(s,key);local k=p.id..'|'..task_key;layer.tasks[k]=layer.tasks[k]or {}
    for _,n in ipairs({'rate_multiplier','completion_hold'})do if args[n]~=nil then layer.tasks[k][n]=args[n]end end
   else
    assert(args.rate_multiplier==nil and args.completion_hold==nil,'Invalid task progress fields')

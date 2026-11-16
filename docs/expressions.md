@@ -5,7 +5,7 @@ Zoi's selected expression set provides the clip for that context.
 Expression sets use schema version 2. [Fixed facial poses](facial-poses.md)
 have their own schema.
 
-Enabled independent packages supply expression sets alongside their other native declarations. SceneZOI owns ten declarations and five neutral nodes. Recorded integration checks used five expression sets from the private, optional HZoi pack; those files are not part of this checkout or required for authoring.
+Enabled independent packages supply expression sets alongside their other native declarations. SceneZOI includes five neutral nodes. Recorded integration checks used five expression sets from the private, optional HZoi pack; those files are not part of this checkout or required for authoring.
 
 ## Responsibilities and data
 
@@ -53,6 +53,10 @@ Every file requires schema_version, id, body and a contexts object (which may be
 Files from different mods may use the same normalized set ID and add distinct contexts or additional clips to an existing context. Body and explicitly supplied label/hold/transition metadata must agree. Identical clip/sample entries deduplicate; conflicting duplicate entries are rejected. Files load in sorted declaration-filename order. Each file merges transactionally: if it conflicts, none of that file's changes apply, a diagnostic warning identifies it, and other valid definitions remain usable. Build-time validation instead rejects the invalid build. An optional explicit default is allowed per body; otherwise the first compatible ID in sorted order is used. No compatible IDs means no facial animation.
 
 Optional `aliases` list old IDs for preference migration. HZoi declares aliases for the previous `scenezoi.*` IDs; the framework has no hardcoded family migration table. UI requests and saved version-2 IDs are hex encoded so spaces/punctuation cannot corrupt the bridge. Existing version-1 preferences are still readable. Display names do not affect saved identity.
+
+Give independent expression sets separate pack-prefixed IDs. If you want to
+contribute to another pack's set, agree on the shared ID and settings with
+its author. See [shared declarations and conflicting IDs](authoring.md#shared-declarations-and-conflicting-ids).
 
 ### Discovery and authoring workflow
 

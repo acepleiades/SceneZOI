@@ -70,6 +70,18 @@ session.clock.scale=.1;session.clock.game_elapsed=session.clock.game_elapsed+.11
 assert(not current.remaining,'One-shot must expire during slow motion')
 A.restore(ctx)
 local before=#calls;session.stopping=true;complete('1',7);assert(#calls==before,'Stopping sessions cannot start sounds')
+-- A scene can replace the legacy action for one role and reuse a named sound set.
+session.stopping=false
+session.node={id='alpha.loop',participants={},task_completion_sounds={role1={charge={
+ {type='play_sound',sound_set='alpha.finish',_clips={'/Alpha/Finish.Finish'},source={component='body',bones={'root'}}}
+}}}}
+local first=#calls
+complete('1',9)
+assert(#calls==first+1 and calls[#calls].path=='/Alpha/Finish.Finish','Play only the explicit scene sound')
+session.node.task_completion_sounds.role1.charge={}
+complete('1',10)
+assert(#calls==first+1,'An empty scene override silences the legacy sound')
+A.restore(ctx)
 for _,change in ipairs({{type='callback'},{clip='run()'},{source={component='body',bones={}}},{when={body='unknown'}},{volume=-1},{max_voices=0},{attenuation={callback='run()'}}})do
  local action=V.copy(spec);for k,v in pairs(change)do action[k]=v end
  assert(not pcall(Data.validate,{schema_version=1,id='bad',label='Bad',maximum=10,on_completion={action}}),'Invalid action accepted')

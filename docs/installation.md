@@ -39,8 +39,7 @@ external pack's tests, supply its checkout:
 python tools/test.py --modkit-root $modkitRoot --content-root "C:/Path/To/content-checkout"
 ```
 
-The older HZoi Reference fixture has its own
-[matching test checkout](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/reference-assets.md#run-the-snapshots-integration-tests).
+HZoi Reference supplies a [silent-audio authoring example and checks](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/reference-assets.md#run-the-reference-checks).
 For public content examples, use [the framework pack](../packs/scenezoi.json),
 [neutral scene files](../packs/scenezoi/scenes/) and the
 [authoring documentation](authoring.md), or follow the optional

@@ -30,7 +30,13 @@ local function acquire(ctx,key,participant,spec)
  return selected
 end
 local function play(ctx,key,participant,spec)
- local clip=Native.load(spec.clip)
+ local path=spec.clip
+ if not path then
+  local clips=spec._clips
+  assert(clips and #clips>0,'Completion sound set unavailable')
+  path=clips[math.random(#clips)]
+ end
+ local clip=Native.load(path)
  local voice=acquire(ctx,key,participant,spec)
  -- Ownership precedes all native mutations, including partially successful creation/play.
  local ok,err=pcall(function()
@@ -45,20 +51,23 @@ end
 function M.trigger(ctx,payload)
  if not ctx or not ctx.session or ctx.session.stopping or ctx.session.ended then return end
  local session=ctx.session
- local definition=session.tasks and session.tasks.definitions[payload.task.id]
+ local task_key=payload.task_key or payload.task.id
+ local definition=session.tasks and session.tasks.definitions[task_key]
  if not definition then return end
  local person
  for _,p in ipairs(session.participants)do if p.id==payload.participant_id then person=p;break end end
  if not person then return end
- local key=payload.task.id..':'..person.id
+ local key=task_key..':'..person.id
  local index=payload.task.completion_index
  if type(index)~='number'or index<=(ctx.completed[key]or 0)then return end
  -- A failed optional sound is not replayed on a later frame; a new completion can try again.
  ctx.completed[key]=index
  local body=person.body or person.expression_body or(session.node.participants[person.role]or {}).body
- for i,spec in ipairs(definition.on_completion or {})do
+ local sounds=((session.node.task_completion_sounds or {})[person.role]or {})[payload.task.id]
+ local pool_key=sounds and key..':'..session.node.id or key
+ for i,spec in ipairs(sounds or definition.on_completion or {})do
   if not spec.when or not spec.when.body or spec.when.body==body then
-   local ok,err=pcall(play,ctx,key..':'..i,person,spec)
+   local ok,err=pcall(play,ctx,pool_key..':'..i,person,spec)
    if not ok then warning(ctx,err)end
   end
  end

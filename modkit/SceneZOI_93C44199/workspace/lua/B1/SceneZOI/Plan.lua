@@ -1,3 +1,4 @@
+local TaskData=require('SceneZOI.TaskData')
 -- Autonomous plans: what an add-on asked an automatic scene to achieve and how it ends.
 -- Owns no playback. Runtime asks tick() what to do next and carries it out.
 local V=require('SceneZOI.DataValidation')
@@ -116,7 +117,8 @@ end
 local function finishes(directive)return directive~=nil and directive.rate>0 and(directive.cap_percent or 100)>=100 end
 
 -- Walks the authored graph from a proposed entry. A node counts only if the fixed roster can play it.
-local function explore(nodes,entry,spec,people,restrictions,with_completion_routes)
+local function explore(data,entry,spec,people,restrictions,with_completion_routes)
+ local nodes=data.nodes;local registry=data.tasks or {}
  local Search=search();local Binding=require('SceneZOI.Binding')
  local start=nodes[entry.scene_id];local roles={}
  for role,id in pairs(entry.bindings)do roles[id]=role end
@@ -124,6 +126,7 @@ local function explore(nodes,entry,spec,people,restrictions,with_completion_rout
  local function playable(node)
   return V.equal(node.furniture,start.furniture)and Search.allowed(nodes,node,restrictions)and pcall(Binding.resolve,roster,node)
  end
+ local unresolved={}
  local visited,queue,finishable,matched,head,uncertain,links={[entry.scene_id]=true},{entry.scene_id},{},{},1,false,{}
  while head<=#queue do
   local id=queue[head];local node=nodes[id];head=head+1
@@ -132,8 +135,12 @@ local function explore(nodes,entry,spec,people,restrictions,with_completion_rout
    for _,goal in ipairs(spec.goals)do
     local directive=((node.tasks or {})[roles[goal.participant_id]]or {})[goal.task_id]
     if finishes(directive)then
-     local key=goal.participant_id..'|'..goal.task_id
-     finishable[key]=finishable[key]or {};finishable[key][id]=true
+     local key,reason=goal.task_id,nil
+     if registry.variants then key,reason=TaskData.resolve(registry,node,goal.task_id)end
+     if key then
+      local providers=finishable[goal]or {};finishable[goal]=providers
+      providers[key]=providers[key]or {};providers[key][id]=true
+     elseif reason=='task_ambiguous'or reason=='task_provider_unavailable'then unresolved[goal]=reason end
     end
    end
    for index,requirement in ipairs(spec.required_stages or {})do
@@ -150,7 +157,32 @@ local function explore(nodes,entry,spec,people,restrictions,with_completion_rout
    end
   end
  end
- if uncertain then return true,true end
+ local bound={}
+ for i,goal in ipairs(spec.goals)do
+  local candidates=finishable[goal]or {}
+  local first=next(candidates)
+  local key
+  if not registry.variants then key=goal.task_id
+  else
+   local entry_directive=((start.tasks or {})[roles[goal.participant_id]]or {})[goal.task_id]
+   if entry_directive then
+    local reason
+    key,reason=TaskData.resolve(registry,start,goal.task_id)
+    if not key then return false,false,reason or 'goal_unreachable' end
+   end
+   if not key then
+    local default=registry.defaults[goal.task_id]
+    if default and (candidates[default] or (not first and uncertain))then key=default
+    elseif first then
+     if next(candidates,first)then return false,false,'task_ambiguous' end
+     key=first
+    end
+   end
+  end
+  if not key or(not uncertain and not candidates[key])then return false,false,unresolved[goal]or 'goal_unreachable' end
+  bound[i]=key;finishable[goal]=candidates[key]
+ end
+ if uncertain then return true,true,nil,bound end
  local function reaches(from,to)
   if from==to then return true end
   local seen,stack={[from]=true},{from}
@@ -162,9 +194,6 @@ local function explore(nodes,entry,spec,people,restrictions,with_completion_rout
   end
   return false
  end
- for _,goal in ipairs(spec.goals)do
-  if not finishable[goal.participant_id..'|'..goal.task_id]then return false,false,'goal_unreachable'end
- end
  -- A required loop must connect to where each goal can finish, in one order or the other.
  for index in ipairs(spec.required_stages or {})do
   if not matched[index]then return false,false,'required_stage_unavailable'end
@@ -173,7 +202,7 @@ local function explore(nodes,entry,spec,people,restrictions,with_completion_rout
    local connected=true
    for _,goal in ipairs(spec.goals)do
     local linked=false
-    for finish in pairs(finishable[goal.participant_id..'|'..goal.task_id])do
+    for finish in pairs(finishable[goal])do
      if reaches(id,finish)or reaches(finish,id)then linked=true;break end
     end
     if not linked then connected=false;break end
@@ -182,14 +211,16 @@ local function explore(nodes,entry,spec,people,restrictions,with_completion_rout
   end
   if not workable then return false,false,'required_stage_unavailable'end
  end
- return true,false
+ return true,false,nil,bound
 end
 
-local function route_check(nodes,entry,spec,people,restrictions)
- local viable,uncertain,why=explore(nodes,entry,spec,people,restrictions,false)
- if viable then return viable,uncertain end
+local function route_check(data,entry,spec,people,restrictions)
+ local viable,uncertain,why,bound=explore(data,entry,spec,people,restrictions,false)
+ if viable then return viable,uncertain,nil,bound end
  -- A completion route may open a path that automatic navigation cannot take: possible, not provable.
- if explore(nodes,entry,spec,people,restrictions,true)then return true,true end
+ local possible,_,fallback_reason,fallback=explore(data,entry,spec,people,restrictions,true)
+ if possible then return true,true,nil,fallback end
+ if fallback_reason=='task_ambiguous'or fallback_reason=='task_provider_unavailable'then why=fallback_reason end
  return false,false,why
 end
 
@@ -207,11 +238,11 @@ local function preference_bonus(plan,node,fraction)
  end
  return bonus
 end
-local function entry_score(nodes,row,spec,seed)
+local function entry_score(nodes,row,spec,seed,bound)
  local node,score=nodes[row.scene_id],0
  local roles={};for role,id in pairs(row.bindings)do roles[id]=role end
- for _,goal in ipairs(spec.goals)do
-  local directive=((node.tasks or {})[roles[goal.participant_id]]or {})[goal.task_id]
+ for i,goal in ipairs(spec.goals)do
+  local directive=TaskData.directive(node,roles[goal.participant_id],goal.task_id,bound[i])
   if directive and directive.rate>0 then score=score+10;if finishes(directive)then score=score+1 end end
  end
  for _,requirement in ipairs(spec.required_stages or {})do
@@ -225,15 +256,16 @@ function M.pick_entry(data,spec,rows,people,restrictions)
  assert(#rows>0,'no_matching_scenes')
  spec.seed=spec.seed or math.random(1,1000000)
  spec.stage_count=spec.stage_count or(spec.stage_min+(spec.seed%(spec.stage_max-spec.stage_min+1)))
- local best,best_score,best_uncertain,reason
+ local best,best_score,best_uncertain,best_bound,reason
  for _,row in ipairs(rows)do
-  local viable,uncertain,why=route_check(data.nodes,row,spec,people,restrictions)
+  local viable,uncertain,why,bound=route_check(data,row,spec,people,restrictions)
   if viable then
-   local score=entry_score(data.nodes,row,spec,spec.seed)
-   if not best or score>best_score then best,best_score,best_uncertain=row,score,uncertain end
-  else reason=why end
+   local score=entry_score(data.nodes,row,spec,spec.seed,bound)
+   if not best or score>best_score then best,best_score,best_uncertain,best_bound=row,score,uncertain,bound end
+  elseif not reason or why=='task_ambiguous'or why=='task_provider_unavailable'then reason=why end
  end
  assert(best,reason or'goal_unreachable')
+ for i,goal in ipairs(spec.goals)do goal.task_key=best_bound[i] end
  spec.route_uncertain=best_uncertain==true
  return best
 end
@@ -249,8 +281,9 @@ function M.new(spec)
 end
 
 local function goal_state(session,goal)
- local entry=session.tasks.participants[goal.participant_id][goal.task_id]
- local maximum=session.tasks.definitions[goal.task_id].maximum
+ local task_key=goal.task_key or goal.task_id
+ local entry=session.tasks.participants[goal.participant_id][task_key]
+ local maximum=session.tasks.definitions[task_key].maximum
  local satisfied=entry.completions>=goal.completions
  return satisfied,satisfied and 1 or(entry.completions+entry.value/maximum)/goal.completions,entry,maximum
 end
@@ -268,9 +301,9 @@ end
 
 -- Can this node still move the goal? The effective rate is what counts, not the authored one.
 local function advance(session,node,goal,entry,maximum)
- local directive=((node.tasks or {})[role_of(session,goal.participant_id)]or {})[goal.task_id]
+ local directive=TaskData.directive(node,role_of(session,goal.participant_id),goal.task_id,goal.task_key)
  if not directive or not directive.rate or directive.rate<=0 then return false,false end
- if Control.task(session,goal.participant_id,goal.task_id)<=0 then return false,false end
+ if Control.task(session,goal.participant_id,goal.task_key or goal.task_id)<=0 then return false,false end
  local percent=directive.cap_percent or 100
  return entry.value<maximum*percent/100,percent>=100
 end
@@ -444,8 +477,8 @@ end
 local function held(session,plan,node)
  local found=false
  each_open(session,plan,function(goal,_,entry,maximum)
-  local directive=((node.tasks or {})[role_of(session,goal.participant_id)]or {})[goal.task_id]
-  if directive and directive.rate and directive.rate>0 and(Control.task(session,goal.participant_id,goal.task_id)<=0 or
+  local directive=TaskData.directive(node,role_of(session,goal.participant_id),goal.task_id,goal.task_key)
+  if directive and directive.rate and directive.rate>0 and(Control.task(session,goal.participant_id,goal.task_key or goal.task_id)<=0 or
    (entry.value>=maximum and(directive.cap_percent or 100)>=100))then found=true end
  end)
  return found
@@ -558,7 +591,7 @@ function M.frozen(session,participant_id,task_id)
  local plan=session.plan
  if not plan or(plan.state~='waiting'and plan.state~='resolving')then return false end
  for _,goal in ipairs(plan.goals)do
-  if goal.participant_id==participant_id and goal.task_id==task_id then return (goal_state(session,goal))end
+  if goal.participant_id==participant_id and (goal.task_key or goal.task_id)==task_id then return (goal_state(session,goal))end
  end
  return false
 end

@@ -70,7 +70,7 @@ def compile_packs(packs, link=True):
         check(isinstance(pack['nodes'], list) and isinstance(pack['extensions'], list), 'Expected pack arrays')
         for node in pack['nodes']:
             fields(node, ['id', 'label', 'kind', 'destination', 'hub', 'duration', 'fps', 'participants', 'anchor_participant',
-                          'tracks', 'hide_if_tracks_missing', 'outfits', 'attachments', 'gaze', 'expressions', 'voices', 'tasks', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
+                          'tracks', 'hide_if_tracks_missing', 'outfits', 'attachments', 'gaze', 'expressions', 'voices', 'tasks', 'task_providers', 'task_completion_sounds', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
                    ['id', 'label', 'kind', 'duration', 'fps', 'participants', 'anchor_participant', 'tracks', 'navigation'])
             from scene_metadata import validate_scene
             validate_scene(node)
@@ -147,8 +147,8 @@ def compile_packs(packs, link=True):
             import completion_data
             completion_data.timing(node.get('movement_timing'),node['duration'])
             completion_data.responses(node.get('completion_responses'),participants,node['kind'])
-            from task_data import directives
-            directives(node.get('tasks', {}), participants)
+            from task_data import scene as task_scene
+            task_scene(node, participants)
             routes=node.get('task_completion_routes', {})
             fields(routes,participants.keys(),[])
             for mapping in routes.values():
@@ -316,8 +316,9 @@ def build(pack_paths, project, expression_paths=None, expression_project=None, p
     for owner, kind, source, data in documents:
         if kind == 'scene_task':
             validate_task(data)
-            check(data['id'] not in task_ids or task_ids[data['id']] == data, 'Conflicting task declaration')
-            task_ids[data['id']] = data
+            key = (owner, data['id'])
+            check(key not in task_ids or task_ids[key] == data, 'Conflicting task declaration within one pack')
+            task_ids[key] = data
     from furniture_data import profile as furniture_profile
     furniture_ids, furniture_objects = {}, {}
     for owner, kind, source, data in documents:

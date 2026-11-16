@@ -27,15 +27,20 @@ alternate-double, single-futon and double-futon objects/variants. An English cat
 description or object tag does not establish support. Unknown models need tested
 profile data. Profiles are extensible compatibility data, not an author whitelist.
 
-## Content-pack attachment example
+## Example from a bed animation pack
 
-HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json#L20) maps the
-same four-second attachment animation to `scenezoi.bed_single_idle` and
-`scenezoi.bed_queen_idle`. The body tracks and furniture profiles still come from
-the [framework bed scenes](../packs/scenezoi/scenes/). This demonstrates an
-optional adult-content pack extending presentation at a furniture hub; it does
-not add a bed scene or establish compatibility with a new furniture model.
-See [the attachment trace](content-examples.md#trace-an-attachment-through-its-profiles).
+HZoi adds a [single-bed branch](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/05_single_bed_idle.json)
+and a [queen-bed branch](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/05_queen_bed_idle.json)
+through its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json). The idle nodes reuse the
+framework’s body tracks. The [queen-bed activity](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/08_queen_bed_female_mounted_sex_kissing.json)
+uses its own tracks and keeps the hub's `bed.queen` kind, 0 cm authored plane,
+and role bindings. This lets players navigate without moving to a different
+bed. A corresponding single-bed node can reuse those animation tracks where
+they fit.
+
+The [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/region_attachment.json)
+maps node IDs to the matching attachment animation, including both framework
+bed hubs. See [the authoring walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/authoring-walkthrough.md#match-the-furniture-and-the-roster).
 
 ## Placement and reservation
 

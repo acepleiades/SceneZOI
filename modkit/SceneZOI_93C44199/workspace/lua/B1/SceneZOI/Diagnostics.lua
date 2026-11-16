@@ -306,6 +306,14 @@ local function inventory()
         local id = excluded_ids[index]
         blocked[id] = excluded[id]
     end
+    local localization = require("SceneZOI.Localization")
+    local function conflict_sample(conflicts)
+        local result = {}
+        for index = 1, math.min(#conflicts, 16) do result[index] = conflicts[index] end
+        return result
+    end
+    local task_conflicts = catalog.tasks and catalog.tasks.conflicts or {}
+    local label_conflicts = localization.conflicts and localization.conflicts() or {}
     local game = query(game_state) or {}
     local report = {
         build = Config.build,
@@ -314,6 +322,8 @@ local function inventory()
         playable_scenes_by_namespace = playable, excluded_scene_count = #excluded_ids,
         excluded_scene_sample = blocked, observed_api_addons = keys(api_addons),
         catalog_warning_count = #(catalog.warnings or {}),
+        task_conflict_count = #task_conflicts, task_conflicts = conflict_sample(task_conflicts),
+        localization_conflict_count = #label_conflicts, localization_conflicts = conflict_sample(label_conflicts),
         game_phase = game.phase, map_id = game.map_id,
         ui_build = query(load, "ui_build"), ui_boot = query(load, "ui_boot"),
         registered_content_files = declarations.file_count,

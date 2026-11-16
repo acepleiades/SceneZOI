@@ -22,6 +22,6 @@ def validate_documents(documents):
   for culture,groups in data['translations'].items():
    for group,rows in groups.items():
     for key,text in rows.items():
-     identity=(culture,group,key)
+     identity=(owner,culture,group,key)
      if identity in seen and seen[identity]!=text:raise ValueError('Conflicting localized text: '+key)
      seen[identity]=text

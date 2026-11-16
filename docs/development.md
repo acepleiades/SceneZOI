@@ -15,14 +15,13 @@ python tools/build_catalog.py
 python tools/test.py --modkit-root $modkitRoot
 ```
 
-The default build stages ten framework declarations: one scene pack with five
+The default build stages the framework declarations: one scene pack with five
 neutral nodes, five furniture profiles, two metadata dictionaries, one facial
-pose and one localization dictionary. The framework inventory owns four animation packages. Default checks are
+pose, a shared scene task, and one localization dictionary. The framework inventory owns four animation packages. Default checks are
 framework-only; `--content-root` is an optional test hook for a compatible author
 checkout that is already available. HZoi's private checkout is not required.
 The public [HZoi-Reference guide](content-examples.md) explains its separate
-silent-audio example. Its older session fixture uses a
-[matching framework checkout](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/reference-assets.md#run-the-snapshots-integration-tests).
+silent-audio authoring example and [its checks](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/reference-assets.md#run-the-reference-checks).
 External packs can use `--packs` and `--project`, with their own `--inventory`
 and `--plugin` arguments for filtering.
 
@@ -185,7 +184,7 @@ See [release checks](validation/README.md) and [runtime troubleshooting](investi
 
 ## Download site
 
-In GitHub **Settings → Pages**, choose **Deploy from a branch** and select
+In GitHub **Settings â†’ Pages**, choose **Deploy from a branch** and select
 **main** and **/docs**. The [download page](index.html) uses the GitHub Releases
 API. Update contributors and their support links in that file. English site copy
 lives there and in [releases.js](site-assets/releases.js). Update related

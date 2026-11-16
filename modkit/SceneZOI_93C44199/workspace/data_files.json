@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "Content/JsonPatch/Text_UI_patch.json",
-      "sha256": "3418e7df31722fd97dd33249f7e8022012285eebe8af4b49c3938cce5d2a6792"
+      "sha256": "794e868e0591bed34fb88db24bd789e09e320b900638a5e53084fa2d6a19ee26"
     }
   ],
   "records": [
@@ -61,6 +61,12 @@
       "owner": "scenezoi",
       "kind": "scene_pack",
       "source": "scenezoi.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__scene_task__excitement",
+      "owner": "scenezoi",
+      "kind": "scene_task",
+      "source": "excitement.json"
     },
     {
       "id": "SceneZOI_Declaration_scenezoi__tag_dictionary__tags",

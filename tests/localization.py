@@ -16,9 +16,10 @@ class LocalizationTests(unittest.TestCase):
   with self.assertRaises(ValueError):validate(data)
   data=copy.deepcopy(self.data);data['execute']='code'
   with self.assertRaises(ValueError):validate(data)
- def test_conflicting_documents_rejected_before_output(self):
+ def test_conflicts_are_allowed_between_packs(self):
   other=copy.deepcopy(self.data);other['translations']['en-US']['messages']['Exit']='Conflict'
-  with self.assertRaises(ValueError):validate_documents([('scenezoi','localization',Path('a'),self.data),('other','localization',Path('b'),other)])
+  validate_documents([('scenezoi','localization',Path('a'),self.data),('other','localization',Path('b'),other)])
+  with self.assertRaises(ValueError):validate_documents([('scenezoi','localization',Path('a'),self.data),('scenezoi','localization',Path('b'),other)])
  def test_content_label_fallback_is_optional(self):
   validate({'schema_version':1,'id':'designer.localization','translations':{'fr-FR':{'labels':{'scene.designer.hub':'Accueil'}}}})
   labels=self.data['translations']['en-US']['labels']

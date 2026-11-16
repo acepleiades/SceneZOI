@@ -136,7 +136,8 @@
         "scene.scenezoi.bed_queen_idle": "Queen Bed Idle Hub",
         "scene.scenezoi.bed_single_idle": "Single Bed Idle Hub",
         "scene.scenezoi.solo_idle_female": "Solo Idle",
-        "scene.scenezoi.solo_idle_male": "Solo Idle"
+        "scene.scenezoi.solo_idle_male": "Solo Idle",
+        "scene_task.excitement": "Excitement"
       }
     },
     "de-DE": {
@@ -273,7 +274,8 @@
         "scene.scenezoi.bed_queen_idle": "Ruhepunkt im Doppelbett",
         "scene.scenezoi.bed_single_idle": "Ruhepunkt im Einzelbett",
         "scene.scenezoi.solo_idle_female": "Solo-Leerlauf",
-        "scene.scenezoi.solo_idle_male": "Solo-Leerlauf"
+        "scene.scenezoi.solo_idle_male": "Solo-Leerlauf",
+        "scene_task.excitement": "Erregung"
       }
     },
     "fr-FR": {
@@ -410,7 +412,8 @@
         "scene.scenezoi.bed_queen_idle": "Point de repos sur lit double",
         "scene.scenezoi.bed_single_idle": "Point de repos sur lit simple",
         "scene.scenezoi.solo_idle_female": "Attente en solo",
-        "scene.scenezoi.solo_idle_male": "Attente en solo"
+        "scene.scenezoi.solo_idle_male": "Attente en solo",
+        "scene_task.excitement": "Excitation"
       }
     },
     "es-ES": {
@@ -547,7 +550,8 @@
         "scene.scenezoi.bed_queen_idle": "Punto de reposo en cama doble",
         "scene.scenezoi.bed_single_idle": "Punto de reposo en cama individual",
         "scene.scenezoi.solo_idle_female": "Reposo en solitario",
-        "scene.scenezoi.solo_idle_male": "Reposo en solitario"
+        "scene.scenezoi.solo_idle_male": "Reposo en solitario",
+        "scene_task.excitement": "Excitación"
       }
     },
     "it-IT": {
@@ -684,7 +688,8 @@
         "scene.scenezoi.bed_queen_idle": "Punto di riposo su letto matrimoniale",
         "scene.scenezoi.bed_single_idle": "Punto di riposo su letto singolo",
         "scene.scenezoi.solo_idle_female": "Attesa da solo",
-        "scene.scenezoi.solo_idle_male": "Attesa da solo"
+        "scene.scenezoi.solo_idle_male": "Attesa da solo",
+        "scene_task.excitement": "Eccitazione"
       }
     },
     "pt-BR": {
@@ -821,7 +826,8 @@
         "scene.scenezoi.bed_queen_idle": "Ponto de repouso na cama de casal",
         "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama de solteiro",
         "scene.scenezoi.solo_idle_female": "Espera a sós",
-        "scene.scenezoi.solo_idle_male": "Espera a sós"
+        "scene.scenezoi.solo_idle_male": "Espera a sós",
+        "scene_task.excitement": "Excitação"
       }
     },
     "pt-PT": {
@@ -958,7 +964,8 @@
         "scene.scenezoi.bed_queen_idle": "Ponto de repouso na cama de casal",
         "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama individual",
         "scene.scenezoi.solo_idle_female": "Espera a sós",
-        "scene.scenezoi.solo_idle_male": "Espera a sós"
+        "scene.scenezoi.solo_idle_male": "Espera a sós",
+        "scene_task.excitement": "Excitação"
       }
     },
     "nl-NL": {
@@ -1095,7 +1102,8 @@
         "scene.scenezoi.bed_queen_idle": "Rustpunt in tweepersoonsbed",
         "scene.scenezoi.bed_single_idle": "Rustpunt in eenpersoonsbed",
         "scene.scenezoi.solo_idle_female": "Solo wachten",
-        "scene.scenezoi.solo_idle_male": "Solo wachten"
+        "scene.scenezoi.solo_idle_male": "Solo wachten",
+        "scene_task.excitement": "Opwinding"
       }
     },
     "tr-TR": {
@@ -1232,7 +1240,8 @@
         "scene.scenezoi.bed_queen_idle": "Çift kişilik yatakta dinlenme noktası",
         "scene.scenezoi.bed_single_idle": "Tek kişilik yatakta dinlenme noktası",
         "scene.scenezoi.solo_idle_female": "Tek Başına Bekleme",
-        "scene.scenezoi.solo_idle_male": "Tek Başına Bekleme"
+        "scene.scenezoi.solo_idle_male": "Tek Başına Bekleme",
+        "scene_task.excitement": "Uyarılma"
       }
     },
     "pl-PL": {
@@ -1369,7 +1378,8 @@
         "scene.scenezoi.bed_queen_idle": "Punkt spoczynku na podwójnym łóżku",
         "scene.scenezoi.bed_single_idle": "Punkt spoczynku na pojedynczym łóżku",
         "scene.scenezoi.solo_idle_female": "Bezczynność solo",
-        "scene.scenezoi.solo_idle_male": "Bezczynność solo"
+        "scene.scenezoi.solo_idle_male": "Bezczynność solo",
+        "scene_task.excitement": "Podniecenie"
       }
     },
     "ru-RU": {
@@ -1506,7 +1516,8 @@
         "scene.scenezoi.bed_queen_idle": "Исходная сцена на двуспальной кровати",
         "scene.scenezoi.bed_single_idle": "Исходная сцена на односпальной кровати",
         "scene.scenezoi.solo_idle_female": "Ожидание соло",
-        "scene.scenezoi.solo_idle_male": "Ожидание соло"
+        "scene.scenezoi.solo_idle_male": "Ожидание соло",
+        "scene_task.excitement": "Возбуждение"
       }
     },
     "ja-JP": {
@@ -1643,7 +1654,8 @@
         "scene.scenezoi.bed_queen_idle": "ダブルベッドの待機ハブ",
         "scene.scenezoi.bed_single_idle": "シングルベッドの待機ハブ",
         "scene.scenezoi.solo_idle_female": "ソロ待機",
-        "scene.scenezoi.solo_idle_male": "ソロ待機"
+        "scene.scenezoi.solo_idle_male": "ソロ待機",
+        "scene_task.excitement": "興奮"
       }
     },
     "ko-KR": {
@@ -1780,7 +1792,8 @@
         "scene.scenezoi.bed_queen_idle": "더블 침대 대기 허브",
         "scene.scenezoi.bed_single_idle": "싱글 침대 대기 허브",
         "scene.scenezoi.solo_idle_female": "혼자 대기",
-        "scene.scenezoi.solo_idle_male": "혼자 대기"
+        "scene.scenezoi.solo_idle_male": "혼자 대기",
+        "scene_task.excitement": "흥분"
       }
     },
     "zh-CN": {
@@ -1917,7 +1930,8 @@
         "scene.scenezoi.bed_queen_idle": "双人床待机枢纽",
         "scene.scenezoi.bed_single_idle": "单人床待机枢纽",
         "scene.scenezoi.solo_idle_female": "单人待机",
-        "scene.scenezoi.solo_idle_male": "单人待机"
+        "scene.scenezoi.solo_idle_male": "单人待机",
+        "scene_task.excitement": "兴奋"
       }
     },
     "zh-TW": {
@@ -2054,7 +2068,8 @@
         "scene.scenezoi.bed_queen_idle": "雙人床待機樞紐",
         "scene.scenezoi.bed_single_idle": "單人床待機樞紐",
         "scene.scenezoi.solo_idle_female": "單人待機",
-        "scene.scenezoi.solo_idle_male": "單人待機"
+        "scene.scenezoi.solo_idle_male": "單人待機",
+        "scene_task.excitement": "興奮"
       }
     }
   }

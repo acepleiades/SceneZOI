@@ -53,29 +53,35 @@ function M.refresh(force)
    data.warnings[#data.warnings+1]=id..': '..tostring(value)
   end
  end
- data.tasks=require('SceneZOI.TaskData').compile(source)
+ local TaskData=require('SceneZOI.TaskData')
+ data.tasks=TaskData.compile(source)
  for _,warning in ipairs(data.tasks.warnings)do data.warnings[#data.warnings+1]=warning end
- for _,node in pairs(data.nodes)do for role,tasks in pairs(node.tasks or {})do for id in pairs(tasks)do
-  if not data.tasks.definitions[id]then data.warnings[#data.warnings+1]='Unavailable task '..id..' in '..node.id..' for '..role end
- end end end
- for _,node in pairs(data.nodes)do for role,routes in pairs(node.task_completion_routes or {})do for task in pairs(routes)do
-  if not data.tasks.definitions[task]then
-   data.warnings[#data.warnings+1]='Unavailable task route task '..task..' in '..node.id..' for '..role
-   routes[task]=nil
+ for _,node in pairs(data.nodes)do
+  node._task_keys={}
+  local unavailable={}
+  for _,field in ipairs({'tasks','task_completion_routes','completion_responses','task_completion_voices','task_completion_sounds'})do
+   for role,tasks in pairs(node[field] or {})do
+    for id,value in pairs(tasks)do
+     local key,reason=TaskData.resolve(data.tasks,node,id)
+     if key then node._task_keys[id]=key
+     else
+      if not unavailable[id] then
+       data.warnings[#data.warnings+1]=reason..': '..node.id..' uses '..id
+       unavailable[id]=true
+      end
+      if field~='tasks'then tasks[id]=nil end
+     end
+     if key and field=='task_completion_sounds'then
+      for _,action in ipairs(value)do if action.sound_set then
+       local set=data.sound_sets[action.sound_set]
+       action._clips=set and set.default and set.default.clips
+       if not action._clips then data.warnings[#data.warnings+1]='Unavailable completion sound set '..action.sound_set..' in '..node.id..' for '..role end
+      end end
+     end
+    end
+   end
   end
- end end end
- for _,node in pairs(data.nodes)do for role,responses in pairs(node.completion_responses or {})do for task in pairs(responses)do
-  if not data.tasks.definitions[task]then
-   data.warnings[#data.warnings+1]='Unavailable completion response task '..task..' in '..node.id..' for '..role
-   responses[task]=nil
-  end
- end end end
- for _,node in pairs(data.nodes)do for role,tasks in pairs(node.task_completion_voices or {})do for task in pairs(tasks)do
-  if not data.tasks.definitions[task]then
-   data.warnings[#data.warnings+1]='Unavailable task voice response '..task..' in '..node.id..' for '..role
-   tasks[task]=nil
-  end
- end end end
+ end
  data.furniture=require('SceneZOI.FurnitureData').compile(source)
  for _,warning in ipairs(data.furniture.warnings)do data.warnings[#data.warnings+1]=warning end
  data.profiles=profiles

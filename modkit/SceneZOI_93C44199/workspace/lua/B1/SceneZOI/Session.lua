@@ -82,7 +82,7 @@ function M.snapshot(current)
         node_kind = current.node.kind, destination = current.node.destination,
         phase = current.ended and "ended" or current.stopping and "exiting" or current.preparing and "preparing" or "playing",
         participants = participants, tracks = tracks, speed_index = current.clock.index,
-        task_progress = current.tasks and require("SceneZOI.DataValidation").copy(current.tasks.participants) or {},
+        task_progress = current.tasks and require("SceneZOI.Tasks").progress(current.tasks,current) or {},
         game_scale = current.clock.scale, effective_speed = current.clock.effective,
         completion_effects = require("SceneZOI.CompletionEffects").snapshot(current.completion_effects)}
 end

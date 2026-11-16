@@ -41,6 +41,34 @@ python tools/build_catalog.py --packs "C:/MyPack/packs/designer.json" --project 
 This stages JSON, not animation imports or a native package. Follow
 [developer setup](installation.md) and [packaging](development.md) for the rest.
 
+## Shared declarations and conflicting IDs
+
+Use your pack ID as a prefix for tasks, voice sets, voice archetypes and
+expression sets you maintain independently. For example, `training.focus` and
+`meditation.focus` can both display **Focus**. Scenes and gameplay integrations
+refer to the internal ID.
+
+Two packs that declare the same ID can interfere even when their JSON files
+and native rows have different names. A conflicting task can use a different
+maximum, decay or completion effect when players navigate between packs. A
+scene that relies on an ambiguous task can lose its progress meter. An overlapping
+voice or expression ID can also affect a Zoi's saved selection. Check the
+rules for [tasks](scene-tasks.md#register-a-definition), [voices](voices.md#independent-declarations)
+and [expressions](expressions.md#responsibilities-and-data).
+
+If another pack already defines something you want to share, contact its
+author before publishing a second copy. You can reference the original ID and
+declare that pack as a dependency. If both packs should work independently of
+each other's scenes and assets, agree on the definition and publish it in a
+small shared content pack. Have both mods declare that pack as a dependency
+and reference the same ID. Coordinate the update so older copies of the
+definition are retired, and test both mods together.
+
+Keep shared IDs stable for existing callers and saved choices. Coordinate
+changes with the other authors, especially changes to a task's progression or
+completion event. Give your own variant a new pack-prefixed ID when it needs
+different behavior.
+
 ## Scenes and participants
 
 A scene declares `id`, `label`, `kind`, `duration`, `fps`, named `participants`,
@@ -123,6 +151,11 @@ tracks play together, and Exit restores gameplay. Test with SceneZOI and your
 pack enabled, plus any dependencies you actually declared. Have the agent report
 which checks it ran. Review contact, clipping and the loop seam in-game yourself.
 
+For a fuller scene, give the agent the [HZoi authoring walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/authoring-walkthrough.md).
+Ask it to show where your pack uses voice contexts, contact sounds, and any
+task completion responses you requested. Test a Zoi's voice choice and
+volume separately from the effects slider, then watch the task finish.
+
 ## Optional scene data
 
 | Behavior | Contract |
@@ -167,6 +200,13 @@ scene is omitted from the catalog, including API discovery and starts. Incoming
 navigation, task routes and transitions that depend on the scene are also
 removed. The catalog check is opt-in.
 
+For a working example, compare the [queen-bed hub](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/05_queen_bed_idle.json)
+with its [optional AAL scene](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/09_queen_bed_aal_frontal.json).
+The optional scene sets `hide_if_tracks_missing` alongside its external role
+tracks. Its [coverage attachment profile](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/region_attachment.json)
+points to the matching attachment clip. The hub offers the optional entry
+when the referenced tracks load.
+
 Install the cooked library before launching the game. The game and its content
 loaders handle mounting. If archive signature checks block a compatible unsigned
 package, use a compatible signature bypasser such as UniversalSigBypasser where
@@ -204,7 +244,7 @@ player build for audible testing. [HZoi downloads](https://www.patreon.com/skyri
 | Resource | How to reference it |
 | --- | --- |
 | Voice sets | Set `voices[role].context` to a context HZoi supplies, such as `kiss`. SceneZOI looks up the context in the Zoi's selected compatible voice set. See [voice instructions](voices.md#scene-instructions). |
-| Sound effects | Set the emitter's `sound_set` to an HZoi ID such as `hzoi.kiss`, then configure the emitter for your scene. See [scene sounds](sfx.md#data) and the [HZoi sound sets](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L12). |
+| Sound effects | Set the emitter's `sound_set` to an HZoi ID such as `hzoi.kiss`, then configure the emitter for your scene. See [scene sounds](sfx.md#data) and the [HZoi sound sets](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json). |
 | Expression sets | Set `expressions[role].context` to a context such as `Kiss`. HZoi's sets reference native inZOI facial animations. SceneZOI uses the Zoi's selected compatible set. For a standalone pack, define your own sets that reference native clips in place. See [expression authoring](expressions.md#responsibilities-and-data). |
 | Male anatomy mesh | Reference `/HZoi_660649D8/Attachments/HZoi_MaleAnatomy.HZoi_MaleAnatomy`. HZoi's coverage profile can already supply the mesh to compatible roles. Its attachment tracks are mapped by scene ID. For synchronized movement in a new scene, author a compatible attachment track and configure its binding. See [coverage profiles](package-split.md#presentation-and-compatibility-profiles). |
 

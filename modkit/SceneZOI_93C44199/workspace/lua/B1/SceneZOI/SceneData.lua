@@ -54,7 +54,7 @@ function M.node(v,owner)
  local tracks=v.tracks;local placeholder={}
  for role in pairs(v.participants or {})do placeholder[#placeholder+1]=role end
  -- Run the remaining validation without treating dynamic track keys as schema fields.
- V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','attachments','gaze','expressions','voices','tasks','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
+ V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','attachments','gaze','expressions','voices','tasks','task_providers','task_completion_sounds','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
  require('SceneZOI.FurnitureData').scene(v.furniture)
  require('SceneZOI.MetadataShape').validate(v)
  V.id(v.id);assert(v.id:sub(1,#owner+1)==owner..'.','Node namespace mismatch');V.name(v.label);assert(v.kind=='loop'or v.kind=='transition','Unsupported scene kind')
@@ -88,7 +88,7 @@ function M.node(v,owner)
  require('SceneZOI.VoiceResponseData').validate(v.task_completion_voices,v.participants)
  require('SceneZOI.CompletionData').timing(v.movement_timing,v.duration)
  require('SceneZOI.CompletionData').responses(v.completion_responses,v.participants,v.kind)
- require('SceneZOI.TaskData').directives(v.tasks,v.participants)
+ require('SceneZOI.TaskData').scene(v)
  require('SceneZOI.TaskRoutes').validate(v.task_completion_routes,v.participants)
  assert(V.object(v.sfx or {}),'Expected named sound emitters');for id,spec in pairs(v.sfx or {})do V.id(id);emitter(spec,v.participants)end
  V.array(v.navigation,512);local ids={}
@@ -116,7 +116,7 @@ function M.compile(documents,check_tracks)
    for id,spec in pairs(value.sound_sets)do if result.sound_sets[id]and not V.equal(result.sound_sets[id],spec)then conflict='Conflicting sound ID: '..id end end
    if conflict then result.warnings[#result.warnings+1]=doc.source..': '..conflict
    else
-    for id,node in pairs(value.nodes)do result.nodes[id]=node end
+    for id,node in pairs(value.nodes)do node._owner=doc.owner or value.id;result.nodes[id]=node end
     for id,spec in pairs(value.sound_sets)do result.sound_sets[id]=spec end
     for _,link in ipairs(value.extensions)do links[#links+1]=link end
    end

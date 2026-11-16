@@ -11,15 +11,13 @@ Completion is still committed by the real task engine on a positive loop-playing
 
 ## Complete content-pack example
 
-HZoi-Reference's [excitement definition](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/tasks/excitement.json) registers maximum/decay,
-presentation and a body-filtered completion sound. Its
-[per-role scene rates](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L134) allow one role to reach 100% while
-capping the other at 50%; the idle omits progression and therefore permits decay.
-The [voice bindings](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L207) make a separate role
-react, while [procedural responses](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L148) add scene
-presentation. Read [the worked trace](content-examples.md#connect-progress-to-independent-responses)
-to follow these independent paths. The reference is adult content with silent
-audio; it has no current authored `task_completion_routes` example.
+HZoi-Reference’s [Excitement definition](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/tasks/excitement.json)
+sets the maximum and decay. [Standing Handjob](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/02_standing_hand_job.json)
+defines per-role progression and caps. [Standing Rear](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/04_standing_rear.json)
+adds a scene-local one-shot, a reaction from the selected voice set, a timed
+slowdown, and independent leg shakes. Another pack can reuse the task and
+choose its own completion presentation.
+[Why these effects are separate](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/authoring-walkthrough.md#give-task-completion-a-visible-or-audible-result)
 
 ## Register a definition
 
@@ -57,12 +55,37 @@ All display settings are optional. `visible: false` suppresses indicators withou
 
 Definitions use the existing independent native declaration discovery: envelope kind `scene_task`, owner from the contributing pack, transport `Text_UI` / retail `Text`. They are not loose files read by the game. Build/package/install content edits normally. Discovery runs at client Lua startup. Every session captures its definitions and progress. Restart the game after changing installed packs.
 
-Malformed definitions and conflicting IDs produce catalog diagnostics. A malformed contribution is isolated. Identical repeated definitions are accepted; a conflicting later definition does not overwrite the first in deterministic source order. Source builds reject malformed/conflicting task definitions before writing generated output.
+### Choose which definition a scene uses
+
+SceneZOI first looks for the task in the scene's pack, then in the framework.
+The mod that started the scene can be a different pack. When neither provider
+declares the task, the scene can name a dependency with
+`"task_providers": {"training.focus": "training"}`. Otherwise, SceneZOI uses
+the sole definition if the available copies agree. If different definitions
+remain, the scene still plays and the task is unavailable. Check
+`scenezoi_runtime/mod_inventory.cfg` for conflicts between packs.
+
+Identical definitions share progress across navigation. Different definitions
+with the same ID keep separate progress and completion counts. A plan binds
+each goal to one definition at entry and keeps that binding across navigation.
+A neutral hub with several viable definitions uses an available framework
+definition when it can. If no choice can be made, the API returns `task_ambiguous`.
+Choose an entry scene that uses the intended definition. The literal task ID
+in API calls and events stays the same.
+
+SceneZOI provides a shared `excitement` definition with the existing
+`orgasm` completion-event identifier. HZoi and other packs can attach
+their own effects to that task in their scene JSON. A malformed task is
+isolated at runtime. The authoring build rejects conflicting definitions
+within a single pack.
 
 Two tasks can display the same label. Give independent tasks pack-prefixed IDs
 such as `training.focus` and `meditation.focus`. When packs intentionally share
 an ID, use the same definition, including any definition-level actions. The
 selected definition applies to every scene that refers to that ID.
+
+See [shared declarations and conflicting IDs](authoring.md#shared-declarations-and-conflicting-ids)
+for how to coordinate a shared task with another pack author.
 
 ## Per-scene progression
 
@@ -195,7 +218,29 @@ Each completion index is attempted once. A missing clip/source or native failure
 
 One-shots do not loop or restart on frame updates. They use the existing native audio pitch limits and duration accounting: game pause/time controls affect playback; SceneZOI's animation-speed selector does not. They pause during scene/outfit preparation, survive navigation, and resume following the same participant. Exit stops/releases all task-action audio through the normal retained-subsystem lifecycle. No global mixer or game sound settings are changed.
 
-This facility implements scene-local completion audio only. Persistent gameplay outcomes and other definition-level action types remain separate. Scene-level voice bindings, routing and procedural effects are implemented independently below. Content still ships no executable code. Native JSON declaration changes require normal package activation; replacing a JSON patch on disk does not prove the loaded native table changed.
+This task-wide facility plays completion audio on any matching scene using the definition. Persistent gameplay outcomes and other definition-level action types remain separate. Scene-level voice bindings, routing and procedural effects are implemented independently below. Content still ships no executable code. Native JSON declaration changes require normal package activation; replacing a JSON patch on disk does not prove the loaded native table changed.
+
+### Play a completion sound in one scene
+
+Add a rule under `task_completion_sounds` for the role and task that trigger
+the sound. You can supply a `clip` path or a `sound_set` ID with default clips
+from a [sound set](sfx.md#data). The source follows the completing Zoi.
+
+```json
+"task_completion_sounds": {
+  "trainer": {
+    "training.focus": [{
+      "type": "play_sound",
+      "sound_set": "training.focus_ready",
+      "source": {"component": "body", "bones": ["pelvis"]}
+    }]
+  }
+}
+```
+
+A scene rule takes precedence over the older task-wide `on_completion` list
+for that role and task. An empty list silences the task-wide action in that
+scene. An absent rule uses the task-wide behavior for compatibility.
 
 ## Scene-local task completion routes
 

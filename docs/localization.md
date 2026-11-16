@@ -110,11 +110,14 @@ replace messages belonging to another author. Pack labels normally need only the
 Named placeholders such as `{min}`, `{max}` and `{code}` must remain unchanged;
 they may move within the translated sentence. Text is plain UTF-8, never HTML,
 Lua or an expression. The UI escapes translated text before creating markup.
-Malformed declarations and conflicting entries are diagnosed and rejected as
-whole documents, independently of other contributions. Build validation fails
-before generated output changes. Limits: 64 cultures/document, 2,048 entries per
-map, 1,024 UTF-8 bytes/key, 4,096 bytes/translation, and the existing 1 MiB native
-declaration limit. Use another namespaced declaration when necessary.
+A malformed declaration is rejected as a document. If two valid packs
+provide different text for the same language and key, the framework's
+translation takes priority when present. Other entries still load. The
+conflict report in `scenezoi_runtime/mod_inventory.cfg` identifies both
+providers and the chosen one. Builds reject conflicts within the same pack.
+A declaration can register 64 cultures and 2,048 entries per map. Keys can
+be up to 1,024 UTF-8 bytes and values up to 4,096 bytes. Use another
+namespaced declaration if you reach the 1 MiB native limit.
 
 Player-written outfit names and proper names are preserved. Outfit categories
 are translated, while raw asset IDs remain internal. Tags/actions, aliases,

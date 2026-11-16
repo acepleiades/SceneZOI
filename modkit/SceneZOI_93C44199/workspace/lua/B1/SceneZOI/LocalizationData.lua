@@ -24,21 +24,40 @@ function M.validate(data)
  return data
 end
 function M.compile(source)
- local out={messages={},labels={},warnings={}}
- for _,doc in ipairs((source.by_kind or {}).localization or {})do
-  local ok,err=pcall(function()
-   local data=M.validate(doc.data)
-   -- Check every conflict before accepting any field from this document.
-   for culture,groups in pairs(data.translations)do for _,kind in ipairs({'messages','labels'})do
-    local existing=out[kind][culture]or {}
-    for key,text in pairs(groups[kind]or {})do assert(not existing[key]or existing[key]==text,'Conflicting localized text: '..key)end
-   end end
-   for culture,groups in pairs(data.translations)do for _,kind in ipairs({'messages','labels'})do
-    out[kind][culture]=out[kind][culture]or {}
-    for key,text in pairs(groups[kind]or {})do out[kind][culture][key]=text end
-   end end
-  end)
-  if not ok then out.warnings[#out.warnings+1]=tostring(doc.source)..': '..tostring(err)end
+ local out={messages={},labels={},warnings={},conflicts={}}
+ local winners={messages={},labels={}}
+ local docs=(source.by_kind or {}).localization or {}
+ local ordered={}
+ for _,doc in ipairs(docs)do if doc.owner=='scenezoi'then ordered[#ordered+1]=doc end end
+ for _,doc in ipairs(docs)do if doc.owner~='scenezoi'then ordered[#ordered+1]=doc end end
+ for _,doc in ipairs(ordered)do
+  local ok,data=pcall(M.validate,doc.data)
+  if not ok then out.warnings[#out.warnings+1]=tostring(doc.source)..': '..tostring(data)
+  else
+   for culture,groups in pairs(data.translations)do
+    for _,kind in ipairs({'messages','labels'})do
+     local bucket=out[kind][culture]or {};out[kind][culture]=bucket
+     local owners=winners[kind][culture]or {};winners[kind][culture]=owners
+     for key,text in pairs(groups[kind]or {})do
+      if bucket[key]==nil then
+       bucket[key]=text;owners[key]=doc.owner or doc.source
+      elseif bucket[key]~=text then
+       out.conflicts[#out.conflicts+1]={culture=culture,kind=kind,key=key,winner=owners[key],other=doc.owner or doc.source}
+      end
+     end
+    end
+   end
+  end
+ end
+ table.sort(out.conflicts,function(a,b)
+  if a.culture~=b.culture then return a.culture<b.culture end
+  if a.kind~=b.kind then return a.kind<b.kind end
+  if a.key~=b.key then return a.key<b.key end
+  return a.other<b.other
+ end)
+ for _,conflict in ipairs(out.conflicts)do
+  out.warnings[#out.warnings+1]='Conflicting localized text: '..conflict.culture..'/'..conflict.key..
+   ' ('..conflict.winner..' wins over '..conflict.other..')'
  end
  return out
 end

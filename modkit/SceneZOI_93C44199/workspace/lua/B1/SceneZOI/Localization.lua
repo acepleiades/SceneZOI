@@ -8,6 +8,7 @@ local source,published,age,published_culture
 local compiled={messages={},labels={},warnings={}}
 local aliases={en='en-US',ko='ko-KR',ja='ja-JP',de='de-DE',fr='fr-FR',it='it-IT',es='es-ES',ru='ru-RU',pl='pl-PL',pt='pt-PT',tr='tr-TR',nl='nl-NL',zh='zh-CN'}
 local canonical={};for _,v in pairs(aliases)do canonical[v:lower()]=v end;canonical['pt-br']='pt-BR';canonical['zh-tw']='zh-TW';canonical['zh-hans']='zh-CN';canonical['zh-hant']='zh-TW'
+function M.conflicts()return compiled.conflicts or {} end
 function M.normalize(value)
  if type(value)~='string'then return 'en-US'end
  value=value:gsub('_','-'):lower()

@@ -37,6 +37,10 @@
       "file": "scenezoi/facial_poses/open_o.json"
     },
     {
+      "kind": "scene_task",
+      "file": "scenezoi/tasks/excitement.json"
+    },
+    {
       "kind": "localization",
       "file": "scenezoi/localization/text.json"
     }

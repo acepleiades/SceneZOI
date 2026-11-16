@@ -63,7 +63,7 @@ class FrameworkCatalogTests(unittest.TestCase):
    (project/'workspace/native_version.json').write_text(json.dumps({'version':'test'}))
    build([ROOT/'packs/scenezoi.json'],project)
    entries=json.loads((project/'Content/JsonPatch/Text_UI_patch.json').read_text(encoding='utf-8'))['PatchList']
-   self.assertEqual(len(entries),10);self.assertEqual(json.loads(entries[0]['Value']['Text'])['owner'],'scenezoi')
+   self.assertEqual(len(entries),11);self.assertEqual(json.loads(entries[0]['Value']['Text'])['owner'],'scenezoi')
    self.assertFalse((project/'lua').exists());self.assertFalse((project/'ui').exists())
  def test_independent_author_uses_explicit_project(self):
   with tempfile.TemporaryDirectory()as directory:

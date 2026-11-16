@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "excitement",
+  "label": "Excitement",
+  "maximum": 90,
+  "initial": 0,
+  "decay": 1,
+  "completion_event": "orgasm",
+  "display": {
+    "color": "#3185c3",
+    "body_colors": {
+      "male": "#3185c3",
+      "female": "#df85ac"
+    },
+    "text_color": "#222222",
+    "track_color": "#bfbfbf"
+  }
+}

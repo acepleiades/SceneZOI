@@ -14,9 +14,9 @@ schemas and examples for contributions using your own assets.
 
 The optional [HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) publishes a reference-only adult-content
 example with proprietary audio replaced by silence. Start with the
-[worked examples](content-examples.md). Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json)
+[worked examples](content-examples.md). Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json)
 shows scene collection, shared sound sets, expression files and typed `data_files`;
-its [native patch](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/modkit/HZoi_660649D8/Content/JsonPatch/Text_UI_patch.json)
+its [native patch](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/modkit/HZoi_660649D8/Content/JsonPatch/Text_UI_patch.json)
 shows the generated envelopes. This source copy is separate from the private
 production pack used in historical audible/visual validation. Neither is required
 to build SceneZOI. Consult the reference's rights notices before reuse.
@@ -64,7 +64,7 @@ Every owner needs its own native project. The generic writer preserves unrelated
 patch entries and records owned declarations in `workspace/data_files.json` for
 packaging; runtime does not read that inventory. Native packaging carries the
 patch as `non_ufs/JsonPatch/Text_UI_patch.json` with manifest membership/checksums.
-The framework default stages ten declarations with five neutral scene nodes.
+The framework default stages five neutral scene nodes and the shared excitement task alongside its other declarations.
 
 B1 reads the native table at startup. The picker and the API use the cached
 catalog. Restart inZOI after changing installed packs so the game mounts the
@@ -172,8 +172,8 @@ For an independently packaged copy of this attachment, see
 [the authoring workflow](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack).
 Use your own object paths and keep SceneZOI as the only mod dependency.
 
-HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json) points to its
-[body profile](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/skin_hair.json). Follow those
+HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/region_attachment.json) points to its
+[body profile](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/skin_hair.json). Follow those
 IDs alongside `node_animations` to see how a content pack activates and animates
 an attachment at its own scenes and framework hubs. Section 17 and material
 slots describe those assets, not universal framework defaults. See the

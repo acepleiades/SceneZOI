@@ -336,7 +336,8 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         initiator = initiator, participant_ids = participant_ids, participants = participants,
         assets = assets, node = node, duration = duration, require_resolved_outfit = true,furniture=furniture,anchor=furniture and furniture.anchor,
     })
-    current.tasks = Tasks.new((Catalog.get_snapshot().tasks or {}).definitions or {}, participants)
+    local tasks=Catalog.get_snapshot().tasks or {}
+    current.tasks=Tasks.new(tasks.variants or tasks.definitions or {},participants,tasks.variants and tasks or nil)
     for _,person in ipairs(participants) do
         person.task_name = person.outfit_name and Protocol.decode(person.outfit_name) or person.id
     end
