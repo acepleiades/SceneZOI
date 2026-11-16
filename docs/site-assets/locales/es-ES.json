@@ -18,7 +18,7 @@
   "solo": "Haz clic en el Zoi que controlas y elige {1:Sesión en solitario de SceneZOI} debajo de {2:Gesto de IA (AI Emote)} para abrir los ajustes.",
   "debug": "Haz clic en el icono del engranaje. En {1:Depuración}, activa {2:Iniciar SceneZOI manualmente} y sal de la sesión en solitario.",
   "picker": "Usa el inicio de depuración en el Zoi que controlas o en un mueble compatible para abrir el selector e iniciar una escena.",
-  "withGameplay": "{1:Con un mod de jugabilidad:} Inicia las escenas mediante las interacciones del propio mod. Puedes dejar desactivado el inicio de depuración. {2:VelvetZOI en Nexus Mods} · {3:VelvetZOI en Patreon}",
+  "withGameplay": "{1:Con un mod de jugabilidad:} Inicia las escenas mediante las interacciones del propio mod. Puedes dejar desactivado el inicio de depuración. VelvetZOI es un ejemplo. {2:VelvetZOI en Nexus Mods} · {3:VelvetZOI en Patreon}. ¿Tienes una idea para tu propio mod? {4:Crea un complemento de jugabilidad para SceneZOI}.",
   "optional": "Paquete opcional HZoi",
   "hzoi": "SceneZOI es {1:apto para todas las edades}. HZoi es un {2:paquete independiente de contenido para adultos}. Extrae HZoi en la misma carpeta Mods, comprueba que {3} contiene su propio {4} y {5:activa ambos mods}. {6:Descargar HZoi}",
   "body": "SceneZOI no incluye modelos de cuerpos desnudos. Para contenido para adultos se recomienda un reemplazo de cuerpo compatible, como {1} o {2}. {3:La física de rebote es opcional.} SceneZOI admite automáticamente los reemplazos masculinos compatibles. {4:Informar de un problema de compatibilidad}",

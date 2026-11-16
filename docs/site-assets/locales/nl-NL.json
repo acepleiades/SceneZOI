@@ -18,7 +18,7 @@
   "solo": "Klik op de Zoi die je bestuurt en kies {1:SceneZOI-solosessie} onder {2:AI-emote (AI Emote)} om de scène-instellingen te openen.",
   "debug": "Klik op het tandwiel. Schakel bij {1:Debug} de optie {2:SceneZOI handmatig starten} in en sluit de solosessie af.",
   "picker": "Gebruik de debugoptie op de Zoi die je bestuurt of op een ondersteund meubel om de kiezer te openen en een scène te starten.",
-  "withGameplay": "{1:Met een gameplaymod:} Start scènes via de interacties van de mod zelf. De debugoptie kan uitgeschakeld blijven. {2:VelvetZOI op Nexus Mods} · {3:VelvetZOI op Patreon}",
+  "withGameplay": "{1:Met een gameplaymod:} Start scènes via de interacties van de mod zelf. De debugoptie kan uitgeschakeld blijven. VelvetZOI is een voorbeeld. {2:VelvetZOI op Nexus Mods} · {3:VelvetZOI op Patreon}. Wil je zelf een mod maken? {4:Maak een gameplay-add-on voor SceneZOI}.",
   "optional": "Optioneel HZoi-pakket",
   "hzoi": "SceneZOI is {1:geschikt voor alle leeftijden}. HZoi is een {2:apart pakket met inhoud voor volwassenen}. Pak HZoi uit in dezelfde Mods-map, controleer of {3} een eigen {4} bevat en {5:schakel beide mods in}. {6:HZoi downloaden}",
   "body": "SceneZOI bevat geen naakte lichaamsmodellen. Voor inhoud voor volwassenen raden we een compatibele lichaamsmod aan, zoals {1} of {2}. {3:Bewegingsfysica voor lichaamsdelen is optioneel.} SceneZOI ondersteunt compatibele mannelijke lichaamsmods automatisch. {4:Een compatibiliteitsprobleem melden}",

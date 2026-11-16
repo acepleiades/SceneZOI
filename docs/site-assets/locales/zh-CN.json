@@ -18,7 +18,7 @@
   "solo": "点击当前操控的 Zoi，在 {2:AI 表情（AI Emote）} 下方选择 {1:SceneZOI 单人场景}，即可打开场景设置。",
   "debug": "点击齿轮图标。在 {1:调试} 中启用 {2:手动启动 SceneZOI}，然后退出单人会话。",
   "picker": "在当前操控的 Zoi 或支持的家具上使用调试启动选项，即可打开选择器并开始场景。",
-  "withGameplay": "{1:使用玩法模组：} 通过模组自身的互动开始场景。调试启动可以保持关闭。{2:Nexus Mods 上的 VelvetZOI} · {3:Patreon 上的 VelvetZOI}",
+  "withGameplay": "{1:使用玩法模组：} 通过模组自身的互动开始场景。调试启动可以保持关闭。VelvetZOI 就是一个例子。{2:Nexus Mods 上的 VelvetZOI} · {3:Patreon 上的 VelvetZOI}。想制作自己的模组？{4:查看 SceneZOI 玩法扩展制作指南}。",
   "optional": "可选的 HZoi 内容包",
   "hzoi": "SceneZOI 本身{1:适合所有年龄}。HZoi 是{2:独立的成人内容包}。将 HZoi 解压到同一个 Mods 文件夹，确认 {3} 内有自己的 {4}，然后{5:同时启用两个模组}。{6:获取 HZoi}",
   "body": "SceneZOI 不包含裸体模型。使用成人内容时，建议安装兼容的体型替换模组，例如 {1} 或 {2}。{3:身体晃动物理效果可选。} SceneZOI 会自动支持兼容的男性体型替换模组。{4:报告兼容性问题}",

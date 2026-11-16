@@ -18,7 +18,7 @@
   "solo": "Kliknij sterowanego Zoi i wybierz {1:Sesja solo SceneZOI} pod opcją {2:Emotka AI (AI Emote)}, aby otworzyć ustawienia sceny.",
   "debug": "Kliknij ikonę koła zębatego. W sekcji {1:Debugowanie} włącz opcję {2:Uruchom SceneZOI ręcznie} i zakończ sesję solo.",
   "picker": "Użyj opcji debugowania na sterowanym Zoi lub obsługiwanym meblu, aby wybrać i rozpocząć scenę.",
-  "withGameplay": "{1:Z modem rozgrywki:} Uruchamiaj sceny przez interakcje tego moda. Opcja debugowania może pozostać wyłączona. {2:VelvetZOI na Nexus Mods} · {3:VelvetZOI na Patreonie}",
+  "withGameplay": "{1:Z modem rozgrywki:} Uruchamiaj sceny przez interakcje tego moda. Opcja debugowania może pozostać wyłączona. VelvetZOI to jeden z przykładów. {2:VelvetZOI na Nexus Mods} · {3:VelvetZOI na Patreonie}. Masz pomysł na własny mod? {4:Stwórz dodatek do rozgrywki dla SceneZOI}.",
   "optional": "Opcjonalny pakiet HZoi",
   "hzoi": "SceneZOI jest {1:dla wszystkich grup wiekowych}. HZoi to {2:oddzielny pakiet treści dla dorosłych}. Rozpakuj HZoi do tego samego folderu Mods, sprawdź, czy {3} zawiera własny {4}, i {5:włącz oba mody}. {6:Pobierz HZoi}",
   "body": "SceneZOI nie zawiera modeli nagich ciał. Do treści dla dorosłych zalecany jest zgodny mod zastępujący model ciała, taki jak {1} lub {2}. {3:Fizyka ruchu ciała jest opcjonalna.} SceneZOI automatycznie obsługuje zgodne zamienniki męskich sylwetek. {4:Zgłoś problem ze zgodnością}",

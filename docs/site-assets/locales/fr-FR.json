@@ -18,7 +18,7 @@
   "solo": "Cliquez sur le Zoi que vous contrôlez et choisissez {1:Session solo SceneZOI} sous {2:Émote IA (AI Emote)} pour accéder aux paramètres.",
   "debug": "Cliquez sur l’icône en forme d’engrenage. Dans {1:Débogage}, activez {2:Lancer SceneZOI manuellement}, puis quittez la session solo.",
   "picker": "Utilisez l’option de débogage sur votre Zoi ou un meuble compatible pour ouvrir le sélecteur et lancer une scène.",
-  "withGameplay": "{1:Avec un mod de gameplay :} Lancez les scènes via les interactions du mod. Vous pouvez laisser le lancement de débogage désactivé. {2:VelvetZOI sur Nexus Mods} · {3:VelvetZOI sur Patreon}",
+  "withGameplay": "{1:Avec un mod de gameplay :} Lancez les scènes via les interactions du mod. Vous pouvez laisser le lancement de débogage désactivé. VelvetZOI en est un exemple. {2:VelvetZOI sur Nexus Mods} · {3:VelvetZOI sur Patreon}. Vous avez une idée de mod ? {4:Créez votre propre extension de gameplay pour SceneZOI}.",
   "optional": "Pack facultatif HZoi",
   "hzoi": "SceneZOI est {1:tout public}. HZoi est un {2:pack de contenu pour adultes séparé}. Extrayez HZoi dans le même dossier Mods, vérifiez que {3} contient son propre {4} et {5:activez les deux mods}. {6:Télécharger HZoi}",
   "body": "SceneZOI ne fournit aucun modèle de corps nu. Pour le contenu adulte, un mod de corps compatible comme {1} ou {2} est recommandé. {3:La physique des mouvements du corps est facultative.} SceneZOI prend automatiquement en charge les corps masculins compatibles. {4:Signaler un problème de compatibilité}",

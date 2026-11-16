@@ -9,6 +9,9 @@
 
 Animation packs can add choices to the built-in solo and paired idle hubs. What you see depends on which packs are installed, which Zois you chose, and where the scene is taking place. For example, a bed scene needs a supported bed and clips made for that placement.
 
+If you have an idea for how scenes should fit into the game, you can
+[build your own gameplay add-on](addon-authoring.md) with the SceneZOI API.
+
 ## While a scene is playing
 
 - Use the scene panel to pick another animation, adjust playback speed, or **Exit**. Pausing inZOI pauses the scene. If an add-on started a scene with **Auto-mode**, turn it off to take manual control when the add-on permits it.
