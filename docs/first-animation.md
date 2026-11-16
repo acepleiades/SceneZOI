@@ -17,8 +17,8 @@ Choose one animation editor. Both have ready-made inZOI rigs and exporters.
 
 | Editor | Download and setup |
 | --- | --- |
-| **Blender** | Download Blender (any recent version should be compatible). Open a supplied `.blend` animation rig, save a working copy, and install and enable `inzoi_motion_export.py` from Blender's Add-ons preferences. [Blender releases](https://www.blender.org/releases/) · [inZOI Blender rigs and exporter](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014) |
-| **Maya** | Get Maya from Autodesk. The rigs were authored in Maya 2026. Open the paired `.ma` file and save a working copy. Extract the exporter ZIP and drag `inzoi_animation_export.py` into the viewport to add the **inZOI Export** button to the **SceneZOI** shelf. Use Display Layers to show the controls and meshes you need. [Autodesk Maya](https://www.autodesk.com/products/maya/free-trial) · [inZOI Maya rigs, exporter and linking tool](https://www.patreon.com/skyrimaceanimations/posts/inzoi-maya-rigs-173172317) |
+| **Blender** | Download Blender and check the rig post for its supported version. Open a supplied `.blend` animation rig, save a working copy, and install and enable `inzoi_motion_export.py` from Blender's Add-ons preferences. [Blender releases](https://www.blender.org/releases/) · [inZOI Blender rigs and exporter](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014) |
+| **Maya** | Get Maya from Autodesk. The rigs were authored in Maya 2026. Open the paired `.ma` file and save a working copy. Extract the exporter ZIP and drag `inzoi_animation_export.py` into the viewport to add the **inZOI Export** button to the **SceneZOI** shelf. Use Display Layers to show the controls and meshes you need. For a seated scene, open the paired rig with the furniture reference box. [Autodesk Maya](https://www.autodesk.com/products/maya/free-trial) · [inZOI Maya rigs, exporter and linking tool](https://www.patreon.com/skyrimaceanimations/posts/inzoi-maya-rigs-173172317) |
 
 For import and packaging, install the inZOI ModKit on Windows. Get the packaged
 SceneZOI release for testing and the repository source for the authoring tools.
@@ -132,8 +132,9 @@ assets, the authoring guide explains how to use an installed HZoi dependency.
 
 ## 6. Package and test in-game
 
-Ask the agent to stage the scene JSON, verify the imported asset paths and
-durations, and package the mod using the owned-payload filter. The authoring
+Stage the scene JSON, check the imported asset paths and durations, and
+package the mod using the owned-payload filter. An agent can handle these steps
+with the project and scene brief you supplied. The authoring
 guide shows how to create the manifest and register the scene files. The
 packaging guide covers the isolated ModKit export and filtering.
 [Authoring and staging](authoring.md#files-and-native-project) · [Packaging](development.md#isolated-packaging)

@@ -1,17 +1,14 @@
-# SceneZOI add-on SDK
+# SceneZOI Lua SDK
 
-Copy `lua/SceneZOIAddon/` into an independent native mod's `workspace/lua/B2/`.
-The SDK contains its own JSON codec and uses public native messages; it does not
-require private framework modules. It is covered by the repository's LICENSE.
+Copy [lua/SceneZOIAddon/](lua/SceneZOIAddon/) into your mod's `workspace/lua/B2/`.
+Follow [Add-on authoring](../docs/addon-authoring.md) to wire your B2 callbacks
+and make a first request. The client uses the versioned native-message API and
+includes its own JSON codec.
 
-Start with the [add-on authoring guide](../docs/addon-authoring.md), then the
-[API reference](../docs/addons.md) and [controls reference](../docs/addon-controls.md).
-The SDK includes request correlation/retries, host-change detection, subscription
-resynchronization, integration renewal, same-entity owner refresh and public-data
-helpers for roles/actions/partners/tasks/navigation. Use `client:request` for
-`start_autonomous_scene`, `get_session`, `set_auto_mode` and `stop_session`.
-See the [goal-driven SDK example](../docs/addon-authoring.md#start-a-goal-driven-scene-through-the-sdk)
-and the [autonomous API reference](../docs/addons.md#autonomous-scenes).
+Use `client:request` for calls such as `get_version`, `find_scenes` and
+`start_autonomous_scene`. Tick each client once with real elapsed seconds.
+Refresh its native owner from the current callback for that same Zoi. If the
+host changes, negotiate again and reconcile your subscriptions and integrations.
+[API reference](../docs/addons.md) · [Live controls](../docs/addon-controls.md) · [Goal-driven example](../docs/addon-authoring.md#start-a-goal-driven-scene-through-the-sdk)
 
-There is no installed test mod, test command mailbox or test declaration in this
-SDK. Repository regressions exercise the SDK using isolated fixtures.
+The SDK uses the [SceneZOI license](../LICENSE).

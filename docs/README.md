@@ -1,43 +1,31 @@
 # SceneZOI documentation
 
-These pages describe the active framework at the repository root. Dated investigation and validation records preserve evidence; they do not override current contracts or imply new visual acceptance.
+## Play
 
-| Topic | Document |
+[Download and install](../README.md#player-downloads) · [Start a scene or report a problem](playing.md) · [Scene Settings](settings.md)
+
+## Make an animation pack
+
+1. [Make your first animation](first-animation.md). Open the Maya or Blender rig, animate a short loop and export it.
+2. [Write and package your first scene](authoring.md). Import the tracks, connect the scene to a hub or the picker, and test it in game.
+3. [Read a complete scene](content-examples.md). Start with a neutral example from SceneZOI or follow the illustrated features in HZoi Reference, which contains adult examples and silent audio.
+
+| I'm adding… | Read |
 | --- | --- |
-| Contributor/fork setup in ModKit | [Developer setup](installation.md) |
-| Source, checks and packaging | [Development](development.md) and [contributing](../CONTRIBUTING.md) |
-| Ownership and native declarations | [Package split](package-split.md) |
-| Runtime architecture | [Design](architecture.md) and [lifecycle contracts](tier1-contracts.md) |
-| Participants and native picker | [Group support](group-support.md) |
-| Concurrent sessions and auto-mode | [Add-on API](addons.md#concurrent-and-background-sessions), [autonomous plans](addons.md#autonomous-scenes) |
-| Furniture | [Furniture](furniture.md) |
-| Animation authoring | [Make your first animation](first-animation.md), [authoring reference](authoring.md) and [worked content-pack examples](content-examples.md) |
-| Scene tags, actions and ratings | [Metadata](scene-metadata.md) |
-| Independent add-ons | [Authoring guide](addon-authoring.md), [API](addons.md), [controls](addon-controls.md) and [SDK](../sdk/README.md) |
-| Gaze and expressions | [Gaze](gaze.md), [expressions](expressions.md), [facial poses/head attachments](facial-poses.md) |
-| Player-facing translations | [Localization](localization.md) |
-| Audio | [Voices](voices.md), [SFX](sfx.md), [settings and volume](settings.md) |
-| Tasks and responses | [Scene tasks](scene-tasks.md), [completion effects](completion-effects.md) |
-| One-shot nodes | [Transitions](transitions.md) |
-| Reproduced issues and limits | [Investigation index](investigations/README.md) and [issue ledger](investigations/runtime-and-ui-issues.md) |
-| Release evidence and limits | [Validation overview](validation/README.md) and [current report](../validation.json) |
+| Another role, furniture placement or a link from a hub | [Participants](group-support.md) · [Furniture](furniture.md) · [Pack declarations and hub extensions](package-split.md) |
+| Tags, actions or translated names | [Metadata and ratings](scene-metadata.md) · [Localization](localization.md) |
+| Where Zois look and how they react | [Gaze](gaze.md) · [Expressions](expressions.md) · [Facial poses](facial-poses.md) |
+| Voices and sound effects | [Voices](voices.md) · [Sound effects](sfx.md) |
+| A progress meter, an effect at completion or a transition | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
+| Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
 
-Curated validation evidence and failure notes are retained here. Raw historical
-checkpoints and machine-specific diagnostics are archived privately; they are not
-public authoring inputs. Current contracts take precedence over dated findings.
+## Make a gameplay mod
 
-- [Add-on controls, results and SDK extensions](addon-controls.md)
-- [Add-on API validation findings and pitfalls](validation/addon-api-20261104.md)
+Follow [Add-on authoring](addon-authoring.md) to set up the [Lua SDK](../sdk/README.md) and start a scene. Use the [API reference](addons.md) for scene searches, autonomous plans and events, and [live controls](addon-controls.md) for changes during a session.
 
-## Public content-pack examples
+## Work on SceneZOI
 
-[HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) is an optional, reference-only adult-content example
-with proprietary audio replaced by silence. The [worked guide](content-examples.md)
-maps features to complete JSON files and traces their declarations, scene
-instructions and referenced libraries. Its lack of a repository-wide license
-does not grant general asset reuse. All-ages examples remain in the
-[neutral scene sources](../packs/scenezoi/scenes/).
-
-The original HZoi production repository stays private. Historical validation used
-that original pack; its audible acceptance is not a claim about silent playback.
-Framework setup and default checks require neither checkout.
+- [Contributing](../CONTRIBUTING.md) explains how to report bugs and open a pull request.
+- [Developer setup](installation.md) gets the source checks running. [Development and packaging](development.md) covers ModKit, native testing and GitHub Pages.
+- [Architecture](architecture.md) shows where to start reading the source. [Runtime contracts](tier1-contracts.md) explains the behavior to preserve when changing it.
+- [Release checks](validation/README.md) covers testing a package. [Troubleshooting the runtime](investigations/runtime-and-ui-issues.md) links recurring symptoms to the relevant code and tests.

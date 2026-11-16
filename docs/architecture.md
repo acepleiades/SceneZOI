@@ -1,32 +1,37 @@
 # Runtime architecture
 
-SceneZOI is a reusable animation framework. HZoi is an optional assets/declarations pack with a private production checkout and a public [muted reference](content-examples.md); HZoi Gameplay is deferred. SceneZOI provides a direct solo launcher and an opt-in debug picker. Both use technical eligibility checks. The debug picker also checks furniture availability.
+A scene is a fixed cast of Zois playing synchronized tracks. Each session owns
+its own clock, current scene, temporary changes and cleanup. The panel follows
+the Zoi under player control. Several sessions can run at once.
 
-## Data and ownership
+## Follow a scene through the code
 
-Enabled native packages contribute inert, independently owned JSON through Text_UI patches, read via retail Text. Source builds collect one scene per file. No author whitelist, content callbacks or compiled runtime scene catalog is required.
+Links below point to the Lua or UI source in the ModKit overlay.
 
-SceneZOI discovers the mounted packs when its client Lua runtime starts. The manual picker and add-on API share that catalog, and each session captures its libraries, graph, and profiles. Restart inZOI after installing or changing content packs so the game mounts the new set and SceneZOI discovers it on startup.
+| When | Start here |
+| --- | --- |
+| Client Lua starts | [DataFiles](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/DataFiles.lua) reads the game data table. [Catalog](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Catalog.lua) validates definitions and builds the scene graph. |
+| The player clicks Start | [Launcher UI](../modkit/SceneZOI_93C44199/ui/scenezoi-starter/), [StartingScenes](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/StartingScenes.lua) and [Binding](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Binding.lua). The picker and the API use the same catalog. |
+| An add-on asks to start | [AddonAPI](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/AddonAPI.lua) handles the public request. [Plan](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Plan.lua) drives autonomous scenes. |
+| Zois prepare and furniture is reserved | [Runtime](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Runtime.lua) coordinates [Session](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Session.lua), [SaveBridge](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/SaveBridge.lua), B2 participants and [Furniture](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Furniture.lua). The session waits for the save journal before changing gameplay state. |
+| Tracks play or change | [Clock](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Clock.lua) drives [Playback](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Playback.lua). [Subsystems](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Subsystems.lua) manages optional presentation. |
+| A scene ends | Runtime coordinates cleanup. Each owner releases its resources, and the save journal keeps any restoration still outstanding. |
 
-Runtime coordinates a fixed roster with explicit named roles. Session owns original appearance/restoration snapshots, participant leases, placement/furniture context and selected speed. Playback samples body and attachment tracks from one shared clock on the game's existing animation instances. Optional engines own their resources independently and retain partial cleanup work for retry. Node preparation holds the outgoing pose until the arriving node is ready.
+## Three boundaries that matter
 
-Expressions, gaze, voices, SFX, tasks, transitions, procedural completion responses and furniture are implemented generic systems. Their data use and native/visual acceptance limits are documented in [the subsystem index](README.md). No HZoi-specific semantics belong in the runtime. Purpose-authored transition choreography and gameplay integration remain separate future content/work.
+- **B1 and B2.** B1 runs client-side playback, UI coordination and the API host.
+  B2 runs simulation changes such as interaction cancellation and autonomy. Use
+  native messages to cross that boundary. The [Lua guide](../modkit/SceneZOI_93C44199/workspace/lua/AGENTS.md)
+  has the binding conventions and differences from UI JavaScript.
+- **Pack data and runtime.** ModKit installs `Text_UI` patches, which the game
+  exposes as `Text`. B1 builds the catalog at startup. Each session keeps the
+  definitions it starts with. Restart inZOI to load newly installed packs.
+  [Pack declarations](package-split.md)
+- **Public API and internals.** Gameplay mods use the versioned SDK and native
+  messages. The rest of the Lua runtime and UI mailboxes are internal. The
+  player picker and add-on starts share role, furniture and resource checks.
+  [Public API](addons.md)
 
-## Add-on boundary
-
-The [version-1 native-message API](addons.md) lets independent B2 mods query
-registered metadata, create a technically eligible session, restrict its lifetime
-navigation and observe copied events. The independent SDK does not require private
-framework modules. Restrictions share the same predicate as scene search and are
-enforced at every route. Tags/actions remain inert content data; the framework
-derives ratings from action definitions. Sessions live in a registry and run side by side; `Plan` drives autonomous sessions.
-
-## Native lifecycle constraints
-
-SceneZOI preserves inZOI animation instances, the native picker/input handshake,
-session-owned outfit snapshots, independently owned resources and retryable
-cleanup. Roles are independent of body type and controlled/NPC status. Smart Zoi
-toggling must not return. Procedural bone shaking does not provide contact or
-foot-locking IK.
-
-See [runtime contracts](tier1-contracts.md), [package ownership](package-split.md), [participant entry](group-support.md) and [validation](../validation.json). The retired prototype's findings survive in these contracts and the concise issue ledger; its runtime and binary assets are not part of the repository.
+For changes to ownership, read the [runtime contracts](tier1-contracts.md).
+For a bug report, use [runtime troubleshooting](investigations/runtime-and-ui-issues.md)
+to find the relevant diagnostic and regression.

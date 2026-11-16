@@ -71,7 +71,8 @@ local function release(self, owner, silent)
     restore("furniture", function() if lease.saved_furniture then require('SceneZOI.FurnitureLease').restore_saved(owner,lease.saved_furniture,lease.token)end end)
     restore("outfit", function() Outfit.restore(owner, lease) end)
     restore("position", function()
-        -- Before the first anchor the simulation has not moved this Zoi.
+        -- Exit can arrive before the first anchor. Skip native position writes
+        -- until the lease actually moved the Zoi, unless restoring from a save.
         if lease.stay or not (lease.location or lease.recovering) then return end
         owner:SetLocationAndRotationOnlySimul(lease.entry_location, lease.entry_rotation, false)
     end)
@@ -120,8 +121,8 @@ local function release(self, owner, silent)
 end
 
 local function clear_task_queue(owner, interaction)
-    -- Autonomy does not stop user-queued tasks. Remove the backlog before cancel
-    -- advances it, and keep new requests from taking over an already-ready lease.
+    -- Cancelling the running interaction can advance the waiting queue. Clear
+    -- it first and keep it clear even after the participant is ready.
     if not interaction:IsQueueEmpty() then
         local ok, message = inzoi.cli.execute("interaction.clear_queue entity_id=" ..
             Protocol.id(owner:GetEntityId()) .. " cancel_current=false")
@@ -252,9 +253,9 @@ end
 local function advance_prepare(self, owner, first_commit)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
-    -- A Zoi already anchored by this lease is still under the task and placement
-    -- guards. The native autonomy query can disagree with the individual option,
-    -- so only require that query to be off before acquiring the Zoi.
+    -- On Back, the aggregate autonomy query can report enabled even when the
+    -- individual option and inheritance are off. An anchored Zoi already has
+    -- the task guard, so the aggregate query gates initial acquisition only.
     local option = owner.AutonomyOption.AutonomyEnable
     local anchored = lease.tasks_settled and lease.location ~= nil
     if first_commit or option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then

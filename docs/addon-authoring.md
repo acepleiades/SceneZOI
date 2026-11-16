@@ -1,10 +1,9 @@
 # Authoring a SceneZOI add-on
 
-SceneZOI owns sessions, fixed participants, playback and cleanup. Several sessions can run at once.
-An add-on owns its gameplay decisions, persistence, rewards and assets. Standard
-starts use the controlled Zoi. Background starts can use any eligible loaded
-initiator. Autonomous starts let the runtime navigate using a plan with goals,
-stages, restrictions and an end policy. Check `get_version.features` for
+A gameplay add-on decides when to start a scene and what to do with its
+result. Start with the controlled Zoi and one eligible scene. Once that works,
+try a background start with a loaded initiator or give SceneZOI an autonomous
+plan with goals, stages, restrictions and an end policy. Check `get_version.features` for
 `background_sessions` and `autonomous_scenes` before using these capabilities.
 See [concurrent starts and plans](addons.md#concurrent-and-background-sessions).
 
@@ -41,14 +40,14 @@ simulation, it attaches its own native module to the controlled Zoi and uses
 native messages to attach the same receiver to other participants as needed.
 Appearance components still perform initial outfit recovery. SceneZOI leaves
 the Zoi wildcard namespace available to other mods. See the
-[coexistence checkpoint](validation/wildcard-coexistence-20261108.json).
+[coexistence checkpoint](https://github.com/acepleiades/SceneZOI/blob/e0cb40d64bb8c313d5c7309c3c5605b231569892/docs/validation/wildcard-coexistence-20261108.json).
 
 Use ModKit's `modkit_list_lua_binding_keys` for the target environment/type when
 authoring your manifest. Test callbacks with an independent exact-group binding
 installed; checking Main startup or JSON discovery alone does not establish
 per-character callback/message delivery. Exact bindings for the same group can
 coexist; do not remove other mods' entries. See the
-[native conflict checkpoint](validation/script-mod-bindings-20261106.json).
+[native conflict checkpoint](https://github.com/acepleiades/SceneZOI/blob/e0cb40d64bb8c313d5c7309c3c5605b231569892/docs/validation/script-mod-bindings-20261106.json).
 
 ## Wire the SDK
 
@@ -93,6 +92,19 @@ The SDK needs real elapsed time even while gameplay is paused.
 B1 Lua must use the native player controller for possession;
 `entity.get_possessed` is B2-only from Lua. Do not treat UI-JavaScript or CLI
 availability as proof that a command is available in both Lua environments.
+
+## Make a first request
+
+Call this with the current B2 owner after wiring the message callback above:
+
+```lua
+client:request(owner, "author.version.1", "get_version", {})
+```
+
+Handle the reply in `response` and check `ok` before reading `result.features`.
+Then call `find_scenes` with the intended participant IDs. Start a returned
+match and wait for `session_started` before treating it as playing.
+[Request fields](addons.md#operations) · [Events](addons.md#events-and-ownership)
 
 ## Three integration patterns
 
@@ -189,10 +201,9 @@ not an executable API-client example, and cloning it does not install it.
 | Native muting originally started then stopped a clip during clothing handoff, and intentional suppression produced a missing-response warning. | API-5 fixes both. Native presentation checks must cover preparation/re-entry and deliberate suppression, not only setter acceptance. |
 | A final GENERAL hub could conceal earlier EXPLICIT playback. | Inspect the result's played history/peak rating when deciding consequences. |
 
-Technical checks do not decide consent, relationships, payments or rewards. Native
-component/asset diagnostics and author visual/audible acceptance are separate.
-See [the concise validation findings](validation/addon-api-20261104.md),
-[API reference](addons.md) and [control contracts](addon-controls.md).
+Check the [API reference](addons.md) for reply codes and the
+[control contracts](addon-controls.md) for ownership. For native presentation
+changes, test what you see or hear during playback and after Exit.
 
 Facial/prop integrations can pair a declared `facial_pose` override with a
 head-component attachment. See [facial poses](facial-poses.md); readiness, release

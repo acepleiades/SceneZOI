@@ -1,34 +1,26 @@
 ---
 name: "Bug report"
-about: "Report a reproducible runtime, build, authoring or documentation problem."
+about: "Report a problem with SceneZOI, its tools or its documentation."
 ---
 
-## Problem
+## What happened?
 
-<!-- What failed? What did you expect to happen instead? -->
+<!-- What did you expect? If this is a docs issue, link the page. -->
 
-## Environment
-
-- SceneZOI build or commit:
-- inZOI version (for in-game problems):
-- ModKit version (for build/validation problems):
-- Enabled content packs and add-ons:
-
-## Reproduction steps
+## Steps to reproduce
 
 1.
 2.
 3.
 
-<!-- Include scene IDs, participant roles, furniture or API operations when relevant.
-For documentation problems, link the affected page and describe the correction. -->
+## Versions and mods
 
-## Evidence
+- SceneZOI version or commit:
+- inZOI or ModKit version:
+- Enabled animation packs and gameplay mods:
 
-<!-- Add focused logs, screenshots, a minimal JSON/Lua example or test output.
-Distinguish isolated tests, native readback and what you saw/heard in game.
-If relevant, report whether Exit restored participant/furniture state. -->
+## Logs or example
 
-## Additional context
-
-<!-- Frequency, a working earlier build, a workaround, or related issues. -->
+<!-- For gameplay issues, zip Documents\inZOI\Mods\InGame\SceneZOI_93C44199\scenezoi_runtime.
+Tell us how you started the scene, which Zois/furniture were involved, and whether Exit restored gameplay.
+For authoring or API issues, a small JSON or SDK example helps. -->

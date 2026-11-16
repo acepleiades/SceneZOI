@@ -1,78 +1,32 @@
 # Contributing to SceneZOI
 
-SceneZOI welcomes reproducible bug reports, authoring/API feedback, documentation
-improvements and focused runtime fixes. Start with [developer setup](docs/installation.md)
-and the [documentation index](docs/README.md).
+## Get started
 
-## Reports and proposals
+1. Fork SceneZOI and clone your fork. Follow [developer setup](docs/installation.md) to run the checks on Windows with ModKit, Python and Node.js.
+2. Make a branch for your change. Use the [source map](docs/architecture.md) to find the relevant code and tests. The default checks work with the framework checkout alone.
+3. Open a pull request against `main`. Explain the problem, what changes for players or authors, and how you checked it. Link an issue if one exists.
 
-Search existing issues before opening a new one. Use the bug-report template for
-runtime, build, authoring or documentation failures; use the feature/API template
-to explain a concrete mod-author use case and the current obstacle.
+## Where to edit
 
-For bugs, include the build or commit, relevant game/ModKit versions, enabled
-packs/add-ons, exact steps, expected behavior and actual behavior. Add focused
-diagnostics or a minimal JSON/Lua example where available. State whether evidence
-comes from an isolated test, native readback or something seen/heard in game.
+| Change | Source |
+| --- | --- |
+| Runtime and game bindings | [`workspace/lua/`](modkit/SceneZOI_93C44199/workspace/lua/) inside the ModKit overlay |
+| In-game controls and launcher | [`ui/`](modkit/SceneZOI_93C44199/ui/) inside the overlay |
+| Built-in scenes, profiles and translations | [`packs/`](packs/) |
+| Public gameplay integration | [`sdk/`](sdk/) and the [API docs](docs/addons.md) |
+| Download site | [`docs/index.html`](docs/index.html) and [site assets](docs/site-assets/) |
 
-For in-game issues, zip the `scenezoi_runtime` folder under
-`Documents\inZOI\Mods\InGame\SceneZOI_93C44199` and attach it to your report.
-SceneZOI saves recent scene history, API calls, and mod discovery information
-automatically. Send the existing diagnostics even after restarting the game.
-[Runtime diagnostics reference](docs/addons.md#runtime-diagnostics)
+ModKit generates the installed `lua/` directory from `workspace/lua/`. Make source edits in the workspace. Check [pack ownership](docs/package-split.md) before adding new assets or declarations. SceneZOI is an all-ages framework. Gameplay rules and pack assets belong in their respective projects.
 
-Larger proposals should be discussed before implementation. SceneZOI runs
-concurrent sessions with fixed participants, and add-ons can start autonomous
-scenes. Predetermined watch-only sequences are deferred.
+## Test your change
 
-## Keep ownership clear
+- For a bug fix, reproduce the failure and keep a regression where the suite can catch it. For a native change, also test the affected behavior in game, including Exit if you touch scene lifecycle.
+- For API or schema changes, check existing callers and update the affected docs and examples.
+- For a docs change, check commands, examples, links and headings. For translated UI text, keep the English fallback and update the [localization entries](docs/localization.md).
+- In the PR, say which checks you ran. If you tried the change in-game, include the result you saw. A Lua regression and an in-game playback test answer different questions. [Release checks](docs/validation/README.md)
 
-- SceneZOI owns reusable playback, participants, presentation, lifecycle and UI.
-- Content packs own animations, attachments, audio and inert JSON declarations.
-- Gameplay add-ons own availability decisions, persistence, rewards and consequences.
+## Report a bug
 
-Keep content-pack-specific IDs, assets and runtime branches out of the framework.
-Independent add-ons use the public native-message API and SDK. Preserve native
-animation instances, input restoration, session snapshots, per-owner cleanup and
-technical eligibility checks. Smart Zoi toggling must not be introduced.
+Search the [existing issues](https://github.com/acepleiades/SceneZOI/issues) first. For a player report, follow the [instructions for sending diagnostics](docs/playing.md#report-a-problem). For authoring or API problems, include the smallest scene JSON or SDK call that reproduces it. Include the version or commit and any required content packs.
 
-Use [the worked content-pack examples](docs/content-examples.md) when a concrete
-declaration helps explain a change. HZoi-Reference is an optional adult-content
-reference with silent audio and separate rights; do not import its assets into
-the framework or make default checks depend on its checkout. Link the exact
-source field/revision and identify excerpts rather than presenting fragments as
-complete playable scenes.
-
-Preserve released API and schema contracts unless a breaking change is agreed.
-Document migration for any agreed break. Remove obsolete internal paths that no
-longer serve a supported contract. Update the relevant docs, examples and checks.
-
-## Validate the change
-
-For runtime or declarative-data changes, run the applicable source checks:
-
-```powershell
-python tools/build_catalog.py
-python tools/test.py --modkit-root "C:/Path/To/inZOIModKit"
-```
-
-Then follow [native validation and packaging](docs/development.md) for the changed
-subsystem. Keep packages filtered to their exact owned payload; never include
-referenced Game/Engine assets, machine-specific inputs or generated build output
-in a source contribution. Preserve user settings and preferences during local tests.
-
-Bug fixes should include meaningful regression coverage where practical. For a
-documentation-only change, check local links, examples and formatting; a native
-rebuild is unnecessary. Do not claim unperformed checks or infer visual acceptance
-from source/native diagnostics.
-
-## Pull requests
-
-Keep the change focused. Describe the original problem, resulting behavior, linked
-issue, validation actually performed and any remaining limits. The pull request
-template provides those prompts. For an API change, include how another mod
-author would use it and update the public reference.
-
-Preserve licensing and attribution. Contributions are made under the repository's
-[GPL-3.0-only license](LICENSE), and work created through the ModKit is also subject
-to its applicable terms and the [inZOI Mods Policy](https://playinzoi.com/en/clause/mods_policy).
+Contributions follow the [repository license](LICENSE) and the applicable inZOI ModKit terms. Keep proprietary assets, private logs and machine-specific paths out of the patch.

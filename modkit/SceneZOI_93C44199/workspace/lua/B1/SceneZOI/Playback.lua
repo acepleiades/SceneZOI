@@ -21,7 +21,8 @@ function M.enter(current)
             current.anchor.Translation = UE.FVector(current.spot.X, current.spot.Y, height)
         end
     end
-    -- The engine can collect a clip only Lua is holding. Fetched on the tick it starts playing, it cannot be.
+    -- A Lua reference alone does not keep an Unreal asset alive through
+    -- preparation. Resolve the clip again on the tick the montage takes ownership.
     current.assets = require("SceneZOI.Catalog").load(current.node)
     current.tracks = {}
     for _, participant in ipairs(current.participants) do

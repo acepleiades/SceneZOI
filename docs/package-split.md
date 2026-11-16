@@ -3,7 +3,6 @@
 SceneZOI provides the reusable runtime and UI. Content packs provide assets and
 inert declarations; gameplay integrations use the separate native-message API.
 SceneZOI must build and run independently of any private content repository.
-Current checks and acceptance boundaries are in [validation.json](../validation.json).
 
 ## Available authoring references
 
@@ -67,11 +66,12 @@ packaging; runtime does not read that inventory. Native packaging carries the
 patch as `non_ufs/JsonPatch/Text_UI_patch.json` with manifest membership/checksums.
 The framework default stages ten declarations with five neutral scene nodes.
 
-Discovery runs at startup, while idle and before Start. Active sessions retain
-their captured graph/libraries. Malformed contributions are isolated with warnings;
-unavailable or roster-incompatible edges are omitted. Disabling/removing a package
-removes its contributions at the next idle discovery. B1 publishes a discovered
-UI catalog; B2 receives a validated current-node snapshot during preparation.
+B1 reads the native table at startup. The picker and the API use the cached
+catalog. Restart inZOI after changing installed packs so the game mounts the
+new set. Active sessions retain their captured graph and libraries. Malformed
+contributions get warnings; unavailable or roster-incompatible edges are omitted.
+B1 publishes the catalog for the UI and sends B2 the validated current node
+during preparation.
 
 ## Roles, entry and extensions
 

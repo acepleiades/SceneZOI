@@ -11,6 +11,7 @@ function M.profile(id)
  local p=(require('SceneZOI.Catalog').get_snapshot().furniture or {}).objects
  return p and p[tostring(actor.ObjectDataTableId)],actor
 end
+-- Search uses recent B2 status as a hint. Only acquire reserves the object.
 function M.available(id)
  local p,a=M.profile(id);local state=M.status[id]
  return p and a and state and state.free and os.time()-state.time<=3 and p or nil
@@ -41,6 +42,7 @@ function M.prepare(id,node)
  local transform=actor:GetTransform();local scale=transform.Scale3D
  assert(math.abs(scale.X-1)<.001 and math.abs(scale.Y-1)<.001 and math.abs(scale.Z-1)<.001,'Scaled furniture is not supported yet')
  local o=profile.offset_cm or {}
+ -- Align the authored support plane to the profile's surface in object space.
  local point=UE.UKismetMathLibrary.TransformLocation(transform,UE.FVector(o.x or 0,o.y or 0,(o.z or 0)+profile.surface_height_cm-node.furniture.surface_height_cm))
  local rotation=actor:K2_GetActorRotation()
  assert(math.abs(rotation.Pitch)<.01 and math.abs(rotation.Roll)<.01,'Tilted furniture is not supported yet')

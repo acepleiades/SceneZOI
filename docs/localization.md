@@ -95,7 +95,7 @@ voice and task labels through the same declaration contract. For example,
 `scene.hzoi.standing_idle` names a scene, while
 `navigation.hzoi.standing_idle.neutral` names its explicit Return edge. Follow
 the [manifest registration](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L161) and
-[English/Japanese excerpt](content-examples.md#translate-labels-without-changing-identity)
+[English/Japanese excerpt](content-examples.md#find-other-examples)
 to see the complete relationship. This optional adult-content reference still
 ships no executable content-pack code.
 

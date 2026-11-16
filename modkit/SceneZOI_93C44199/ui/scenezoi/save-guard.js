@@ -44,8 +44,8 @@
      if(!data||data.version!==2||typeof data.host!=='string'||!Array.isArray(data.records))return;
      var previousHost=host;
      host=data.host;
-     // A Lua reload replaces the host while the UI still has this world's journal.
-     // Send it to the new host before acknowledging or caching its empty boot snapshot.
+     // Lua can restart while native participants and furniture are still held.
+     // Give the new host the cached originals before it publishes an empty journal.
      if(previousHost&&previousHost!==host&&state[key]&&state[key].records.length){
       adopt(state[key]);
       return;

@@ -150,9 +150,9 @@ function M.rebind(record)
     record.mesh, record.instance = fresh.mesh, fresh.instance
 end
 
--- Nothing in the game outranks a running scene: its tasks are already being cancelled and the
--- player's input is captured. So whatever took the slot, or left it empty, gives it back. The
--- limit below is what ends a scene the game will not let go of.
+-- Native avoidance can interrupt a montage even when the interaction queue
+-- is idle. Reacquire the scene track at the shared sample. If the game keeps
+-- taking the slot, fail normally so Exit can restore the participant.
 local function recoverable_clip(record)
     local incoming = record.instance:GetCurrentActiveMontage()
     return incoming and incoming:GetName() or "none"
@@ -166,7 +166,6 @@ local function take_back_track(record, position)
     if not record.recovery_window or now - record.recovery_window >= 2 then
         record.recovery_window, record.recovery_attempts = now, 0
     end
-    -- Bound recovery if the game repeatedly replaces our track.
     if record.recovery_attempts >= 3 then return false end
     record.recovery_attempts = record.recovery_attempts + 1
     M.enter(record, record.asset, record.desired, position)

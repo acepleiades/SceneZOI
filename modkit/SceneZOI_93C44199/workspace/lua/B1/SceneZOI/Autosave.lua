@@ -22,7 +22,8 @@ local function native_settings()
 end
 local function set_enabled(enabled,settings)
  if settings then
-  -- Save the owned flag without reapplying rendering or other game settings.
+  -- Reapplying all settings through the native command caused frame stalls at
+  -- scene entry and Exit. Persist just the autosave flag when it is exposed.
   settings.EnableAutoSave=enabled
   assert(settings.EnableAutoSave==enabled,'Could not change autosave')
   settings:SaveSettings()

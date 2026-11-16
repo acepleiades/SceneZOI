@@ -104,8 +104,7 @@ On the tested retail build, the package is installed at
 | `scenezoi_voice/` | Per-Zoi voice preferences |
 | `scenezoi_runtime/` | Runtime transport, status and diagnostics |
 
-For an unresponsive or dark scene panel, retain the entire runtime directory
-after reproducing it. `panel_state.cfg` records the native input blocker, pending
+For an unresponsive or dark panel, share the [runtime folder](playing.md#report-a-problem). `panel_state.cfg` records the native input blocker, pending
 read age/status and last received click for the current UI session.
 `input_restore.cfg` distinguishes deferred editor/modal focus from completed or
 failed restoration. A retained diagnostic snapshot is not a complete event log.
@@ -127,8 +126,5 @@ back atomically to defaults. `SoundNative.lua` applies gains once to the current
 unscaled level and isolates failed components for their ordinary retry/cleanup.
 `settings-ui.js` supplies the custom draggable controls and exact numeric fields.
 
-Regressions cover persistence/restart, bounds/storage failures, stale UI frames,
-independent group retries, panel exclusivity, body selection, add-on factors,
-task caps/decay/completion holds, audio routing, fades, paused audio, new
-components and independent cleanup. Installed/native evidence and author UI/audio acceptance
-are recorded separately in [validation](validation/README.md).
+For preference changes, start with the [settings tests](../tests/settings.lua)
+and [panel tests](../tests/settings.cjs).

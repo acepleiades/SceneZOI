@@ -81,17 +81,15 @@ the proximity threshold. Reversal is confirmed by an accumulated excursion from 
 using `min_delta_cm` as hysteresis. Small per-frame movements accumulate instead
 of being discarded. Plateaus retain the preceding trend. Distance/trend
 updates continue during cooldown, so cooldown does not create a stale artificial
-minimum. Sampling uses the shared scene clock at most once per host sample;
-missed frames are not fabricated. Unlike Unity LateUpdate, the current Lua host
-has no independently verified post-animation native tick hook. Native phase,
-thresholds and fast-playback sampling need the first in-game checkpoint.
+minimum. The runtime samples once per host update. Check the threshold and reversal in
+game at the fastest scene speed you support. A short contact can fall between
+samples.
 
 The requested clip playback rate follows native game time, with a 1x floor for positive slow motion and native bounds for fast-forward. Pause is a separate operation. SceneZOI's 0.5/1.0/1.5/2.0 controls select variants
 and change animation/contact frequency; they never multiply a clip's pitch or
-playback duration. All selected variants likewise play at the native game rate.
-There is no `pitch_reference` field in the current development schema.
+playback duration. All selected variants use the same native-time rules.
 
-The shared clock now has two monotonic channels: `session_elapsed` follows the
+The shared clock has two monotonic channels: `session_elapsed` follows the
 combined animation rate, while `game_elapsed` follows native game speed alone.
 SFX uses the latter for clip progress, continuous gaps, sampling intervals,
 cooldowns and bounded retries. Both channels freeze during owned preparation
@@ -102,7 +100,7 @@ time stretch.
 The adapter reads native AudioSettings limits without changing global settings.
 The current ModKit reports minimum 0.4 and maximum 2.0. Requested rates outside
 those limits are clamped; scheduling uses the applied rate to avoid cutting off
-continuous clips early. Consequently native game rates above the limit are capped locally. Audible results are recorded separately in [release validation](validation/README.md); new clips and rate/asset combinations require their own checks. Diagnostics include actual/requested rate, limit source, clip,
+continuous clips early. Consequently native game rates above the limit are capped locally. Listen in game at the native speeds you intend to support. Diagnostics include actual/requested rate, limit source, clip,
 bucket, play counts, distance and errors.
 
 Game pause freezes owned components and timers. An outfit preparation hold pauses
@@ -114,102 +112,8 @@ components. Missing/wrong-type assets are optional, with bounded retry; they do
 not block scene-body readiness. No game audio, global mix, animation instance,
 input ownership or original outfit snapshot is modified by this engine.
 
-## Current scene configuration
+## Worked example
 
-Distance emitters track approaching/separating trends through cooldown, with
-declarative proximity, dead-band and cooldown settings. Triggered and continuous
-sounds avoid immediate repeats where the pool permits. Each emitter owns its
-moving, attenuated world audio components independently. Scene speed selects
-authored variants; native game time governs audio playback.
-
-These scene declarations are now available in the public, optional
-[HZoi-Reference](https://github.com/acepleiades/HZoi-Reference). Compare the [hand-scene emitter](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/02_standing_hand_job.json#L84)
-with its [shared sound sets](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi.json#L12): `hzoi.kutyu` supplies
-speed variants, while `hzoi.piston` supplies a default clip group for the
-[rear-scene emitter](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/04_standing_rear.json#L97). Owners, detector endpoints and audio
-source points are explicit. The reference's samples are silent replacements for
-proprietary recordings; it cannot demonstrate audible output. See
-[worked examples](content-examples.md). The declarations specify:
-
-- `scenezoi.standing_idle`: normal Idle expressions and no sound emitters. The
-  temporary continuous kiss test was removed in animation-refresh-1 after the
-  author confirmed the Kiss expressions. The generic continuous engine and
-  `hzoi.kiss` library remain available for future scene declarations.
-- `hzoi.standing_hand_job`: female `hand_r` to male `pelvis`, sound at the contact
-  midpoint, `hzoi.kutyu`. A/B/C/D are selected at 0.5/1.0/1.5/2.0 and every chosen variant follows native game-time rate without a further
-  scene-speed multiplier.
-- `hzoi.standing_rear`: male `pelvis` to female `pelvis`, midpoint source,
-  `hzoi.piston`, native game-time rate.
-
-Only the female role in `hzoi.male_standing_female_kneeling_fellatio` retains the fixed O override.
-Kiss uses the existing expression library and does not enable that override.
-The separate voice and task-completion audio engines are implemented. Content-defined state/events must not introduce pack-specific meanings into this generic sound engine.
-
-## Verification boundary
-
-`Sfx.lua` owns scheduling, `SoundNative.lua` owns Unreal audio calls, and
-`tools/sound_data.py` validates declarations during catalog compilation. Unit
-checks cover multiple emitters/three roles, repeated bodies, closest approaches,
-plateaus/cooldown, speed buckets, pause, native pitch limits, outfit holds,
-optional asset recovery, bounded polyphony and cleanup retry. A commandlet smoke
-check exercised native attenuation/pitch/pause methods and read the native pitch
-limits. Later retail playback exposed the stale-wave failure documented below;
-the corrected trial ran for 97 seconds/40 plays without SFX errors and exited
-cleanly. Final audible timing still belongs to the author.
-See [release validation](validation/README.md) for current checks and author acceptance.
-
-
-## First live corrections (sfx-2)
-
-The original continuous hub run stopped at 13 plays with a typed `SetSound`
-rejection on a cached SoundWave userdata. The bridge validity check did not
-reliably identify that expired handle. Every play now resolves the wave again
-from its validated object path before assigning it to the native component;
-the component retains the current playing wave. Cached Lua userdata is not
-native asset ownership. An isolated regression reproduces a validity query
-that cannot identify the tombstone.
-
-The first detector compared each frame's motion with the dead band. This delayed
-hand reversal by about 0.1 seconds in the measured 45 Hz run and could discard
-subtle movement entirely at higher frame rates. It now uses extrema-based
-reversal hysteresis. The generic default remains 0.1 cm; the two HZoi contact
-fixtures use 0.01 cm, tested against their measured traces. Hand events moved
-from scene phase about 0.133 to 0.044, one sampled frame after their distance
-minimum near 0.022. The rear fixture also fires once per measured cycle near its
-minimum. These are native call/distance observations, not final audible acceptance.
-The source recordings themselves are unchanged; perceived onset/accents and
-other animation/body combinations still need author review.
-
-The corrected hub lifetime trial reached 40 clip plays over 97 seconds without
-SFX errors and ended `idle/ok`. Both contact trials also ended `idle/ok`.
-
-
-## Native-time correction and focus policy (sfx-3)
-
-The author clarified that SceneZOI speed must not retime audio. Earlier builds
-multiplied generic clips by scene speed as well as native speed. The separate
-native-time channel and removal of `pitch_reference` correct that policy; tests
-cover all four scene speeds, generic/variant clips, mid-clip native rate changes,
-pause, and fixed continuous duration across scene-speed changes.
-
-In the later reported silent rear session, trigger counts were advancing without
-SFX errors. The author then observed that sound stopped when the game lost focus;
-the saved game setting had background audio disabled. SceneZOI preserves that
-game-wide preference and continues using world audio rather than UI audio.
-This observation is separate from the earlier real stale-wave error.
-
-
-Animation-refresh-1 updates the idle/handjob/standing-kneeling body and attachment
-clips, keeping the same timing and skeletons. Earlier native distance/phase
-measurements describe the previous exports; contact alignment for the touched-up
-motion needs its next author checkpoint. The rear-animation assets are unchanged.
-
-
-## Slow-motion audio policy (20261103-audio-slowmotion-1)
-
-For native game time strictly between 0 and 1, SceneZOI audio keeps its normal 1x pitch/playback rate. This covers voices, continuous/contact SFX and completion one-shots, regardless of the control causing slow motion. Pause still pauses audio; native fast-forward retains existing pitch bounds. Scene animation speed never retimes audio. Clip timers use actual audio rate, so clips can finish while animation is still moving slowly. Contact cooldowns and authored gaps retain existing game-time scheduling.
-
-
-## Native audio completion (20261103-audio-finish-1)
-
-The duration/rate estimate is now a lower bound for normal completion, not a forced stop. Once it expires, SceneZOI waits for the native AudioComponent to stop playing before recycling continuous clips, releasing one-shots or resuming normal voice after a response. This protects short tails and newly selected voice sets from audio-thread/startup delay. Pause freezes completion and its watchdog. A two-audio-second observed-wait watchdog bounds broken/looping native components; a long initial asset-loading frame does not consume this watchdog. If native state is unavailable, the existing timer fallback remains. Explicit voice-set changes, response priority fades, navigation, bounded pool stealing and Exit still intentionally stop owned playback.
+The [HZoi hand scene](content-examples.md#find-other-examples) shows an emitter
+that selects clips from a named sound set when two bones approach and separate.
+Test the distance threshold and cooldown in game with each speed you support.

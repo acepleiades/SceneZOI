@@ -338,6 +338,8 @@ end
 local function flush(journal)
     if not journal.dirty then return end
     if not journal.loaded then
+        -- A transient read failure leaves the previous run's history unknown.
+        -- Keep the new entries pending so the first write cannot erase it.
         local previous = query(load, journal.key)
         if previous == nil then
             if not journal.read_failed then

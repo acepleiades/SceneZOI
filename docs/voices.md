@@ -1,6 +1,8 @@
 # Voices
 
-SceneZOI supports optional, participant-owned continuous voices. SceneZOI owns discovery, validation, preferences, UI, spatial playback and cleanup. Content packs own archetypes, contexts, sets and Sound Waves. The framework has no built-in voice families, context enum or HZoi identifiers. Task-completion one-shot responses are described below.
+Choose a voice context for each speaking role. For example, a scene can ask
+for a breath or conversation context, and the Zoi's selected set supplies the
+clips. A pack can also add a one-shot reaction to a task completion.
 
 ## Independent declarations
 
@@ -16,7 +18,7 @@ An archetype requires `id`, `label` and appearance `body` (`female` or `male`). 
 {"schema_version":1,"id":"conversation","label":"Conversation"}
 ```
 
-A context requires `id` and `label`. Contexts are data, not runtime enums. The personality panel creates controls from the current discovered contexts. Newly enabled declarations refresh at startup, while idle, and before Start; an active session keeps its library until Exit, like expressions and the scene graph.
+A context requires `id` and `label`. Contexts are data, not runtime enums. The personality panel creates controls from the current discovered contexts. Declarations load at client Lua startup. An active session keeps its library until Exit.
 
 ```json
 {
@@ -82,16 +84,6 @@ Clip choice is uniform among candidates outside the last three successfully play
 
 Scene speed never retimes a voice clip. Native game time controls rate and pause, within the native audio pitch limits. Outfit preparation pauses the current clip and preserves history; navigation stops/destroys outgoing node voices, and arriving roles use their requested contexts. Live preference edits replace only that participant's source. Cleanup failures retain ownership for retry; Exit releases every owned source independently.
 
-## Validation
-
-Isolated Lua/browser tests cover dynamic contexts, malformed data, defaults, persistence, silence, single-archetype resets, male/repeated-body owners, timing, held outfits, live edits, missing assets, cleanup retry and UI acknowledgement/Exit behavior. Recorded maintainer checks with the private HZoi pack additionally verified imported clip ownership, exclusion of response clips from continuous loops, four complete contexts, both silent hubs and renamed scene navigation. ModKit validation and installed hashes are recorded in `validation.json`. These are separate from the author's in-game audio/UI/Exit acceptance.
-
-
-## Slow-motion audio policy (20261103-audio-slowmotion-1)
-
-For native game time strictly between 0 and 1, SceneZOI audio keeps its normal 1x pitch/playback rate. This covers voices, continuous/contact SFX and completion one-shots, regardless of the control causing slow motion. Pause still pauses audio; native fast-forward retains existing pitch bounds. Scene animation speed never retimes audio. Clip timers use actual audio rate, so clips can finish while animation is still moving slowly. Contact cooldowns and authored gaps retain existing game-time scheduling.
-
-
 ## Task-triggered one-shot voice responses
 
 Runtime `20261103-voice-responses-1` adds optional named `responses` to schema-1 voice sets. These are variants of the participant's already selected set, not new personality contexts or separate archetype choices:
@@ -135,9 +127,6 @@ Preparation/outfit holds pause audio and fading. A started response survives a p
 
 Task reset/events, definition-level completion sounds, authored routes and procedural effects keep their existing semantics. Voice routing is processed after all update completions are collected and before scene handoff. An authored destination does not silently remove an explicitly configured completion voice; the started line follows the same participant across preparation. This is presentation, not a gameplay consequence or pack-supplied executable callback.
 
-Logs identify speaker, selected set and response on successful playback; heartbeat status reports plays/active channels and optional errors. Tests cover three independent speakers, fades, priority suppression/preemption, own/partner identity, random groups, continuous resumption, pause/slow-motion/native rate, scene speed independence, navigation, silent/live preferences, missing assets, partial play and retryable cleanup. Native audible acceptance is recorded separately in validation reports.
-
-
-## Native audio completion (20261103-audio-finish-1)
-
-The duration/rate estimate is now a lower bound for normal completion, not a forced stop. Once it expires, SceneZOI waits for the native AudioComponent to stop playing before recycling continuous clips, releasing one-shots or resuming normal voice after a response. This protects short tails and newly selected voice sets from audio-thread/startup delay. Pause freezes completion and its watchdog. A two-audio-second observed-wait watchdog bounds broken/looping native components; a long initial asset-loading frame does not consume this watchdog. If native state is unavailable, the existing timer fallback remains. Explicit voice-set changes, response priority fades, navigation, bounded pool stealing and Exit still intentionally stop owned playback.
+If a response is missing, check the speaker, selected set and response group
+in the logs. Test both a speaking Zoi and one set to silent, including a
+navigation or outfit change during playback.

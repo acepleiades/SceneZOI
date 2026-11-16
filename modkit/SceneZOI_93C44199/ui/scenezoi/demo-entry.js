@@ -1,4 +1,4 @@
-// Temporary demo integration: self-click, native selection, then explicit framework roles.
+// Native picker handoff. Resolve the returned roster into explicit scene roles.
 (function(){
     'use strict';
     var pending=null;
@@ -48,7 +48,8 @@
                 return request.then(function(raw){
                     var ready=['SZ2',host[1],'ready',window.SceneZOIControls.bootId,token].join('|');
                     return cfg('uimod.cfg_save','selection_ui_ready',ready).then(function(){
-                        // Keep old Start packets retired across a Lua restart.
+                        // Commit the host identity only after the readiness write.
+                        // A failed cfg read/write must retry; old Start packets stay retired.
                         lastRequest=value(raw);hostToken=host[1];launcherToken=token;
                     });
                 });

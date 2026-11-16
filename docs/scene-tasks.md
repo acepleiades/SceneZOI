@@ -1,6 +1,9 @@
 # Scene tasks
 
-Build `20261103-tasks-1`, task schema 1. Scene tasks are optional, session-owned numerical state, independent of animation, expressions and audio. Task schema 1 remains its own data contract. Independent integrations observe tasks through the [public add-on API version 1](addons.md).
+A scene task gives each participant a progress meter. The pack defines how fast
+it rises, where it caps and what happens when it fills. SceneZOI keeps the value
+and completion count for the session. Gameplay mods can read both through the
+[add-on API](addons.md). Task definitions use schema version 1.
 
 Independent add-ons can inspect normalized state, set/modify progress and apply
 caller-scoped rate multipliers/completion holds through [live controls](addon-controls.md#live-controls).
@@ -52,9 +55,14 @@ Identifiers are exact, case-sensitive identifiers: lowercase ASCII letters, digi
 
 All display settings are optional. `visible: false` suppresses indicators without disabling progression/events. Colors accept `#RRGGBB` only. `body_colors` optionally overrides the fallback ring color for the framework's existing appearance-body traits; those colors have no gameplay meaning. Without presentation data, the framework uses its neutral palette.
 
-Definitions use the existing independent native declaration discovery: envelope kind `scene_task`, owner from the contributing pack, transport `Text_UI` / retail `Text`. They are not loose files read by the game. Build/package/install content edits normally. Discovery refreshes at startup, while idle and before Start. Every session captures its definitions and progress; changes to installed contributions apply to a later session.
+Definitions use the existing independent native declaration discovery: envelope kind `scene_task`, owner from the contributing pack, transport `Text_UI` / retail `Text`. They are not loose files read by the game. Build/package/install content edits normally. Discovery runs at client Lua startup. Every session captures its definitions and progress. Restart the game after changing installed packs.
 
 Malformed definitions and conflicting IDs produce catalog diagnostics. A malformed contribution is isolated. Identical repeated definitions are accepted; a conflicting later definition does not overwrite the first in deterministic source order. Source builds reject malformed/conflicting task definitions before writing generated output.
+
+Two tasks can display the same label. Give independent tasks pack-prefixed IDs
+such as `training.focus` and `meditation.focus`. When packs intentionally share
+an ID, use the same definition, including any definition-level actions. The
+selected definition applies to every scene that refers to that ID.
 
 ## Per-scene progression
 
@@ -157,17 +165,9 @@ The fixed-width 132-pixel Scene Tasks tray sits 10 pixels to the right of the ma
 
 With a tray present, outfit/personality/settings panels shift right by 142 pixels. Without it, their existing viewport-placement fallback remains in effect. The tray retains the requested immediate-right priority even near the viewport edge; the user can move/resize the main window to provide room. The combined native hit rectangle includes the tray and configuration panel. Existing drag, resize, input focus and Exit behavior are retained.
 
-## Validation boundaries
-
-Isolated tests cover independent rates/owners, caps, omitted decay, zero holds, negative rates, multiple task types, percentages, initial maximum, repeated completion/reset, navigation, game pause/speed independence, copied event payloads, filtered subscriptions, event bursts, malformed definitions, invalid references, source-build atomicity and backward compatibility. UI tests cover rings, labels, roster size, stale-frame rejection, reflow, resizing, scrolling CSS and input bounds. Browser rendering and ModKit validation are separate from native in-game acceptance; consult `validation.json` for this build's exact installed/live status.
-
-### Native ring renderer correction
-
-UI build `20261103-tasks-ui-2` draws partial progress with explicit SVG arc geometry rather than dashed circle strokes, and centers percentage text with a flex overlay. A synthetic in-game rendering check verifies the empty gray track, partial colored fill and centered text. That UI revision preserved task runtime build `20261103-tasks-1`; the later completion-sound runtime is `20261103-task-sounds-1`. Larger-roster isolated checks cover 3, 4, 16 and 64 participants, but authored 3+ scene playback has no live acceptance claim.
-
 ## Data-defined completion sounds
 
-Runtime build `20261103-task-sounds-1` adds optional `on_completion` actions to schema-1 task definitions. The generic completion event is still emitted and progress reset independently of action success. A definition without actions retains its previous behavior.
+A schema-1 task definition can declare `on_completion` actions. The generic completion event is still emitted and progress reset independently of action success. A definition without actions retains its previous behavior.
 
 ```json
 "on_completion": [
@@ -230,25 +230,11 @@ If destination resource loading fails for a valid route, the completed task rema
 
 Diagnostics now identify node/revision at playback entry and print selected/failed task routes, supporting read-only verification of automatic navigation. This tier does not implement an animation-marker system or pending climax state. Authors can supply completion animations as ordinary data-defined transition nodes without executable content-pack code.
 
-## Accepted task-routing checkpoint
-
-On 2026-11-03 the author accepted the reused-asset male task-completion route in-game. Read-only diagnostics corroborated the selected role/task destination, transition arrival, automatic idle arrival, one completion sound, zero reported attachment clock error and clean Exit. Task values were not logged per frame; freeze behavior remains covered by automated regressions. Both temporary HZoi nodes and their idle/profile references were removed on request. Generic routing to looping or transition scenes and all regression fixtures remain. Other roles, larger rosters and failure cases retain isolated coverage rather than a new live acceptance claim.
-
 ## Procedural completion responses
 
-Runtime `20261103-completion-effects-1` adds optional scene-local `movement_timing` and `completion_responses` data. Existing completion reset/events/sounds remain independent. Authored routes have priority; otherwise content may enable a synchronized slowdown, a general fallback without timing, and independently owned bone oscillation. See [complete JSON authoring and clock/cleanup rules](completion-effects.md).
-
-
-## Slow-motion audio policy (20261103-audio-slowmotion-1)
-
-For native game time strictly between 0 and 1, SceneZOI audio keeps its normal 1x pitch/playback rate. This covers voices, continuous/contact SFX and completion one-shots, regardless of the control causing slow motion. Pause still pauses audio; native fast-forward retains existing pitch bounds. Scene animation speed never retimes audio. Clip timers use actual audio rate, so clips can finish while animation is still moving slowly. Contact cooldowns and authored gaps retain existing game-time scheduling.
+Use scene-local `movement_timing` and `completion_responses` to animate a response when a task completes. Existing completion reset/events/sounds remain independent. Authored routes have priority; otherwise content may enable a synchronized slowdown, a general fallback without timing, and independently owned bone oscillation. See [complete JSON authoring and clock/cleanup rules](completion-effects.md).
 
 
 ## Completion voice bindings
 
 Scene-local `task_completion_voices` rules can make the completing participant or another named participant play a response variant from their selected voice set. Responses are independently prioritized, fade the continuous voice and resume it afterward. Task events, sounds, authored routes and procedural effects remain intact. See [voice response authoring](voices.md#task-triggered-one-shot-voice-responses).
-
-
-## Native audio completion (20261103-audio-finish-1)
-
-The duration/rate estimate is now a lower bound for normal completion, not a forced stop. Once it expires, SceneZOI waits for the native AudioComponent to stop playing before recycling continuous clips, releasing one-shots or resuming normal voice after a response. This protects short tails and newly selected voice sets from audio-thread/startup delay. Pause freezes completion and its watchdog. A two-audio-second observed-wait watchdog bounds broken/looping native components; a long initial asset-loading frame does not consume this watchdog. If native state is unavailable, the existing timer fallback remains. Explicit voice-set changes, response priority fades, navigation, bounded pool stealing and Exit still intentionally stop owned playback.

@@ -32,19 +32,18 @@ framework's native declaration patch and ownership inventory under
 or package the mod. The tests cover Lua behavior, author-data validation and UI
 behavior in isolation, without launching a household.
 
-The default checks do not need HZoi or another content checkout. The optional
-public [HZoi-Reference examples](content-examples.md) are available for content
-study; the original production repository remains private. If you have a
-compatible external author checkout with its own `packs/` and framework-compatible
-`tests/`, you can opt into those checks:
+You only need the framework to run the default suite. To include a compatible
+external pack's tests, supply its checkout:
 
 ```powershell
 python tools/test.py --modkit-root $modkitRoot --content-root "C:/Path/To/content-checkout"
 ```
 
+The older HZoi Reference fixture has its own
+[matching test checkout](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/reference-assets.md#run-the-snapshots-integration-tests).
 For public content examples, use [the framework pack](../packs/scenezoi.json),
 [neutral scene files](../packs/scenezoi/scenes/) and the
-[authoring documentation](README.md), or follow the optional
+[authoring documentation](authoring.md), or follow the optional
 [worked HZoi-Reference guide](content-examples.md).
 
 ### Editor type definitions

@@ -29,6 +29,7 @@ function M.update(state,session,dt,emit)
   for _,id in ipairs(state.definition_ids)do
    local definition=state.definitions[id];local entry=state.participants[p.id][id]
    local directive=directives[p.role]and directives[p.role][id]
+   -- Omission lets the meter decay. An authored zero holds its value.
    local rate=directive and directive.rate or -(definition.decay or 0)
    local multiplier,held=Control.task(session,p.id,id)
    if rate>0 then multiplier=multiplier*Settings.task_multiplier(appearance_body(p,session))*Plan.rate_factor(session)end

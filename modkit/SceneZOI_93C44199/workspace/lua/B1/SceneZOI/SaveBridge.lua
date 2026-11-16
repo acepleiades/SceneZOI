@@ -63,7 +63,9 @@ function M.offer(current,actor,fields)
   local people={};for key,value in pairs(current.save_records)do people[key]=value end
   serial=serial+1
   records[current.token]={token=current.token,serial=serial,people=people,beds=beds,sent={}}
-  -- A new scene needs a journal that the save reader can load. Keep all older records if it cannot be written.
+  -- The save callback can run after the game has serialized some participant
+  -- changes. Publish the originals before commit and carry old recovery records
+  -- forward when another scene starts.
   local ok,result=pcall(publish,true)
   if not ok then
    records[current.token]=nil

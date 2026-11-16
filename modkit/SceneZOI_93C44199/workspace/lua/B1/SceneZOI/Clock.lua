@@ -38,6 +38,8 @@ function M:normal_rate(modifier)
 end
 
 local function update_effective(clock)
+    -- A completion response has its own rate from the authored 1x baseline.
+    -- Keeping the preset intact lets manual and Auto-mode speed resume afterward.
     clock.effective = clock.scale * (clock.motion_rate or clock:normal_rate())
 end
 

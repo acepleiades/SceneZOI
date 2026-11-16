@@ -1,6 +1,7 @@
 # Scene runtime contracts
 
-These contracts describe the current framework. “Tier 1” in the filename is historical; later optional engines extend the same ownership and lifecycle. See [validation](../validation.json) for current recorded build markers and separate acceptance evidence.
+Read the part of this page that covers the lifecycle or resource you are
+changing. See the [source map](architecture.md) for entry points.
 
 ## Ownership
 
@@ -16,7 +17,9 @@ These contracts describe the current framework. “Tier 1” in the filename is 
 | UI | Acknowledged state and absolute session/revision-scoped requests, not restoration or animation ownership |
 | B2 participant/furniture leases | Task interruption, original autonomy/inheritance, collision/position restoration and exclusive furniture reservation |
 
-SceneZOI stops only its own montages. It never replaces the game's animation instance or toggles Smart Zoi. Membership and named-role assignments remain fixed until Exit. The picker supports one to three Zois with compatible authored roles, including repeated body types. The bundled neutral library includes two solo standing hubs and three adult-compatible male/female paired hubs.
+Playback retires the montages SceneZOI owns and keeps the game's animation
+instance. Participant preparation separately interrupts gameplay overlays
+that would carry through from the cancelled task. Leave Smart Zoi untouched. Membership and named-role assignments remain fixed until Exit. The picker supports one to three Zois with compatible authored roles, including repeated body types. The bundled neutral library includes two solo standing hubs and three adult-compatible male/female paired hubs.
 
 The B1 actor registry maps each Zoi ID to its latest registered native actor.
 An ending object removes that entry only if it still owns it; late or repeated
@@ -40,7 +43,9 @@ This recovery requires SceneZOI to remain enabled on load. Exit, finish cleanup 
 
 ## Time and navigation
 
-Animation advances by unscaled host delta × effective native game time scale × selected scene speed, with an optional shared procedural-completion multiplier. Speeds are 0.50, 1.00, 1.50 and 2.00, default 1.00. Native pause freezes animation. Speed survives navigation and resets for a new session. Preparation holds do not accrue catch-up time. Heartbeats, Exit and cleanup remain independent of animation time.
+Animation advances by unscaled host delta × effective native game time scale × selected scene speed, during normal playback. A procedural completion response supplies its own
+rate from the authored 1× baseline, while native game time still drives
+the response and the session keeps its selected speed. Speeds are 0.50, 1.00, 1.50 and 2.00, default 1.00. Native pause freezes animation. Speed survives navigation and resets for a new session. Preparation holds do not accrue catch-up time. Heartbeats, Exit and cleanup remain independent of animation time.
 
 Task rates/decay and audio scheduling use native-game time independently of the animation selector. Positive native slow motion retains normal audio rate; pause is separate. See [tasks](scene-tasks.md), [voices](voices.md) and [SFX](sfx.md).
 
@@ -50,7 +55,9 @@ Loops and [one-shot transitions](transitions.md) are supported. Transition nodes
 
 ## Outfits and appearance
 
-Each participant lease captures original garment/accessory descriptions and ownership once. Automatic remove_slots directives accumulate in SceneZOI's sparse Script layer; omitted directives retain current state. A game work outfit (Job costume tag, in the Script slot as the newest layer) is taken off for the scene and put back afterwards; any other foreign Script ownership is refused. Manual controls toggle only session-entry pieces and preserve original materials/transforms/accessory data. A later node's explicit removal can override a manual restore. Base styles and original snapshots are not rewritten.
+Each participant lease captures original garment/accessory descriptions and ownership once. Automatic remove_slots directives accumulate in SceneZOI's sparse Script layer; omitted directives retain current state. A game work outfit (Job costume tag, newest Script layer) can be borrowed
+and restored on Exit. Several outfits can share the Script reason. SceneZOI
+removes only the costume ID it applied, preserving other Script layers. Manual controls toggle only session-entry pieces and preserve original materials/transforms/accessory data. A later node's explicit removal can override a manual restore. Base styles and original snapshots are not rewritten.
 
 Requests, resolved appearance and session-entry originals are distinct. B2 acknowledges the game's resolved garment results, including native underwear normalization. B1 waits for those results, a stable game instance and optional material/body readiness. Outfit edits hold the current pose/time, then resume without restarting the node. Counters/revisions prevent stale acknowledgements; Exit discards pending UI retries and releases the original state through independent cleanup.
 
@@ -81,11 +88,14 @@ An action's highest declared enum rating determines the scene rating; unclassifi
 scenes cannot match an explicit rating filter. [Metadata](scene-metadata.md) is inert
 and does not implement consent/gameplay decisions or detect rendered content.
 
-## Regression and acceptance constraints
+## Tests for lifecycle changes
 
-Retain meaningful checks for first-click/cancel/repeat entry, explicit repeated-body roles, delayed preparation, native-instance preservation, original outfit restoration, resolved-underwear acknowledgements, rebuild barriers, independent retained attachments and partial cleanup failures. Furniture adds reserve-before-prepare and release-acknowledgement barriers. Test movement/furniture use after Exit as well as repeated playback. See the [issue ledger](investigations/runtime-and-ui-issues.md).
-
-Automated suites, native numerical diagnostics and author visual acceptance establish different things. Consult [validation](../validation.json), not historical marker literals, before testing a loaded build. The [public native-message API is version 1](addons.md). Internal Lua modules, UI mailboxes and manual picker transport are private development interfaces. Scene metadata and schema compatibility are documented separately.
+Start with [actor registration](../tests/actor-registration.lua),
+[participant tasks](../tests/participant-tasks.lua), [save recovery](../tests/save-bridge.lua),
+and [furniture leases](../tests/furniture-lease.lua), depending on the change.
+Check that Exit restores movement and furniture use in game. See
+[release checks](validation/README.md) for the difference between fixture,
+native and playback checks.
 
 ## Control focus and duplicate entry
 

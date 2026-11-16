@@ -1,10 +1,10 @@
-# Add-on integration examples
+# Add-on examples
 
-The reusable [SDK](../../sdk/README.md) and [authoring guide](../../docs/addon-authoring.md)
-show affectionate starts, restricted encounters and independent observers/modifiers.
-The [API reference](../../docs/addons.md) defines messages, events and ownership;
-the [controls reference](../../docs/addon-controls.md) covers live state/effects.
+Use the [add-on authoring guide](../../docs/addon-authoring.md) for a first
+request, example scene search and goal-driven start. Copy the
+[SDK](../../sdk/README.md) into your own ModKit project when you are ready to
+test it.
 
-The temporary installable test mod, command controllers, fixture declarations and
-acceptance runner were removed after validation. The [findings](../../docs/validation/addon-api-20261104.md)
-retain measured coverage and common pitfalls. Isolated repository regressions remain.
+For messages and events, see the [API reference](../../docs/addons.md). For
+outfits, tasks, attachments and other changes to a running session, see
+[live controls](../../docs/addon-controls.md).

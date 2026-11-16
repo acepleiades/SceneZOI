@@ -1,6 +1,8 @@
 # SceneZOI add-on API, version 1
 
-Independent add-on acceptance was recorded on API-5. See [release validation](validation/README.md) for later runtime checks. Start with the [authoring guide](addon-authoring.md), use the [SDK](../sdk/README.md), and consult [live controls/results](addon-controls.md) for the extended contract. [Validation findings](validation/addon-api-20261104.md) record measured coverage and pitfalls.
+Use this page to look up requests, replies, events and autonomous plans. For
+setup and a first request, see [add-on authoring](addon-authoring.md) and the
+[Lua SDK](../sdk/README.md). For an active scene, see [live controls](addon-controls.md).
 
 Several sessions can run at once; see [concurrent and background sessions](#concurrent-and-background-sessions)
 and [autonomous scenes](#autonomous-scenes). Scene Settings offers the unrestricted manual picker as an opt-in debug tool. Add-ons supply gameplay decisions;

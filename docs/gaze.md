@@ -71,8 +71,6 @@ The standing framework/HZoi idles declare mutual eye contact and the first two H
 branches. The rear node declares male-to-female pelvis and female-to-own-left
 shoulder. The neutral framework pack's gaze data contains no adult asset reference.
 
-Validation distinguishes isolated checks, native rotation/state checks, and the
-author's final visual acceptance. See `validation.json` for the current build.
 
 
 ## Complete source examples
@@ -85,36 +83,15 @@ These HZoi-Reference files contain adult scene descriptions; see
 [worked examples](content-examples.md) for context. Authored targets still obey
 the native eye limits described above.
 
-## Tier3-2 correction
+## Aim the head for distant targets
 
-The author's visual test of tier3-1 identified enlarged female eyes and no visible
-male eye movement. Native readback confirmed both defects: the neutral scale was
-incorrectly written as (1,1,1) in a scale-delta field, doubling parent-eye scale;
-depth 0 left the male EyeParallel child bones at their original orientation.
-Tier3-2 writes (0,0,0) and propagates the rotation to descendants. Eye look limits,
-scene targets, native blinking, and entry removal on Exit remain in effect.
-Regression checks model the native additive scale and child-bone rules, rather
-than checking only the requested rotation and restored entry counts.
+SceneZOI turns the eyes within the game's limits and preserves authored head
+motion. If a target is far below the face, a Zoi may only glance in its
+direction. Key the head toward the target in the body animation for a stronger
+look.
 
+## Navigation handoff
 
-## Eye-only reach in the rear node
-
-A live check on 2026-10-31 confirmed that the male target is the female body's
-pelvis bone. Once the authored pose had settled, reaching it required roughly
-57–66 degrees of downward eye rotation during the sampled part of the loop.
-The active native vertical gaze limit was 5 degrees, and both eyes' scene
-corrections remained at that limit. The declared target was retained throughout.
-This small glance can appear nearly forward. Full fixation on that target needs
-a more downward authored head pose or a future optional head-following mode;
-SceneZOI currently preserves authored head animation and native eye limits.
-
-
-## Continuous node handoff (expressions-10)
-
-Leaving a node keeps its outgoing target map and role bindings active while the body pose is held and the arriving node prepares. The session temporarily clears its arriving bindings during preparation; gaze uses its retained outgoing bindings throughout that interval. At playback entry, both maps are replaced and sampled immediately. This removes the explicit forward reset previously issued on leave. Omitted targets still mean forward in the arriving node; no previous target is inherited after entry. Ownership, copied-head recovery, native limits and Exit cleanup are unchanged. Regression checks retain moving outgoing targets through preparation and apply an omitted target only at entry.
-
-Expressions-10 final checkpoint: the author confirmed both the gaze forward-reset fix and immediate O activation. Final packaged family switching, hub navigation, Exit and re-entry passed; a 130-second native run after the ownership correction also ended with a clean Exit.
-
-## Neutral bed gaze
-
-Both neutral bed hubs direct the female role toward her own body hand_l. Male gaze is omitted and therefore forward. Standard-bed support is currently 68 cm and futons 20 cm. Native readback/playback passed; final blink/gaze visual acceptance remains separate.
+The outgoing gaze target stays active while the next node prepares. The arrival
+applies its own target as playback starts. If it omits the target, the eyes
+return forward at that point.

@@ -21,7 +21,8 @@ pose and one localization dictionary. The framework inventory owns four animatio
 framework-only; `--content-root` is an optional test hook for a compatible author
 checkout that is already available. HZoi's private checkout is not required.
 The public [HZoi-Reference guide](content-examples.md) explains its separate
-silent-audio example and optional content checks.
+silent-audio example. Its older session fixture uses a
+[matching framework checkout](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/reference-assets.md#run-the-snapshots-integration-tests).
 External packs can use `--packs` and `--project`, with their own `--inventory`
 and `--plugin` arguments for filtering.
 
@@ -140,9 +141,6 @@ A new UI instance completes its own handshake before exposing Start.
    check for `SceneZOISimulationReceiver` on the controlled Zoi and each
    addressed participant. Verify actual playback and Exit after any recovery.
 
-The [possession and API checkpoint](validation/api-possession-20261109.json)
-records how the launcher lost readiness before this handshake change.
-
 ### Package location and persistent data
 
 Discover the installation directory and cfg directory independently. On the tested
@@ -166,21 +164,9 @@ without the old cfg data.
 
 ### Clean-install release check
 
-Test the exact ZIP intended for distribution, not only the development install.
-Close inZOI, back up existing mod folders and all settings/recovery files outside
-Mods, then install into a fresh directory without carrying old runtime cfg into
-the test. Launch a fresh game process and verify automatic loading, Start entries
-on the controlled Zoi and supported furniture, playback, Exit and re-entry.
-Do not seed configuration, manually mount scripts or hot reload to make this
-acceptance pass. Preserve a separate update test with existing preferences.
-
-SceneZOI 1.0 passed against retained developer configuration but failed on a fresh
-install. A missing `selection_request` made native `cfg_load` fail, and the UI
-cached host identity too early to retry its readiness acknowledgement. The test
-fixture had incorrectly returned empty success for missing keys. Version 1.0.1
-initializes the mailbox and retries incomplete handshakes. Keep native-style
-missing-key failures in fixtures; see the [checkpoint](validation/fresh-install-startup-20261105.json)
-and [issue ledger](investigations/runtime-and-ui-issues.md).
+Follow the [release checklist](validation/README.md) with the ZIP you intend to
+ship. Missing native cfg keys fail reads on a fresh install. Use a profile
+with no prior cfg and keep the old settings for a separate update test.
 
 ### Saves and cleanup
 
@@ -194,7 +180,14 @@ participant and furniture restoration. Keep the framework enabled for recovery;
 Exit, finish cleanup and save outside scene mode before removing a test build.
 Cancelled gameplay interactions and departed groups are not resumed.
 
-Record changed runtime/UI/data markers and measured evidence in `validation.json`.
-Use the [issue ledger](investigations/runtime-and-ui-issues.md) for concise findings
-and [subsystem docs](README.md) for current contracts. Documentation-only changes
-do not require rebuilding or installing byte-identical runtime packages.
+Record the checked commit, build and results with the related PR or release.
+See [release checks](validation/README.md) and [runtime troubleshooting](investigations/runtime-and-ui-issues.md).
+
+## Download site
+
+In GitHub **Settings → Pages**, choose **Deploy from a branch** and select
+**main** and **/docs**. The [download page](index.html) uses the GitHub Releases
+API. Update contributors and their support links in that file. English site copy
+lives there and in [releases.js](site-assets/releases.js). Update related
+[language files](site-assets/locales/) when changing copy. Preserve numbered
+placeholders for links/formatting and match the game's translated menu names.

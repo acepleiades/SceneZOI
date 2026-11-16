@@ -39,17 +39,21 @@ GroupDeparture calls RemoveZoiGroupMember with UserSelf and checks actual member
 
 These are real departures. Native minimum-membership rules may dissolve a group, and activities may stop or continue with remaining members. Cancelling, failed entry and Exit do not rebuild groups or resume interrupted activities. No SceneZOI gameplay group is created. The debug picker uses this departure policy. The direct solo launcher starts without a picker or a gameplay-group departure.
 
-Historical live tests covered four-member Default groups, leader/member requesters, cancellation, two source groups and the author's soccer activity. Broader group/activity compatibility is not established. Isolated checks retain failed leave/disband, unchanged-group fallback and concurrent-group-change cases. [Earlier selector research](investigations/participant-selection-options.md) records why the clean cooperative route was unavailable through tested Lua exports.
+Keep tests for group leaders and members, a failed leave, a cancelled picker
+and group membership that changes during selection. The ordinary native
+selection checks still apply to each chosen Zoi.
 
 ## Attachments and cleanup
 
 Named attachments explicitly select participant roles. Separate same-asset instances on different Zois retain independent components, animation, materials, body state and retryable cleanup. Retained owner/mesh/profile identity cannot change across nodes. Ordinary attachments support multiple owners/resources; the current region-replacement adapter permits one body-region owner per participant. Content defines compatibility and geometry through [native profile declarations](package-split.md).
 
-## Development and evidence
+## Testing changes to entry
 
-Removed MM/FF/MFF/MMF scene fixtures remain synthetic test rosters only. The framework supplies five neutral nodes; maintainer integration tests also used four standing nodes from the private HZoi pack. The suite covers repeated bodies, independent resources, shared clocks, held navigation, second-owner failure and cleanup. Historical multi-person diagnostics are not acceptance of unprovided group choreography.
-
-After changing native chunk hooks/bindings, reload both Lua environments while no scene is active, then verify actual group membership and successful entry. Repeated remounts retained stale dispatch in a tested session. Released appearance-reference failures may require restarting the game. Matching build markers alone are insufficient. Consult [current validation](../validation.json) and the [issue ledger](investigations/runtime-and-ui-issues.md).
+After changing a native binding or chunk hook, reload both Lua environments in
+an idle game and try the actual picker. Use the
+[hot-update checks](development.md#hot-update-readiness) to verify that the
+launcher and controls acknowledge the current Lua host. For a release, test a
+fresh game process.
 
 ## Active-session safeguards
 
@@ -61,4 +65,4 @@ The last_exit diagnostic stores client, sequence, final result and initiating ex
 
 ## Participant task ownership
 
-Acquiring a participant disables autonomy, clears their native waiting interaction queue and cancels the current interaction through its normal cancellation path. Readiness waits for two idle callbacks. The lease continues clearing new queued work and interrupts independently identified current tasks during playback. Cleanup restores the original autonomy value/inheritance, collision and position independently. Interrupted activities and cancelled queues are not resumed or reconstructed. The author permitted cancellation as fallback because a supported reliable queue-pause mechanism has not been established. See `tests/participant-tasks.lua` and the current acceptance boundary in [validation](../validation.json).
+Acquiring a participant disables autonomy, clears their native waiting interaction queue and cancels the current interaction through its normal cancellation path. Readiness waits for two idle callbacks. The lease continues clearing new queued work and interrupts independently identified current tasks during playback. Cleanup restores the original autonomy value/inheritance, collision and position independently. Interrupted activities and cancelled queues are not resumed or reconstructed. See the [participant task regressions](../tests/participant-tasks.lua).

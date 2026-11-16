@@ -55,14 +55,6 @@ This does not pause the native game clock or all sound. Existing scene-directed 
 
 The existing lifecycle events cover arrival/preparation/departure. A transition additionally queues `transition_completed` once when its playback duration is reached, before preparing its destination. The B1 event snapshot includes `node_kind` and `destination` as well as existing session/node identity, revision and participants. The event means the clip finished; destination asset failure can still cause a later session exit. Existing native event packet fields remain compatible, and clients can obtain kind/destination from the public catalog.
 
-## Validation boundaries
-
-Isolated checks cover source/runtime schema, missing/incompatible destinations, finite chains and cycles, repeated-body roles, all four scene speeds, native-time changes, pause, large frame overshoot, clamped body/attachment samples, all-task freeze, server/UI navigation lock, final-pose hold during delayed preparation, automatic arrival, retained speed/roster, task resumption, duplicate prevention, early Exit and failed-destination cleanup. These are not an authored live choreography acceptance claim. See `validation.json` for current native installation/acceptance status.
-
-## Accepted reused-asset checkpoint
-
-On 2026-11-03 the author confirmed the temporary HZoi transition worked perfectly. A read-only Lua-log review corroborated two transition-to-rear sequences, zero reported attachment clock discrepancy and clean Exit; task values were not logged frame by frame. The test scene, idle edge and profile track mapping were subsequently removed at the author's request. Generic transition support and isolated regression coverage remain. Purpose-authored transition choreography still awaits future assets.
-
 ## Task-triggered entry
 
 A loop can use scene-local `task_completion_routes` to enter a transition after a named role completes a registered task. The full roster uses the destination; completion reset/events/actions occur before the handoff, and task state then freezes for the transition. See [the mapping, arbitration and failure rules](scene-tasks.md#scene-local-task-completion-routes).

@@ -74,7 +74,9 @@ placement. The box represents the usable surface around one seat pair. Keep
 animation contacts independent of arms and backs. The Minimalist Sofa has no
 armrests, the Modern Chesterfield has a low back, and the Quilted Pattern
 Ottoman includes a seat without back or arm support. Check the Curtain Sofa
-separately before choosing dimensions. Final reference dimensions are pending.
+separately in-game. The paired Maya sofa reference uses a box 170 cm wide,
+55 cm deep and 44 cm high, with the seat surface at Y = 44 cm in Maya.
+Use it for authoring. Sofa placement and reservations still need runtime support.
 
 For future playback, clear the two selected sitting spots through the native
 interaction and posture paths, wait for confirmed vacancy and hold both spots
@@ -84,11 +86,9 @@ found that a single Zoi can hold two sofa interaction slots at once and that
 some two-seat sofas expose more than two raw slot records. Map real sitting
 spots and their associated slots before choosing or reserving a pair.
 
-## Verification boundary
+## Test a furniture profile
 
-Source regressions cover data validation, placement, partial acquisition, delayed
-release and recovery. The author reported normal bed behavior in the final joint
-pass. Earlier native save/load and API trials included bed cleanup. These do not
-establish every object model, menu route or third-party occupancy interaction.
-Use [current validation](validation/README.md) for the recorded evidence and keep
-new-model visual/occupancy tests separate from schema or asset-readiness checks.
+Test the actual object in game. Check that the picker offers it when free,
+rejects it when occupied, aligns the scene, and lets the next Zoi use it after
+Exit. See the [placement](../tests/furniture-placement.lua) and
+[lease](../tests/furniture-lease.lua) tests for the underlying rules.

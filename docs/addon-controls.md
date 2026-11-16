@@ -1,4 +1,4 @@
-# Expanded add-on controls (API version 1)
+# Add-on controls and outcomes
 
 These controls extend the version-1 native-message contract. Negotiate `get_version.features`: `explicit_bindings`, `preflight`,
 `furniture_discovery`, `session_results`, `integration_leases`, `live_controls`,
@@ -190,8 +190,7 @@ Additional error codes include `capability_not_granted`, `integration_not_regist
 
 ## Add-ons these contracts enable
 
-These are use cases inferred from the supplied mod names, not claims about their
-actual implementations or a promise to reproduce their assets/game systems.
+Use these patterns to decide which operation your add-on needs.
 
 | Add-on family | Framework integration |
 | --- | --- |
@@ -202,10 +201,7 @@ actual implementations or a promise to reproduce their assets/game systems.
 | Fluids, sweat, overlays, opacity, inflation, physics | Use action/partner/completion events and task state to drive the add-on's own native effects. Generic attachments are available; framework does not invent unsupported material, morph, cloth or physics interfaces or supply anatomy. |
 | Director | Inspect host-filtered destinations and metadata; creator commands ordinary navigation/speed. Observation alone cannot seize another integration's navigation. |
 
-The [authoring guide](addon-authoring.md) covers packaging and common pitfalls.
-[Validation findings](validation/addon-api-20261104.md) distinguish source checks,
-native evidence and author visual/audible acceptance. Temporary test scripts/mods
-have been removed; SDK and isolated regressions remain.
+For setup and testing, see [add-on authoring](addon-authoring.md).
 
 
 ### Refresh native owner wrappers
@@ -217,9 +213,3 @@ Only matching entity IDs update stored pending-request/renewal references; anoth
 Zoi cannot take over the caller. This matters when one Lua environment is reloaded
 while an add-on in the other environment survives. A host-instance change still
 requires explicit version negotiation, subscription and integration registration.
-
-API-5 native validation covers actual voice mute/resume and muted clothing handoffs,
-paused lease renewal, manual-session observers and host-only reload; see
-`validation.json`. Author visual/audible judgement remains separate from native
-emitter/asset/state diagnostics. A registered native add-on also passed fresh-process automatic Lua/declaration
-loading and the full suite without manual mounting or diagnostic data patching.

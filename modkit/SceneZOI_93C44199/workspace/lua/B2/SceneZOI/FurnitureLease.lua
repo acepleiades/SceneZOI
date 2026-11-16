@@ -36,7 +36,8 @@ function M.message(owner,content)
    if not M.release(bed,l)then return end
    reason='native_restriction_cleared'
   elseif not l and not M.retired[token]and f[4]=='held'then
-   -- B2 may have reloaded since B1 received the acquisition acknowledgement.
+   -- A B2 reload loses its Lua lease table but can leave the native slot held.
+   -- B1's held acknowledgement gives us the owner and object for this release.
    if not clear_restriction(bed,owner:GetEntityId())then return end
    reason='cleared_after_lease_lost'
   elseif l then

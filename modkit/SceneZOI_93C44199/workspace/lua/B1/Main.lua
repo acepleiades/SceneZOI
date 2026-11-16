@@ -5,6 +5,8 @@ local Diagnostics = require("SceneZOI.Diagnostics")
 local M = {}
 
 function M.on_begin()
+    -- The native call serializes the entire Text table. Polling it during normal
+    -- gameplay caused periodic hitches, even when the resulting catalog was unchanged.
     require("SceneZOI.DataFiles").refresh()
     require("SceneZOI.ExpressionLibrary").refresh()
     require("SceneZOI.FacialPoseLibrary").refresh()

@@ -53,6 +53,8 @@ function M.directives(value,roles)
 end
 function M.compile(source)
  local result={definitions={},warnings={}}
+ -- Scene data and API goals share one ID space. Keep conflict resolution
+ -- independent of native table order, and accept repeated equal definitions.
  local docs={};for i,doc in ipairs(source.by_kind.scene_task or {})do docs[i]=doc end
  table.sort(docs,function(a,b)return a.source<b.source end)
  for _,doc in ipairs(docs)do

@@ -1,13 +1,95 @@
 # Authoring content for SceneZOI
 
-Content packs supply assets and inert JSON. SceneZOI supplies playback, participant
-ownership, presentation and cleanup. A pack can be built independently and extend
-framework hubs without editing framework source. Start with the public
-[framework manifest](../packs/scenezoi.json), [neutral scene files](../packs/scenezoi/scenes/)
-and [package/declaration guide](package-split.md).
+Start with one loop. Give each Zoi a role, import one matching track per role,
+and make a scene that the picker or an existing hub can open.
+
+1. [Create a ModKit project and pack manifest](#files-and-native-project).
+2. [Declare the scene, roles and entry](#scenes-and-participants).
+3. [Import and check the tracks](#animation-and-attachment-requirements).
+4. [Package and test](#verify-your-pack). Add optional sound and presentation once the loop works.
+
+Use the [framework manifest](../packs/scenezoi.json) and [neutral scenes](../packs/scenezoi/scenes/) as working examples.
 
 New to character animation? Start with [Make your first SceneZOI animation](first-animation.md)
 for the Maya and Blender rigs, exporters and a first in-game test.
+
+## Files and native project
+
+Create and register your own project through ModKit. Give your pack a namespace,
+author one scene per JSON file, and point the manifest at a child directory:
+
+```json
+{
+  "schema_version": 3,
+  "id": "designer",
+  "scene_directory": "designer/scenes",
+  "extensions": []
+}
+```
+
+Scene files use namespaced IDs independently of filenames. Builds collect the
+directory recursively and validate it before staging a native scene-pack row.
+`expression_files` and `data_files` add other declarative definitions. Use your own
+assets and packaging inventory; no private content checkout is needed.
+
+From the SceneZOI checkout:
+
+```powershell
+python tools/build_catalog.py --packs "C:/MyPack/packs/designer.json" --project "C:/Path/To/DesignerProject"
+```
+
+This stages JSON, not animation imports or a native package. Follow
+[developer setup](installation.md) and [packaging](development.md) for the rest.
+
+## Scenes and participants
+
+A scene declares `id`, `label`, `kind`, `duration`, `fps`, named `participants`,
+`anchor_participant`, one entry in `tracks` per role, and `navigation`. Copy a neutral
+scene as a complete structural example and replace its identity/assets with your
+own. Roles describe responsibilities; they are not inferred from body type,
+controlled/NPC status or roster order. Body/life-stage requirements describe actual
+appearance compatibility. Mutual actions are explicitly authored in both directions.
+
+Declare `starting_hub: true` on a compatible loop to make it eligible for entry.
+The selected roster must match the entire scene. Membership and role assignments
+stay fixed; connected nodes must preserve compatible roles and furniture context.
+A hub extension links your pack into enabled framework navigation. A solo scene
+has one role and extends `scenezoi.solo_idle_female` or `scenezoi.solo_idle_male`,
+with the same role name, body and life stages as that hub. See
+[participants](group-support.md), [furniture](furniture.md) and
+[navigation/package extensions](package-split.md#roles-entry-and-extensions).
+
+## Animation and attachment requirements
+
+Body tracks must load on the compatible native skeleton and agree with authored
+duration within the runtime tolerance. Paired clips use a shared origin/coordinate
+setup for their intended contact. SceneZOI preserves the game's animation instances
+and samples the tracks from one clock; it does not repair contact, author IK or
+retarget arbitrary facial/body proportions for you.
+
+The generic import tools validate source hashes, target skeletons and duration.
+Rigs/exporters and their application-specific authoring workflows are maintained
+separately. Investigate import accuracy for a concrete reproduced mismatch.
+
+Named skeletal attachments specify their owning participant, mesh, socket and
+reference bone, plus an optional duration-matched animation. The mesh uses its own
+skeleton. `component` selects `body` or `head`; inverse-reference binding avoids a
+double authored root offset. Resources have independent ownership and cleanup.
+See [head attachments and fixed facial poses](facial-poses.md) and
+[coverage/material profiles](package-split.md#presentation-and-compatibility-profiles).
+
+## Verify your pack
+
+1. Run the catalog build above. Use [isolated packaging](development.md#isolated-packaging)
+   and filter the exported package to your owned assets. Declare SceneZOI as a
+   dependency in the native manifest.
+2. Close inZOI and install the filtered pack beside SceneZOI. Enable both mods
+   and any declared dependencies, then load a test save.
+3. Start the scene on the intended roster and furniture. Watch a full loop,
+   try its navigation and **Exit**, then start it again. Check contacts and
+   animation timing in-game where the character meshes can differ from the rig.
+4. Test with only the dependencies you list. If you use an optional library,
+   try with it installed and absent.
 
 ## Hand an animation pack to an AI agent
 
@@ -40,6 +122,58 @@ A successful first test means the scene appears at the intended entry, all
 tracks play together, and Exit restores gameplay. Test with SceneZOI and your
 pack enabled, plus any dependencies you actually declared. Have the agent report
 which checks it ran. Review contact, clipping and the loop seam in-game yourself.
+
+## Optional scene data
+
+| Behavior | Contract |
+| --- | --- |
+| Scene/participant tags, directed actions, calculated ratings | [Metadata](scene-metadata.md) |
+| Expressions and fixed partial-face poses | [Expressions](expressions.md), [facial poses](facial-poses.md) |
+| Eye targets | [Gaze](gaze.md) |
+| Spatial sounds and voices | [SFX](sfx.md), [voices](voices.md) |
+| Numerical tasks, completion routes and one-shot actions | [Scene tasks](scene-tasks.md) |
+| Authored one-shot transition nodes | [Transitions](transitions.md) |
+| Procedural completion effects and timing | [Completion responses](completion-effects.md) |
+
+Scene ratings derive from declared actions; do not write `content_rating` into
+scene JSON. Metadata describes content, while separate gameplay integrations own
+availability decisions and consequences. Use [API/SDK add-ons](addon-authoring.md)
+for executable integration rather than putting code in content declarations.
+
+## Translated display text
+
+Keep IDs and source labels stable. Content packs can contribute inert
+[localization declarations](localization.md) for scene titles, explicit navigation
+captions, expression/voice choices and task captions. Missing entries fall back
+to English. Tags and actions are authoring metadata and are not translated.
+
+## Optional animation assets
+
+Content packs can use animations from independent libraries, including clips
+originally made for another Unreal project, when the license permits that use.
+This lets authors build scenes around existing animations without having to
+animate them. The clips can be cooked with stock Unreal Engine and distributed
+separately from the content pack. The game must be able to mount the cooked
+package for its engine build and platform, resolve the animation's dependencies,
+and play it on the target skeleton. [Unreal Engine content cooking](https://dev.epicgames.com/documentation/en-us/unreal-engine/cooking-content-in-unreal-engine)
+
+Reference each clip's Unreal object path in `tracks`. Add
+`"hide_if_tracks_missing": true` to a scene to make it conditional on those
+assets. On catalog discovery, SceneZOI checks every role track, named attachment
+mesh and animation, and any matching coverage attachment track declared for the
+scene. Clips must load and match the authored duration. If a check fails, the
+scene is omitted from the catalog, including API discovery and starts. Incoming
+navigation, task routes and transitions that depend on the scene are also
+removed. The catalog check is opt-in.
+
+Install the cooked library before launching the game. The game and its content
+loaders handle mounting. If archive signature checks block a compatible unsigned
+package, use a compatible signature bypasser such as UniversalSigBypasser where
+the game's terms permit it. [UniversalSigBypasser](https://github.com/rm-NoobInCoding/UniversalSigBypasser)
+
+Test playback on the target Zoi, including looping and Exit. Then launch with
+the library absent and verify that the scene disappears from navigation and API
+search results.
 
 ## Learn from a complete content pack
 
@@ -97,130 +231,3 @@ scene-local attachment example. The mesh and clips ship under your own mod's
 asset paths. Players need SceneZOI and your pack. Follow the
 [independent pack walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md)
 for setup, coverage profiles and testing with HZoi disabled.
-
-## Files and native project
-
-Create and register your own project through ModKit. Give your pack a namespace,
-author one scene per JSON file, and point the manifest at a child directory:
-
-```json
-{
-  "schema_version": 3,
-  "id": "designer",
-  "scene_directory": "designer/scenes",
-  "extensions": []
-}
-```
-
-Scene files use namespaced IDs independently of filenames. Builds collect the
-directory recursively and validate it before staging a native scene-pack row.
-`expression_files` and `data_files` add other declarative definitions. Use your own
-assets and packaging inventory; no private content checkout is needed.
-
-From the SceneZOI checkout:
-
-```powershell
-python tools/build_catalog.py --packs "C:/MyPack/packs/designer.json" --project "C:/Path/To/DesignerProject"
-```
-
-This stages JSON, not animation imports or a native package. Follow
-[developer setup](installation.md) and [packaging](development.md) for the rest.
-
-## Scenes and participants
-
-A scene declares `id`, `label`, `kind`, `duration`, `fps`, named `participants`,
-`anchor_participant`, one body `track` per role, and `navigation`. Copy a neutral
-scene as a complete structural example and replace its identity/assets with your
-own. Roles describe responsibilities; they are not inferred from body type,
-controlled/NPC status or roster order. Body/life-stage requirements describe actual
-appearance compatibility. Mutual actions are explicitly authored in both directions.
-
-Declare `starting_hub: true` on a compatible loop to make it eligible for entry.
-The selected roster must match the entire scene. Membership and role assignments
-stay fixed; connected nodes must preserve compatible roles and furniture context.
-A hub extension links your pack into enabled framework navigation. A solo scene
-has one role and extends `scenezoi.solo_idle_female` or `scenezoi.solo_idle_male`,
-with the same role name, body and life stages as that hub. See
-[participants](group-support.md), [furniture](furniture.md) and
-[navigation/package extensions](package-split.md#roles-entry-and-extensions).
-
-## Animation and attachment requirements
-
-Body tracks must load on the compatible native skeleton and agree with authored
-duration within the runtime tolerance. Paired clips use a shared origin/coordinate
-setup for their intended contact. SceneZOI preserves the game's animation instances
-and samples the tracks from one clock; it does not repair contact, author IK or
-retarget arbitrary facial/body proportions for you.
-
-The generic import tools validate source hashes, target skeletons and duration.
-Rigs/exporters and their application-specific authoring workflows are maintained
-separately. Investigate import accuracy for a concrete reproduced mismatch.
-
-Named skeletal attachments specify their owning participant, mesh, socket and
-reference bone, plus an optional duration-matched animation. The mesh uses its own
-skeleton. `component` selects `body` or `head`; inverse-reference binding avoids a
-double authored root offset. Resources have independent ownership and cleanup.
-See [head attachments and fixed facial poses](facial-poses.md) and
-[coverage/material profiles](package-split.md#presentation-and-compatibility-profiles).
-
-## Optional animation assets
-
-Content packs can use animations from independent libraries, including clips
-originally made for another Unreal project, when the license permits that use.
-This lets authors build scenes around existing animations without having to
-animate them. The clips can be cooked with stock Unreal Engine and distributed
-separately from the content pack. The game must be able to mount the cooked
-package for its engine build and platform, resolve the animation's dependencies,
-and play it on the target skeleton. [Unreal Engine content cooking](https://dev.epicgames.com/documentation/en-us/unreal-engine/cooking-content-in-unreal-engine)
-
-Reference each clip's Unreal object path in `tracks`. Add
-`"hide_if_tracks_missing": true` to a scene to make it conditional on those
-assets. On catalog discovery, SceneZOI checks every role track, named attachment
-mesh and animation, and any matching coverage attachment track declared for the
-scene. Clips must load and match the authored duration. If a check fails, the
-scene is omitted from the catalog, including API discovery and starts. Incoming
-navigation, task routes and transitions that depend on the scene are also
-removed. The catalog check is opt-in.
-
-Install the cooked library before launching the game. The game and its content
-loaders handle mounting. If archive signature checks block a compatible unsigned
-package, use a compatible signature bypasser such as UniversalSigBypasser where
-the game's terms permit it. [UniversalSigBypasser](https://github.com/rm-NoobInCoding/UniversalSigBypasser)
-
-Test playback on the target Zoi, including looping and Exit. Then launch with
-the library absent and verify that the scene disappears from navigation and API
-search results.
-
-## Optional scene data
-
-| Behavior | Contract |
-| --- | --- |
-| Scene/participant tags, directed actions, calculated ratings | [Metadata](scene-metadata.md) |
-| Expressions and fixed partial-face poses | [Expressions](expressions.md), [facial poses](facial-poses.md) |
-| Eye targets | [Gaze](gaze.md) |
-| Spatial sounds and voices | [SFX](sfx.md), [voices](voices.md) |
-| Numerical tasks, completion routes and one-shot actions | [Scene tasks](scene-tasks.md) |
-| Authored one-shot transition nodes | [Transitions](transitions.md) |
-| Procedural completion effects and timing | [Completion responses](completion-effects.md) |
-
-Scene ratings derive from declared actions; do not write `content_rating` into
-scene JSON. Metadata describes content, while separate gameplay integrations own
-availability decisions and consequences. Use [API/SDK add-ons](addon-authoring.md)
-for executable integration rather than putting code in content declarations.
-
-## Verify your pack
-
-Run source validation, native validation and exact owned-payload filtering. Then
-test fresh startup, matching/no-match entry, navigation, appearance changes,
-pause/speed, Exit/re-entry and independence from optional packs as applicable.
-Check actual asset readiness and retained errors; an accepted command is not
-rendered acceptance. New geometry, facial targets, audio and furniture variants
-need their own fit/presentation checks. Keep those results distinct from source
-tests in your contribution or validation notes.
-
-## Translated display text
-
-Keep IDs and source labels stable. Content packs can contribute inert
-[localization declarations](localization.md) for scene titles, explicit navigation
-captions, expression/voice choices and task captions. Missing entries fall back
-to English. Tags and actions are authoring metadata and are not translated.

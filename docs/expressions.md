@@ -1,6 +1,9 @@
 # Scene expressions and personality
 
-Current runtime and acceptance boundaries are recorded in [validation.json](../validation.json). Expression definitions use schema version 2; fixed facial poses use their separately documented schema.
+Choose an expression context per role, such as `Idle` or `Kiss`. The
+Zoi's selected expression set provides the clip for that context.
+Expression sets use schema version 2. [Fixed facial poses](facial-poses.md)
+have their own schema.
 
 Enabled independent packages supply expression sets alongside their other native declarations. SceneZOI owns ten declarations and five neutral nodes. Recorded integration checks used five expression sets from the private, optional HZoi pack; those files are not part of this checkout or required for authoring.
 
@@ -68,7 +71,7 @@ This repurposes the native text table as a declaration carrier; it is not a dedi
 
 `DataFiles.lua` validates each envelope independently, groups records by case-insensitive kind, and supplies `expression_set` to `ExpressionLibrary.lua`. Scene packs, body/material/coverage profiles, voices, tasks and furniture profiles have independent consumers; enabled scene graphs are assembled at runtime. Missing/malformed records warn without terminating a session. Runtime contains no content pack IDs or filename list and never executes declaration code. Limits remain 4096 declaration rows, 1 MiB per envelope, 16 MiB for the native response, and bounded JSON depth/nodes.
 
-Discovery runs on boot, periodically while no session is active, and immediately before session capture. Unchanged records preserve the cached snapshot. This avoids treating an early boot before another pack mounts as a permanently empty library. Active sessions retain their library until Exit. Native disable/re-enable was tested in the running game: five records became zero, then five again, with zero discovery warnings throughout. Physical uninstall on a later startup remains untested.
+The library is built from enabled declarations at client Lua startup. Restart inZOI after changing your packs. Active sessions retain their library until Exit.
 
 Add expression definitions to your pack manifest's `expression_files`. From the SceneZOI checkout, use `python tools/build_catalog.py --packs <your-pack-manifest> --project <your-native-project>` to validate and stage that owner's declarations. The generic writer preserves unrelated patch entries and records packaging ownership in `workspace/data_files.json`; runtime does not read that inventory. The patch ships through ModKit as `non_ufs/JsonPatch/Text_UI_patch.json` with native manifest membership/checksums. See [package authoring](package-split.md); no private content checkout or executable pack registration is required.
 
@@ -89,7 +92,7 @@ Each participant has independent loaded options, random selection history, hold 
 
 Timers use the existing shared session clock, respecting game pause, game speed and the selected scene speed. Native montage blend duration is adjusted by selected scene speed at selection time. A speed change during an already-running native blend is not retroactively retimed. The initial version blends complete facial poses; independently composable facial regions and random strength ranges are not claimed.
 
-The native adapter installs and samples its own head montage on the existing game-owned head animation instance. Automatic end fading is disabled on that owned transient montage, so looping near the clip's end does not expose the native mood expression. Deliberate expression transitions still blend, and Exit stops the owned playback. The separate native mood-cache blend is also suppressed while a full expression clip is owned; disabling montage end fading alone does not suppress it. Each actual head instance retains its latest observed native blend weight for restoration after its owned playback retires or on Exit. Later nonzero game/foreign writes are preserved, and blend restoration retries independently of montage cleanup. Named additive poses alone do not claim this full-expression blend. See the [mood-blend checkpoint](validation/facial-mood-20261105.json). It never replaces animation instances, changes native eye/blink settings or edits face-customization data. Outgoing facial poses are held during node preparation. Appearance replacement rebinds to the current head and retires playback on its actual previous owner. Outgoing leases remain owned through their native blend deadline, measured with paused/dilated game time; only completed, inactive leases or positively invalid native instances are pruned. A failed native query retains ownership for cleanup retries. Exit retries only remaining owned playback/overlay cleanup. Native and visual results for current content are recorded in [release validation](validation/README.md); new clips and customized heads require their own acceptance.
+The native adapter installs and samples its own head montage on the existing game-owned head animation instance. Automatic end fading is disabled on that owned transient montage, so looping near the clip's end does not expose the native mood expression. Deliberate expression transitions still blend, and Exit stops the owned playback. The separate native mood-cache blend is also suppressed while a full expression clip is owned; disabling montage end fading alone does not suppress it. Each actual head instance retains its latest observed native blend weight for restoration after its owned playback retires or on Exit. Later nonzero game/foreign writes are preserved, and blend restoration retries independently of montage cleanup. Named additive poses alone do not claim this full-expression blend. See the [mood-blend checkpoint](https://github.com/acepleiades/SceneZOI/blob/e0cb40d64bb8c313d5c7309c3c5605b231569892/docs/validation/facial-mood-20261105.json). It never replaces animation instances, changes native eye/blink settings or edits face-customization data. Outgoing facial poses are held during node preparation. Appearance replacement rebinds to the current head and retires playback on its actual previous owner. Outgoing leases remain owned through their native blend deadline, measured with paused/dilated game time; only completed, inactive leases or positively invalid native instances are pruned. A failed native query retains ownership for cleanup retries. Exit retries only remaining owned playback/overlay cleanup. Test new clips on the head shapes you intend to support.
 
 An unavailable native expression asset, a failed native load or an asset of the wrong type is skipped. If none can load for a selected context, the scene continues, the personality panel reports the problem and the engine retries at bounded intervals. The ModKit's separate inspection commandlet could not load these native game assets, so references alone do not establish playback.
 
@@ -140,14 +143,3 @@ preferences are not included in packages. Voice selection is independent in the
 same panel; see [voices](voices.md). Both preference directories must survive
 updates. See [storage locations](settings.md#storage-location) before backing up,
 uninstalling or resetting a development installation.
-
-## Verification boundary
-
-Isolated checks cover three independent roles with repeated bodies, persistent preferences, malformed/missing content, failed storage, stale/duplicate commands, paused shared time, head replacement, foreign overlays, cleanup retries, exclusive panels and UI selection. Existing group, outfits, attachment, gaze and lifecycle suites remain passing. ModKit analysis and payload/hash verification are recorded in `validation.json`. These do not substitute for author visual acceptance or native runtime playback verification.
-
-
-## Current authored use and retained evidence
-
-The framework hubs use Idle expressions without a mouth override. HZoi enables the female fixed O only in hzoi.male_standing_female_kneeling_fellatio. Kiss remains available as an explicitly sampled pose in content. Ordinary unsampled clips now advance/loop with authored blink motion; this is distinct from a guaranteed visible blink in every explicit pose.
-
-The author accepted the refined female O, reference-free activation, continuous gaze handoff, dropdown interaction and tested family switching/Exit. Other customized heads, new authored poses and male O proportions retain separate visual-review limits. Retired curve-map/reference-sampler experiments must not be restored. Ownership/native tombstone and quaternion-round-trip regressions are summarized in the [issue ledger](investigations/runtime-and-ui-issues.md).
