@@ -125,6 +125,10 @@ function M.resolve(registry,node,id)
  return registry.defaults[id], 'task_ambiguous'
 end
 
+function M.can_finish(directive)
+ return directive and directive.rate>0 and (directive.cap_percent or 100)>=100
+end
+
 function M.directive(node,role,id,key)
  local directive=((node.tasks or {})[role] or {})[id]
  if directive and (not node._task_keys or node._task_keys[id]==(key or id))then return directive end

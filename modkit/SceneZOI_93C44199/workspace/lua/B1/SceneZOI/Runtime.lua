@@ -454,7 +454,10 @@ function M.start_background(row)
     local lifetime = npc_only and row.default_length and {game_minutes = Settings.npc_scene_minutes()} or row.lifetime
     current.npc_only, current.lifetime, current.exit_policy = npc_only, lifetime, row.placement.exit
     current.origin_id = row.origin_id
-    if row.plan then current.plan = Plan.new(row.plan) end
+    if row.plan then
+        current.plan = Plan.new(row.plan)
+        Plan.enter_node(current)
+    end
     current.max_start_distance_cm = row.placement.max_start_distance_cm
     Sessions.add(current)
     Addons.created(row, current)

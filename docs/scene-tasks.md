@@ -65,13 +65,18 @@ the sole definition if the available copies agree. If different definitions
 remain, the scene still plays and the task is unavailable. Check
 `scenezoi_runtime/mod_inventory.cfg` for conflicts between packs.
 
-Identical definitions share progress across navigation. Different definitions
-with the same ID keep separate progress and completion counts. A plan binds
-each goal to one definition at entry and keeps that binding across navigation.
-A neutral hub with several viable definitions uses an available framework
-definition when it can. If no choice can be made, the API returns `task_ambiguous`.
-Choose an entry scene that uses the intended definition. The literal task ID
-in API calls and events stays the same.
+Identical definitions share progress across navigation. For tasks outside an
+autonomous plan's goals, different definitions with the same ID keep separate
+meters and counts.
+
+An autonomous goal follows the definition of the scene currently playing.
+If the maximum changes from 100 to 200, 40% carries over as 80 points.
+The destination's rate and decay apply, and its cap limits further gains.
+Completions already earned still count. A scene change alone does not complete
+a task. A carried full meter waits for a playing scene that permits completion.
+If a scene has no resolvable definition, progress waits until a later scene
+provides one. This also applies during manual takeover of an autonomous plan.
+API calls and completion events use the same task ID across packs.
 
 SceneZOI provides a shared `excitement` definition with the existing
 `orgasm` completion-event identifier. HZoi and other packs can attach
@@ -81,8 +86,8 @@ within a single pack.
 
 Two tasks can display the same label. Give independent tasks pack-prefixed IDs
 such as `training.focus` and `meditation.focus`. When packs intentionally share
-an ID, use the same definition, including any definition-level actions. The
-selected definition applies to every scene that refers to that ID.
+an ID, coordinate the definition and keep pack-specific effects on the scenes
+that need them. The resolved definition governs the current scene.
 
 See [shared declarations and conflicting IDs](authoring.md#shared-declarations-and-conflicting-ids)
 for how to coordinate a shared task with another pack author.

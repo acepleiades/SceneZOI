@@ -5,6 +5,7 @@ local Control=require('SceneZOI.AddonControl')
 local Effects=require('SceneZOI.AddonEffects')
 local M={}
 local Tasks=require('SceneZOI.Tasks')
+local Plan=require('SceneZOI.Plan')
 local function runtime()return require('SceneZOI.Runtime')end
 local operations={register_integration=true,renew_integration=true,release_integration=true,request_stop=true,
  get_session_result=true,get_navigation=true,get_task_state=true,set_speed=true,set_speed_multiplier=true,
@@ -58,16 +59,18 @@ function M.execute(actor,req)
   assert(task_key,reason or 'task_not_found')
   local d=s.tasks.definitions[task_key]
   local entry=s.tasks.participants[p.id][task_key]
+  local goal=Plan.goal(s,p.id,args.task_id)
   if op=='set_task_controls'then
    assert(args.amount==nil and args.value==nil and(args.rate_multiplier~=nil or args.completion_hold~=nil),'Invalid task controls')
    if args.rate_multiplier~=nil then V.number(args.rate_multiplier,0,10)end
    if args.completion_hold~=nil then V.boolean(args.completion_hold)end
-   local layer=Control.layer(s,key);local k=p.id..'|'..task_key;layer.tasks[k]=layer.tasks[k]or {}
+   local layer=Control.layer(s,key);local k=p.id..'|'..(goal and args.task_id or task_key);layer.tasks[k]=layer.tasks[k]or {}
    for _,n in ipairs({'rate_multiplier','completion_hold'})do if args[n]~=nil then layer.tasks[k][n]=args[n]end end
   else
    assert(args.rate_multiplier==nil and args.completion_hold==nil,'Invalid task progress fields')
    if op=='modify_task_progress'then assert(args.value==nil,'Use amount for modify');V.number(args.amount,-d.maximum,d.maximum);entry.value=math.max(0,math.min(d.maximum,entry.value+args.amount))
    else assert(args.amount==nil,'Use value for set');V.number(args.value,0,d.maximum);entry.value=args.value end
+   if goal and (op=='set_task_progress'or entry.value<d.maximum)then goal.pending_handoff=nil end
   end
   return true,{participant_id=p.id,task_id=args.task_id,value=entry.value,maximum=d.maximum,percent=100*entry.value/d.maximum,completions=entry.completions,completion_deferred_until_playing_tick=true}
  end

@@ -249,6 +249,13 @@ The planner follows authored navigation edges and transitions. It uses the
 slowest goal's progress to advance stages. A goal's progress is its completed
 count plus the current meter fraction, divided by its requested count. A goal
 at 100% still needs the task engine's completion event to count as satisfied.
+The goal uses the current scene's task definition. If a new scene resolves the
+same task ID to another definition, the meter keeps its percentage and
+completions already counted. The destination determines how the task progresses
+and what happens on completion. A neutral hub can connect to different valid
+providers without choosing one for the entire plan.
+[Task definitions across packs](scene-tasks.md#choose-which-definition-a-scene-uses)
+
 Stages move forward in order. A timed plan without goals divides its duration
 evenly across stages. Both plan clocks pause during preparation, game pause and
 manual takeover. The real clock ignores game speed and the game clock follows
