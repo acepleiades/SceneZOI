@@ -119,7 +119,7 @@ playing readiness; reads may inspect preparation/cleanup.
 | `get_task_state` | Copied `definitions` used by the current scene and participant rows, including `base_rate`, combined `rate_multiplier`, `player_rate_multiplier`, `addon_rate_multiplier`, `effective_rate` and completion hold. The player factor applies only to positive base rates; see [settings](settings.md#task-progress). `get_definitions` lists task IDs across packs. Use `get_task_state` to inspect the active definition when packs disagree. |
 | `set_task_progress` | `participant_id`, `task_id`, `value` within 0–maximum. Requires `tasks`. |
 | `modify_task_progress` | `participant_id`, `task_id`, `amount` within ±maximum; resulting progress clamps to 0–maximum. Requires `tasks`. |
-| `set_task_controls` | `participant_id`, `task_id`, optional `rate_multiplier` 0–10 and/or `completion_hold` boolean. Per-caller factors combine and clamp to 0–10, before the player's separate 0.1–5 positive-progress factor. Zero freezes accumulation/decay. Any active hold blocks completion. For a task used by an autonomous goal, these controls follow the participant and task ID across scene changes. Requires `tasks`. |
+| `set_task_controls` | `participant_id`, `task_id`, optional `rate_multiplier` 0–10 and/or `completion_hold` boolean. Per-caller factors combine and clamp to 0–10, before the player's separate 0.1–5 positive-progress factor. Zero freezes accumulation/decay. Any active hold blocks completion. These controls follow the participant and task ID across scene changes. Requires `tasks`. |
 
 Setting progress to the maximum schedules ordinary engine completion on the next
 positive playing tick. It never manufactures an event, response, animation or route.

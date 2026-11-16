@@ -43,7 +43,7 @@ are the author's role IDs. Each role declares its body requirements separately.
 
 ## Connect progress to independent responses
 
-1. The [task definition](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/tasks/excitement.json) sets maximum
+1. [SceneZOI’s shared task definition](../packs/scenezoi/tasks/excitement.json) sets maximum
    and decay. The [hand scene](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/02_standing_hand_job.json)
    sets different rates and caps for its two roles in `tasks`.
 2. When a participant reaches the maximum, SceneZOI resets their meter and emits

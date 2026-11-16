@@ -36,7 +36,9 @@ local people={}
 for i,body in ipairs({'male','female','male'})do people[i]={id=tostring(i),role='role'..i,body=body,actor={id=tostring(i),point={X=i,Y=0,Z=0}}}end
 local session={participants=people,node={id='neutral.scene',participants={}},tasks={definitions={charge=definition}},clock={game_elapsed=0,scale=1,index=2}}
 local ctx={};A.prepare(ctx,session);assert(A.ready(ctx));A.enter(ctx)
-local function complete(id,index)A.trigger(ctx,{participant_id=id,task={id='charge',completion_index=index}})end
+local function complete(id,index,key)
+ A.trigger(ctx,{participant_id=id,task_key=key or 'charge',task={id='charge',completion_index=index}})
+end
 complete('1',1);complete('2',1);complete('3',1);assert(#calls==2 and calls[1].owner=='1'and calls[2].owner=='3','Completed-participant body filter and repeated-body owners')
 complete('1',1);assert(#calls==2,'No duplicate playback for repeated completion delivery')
 local pool=ctx.pools['charge:1:1'];assert(pool[1].volume==.7)
@@ -70,7 +72,7 @@ session.clock.scale=.1;session.clock.game_elapsed=session.clock.game_elapsed+.11
 assert(not current.remaining,'One-shot must expire during slow motion')
 A.restore(ctx)
 local before=#calls;session.stopping=true;complete('1',7);assert(#calls==before,'Stopping sessions cannot start sounds')
--- A scene can replace the legacy action for one role and reuse a named sound set.
+-- A scene can replace the definition's action for one role and reuse a named sound set.
 session.stopping=false
 session.node={id='alpha.loop',participants={},task_completion_sounds={role1={charge={
  {type='play_sound',sound_set='alpha.finish',_clips={'/Alpha/Finish.Finish'},source={component='body',bones={'root'}}}
@@ -80,7 +82,16 @@ complete('1',9)
 assert(#calls==first+1 and calls[#calls].path=='/Alpha/Finish.Finish','Play only the explicit scene sound')
 session.node.task_completion_sounds.role1.charge={}
 complete('1',10)
-assert(#calls==first+1,'An empty scene override silences the legacy sound')
+assert(#calls==first+1,'An empty scene override silences the definition sound')
+A.restore(ctx)
+session.node={id='beta.loop',participants={}}
+local other=V.copy(definition)
+other.on_completion[1].clip='/Beta/Finish.Finish'
+session.tasks.definitions['beta:charge']=other
+complete('1',10,'beta:charge')
+assert(#calls==first+1,'A provider change does not replay a delivered completion')
+complete('1',11,'beta:charge')
+assert(#calls==first+2 and calls[#calls].path=='/Beta/Finish.Finish','The next completion uses the new provider sound')
 A.restore(ctx)
 for _,change in ipairs({{type='callback'},{clip='run()'},{source={component='body',bones={}}},{when={body='unknown'}},{volume=-1},{max_voices=0},{attenuation={callback='run()'}}})do
  local action=V.copy(spec);for k,v in pairs(change)do action[k]=v end

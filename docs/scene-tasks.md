@@ -11,7 +11,7 @@ Completion is still committed by the real task engine on a positive loop-playing
 
 ## Complete content-pack example
 
-HZoi-Reference’s [Excitement definition](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/tasks/excitement.json)
+SceneZOI’s shared [Excitement definition](../packs/scenezoi/tasks/excitement.json)
 sets the maximum and decay. [Standing Handjob](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/02_standing_hand_job.json)
 defines per-role progression and caps. [Standing Rear](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/04_standing_rear.json)
 adds a scene-local one-shot, a reaction from the selected voice set, a timed
@@ -67,17 +67,15 @@ With no named dependency, the first pack ID in alphabetical order supplies
 the definition. This is independent of load order. When definitions disagree,
 `scenezoi_runtime/mod_inventory.cfg` lists the packs and the fallback winner.
 
-Identical definitions share progress across navigation. For tasks outside an
-autonomous plan's goals, different definitions with the same ID keep separate
-meters and counts.
+Each participant keeps one meter and completion count per task ID for the
+session. This applies to manually started sessions and sessions started
+through the API, with or without an autonomous goal. If a new scene changes
+the maximum from 100 to 200, 40% carries over as 80 points. The destination's
+rate and decay apply, and its cap limits further gains.
 
-An autonomous goal follows the definition of the scene currently playing.
-If the maximum changes from 100 to 200, 40% carries over as 80 points.
-The destination's rate and decay apply, and its cap limits further gains.
-Completions already earned still count. A scene change alone does not complete
-a task. A carried full meter waits for a playing scene that permits completion.
-If a scene has no resolvable definition, progress waits until a later scene
-provides one. This also applies during manual takeover of an autonomous plan.
+A scene change alone does not complete a task. A carried full meter waits for
+a playing scene that permits completion. If the current scene cannot resolve
+the task's definition, its meter stays parked until a later scene resolves it.
 API calls and completion events use the same task ID across packs.
 
 SceneZOI provides a shared `excitement` definition with the existing
@@ -247,7 +245,7 @@ from a [sound set](sfx.md#data). The source follows the completing Zoi.
 
 A scene rule takes precedence over the older task-wide `on_completion` list
 for that role and task. An empty list silences the task-wide action in that
-scene. An absent rule uses the task-wide behavior for compatibility.
+scene. When a role has no scene-level rule, the definition’s completion sound applies.
 
 ## Scene-local task completion routes
 

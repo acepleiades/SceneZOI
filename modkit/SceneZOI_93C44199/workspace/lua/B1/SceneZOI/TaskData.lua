@@ -66,7 +66,7 @@ function M.scene(node)
  end
 end
 
--- A shared definition has one state key. Distinct definitions retain separate progress.
+-- Equal definitions share one key. Distinct definitions keep their own rules.
 function M.compile(source)
  local result={definitions={},variants={},by_owner={},defaults={},providers={},conflicts={},warnings={}}
  local docs,by_id={},{}
@@ -115,7 +115,6 @@ function M.compile(source)
 end
 
 function M.resolve(registry,node,id)
- if not registry.variants then return registry.definitions[id] and id or nil end
  local providers=registry.providers[id]
  if not providers then return nil,'task_not_found' end
  local owner=node and node._owner

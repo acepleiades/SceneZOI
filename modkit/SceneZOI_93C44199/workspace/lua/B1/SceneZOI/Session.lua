@@ -2,6 +2,7 @@ local Binding = require("SceneZOI.Binding")
 local Clock = require("SceneZOI.Clock")
 local OutfitState = require("SceneZOI.OutfitState")
 local Plan = require("SceneZOI.Plan")
+local Tasks = require("SceneZOI.Tasks")
 local M = {}
 
 function M.new(options)
@@ -52,7 +53,7 @@ function M.change_node(current, node, assets, duration, subsystems)
     current.transition_finished = nil
     current.bindings, current.tracks = nil, {}
     for _, participant in ipairs(current.participants) do participant.node_ready = false end
-    Plan.enter_node(current)
+    if current.tasks then Tasks.enter_node(current.tasks,node) end
 end
 
 function M.snapshot(current)
@@ -71,7 +72,7 @@ function M.snapshot(current)
         plan=Plan.snapshot(current),
         focused=current.final_focus==true or require('SceneZOI.Sessions').focused()==current,
         result_facts=require('SceneZOI.AddonControl').facts(current),
-        task_state=current.tasks and require('SceneZOI.Tasks').inspect(current.tasks,current)or {},
+        task_state=current.tasks and Tasks.inspect(current.tasks,current)or {},
         addon_data=require('SceneZOI.DataValidation').copy(current.node.addon_data or {}),
         participant_addon_data=require('SceneZOI.DataValidation').copy(current.node.participant_addon_data or {}),
         addon_id=current.addon_id,request_id=current.request_id,addon_context=require('SceneZOI.DataValidation').copy(current.addon_context),
@@ -84,7 +85,7 @@ function M.snapshot(current)
         node_kind = current.node.kind, destination = current.node.destination,
         phase = current.ended and "ended" or current.stopping and "exiting" or current.preparing and "preparing" or "playing",
         participants = participants, tracks = tracks, speed_index = current.clock.index,
-        task_progress = current.tasks and require("SceneZOI.Tasks").progress(current.tasks,current) or {},
+        task_progress = current.tasks and Tasks.progress(current.tasks,current) or {},
         game_scale = current.clock.scale, effective_speed = current.clock.effective,
         completion_effects = require("SceneZOI.CompletionEffects").snapshot(current.completion_effects)}
 end

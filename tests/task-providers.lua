@@ -44,19 +44,10 @@ assert(not key and reason=='task_not_found')
 local same=Data.compile({by_kind={scene_task={docs[4],docs[1]}}})
 assert(Data.resolve(same,c,'charge')=='charge' and #same.conflicts==0,'Equivalent definitions share one meter')
 local people={{id='1',role='lead',body='male'}}
-local session={token='scoped',participants=people,node=a,clock={},addon_controls={}}
-session.tasks=Tasks.new(registry.variants,people,registry)
-Control.init(session)
-local completed={}
+local session,completed
 local function tick(seconds)
  Tasks.update(session.tasks,session,seconds,function(event)completed[#completed+1]=event end)
 end
-tick(1)
-assert(Tasks.progress(session.tasks,session)['1'].charge.value==5)
-session.node=b;tick(2)
-assert(Tasks.progress(session.tasks,session)['1'].charge.value==10)
-session.node=a
-assert(Tasks.progress(session.tasks,session)['1'].charge.value==5,'Navigation keeps distinguishable progress')
 local Session=require('SceneZOI.Session')
 local function spec_for(count)
  return Plan.parse({goals={{task_id='charge',participant_id='1',completions=count}}},registry.definitions,{'1'})
@@ -98,9 +89,9 @@ no_core.variants['beta:charge'].initial=7
 local function start(n,count,definitions)
  definitions=definitions or no_core
  session=Session.new({node=n,participants=V.copy(people),participant_ids={'1'},token='provider-test'})
- session.preparing=false;session.plan=Plan.new(spec_for(count))
- session.tasks=Tasks.new(definitions.variants,session.participants,definitions)
- Plan.enter_node(session)
+ session.preparing=false
+ if count then session.plan=Plan.new(spec_for(count))end
+ session.tasks=Tasks.new(definitions.variants,session.participants,definitions,n)
  completed={}
 end
 local function visit(n)
@@ -119,6 +110,27 @@ end
 local function near(actual,expected)
  assert(math.abs(actual-expected)<1e-6, tostring(actual)..' expected '..expected)
 end
+
+start(left)
+assert(not session.plan and not session.addon_id, 'Manual sessions have no add-on or plan')
+tick(1)
+assert(progress().value==5)
+visit(right)
+assert(progress().value==10,'A manual scene change carries 50 percent into the new definition')
+tick(5)
+assert(#completed==1 and completed[1].task.completion_event=='beta_done' and progress().completions==1)
+tick(3)
+visit(neutral);tick(30)
+assert(not progress(),'An unresolved scene hides a parked manual meter')
+visit(left)
+near(progress().value,3)
+assert(progress().completions==1,'Manual handoffs keep the completion count')
+tick(2)
+assert(#completed==2 and completed[2].task.completion_event=='alpha_done' and completed[2].task.completion_index==2)
+
+start(neutral)
+visit(right)
+assert(progress().value==7 and progress().completions==0,'An unresolved entry uses the first available definition’s initial value')
 
 start(first,2)
 tick(1)
@@ -166,8 +178,23 @@ near(progress().value,10*fraction)
 tick(2)
 assert(#completed==1 and completed[1].task_key=='alpha:charge' and goal().satisfied)
 
--- Public task controls use the goal ID while values and limits use the active definition.
-start(left,1)
+-- Auxiliary tasks still carry progress when the plan targets another task.
+local alpha_focus,beta_focus=doc('alpha',40),doc('beta',80)
+alpha_focus.data.id,beta_focus.data.id='focus','focus'
+local with_focus=Data.compile({by_kind={scene_task={docs[1],docs[2],alpha_focus,beta_focus}}})
+local function extra_task(n)
+ n=V.copy(n)
+ n.tasks.lead.focus={rate=4}
+ n._task_keys.focus=Data.resolve(with_focus,n,'focus')
+ return n
+end
+start(extra_task(left),1,with_focus)
+tick(1)
+visit(extra_task(right))
+local active=Tasks.progress(session.tasks,session)['1']
+assert(active.focus.value==8 and active.charge.value==10,'Both goal and auxiliary meters preserve their own percentages')
+
+-- Public task controls use the task ID, with or without an autonomous goal.
 package.loaded['SceneZOI.Runtime']={api_session=function()return session end,is_addon_owner=function()return false end}
 local services=require('SceneZOI.AddonServices')
 local owner={GetEntityId=function()return {Value=1}end}
@@ -177,17 +204,24 @@ local function api(op,args)
  local handled,value=services.execute(owner,{addon_id='fixture',client_id='client',operation=op,arguments=args})
  assert(handled);return value
 end
-api('set_task_controls',{participant_id='1',task_id='charge',completion_hold=true})
-api('set_task_progress',{participant_id='1',task_id='charge',value=10})
-visit(capped);tick(1)
-local info=api('get_task_state',{})
-assert(info.definitions.charge.maximum==20 and info.participants[1].value==20 and info.participants[1].completion_hold)
-assert(goal().completed==0 and not goal().satisfied)
-api('set_task_controls',{participant_id='1',task_id='charge',completion_hold=false})
-tick(1);assert(#completed==0,'A carried full meter does not complete on a lower cap')
-assert(Plan.route(session,session.plan)=='finish','A carried full meter can route to an uncapped scene')
-visit(right)
-assert(#completed==0)
-tick(1)
-assert(#completed==1 and completed[1].task.completion_event=='beta_done' and goal().satisfied)
-print('Task providers passed: pack precedence, deterministic fallback, cross-pack route feasibility, normalized carry, isolated manual tasks, unresolved hubs, caps, live controls, and single completion credit.')
+for _,autonomous in ipairs({false,true})do
+ start(left,autonomous and 1 or nil)
+ api('set_task_controls',{participant_id='1',task_id='charge',rate_multiplier=0.5,completion_hold=true})
+ api('set_task_progress',{participant_id='1',task_id='charge',value=10})
+ visit(capped);tick(1)
+ local info=api('get_task_state',{})
+ local meter=info.participants[1]
+ assert(info.definitions.charge.maximum==20 and meter.value==20 and meter.completion_hold)
+ assert(meter.addon_rate_multiplier==0.5 and meter.completions==0,'Controls and completion count stay attached to the task')
+ api('set_task_controls',{participant_id='1',task_id='charge',rate_multiplier=1,completion_hold=false})
+ tick(1);assert(#completed==0,'A carried full meter does not complete on a lower cap')
+ if autonomous then
+  assert(Plan.route(session,session.plan)=='finish','A carried full meter can route to an uncapped scene')
+ end
+ visit(right)
+ assert(#completed==0)
+ tick(1)
+ assert(#completed==1 and completed[1].task.completion_event=='beta_done' and progress().completions==1)
+ if autonomous then assert(goal().satisfied)end
+end
+print('Task providers passed: pack precedence, deterministic fallback, cross-pack route feasibility, normalized carry, manual and autonomous handoffs, unresolved hubs, caps, live controls, and single completion credit.')

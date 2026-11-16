@@ -337,7 +337,7 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         assets = assets, node = node, duration = duration, require_resolved_outfit = true,furniture=furniture,anchor=furniture and furniture.anchor,
     })
     local tasks=Catalog.get_snapshot().tasks or {}
-    current.tasks=Tasks.new(tasks.variants or tasks.definitions or {},participants,tasks.variants and tasks or nil)
+    current.tasks=Tasks.new(tasks.variants or tasks.definitions or {},participants,tasks.variants and tasks or nil,node)
     for _,person in ipairs(participants) do
         person.task_name = person.outfit_name and Protocol.decode(person.outfit_name) or person.id
     end
@@ -454,10 +454,7 @@ function M.start_background(row)
     local lifetime = npc_only and row.default_length and {game_minutes = Settings.npc_scene_minutes()} or row.lifetime
     current.npc_only, current.lifetime, current.exit_policy = npc_only, lifetime, row.placement.exit
     current.origin_id = row.origin_id
-    if row.plan then
-        current.plan = Plan.new(row.plan)
-        Plan.enter_node(current)
-    end
+    if row.plan then current.plan = Plan.new(row.plan) end
     current.max_start_distance_cm = row.placement.max_start_distance_cm
     Sessions.add(current)
     Addons.created(row, current)

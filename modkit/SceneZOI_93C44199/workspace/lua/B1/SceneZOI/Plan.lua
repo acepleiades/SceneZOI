@@ -268,43 +268,16 @@ function M.new(spec)
  return plan
 end
 
-function M.goal(session,participant_id,task_id)
+local function goal_for(session,participant_id,task_id)
  local by_person=session.plan and session.plan.goals_by_participant
  local tasks=by_person and by_person[participant_id]
  return tasks and tasks[task_id]
 end
 
--- Move each goal's meter only when the handoff commits. An unresolved node
--- leaves it parked on its previous provider until the plan reaches another.
-function M.enter_node(session)
- local plan,tasks=session.plan,session.tasks
- if not plan or not tasks then return end
- for _,goal in ipairs(plan.goals)do
-  local key=TaskData.resolve(tasks.registry or tasks,session.node,goal.task_id)
-  local previous=goal.task_key
-  if previous then
-   local entries=tasks.participants[goal.participant_id]
-   local source=entries[previous]
-   local maximum=tasks.definitions[previous].maximum
-   local full=source.value>=maximum
-   if full then goal.pending_handoff=true end
-   if key and key~=previous then
-    local target=entries[key]
-    local limit=tasks.definitions[key].maximum
-    local value=(source.value/maximum)*limit
-    -- Rounding a nearly full meter up must not award a completion.
-    if not full and value>=limit then value=limit*(1-2^-52) end
-    target.value,target.completions=value,source.completions
-   end
-  end
-  if key then goal.task_key=key end
- end
-end
-
 local function goal_state(session,goal)
  local tasks=session.tasks
- local key=goal.task_key or TaskData.resolve(tasks.registry or tasks,session.node,goal.task_id)
- local entry=key and tasks.participants[goal.participant_id][key]
+ local key=tasks.last_keys[goal.task_id]
+ local entry=key and tasks.participants[goal.participant_id][goal.task_id]
  local completed=entry and entry.completions or 0
  local fraction=entry and entry.value/tasks.definitions[key].maximum or 0
  local satisfied=completed>=goal.completions
@@ -615,7 +588,7 @@ end
 function M.frozen(session,participant_id,task_id)
  local plan=session.plan
  if not plan or(plan.state~='waiting'and plan.state~='resolving')then return false end
- local goal=M.goal(session,participant_id,task_id)
+ local goal=goal_for(session,participant_id,task_id)
  return goal and (goal_state(session,goal)) or false
 end
 function M.locked(session)return session.plan~=nil and session.plan.auto_mode==true and session.plan.state~='finished'end
