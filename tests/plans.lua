@@ -176,24 +176,27 @@ s.node=nodes.still;step(s,1,1);assert(actions.stop=='ok','It ends once the trans
 s=session({goals={goal_lead}},'both');s.completion_effects={motion={}};step(s,12,1);assert(not actions.stop,'Waits for the response')
 s.completion_effects=nil;step(s,1,1);assert(actions.stop=='ok')
 
--- A fractional stay overlaps the response and uses real playback time.
+-- A fractional stay overlaps the response and follows changes to native game speed.
 s=session({goals={goal_lead},post_completion_stay_seconds=2.5},'both')
 s.completion_effects={motion={}}
-while not s.plan.goals_reached_at and s.plan.real_used<20 do step(s,1,1)end
+step(s,5,1,2)
 assert(s.plan.state=='resolving' and not actions.stop)
 assert(Plan.snapshot(s).post_completion_stay_seconds==2.5)
-local reached=s.plan.goals_reached_at
-assert(reached)
+local reached_game,reached_real=s.plan.game_used,s.plan.real_used
+assert(reached_game==10 and reached_real==5)
 assert(not Plan.tick(s,5,0),'Pause does not consume the stay')
 Plan.set_auto(s,false)
-assert(not Plan.tick(s,5,1),'Manual takeover does not consume the stay')
+assert(not Plan.tick(s,5,3),'Manual takeover does not consume the stay')
 Plan.set_auto(s,true)
+assert(s.plan.game_used==reached_game and s.plan.real_used==reached_real)
 s.completion_effects=nil
-assert(not Plan.tick(s,2,3),'Faster game time does not shorten the stay')
-assert(Plan.tick(s,.5,1).stop=='ok' and s.plan.outcome=='goals_met')
-assert(s.plan.real_used-reached==2.5 and s.tasks.participants['1'].charge.completions==1)
+assert(not Plan.tick(s,.5,3),'Half a second at 3x consumes 1.5 seconds of the stay')
+assert(not Plan.tick(s,.75,1),'Switching back to 1x leaves a quarter second')
+assert(Plan.tick(s,.25,1).stop=='ok' and s.plan.outcome=='goals_met')
+assert(s.plan.game_used-reached_game==2.5 and s.plan.real_used-reached_real==1.5)
+assert(s.tasks.participants['1'].charge.completions==1)
 s=session({goals={goal_lead},post_completion_stay_seconds=2.5},'both');s.completion_effects={motion={}}
-step(s,16,1);assert(s.plan.state=='resolving' and not actions.stop,'A longer response still finishes')
+step(s,8,1,2);assert(s.plan.state=='resolving' and not actions.stop,'A longer response still finishes at higher game speed')
 s.completion_effects=nil;assert(Plan.tick(s,.1,1).stop=='ok')
 refused({goals={goal_lead},post_completion_stay_seconds=-1},'Invalid')
 refused({goals={goal_lead},post_completion_stay_seconds=1,end_policy={type='addon'}},'Post-completion stay')

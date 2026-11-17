@@ -14,7 +14,6 @@ package.loaded["SceneZOI.Runtime"] = {boot = noop, stop = noop, flush_notificati
 package.loaded["SceneZOI.SimulationRoute"] = {boot = noop, tick = noop}
 package.loaded["SceneZOI.Diagnostics"] = {tick = noop, shutdown = noop}
 package.loaded["SceneZOI.AddonAPI"] = {tick = noop}
-package.loaded["SceneZOI.AddonTrace"] = {flush = noop}
 package.loaded["SceneZOIStarter.Entry"] = {boot = noop, tick = noop, stop = noop, is_ready = function() return true end}
 package.loaded["SceneZOIStarter.Menu"] = {tick = noop, stop = noop}
 

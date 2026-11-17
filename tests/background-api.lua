@@ -172,28 +172,22 @@ serial=serial+1
 API.receive(b,J.encode({api_version=1,addon_id='test.addon',client_id='test.client',request_id='r'..serial,operation='get_request_status',arguments={request_id=asked}}))
 assert(responses[#responses].ok,'A request is found whichever Zoi asks')
 -- Read the same plain-text diagnostics that are included in a player's runtime ZIP.
-local Trace=require('SceneZOI.AddonTrace')
+local Diagnostics=require('SceneZOI.Diagnostics')
 local function read_trace(skip)
- local keys,rows={},{}
- for key in pairs(cfg)do if key:match('^api_trace_host_%d+_%d+_%d+$')then keys[#keys+1]=key end end
- table.sort(keys)
- local count=0
- for _,key in ipairs(keys)do
-  for line in cfg[key]:gmatch('[^\n]+')do
-   count=count+1
-   if count>skip then rows[#rows+1]=line end
-  end
+ local rows={}
+ for line in (cfg.api_trace or ''):gmatch('[^\n]+')do
+  if skip==0 then rows[#rows+1]=line else skip=skip-1 end
  end
- return rows,#keys
+ return rows
 end
 local function includes(row,...)
  for _,field in ipairs({...})do assert(row:find(field,1,true),field)end
 end
 local function trace_sequence(row)return tonumber(row:match(' sequence=(%d+)'))end
-Trace.flush()
+Diagnostics.flush()
 local skip=#read_trace(0)
 assert(request('get_session',{}).ok and #read_trace(skip)==0,'Calls queue writes outside the API handler')
-API.tick(1)
+Diagnostics.tick(1)
 local traces=read_trace(skip)
 assert(#traces==1)
 includes(traces[1],'addon_id=test.addon','operation=get_session','endpoint_id=1')
@@ -215,13 +209,13 @@ Events.emit('playback_speed_changed',{id='test.session',addon_id='test.addon',ad
 Events.flush()
 local native_execute=inzoi.cli.execute
 inzoi.cli.execute=function(line)
- if line:find(' key=api_trace_',1,true)then return false end
+ if line:find('cfg_save',1,true)and line:find(' key=api_trace ',1,true)then return false end
  return native_execute(line)
 end
-Trace.flush()
-assert(#read_trace(skip)==1,'A storage failure leaves previous trace pages intact')
+Diagnostics.flush()
+assert(#read_trace(skip)==1,'A storage failure leaves the previous trace intact')
 inzoi.cli.execute=native_execute
-Trace.flush()
+Diagnostics.flush()
 traces=read_trace(skip)
 assert(#traces==9,'Pending calls survive a storage failure')
 includes(traces[2],'addon_id=other.addon')
@@ -237,15 +231,15 @@ includes(traces[7],'code=request_id_reused','replayed=false')
 includes(traces[8],'kind=rejected','code=invalid_json','payload_bytes=23')
 includes(traces[9],'code=invalid_envelope','addon_id=broken.addon')
 assert(not traces[9]:find('private-note',1,true))
-require('SceneZOI.Diagnostics').flush()
+Diagnostics.flush()
 includes(cfg.scene_history,'event=playback_speed_changed','session_id=test.session','stage=2','effective_speed=1.5')
 assert(not cfg.scene_history:find('private-note',1,true))
 for _=1,302 do assert(request('get_session',{},'other.addon').ok)end
-Trace.flush()
-local pages
-traces,pages=read_trace(skip)
-assert(pages>1 and #traces==311)
-includes(traces[311],'addon_id=other.addon','operation=get_session')
+Diagnostics.flush()
+traces=read_trace(0)
+assert(#traces>0 and #traces<=512 and #cfg.api_trace<=131072)
+includes(traces[#traces],'addon_id=other.addon','operation=get_session','request_id=r'..serial..' ')
 for index=2,#traces do assert(trace_sequence(traces[index])==trace_sequence(traces[index-1])+1)end
+for key in pairs(cfg)do assert(not key:match('^api_trace_'),'API traces must not create page files')end
 
 print('Background API passed: opt-in flag, old contract unchanged, reservations, departures, household detection, placement and lifetime validation, distance, cap, timeouts and addressing by id.')

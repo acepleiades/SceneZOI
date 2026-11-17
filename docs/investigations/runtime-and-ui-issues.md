@@ -16,7 +16,7 @@ were enabled with the player.
 | Normal play hitches regularly | Check whether anything is rescanning the full native Text table. Pack discovery belongs at B1 startup. [Discovery lifecycle test](../../tests/discovery-lifecycle.lua) |
 | A held prop reappears when changing clothing | Appearance may reset visibility or recreate the carried object. Check the same prop during the handoff, playback and Exit. [Appearance tests](../../tests/appearance.lua) · [Native playback tests](../../tests/native.lua) |
 | A scene ends after nearby gameplay interrupts a montage | Check whether the owned track was interrupted on the same animation instance. B1 can reacquire it at the shared sample when a native avoidance animation takes the slot. [Native playback tests](../../tests/native.lua) |
-| Auto-mode picks an unexpected scene or runs too long | Read the initiating call in `api_trace*.cfg`. Check its restrictions, goals, clock and end policy. An accepted API call only starts the asynchronous entry path. [Autonomous API](../addons.md#autonomous-scenes) · [Plan runtime tests](../../tests/plan-runtime.lua) |
+| Auto-mode picks an unexpected scene or runs too long | Read the initiating call in `api_trace.cfg`. Check its restrictions, goals, clock and end policy. An accepted API call only starts the asynchronous entry path. [Autonomous API](../addons.md#autonomous-scenes) · [Plan runtime tests](../../tests/plan-runtime.lua) |
 
 The [old issue ledger](https://github.com/acepleiades/SceneZOI/blob/e0cb40d64bb8c313d5c7309c3c5605b231569892/docs/investigations/runtime-and-ui-issues.md)
 has earlier reproductions and measurements for regressions that need more history.

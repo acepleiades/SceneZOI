@@ -201,7 +201,7 @@ completion routes and manual takeover. `placement` and `lifetime` use the
 | --- | --- |
 | `goals` | Up to 16 `{participant_id, task_id, completions}` entries. Use an installed task ID from `get_definitions` and a roster member's ID. Each participant/task pair can appear once. `completions` is an integer from 1 to 100, defaults to 1, and counts new completions in this session. |
 | `end_policy` | `{type:'goals'}` (default with goals), `{type:'duration', seconds, clock}` with 1–7,200 seconds and `clock` set to `game` (default) or `real`, or `{type:'addon'}`. Required without goals. |
-| `post_completion_stay_seconds` | Optional fractional seconds from 0 to 7,200 for the `goals` end policy. Default 0. Once all goals and required stages are met, the scene stays active for at least this long. The timer runs alongside authored completion responses and pauses with the game or when Auto-mode is off. |
+| `post_completion_stay_seconds` | Optional time at Normal game speed, from 0 to 7,200 seconds. Fractional values are allowed and the default is 0. For the `goals` end policy, the timer starts when all goals and required stages are met. It follows inZOI's native time controls, runs alongside authored completion responses, and pauses when the game is paused or Auto-mode is off. |
 | `task_progress_multiplier` | 0.1-5, default 1. Scales positive task rates under the plan. |
 | `stages` | A positive integer or `{min, max}`, up to 16. Default 1. Chosen once and returned in the accepted response. |
 | `required_stages` | Up to 16 `{stage?, match}` entries. Each scene query in `match` must match a loop that actually plays under Auto-mode. Omit `stage` to match any stage. A numbered stage must exist for every possible count. |
@@ -286,7 +286,14 @@ call `renew_session` before it lapses. The SDK's automatic integration renewal
 covers `register_integration` only.
 
 A timed plan runs out its duration even if nothing is advancing, and reports what it did not reach.
-Authored completion responses finish before the plan moves on, publishes `plan_goals_met` or ends. For a goal-driven exit, set `"post_completion_stay_seconds": 6` to give completion audio and animation at least six seconds from the point when the plan meets its goals and required stages. Responses tracked by the plan can keep it active longer. Check `get_version.features.autonomous_post_completion_stay` before sending this field to an older framework. Explicit stops and lifetime limits still take effect during the stay.
+Authored completion responses finish before the plan moves on, publishes
+`plan_goals_met` or ends. Set `"post_completion_stay_seconds": 6` for a
+six-second stay at Normal game speed after all goals and required stages are
+met. Fast-forward shortens the wait in real time. SceneZOI's animation speed
+buttons have no effect on the timer. Responses tracked by the plan can keep
+the scene active longer. Check `get_version.features.autonomous_post_completion_stay`
+before sending this field to an older framework. Explicit stops and lifetime
+limits still take effect during the stay.
 
 A session with a plan shows an **Auto-mode** toggle in its panel, and an owner can
 call `set_auto_mode` with `session_id` and `enabled`. While it is on, manual and
@@ -414,7 +421,8 @@ extraction.
 - `environment_history.cfg` keeps the last 16 inventory snapshots, up to
   128 KiB. Match the `environment_id` on a failure to the inventory from when it
   happened. For early startup events, match the `run_id` and timestamp.
-- `api_trace_*.cfg` preserves every incoming add-on API call, including
+- `api_trace.cfg` is always enabled. It keeps the newest 512 add-on API
+  records, up to 128 KiB, across game restarts and Lua reloads. This includes
   successful polls, lease renewals, retries, and rejected messages.
 
 The diagnostics folder is
@@ -423,7 +431,9 @@ SceneZOI saves queued entries about once per second and flushes them on normal
 unload. A crash can lose entries still in memory.
 
 Scene history, environment history, and API traces use one plain-text record
-per line. The current mod inventory uses one field per line.
+per line. The current mod inventory uses one field per line. Numbered
+`api_trace_*.cfg` files from older versions are still readable. You can remove
+them manually when you no longer need that history.
 
 API trace entries include a timestamp and sequence number. Call entries record
 the add-on ID, client ID, request ID, host instance, receiving Zoi's game ID,

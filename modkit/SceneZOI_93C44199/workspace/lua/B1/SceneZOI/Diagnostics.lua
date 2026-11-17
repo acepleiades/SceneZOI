@@ -6,6 +6,7 @@ local M = {}
 local command = " mod_id=" .. Config.mod_id .. " section=" .. Config.section
 local history = {key = "scene_history", max_records = 256, max_bytes = 131072, lines = {}, size = 0}
 local environments = {key = "environment_history", max_records = 16, max_bytes = 131072, lines = {}, size = 0}
+local api_trace = {key = "api_trace", max_records = 512, max_bytes = 131072, marker = "kind=", lines = {}, size = 0}
 local elapsed, inventory_elapsed = 0, 15
 local run_id, environment_id, inventory_signature, inventory_revision, record_index = nil, nil, nil, 0, 0
 local inventory_pending, release_version_pending
@@ -77,6 +78,7 @@ function M.load(key)
 end
 
 local function append(journal, line)
+    if #line + 1 > journal.max_bytes then return end
     journal.lines[#journal.lines + 1] = line
     journal.size = journal.size + #line + 1
     while #journal.lines > journal.max_records or journal.size > journal.max_bytes do
@@ -106,6 +108,10 @@ function M.record(name, fields)
         fields.event = name
         append(history, M.format(M.stamp(fields)))
     end)
+end
+
+function M.record_api_trace(fields)
+    append(api_trace, M.format(M.stamp(fields)))
 end
 
 local function identifier(value)
@@ -351,7 +357,7 @@ local function flush(journal)
         -- A transient read failure leaves the previous run's history unknown.
         -- Keep the new entries pending so the first write cannot erase it.
         local previous = query(M.load, journal.key)
-        if previous == nil then
+        if type(previous) ~= "string" then
             if not journal.read_failed then
                 print("[SceneZOI] Could not read " .. journal.key .. ". Will retry.")
                 journal.read_failed = true
@@ -360,8 +366,9 @@ local function flush(journal)
         end
         local pending = journal.lines
         journal.lines, journal.size = {}, 0
+        local marker = journal.marker or "event="
         for line in previous:gmatch("[^\n]+") do
-            if not line:find('"', 1, true) and line:find("event=", 1, true) then append(journal, line) end
+            if not line:find('"', 1, true) and line:find(marker, 1, true) then append(journal, line) end
         end
         for _, line in ipairs(pending) do append(journal, line) end
         journal.loaded = true
@@ -379,6 +386,7 @@ function M.flush()
     if release_version_pending then release_version_pending = not M.save("release_version", release_version) end
     flush(history)
     flush(environments)
+    flush(api_trace)
 end
 
 function M.boot(id)

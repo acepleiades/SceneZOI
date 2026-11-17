@@ -515,9 +515,9 @@ function M.tick(session,dt,scale)
   if timed then return waiting(plan,'duration_remaining')end
   if policy.type=='goals'then
    local stay=plan.post_completion_stay_seconds or 0
-   if not plan.goals_reached_at then plan.goals_reached_at=plan.real_used end
-   -- The stay and authored effects can run together. Both must finish before Exit.
-   if settled(session) and plan.real_used-plan.goals_reached_at>=stay then return finish(plan,'ok','goals_met')end
+   if not plan.goals_reached_game_seconds then plan.goals_reached_game_seconds=plan.game_used end
+   -- The native simulation clock governs the stay while authored responses run alongside it.
+   if settled(session) and plan.game_used-plan.goals_reached_game_seconds>=stay then return finish(plan,'ok','goals_met')end
    plan.state='resolving'
    return waiting(plan,'completion_response_or_stay')
   end

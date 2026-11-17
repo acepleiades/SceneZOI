@@ -4,10 +4,7 @@ local Protocol = require("SceneZOI.Protocol")
 local Diagnostics = require("SceneZOI.Diagnostics")
 local M = {}
 
-local page_bytes, flush_interval, pages_per_tick = 32768, 1, 4
 local sequence = 0
-local pending, page = {}, nil
-local elapsed, storage_failed = 0, false
 local request_fields = {"addon_id", "client_id", "request_id", "operation", "api_version", "expected_instance_id"}
 local argument_fields = {
     "participants", "initiator", "furniture_id", "scene_id", "search", "session_restrictions",
@@ -78,42 +75,7 @@ end
 local function write(row)
     sequence = sequence + 1
     row.sequence = sequence
-    local line = Diagnostics.format(Diagnostics.stamp(row)) .. "\n"
-    if not page or page.bytes + #line > page_bytes then
-        local number = page and page.number + 1 or 1
-        local capture = page and page.capture or row.instance_id:gsub("%W", "_")
-        page = {capture = capture, number = number, bytes = 0, saved = "", lines = {}}
-    end
-    if #page.lines == 0 then pending[#pending + 1] = page end
-    page.lines[#page.lines + 1] = line
-    page.bytes = page.bytes + #line
-end
-
--- Write a batch of complete trace lines through the normal runtime cfg store.
--- Keep the queue intact if the native write fails so the next tick can retry.
-function M.flush(max_pages)
-    local count = math.min(#pending, max_pages or #pending)
-    for _ = 1, count do
-        local current = pending[1]
-        local key = ("api_trace_%s_%06d"):format(current.capture, current.number)
-        local body = current.saved .. table.concat(current.lines)
-        if not Diagnostics.save(key, body) then
-            if not storage_failed then print("[SceneZOI] Could not save API trace. Will retry.") end
-            storage_failed = true
-            return
-        end
-        storage_failed = false
-        current.saved, current.lines = body, {}
-        table.remove(pending, 1)
-    end
-end
-
-function M.tick(dt)
-    if #pending == 0 then elapsed = 0; return end
-    elapsed = elapsed + dt
-    if elapsed < flush_interval then return end
-    elapsed = 0
-    M.flush(pages_per_tick)
+    Diagnostics.record_api_trace(row)
 end
 
 local function summarize_result(value)

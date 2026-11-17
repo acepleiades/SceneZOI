@@ -2,7 +2,8 @@ package.path = "modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;" .. package.pat
 local Json = require("SceneZOI.Json")
 local release_version = require("SceneZOI.ReleaseVersion")
 local cfg = {scene_history = "event=previous_start timestamp=1\n", release_version = "old"}
-local fail_read, fail_write, fail_version_write = false, false, false
+local fail_read, fail_write, fail_version_write = nil, nil, false
+local api_writes = 0
 local snapshot = {nodes = {["hzoi.idle"] = {}, ["scenezoi.idle"] = {}}, warnings = {"one"},
     excluded = {["hzoi.optional"] = {code = "asset_unavailable", asset = "/Game/Optional.Asset"}}}
 package.loaded["SceneZOI.DataFiles"] = {get = function()
@@ -17,23 +18,28 @@ inzoi = {cli = {execute = function(line)
     end
     local key = assert(line:match(" key=([%w_]+)"))
     if line:find("cfg_save", 1, true) then
-        if fail_write and key == "scene_history" then return false, "Write failed" end
+        if key == "api_trace" then api_writes = api_writes + 1 end
+        if key == fail_write then return false, "Write failed" end
         if fail_version_write and key == "release_version" then return false, "Write failed" end
         cfg[key] = assert(line:match(' value="([^"]*)"$'))
         return true
     end
-    if fail_read and key == "scene_history" then return false, "Read failed" end
+    if key == fail_read then return false, "Read failed" end
     -- The retail cfg bridge escapes apostrophes in addition to JSON escapes.
     if cfg[key] then return true, "", (Json.encode({value = cfg[key]}):gsub("'", "\\'")) end
     return false, "Key not found"
 end}}
 
-local function read_history()
+local function lines(body)
     local list = {}
-    for line in cfg.scene_history:gmatch("[^\n]+") do
+    for line in body:gmatch("[^\n]+") do
         list[#list + 1] = line
     end
     return list
+end
+
+local function read_history()
+    return lines(cfg.scene_history)
 end
 local function includes(row, ...)
     for _, field in ipairs({...}) do assert(row:find(field, 1, true), field) end
@@ -69,14 +75,14 @@ includes(rows[3], "code=prepare_timeout", "role=lead", "cleanup_complete=false")
 package.loaded[mod] = nil
 diagnostics = require(mod)
 local before_retry = cfg.scene_history
-fail_read = true
+fail_read = "scene_history"
 diagnostics.record("start_requested", {scene_id = "test.retry"})
 diagnostics.flush()
 assert(cfg.scene_history == before_retry)
-fail_read, fail_write = false, true
+fail_read, fail_write = nil, "scene_history"
 diagnostics.flush()
 assert(cfg.scene_history == before_retry)
-fail_write = false
+fail_write = nil
 diagnostics.flush()
 local recovered = read_history()
 assert(#recovered == 4 and recovered[2] == initial[2])
@@ -103,6 +109,66 @@ includes(cfg.environment_history, "release_version=" .. release_version)
 includes(cfg.mod_inventory, "release_version=" .. release_version)
 includes(cfg.environment_history, "observed_api_addons=[third.party]")
 print("Runtime diagnostics passed: native apostrophe escapes, retained history across reload and storage retries, bounded retention, and labeled mod inventory.")
+
+-- API calls share one rolling file across runtime hosts, even if the first read fails.
+local legacy = "api_trace_host_1_2_000001"
+cfg[legacy] = "kind=call request_id=legacy-only\n"
+diagnostics.record_api_trace({kind = "call", request_id = "old-host", sequence = 1})
+assert(cfg.api_trace == nil, "Recording an API call must not write synchronously")
+diagnostics.shutdown()
+includes(cfg.api_trace, "kind=call", "run_id=host.test", "request_id=old-host ")
+local before_reload = cfg.api_trace
+local writes_before_reload = api_writes
+package.loaded[mod] = nil
+diagnostics = require(mod)
+diagnostics.boot("host.new")
+diagnostics.record_api_trace({kind = "call", request_id = "new-host.first", sequence = 1})
+fail_read = "api_trace"
+diagnostics.flush()
+assert(cfg.api_trace == before_reload and api_writes == writes_before_reload,
+    "A failed initial read must not overwrite existing traces")
+diagnostics.record_api_trace({kind = "rejected", request_id = "new-host.second", sequence = 2})
+fail_read, fail_write = nil, "api_trace"
+diagnostics.flush()
+assert(cfg.api_trace == before_reload, "A failed write must leave the earlier file intact")
+fail_write = nil
+diagnostics.flush()
+local api_rows = lines(cfg.api_trace)
+assert(#api_rows == 3 and api_rows[1] == lines(before_reload)[1])
+includes(api_rows[2], "request_id=new-host.first ", "run_id=host.new")
+includes(api_rows[3], "request_id=new-host.second ", "kind=rejected")
+local saved_trace, writes_after_retry = cfg.api_trace, api_writes
+diagnostics.flush()
+assert(cfg.api_trace == saved_trace and api_writes == writes_after_retry,
+    "An idle flush must neither duplicate nor rewrite API traces")
+
+fail_write = "api_trace"
+for i = 1, 600 do
+    diagnostics.record_api_trace({kind = "call", request_id = "count." .. i, sequence = i})
+end
+diagnostics.flush()
+assert(cfg.api_trace == saved_trace, "A burst during write failure must not replace the saved file")
+fail_write = nil
+diagnostics.flush()
+api_rows = lines(cfg.api_trace)
+assert(#api_rows == 512 and #cfg.api_trace <= 131072)
+for i, line in ipairs(api_rows) do includes(line, "request_id=count." .. (88 + i) .. " ") end
+
+local detail = string.rep("x", 2400)
+for i = 1, 80 do
+    diagnostics.record_api_trace({kind = "call", request_id = "bytes." .. i, sequence = i, arguments = {test = detail}})
+end
+diagnostics.flush()
+api_rows = lines(cfg.api_trace)
+assert(#api_rows > 1 and #api_rows < 80 and #cfg.api_trace <= 131072, "Byte cap must also evict old whole rows")
+for i, line in ipairs(api_rows) do
+    includes(line, "request_id=bytes." .. (80 - #api_rows + i) .. " ", "arguments={test=" .. detail .. "}")
+end
+assert(cfg[legacy] == "kind=call request_id=legacy-only\n", "Legacy pages must be left intact")
+for key in pairs(cfg) do
+    assert(not key:match("^api_trace_") or key == legacy, "No new trace page may be written")
+end
+print("API diagnostics passed: one file, prior hosts retained, read/write retries, idle writes, row and byte caps, and no new trace pages.")
 
 local actor = {x = 0, CharacterMovement = {MovementMode = 1, CustomMovementMode = 0},
     Mesh = {GetAnimInstance = function()

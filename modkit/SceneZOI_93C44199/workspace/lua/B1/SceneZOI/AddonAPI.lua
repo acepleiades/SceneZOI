@@ -391,6 +391,5 @@ end
 function M.tick(dt)
  local ok,err=pcall(update,dt)
  if not ok and pending then M.fail_start(pending.token,tostring(err))end
- Trace.tick(dt)
 end
 return M

@@ -32,7 +32,6 @@ function M.on_end()
     Entry.stop()
     Runtime.stop("mod_unloaded")
     Runtime.flush_notifications()
-    require("SceneZOI.AddonTrace").flush()
     Diagnostics.shutdown()
 end
 
