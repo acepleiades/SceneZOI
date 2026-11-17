@@ -1,2 +1,2 @@
 -- Generated from the plugin descriptor by tools/build_catalog.py.
-return "1.3.12"
+return "1.4.0"
