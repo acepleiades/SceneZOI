@@ -1,5 +1,33 @@
 (function () {
     'use strict';
+    function bindTextCommit(input, commit) {
+        var sawDown = false, sawPress = false;
+        function enter(event) {
+            // Cohtml can deliver Return through the legacy keyboard fields.
+            if (event.isComposing || !(event.key === 'Enter' || event.key === 'Return' ||
+                event.code === 'Enter' || event.code === 'NumpadEnter' ||
+                event.keyCode === 13 || event.which === 13 || event.charCode === 13)) return false;
+            event.preventDefault();
+            return true;
+        }
+        input.addEventListener('change', commit);
+        input.addEventListener('keydown', function (event) {
+            if (!enter(event)) return;
+            sawDown = true;
+            if (!event.repeat) commit();
+        });
+        input.addEventListener('keypress', function (event) {
+            if (!enter(event)) return;
+            sawPress = true;
+            if (!sawDown && !event.repeat) commit();
+        });
+        input.addEventListener('keyup', function (event) {
+            if (!enter(event)) return;
+            if (!sawDown && !sawPress) commit();
+            sawDown = sawPress = false;
+        });
+        input.addEventListener('blur', function () { sawDown = sawPress = false; });
+    }
     function createGroup(options,group,keys,labels,note,min,max,format) {
         format=format||{unit:'%',initial:100};
         function unit(){return format.translated?window.SceneZOILocalization.text(format.unit):format.unit;}
@@ -82,8 +110,7 @@
                 var value=Number(raw);inputs[i].value=String(value);message='';
                 if(value!==values[i]){values[i]=value;commit();}else update();
             }
-            inputs[i].addEventListener('change',typed);
-            inputs[i].addEventListener('keydown',function(event){if(event.key==='Enter'){event.preventDefault();typed();}});
+            bindTextCommit(inputs[i], typed);
         });
         document.addEventListener('mousemove',function(event){if(dragging!==null && available())position(dragging,event);});
         document.addEventListener('mouseup',function(){if(dragging===null)return;dragging=null;commit();});
@@ -232,14 +259,11 @@
             });
             if(!rotationValues(values)){message='Enter angles from -180 to 180 degrees.';update();return;}
             var command={action:'rotate',participant:person,attachment:mesh,bone:bone,rotation:values};
-            if(pending)queued=command;
+            if(pending)queued=JSON.stringify(pending.command)===JSON.stringify(command)?null:command;
             else if(JSON.stringify(angles(selectedRow()))!==JSON.stringify(values))send(command);
             else {message='';update();}
         }
-        inputs.forEach(function(input){
-            input.addEventListener('change',applyAngles);
-            input.addEventListener('keydown',function(event){if(event.key==='Enter'){event.preventDefault();applyAngles();}});
-        });
+        inputs.forEach(function(input){bindTextCommit(input, applyAngles);});
         container.addEventListener('click',function(event){
             if(!available()||pending)return;
             var target=event.target;

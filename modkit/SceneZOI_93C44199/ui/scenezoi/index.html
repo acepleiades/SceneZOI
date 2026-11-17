@@ -98,14 +98,23 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
 #app-root.scene-compact > #title-bar, #app-root.scene-compact > #content,
 #app-root.scene-compact > #resize-handle, #app-root.scene-compact > #scene-tools,
 #app-root.scene-compact > #outfit-panel, #app-root.scene-compact > #scene-tasks { display: none !important; }
-/* Cohtml views sit above native UMG. Match its dark modal scrim locally and
-   release native hit bounds; do not hide/suspend the receiver or pause the scene. */
-#app-root.scene-menu-blocked { pointer-events: none; }
-#app-root.scene-menu-blocked::after, #app-root.scene-menu-blocked #scene-tools::after,
+/* Cohtml views sit above native UMG. Hide the rendered panel over Options
+   while leaving its receiver and heartbeat running. */
+#app-root.scene-menu-hidden, #app-root.scene-menu-hidden * { visibility: hidden !important; }
+#app-root.scene-menu-hidden, #app-root.scene-menu-blocked { pointer-events: none; }
+/* Absolute scrims cover each panel's padding box. Darken the 1px borders
+   separately to match the scrim over #bfbfbf. */
+#app-root.scene-menu-blocked, #app-root.scene-menu-blocked #outfit-panel,
+#app-root.scene-menu-blocked #scene-tasks, #app-root.scene-menu-blocked #scene-tools > button {
+    border-color: #434343;
+}
+#app-root.scene-menu-blocked #scene-tools > button { position: relative; }
+#app-root.scene-menu-blocked::after, #app-root.scene-menu-blocked #scene-tools > button::after,
 #app-root.scene-menu-blocked #outfit-panel::after, #app-root.scene-menu-blocked #scene-tasks::after {
     content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,.65); border-radius: 7px; z-index: 100; pointer-events: none;
 }
+#app-root.scene-menu-blocked #scene-tools > button::after { border-radius: 3px; }
 button:disabled { cursor: default; opacity: .45; }
 button:focus-visible { outline: 2px solid #3185c3; outline-offset: 2px; }
 /* Attached scene tools and outfit window share the native inZOI palette. */

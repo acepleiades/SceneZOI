@@ -33,11 +33,33 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  assert.equal(root['aria-disabled'],'true');ctx.inzoi.view.hover(true);assert.equal(hovers.at(-1),false);
  for(const name of ['mousedown','mouseup','click','wheel','keydown','keyup','contextmenu'])assert(emit(name,{id:'scene-exit',parentNode:root}),name);
  emit('click',icon);assert(!classes.has('scene-compact'),'Native hide cannot run behind a menu');
+ // The native Game Menu remains visible and owns pause under both confirmations.
+ for(const primary_detail of ['GameMenu_LobbyButton','GameMenu_QuitButton']){
+   state={blocked:true,primary_kind:'popup',primary_detail,input_block_ui_type:'GameMenu',
+     esc_stack_remains:true,pause_reasons:['CommonPopup','GameMenu']};
+   timers[125]();await flush();
+   assert(classes.has('scene-menu-blocked')&&!classes.has('scene-menu-hidden'));
+   assert(emit('click',{id:'scene-exit',parentNode:root}));
+   assert.deepEqual(reports.at(-1),[-10000,-10000,1,1]);
+ }
+ // Options records GameMenu as the input owner but adds the GameOption pause.
+ root.style.visibility='visible';
+ state={blocked:true,primary_kind:'modal_ui',primary_detail:'GameMenu',input_block_ui_type:'GameMenu',
+   esc_stack_remains:true,pause_reasons:['GameMenu','GameOption']};
+ timers[125]();await flush();
+ assert(!classes.has('scene-menu-blocked')&&classes.has('scene-menu-hidden'));
+ assert.equal(ctx.window.SceneZOIPanel.snapshot().menu_mode,'hidden');
+ assert(emit('keydown',{id:'scene-exit',parentNode:root}));
+ assert.deepEqual(reports.at(-1),[-10000,-10000,1,1]);
+ assert.equal(root.style.visibility,'visible','Options presentation must not overwrite session visibility');
+ state={blocked:true,primary_kind:'modal_ui',input_block_ui_type:'GameMenu',pause_reasons:['GameMenu']};
+ timers[125]();await flush();
+ assert(classes.has('scene-menu-blocked')&&!classes.has('scene-menu-hidden'),'Options Back restores the dimmed panel');
  state={blocked:false,pause_reasons:['UserPause']};timers[125]();await flush();
  assert(!classes.has('scene-menu-blocked'),'Time-control pause alone must leave controls usable');
  assert(!emit('click',{id:'scene-exit',parentNode:root}));
  assert.equal(root['aria-disabled'],'false');ctx.inzoi.view.hover(true);assert.equal(hovers.at(-1),true);
- // Other native surfaces may report blocked, including a popup over Game Menu.
+ // An unrelated blocker, or a popup without the Esc stack, leaves presentation alone.
  for(const overlay of [
    {primary_kind:'modal_ui',input_block_ui_type:'',esc_stack_remains:true},
    {primary_kind:'modal_ui',input_block_ui_type:'PhotoMode'},
@@ -93,7 +115,10 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  assert.match(css,/#scene-navigation button, #scene-exit, #scene-restore \{ font-family: var\(--inzoi-font-ui\);/);
  assert(css.indexOf('src="window.js"')<css.indexOf('src="panel-state.js"'));
  assert(css.indexOf('src="panel-state.js"')<css.indexOf('src="outfit-ui.js"'));
- for(const id of ['scene-tools','scene-tasks','outfit-panel'])assert(css.includes('#app-root.scene-menu-blocked #'+id+'::after'));
+ for(const selector of ['#app-root.scene-menu-blocked','#app-root.scene-menu-blocked #scene-tools > button',
+   '#app-root.scene-menu-blocked #scene-tasks','#app-root.scene-menu-blocked #outfit-panel'])assert(css.includes(selector+'::after'));
+ assert.match(css, /#app-root\.scene-menu-blocked #scene-tools > button \{\s*border-color: #434343;/);
+ assert.match(css, /#app-root\.scene-menu-hidden \* \{ visibility: hidden !important;/);
  assert(!fs.readFileSync(base+'panel-state.js','utf8').includes("action: 'hide'"));
- console.log('Panel state passed: injected hide capture, restore, expanded size, hidden bounds, Game Menu input/dimming, unrelated overlays, time pause, serialized polling.');
+ console.log('Panel state passed: injected hide capture, restore, expanded size, hidden bounds, Game Menu and confirmations dimmed, Options concealment, unrelated overlays, time pause, serialized polling.');
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -19,13 +19,23 @@ const event=x=>({button:0,clientX:x,preventDefault(){}});
 function frame(ack=0,values=[100,100,100],code='ok',rev=s.revision){return ['SZ2',s.client,s.sequence,rev,ack,code,...values].join('|');}
 async function poll(){timers[1]();for(let i=0;i<10;i++)await Promise.resolve();}
 function typed(k,value){number(k).value=value;number(k).change();}
+function enter(input,type,fields){
+ let prevented=false;
+ input[type]({...fields,preventDefault(){prevented=true;}});
+ assert(prevented,`Handled Enter event must prevent default: ${type}`);
+}
 (async()=>{
  assert(number('sfx').disabled);raw=frame();await poll();assert(!number('sfx').disabled);
  slider('sfx').mousedown(event(175));assert.equal(number('sfx').value,'75');assert.equal(writes.length,0,'Dragging previews without flooding persistent storage');
  docEvents.mousemove.forEach(f=>f(event(240)));docEvents.mouseup.forEach(f=>f());assert.equal(writes.at(-1).v,'SZ2|test|1|settings_audio|1|2|140|100|100');
  ui.retry();assert.equal(writes.length,2);assert.equal(writes[0].v,writes[1].v);
  raw=frame();await poll();assert.equal(number('sfx').value,'140','Unacknowledged frames must not undo a pending edit');
- typed('female','0');assert.equal(writes.at(-1).v,'SZ2|test|1|settings_audio|2|2|140|0|100');
+ number('female').value='0';
+ enter(number('female'),'keydown',{keyCode:13});
+ enter(number('female'),'keypress',{charCode:13});
+ enter(number('female'),'keyup',{which:13});
+ assert.equal(writes.length,3,'A complete legacy Enter sequence applies the value once');
+ assert.equal(writes.at(-1).v,'SZ2|test|1|settings_audio|2|2|140|0|100');
  raw=frame(1,[140,100,100]);await poll();assert.equal(number('female').value,'0','Older acknowledgements must not replace a newer full snapshot');
  raw=frame(2,[140,0,100]);await poll();assert.match(elements['settings-status-audio'].textContent,/Saved/);
  typed('male','201');typed('male','-1');typed('male','1.5');typed('male','');assert.equal(writes.length,3);assert.match(elements['settings-status-audio'].textContent,/whole number/);
@@ -44,7 +54,10 @@ function typed(k,value){number(k).value=value;number(k).change();}
  taskRaw=frame(0,[100,100]);timers[0]();for(let i=0;i<10;i++)await Promise.resolve();
  assert(!number('task-female').disabled && !number('task-male').disabled);
  const previousAudio=number('male').value;
- typed('task-female','50');typed('task-male','200');
+ number('task-female').value='50';
+ enter(number('task-female'),'keydown',{code:'NumpadEnter'});
+ number('task-male').value='200';
+ enter(number('task-male'),'keyup',{keyCode:13});
  assert.equal(writes.at(-1).k,'settings_task_rates');assert.match(writes.at(-1).v,/\|settings_task_rates\|2\|2\|50\|200$/);
  assert.equal(number('male').value,previousAudio,'Task edits must not alter volume controls');
  taskRaw=frame(1,[50,100]);timers[0]();for(let i=0;i<10;i++)await Promise.resolve();assert.equal(number('task-male').value,'200','An older task ack must not undo the other task slider');
@@ -69,7 +82,9 @@ function typed(k,value){number(k).value=value;number(k).change();}
  assert.match(elements['npc-scene-settings'].innerHTML,/data-i18n="in-game min"/);
  const npcWrites=writes.length;typed('npc-scene-length','4');typed('npc-scene-length','121');assert.equal(writes.length,npcWrites,'Out-of-range minutes are refused');
  assert.match(elements['settings-status-npc_scene'].textContent,/5 to 120/);
- typed('npc-scene-length','60');assert.match(writes.at(-1).v,/\|settings_npc_scene\|\d+\|2\|60$/);assert.equal(writes.at(-1).k,'settings_npc_scene');
+ number('npc-scene-length').value='60';
+ enter(number('npc-scene-length'),'keypress',{charCode:13});
+ assert.match(writes.at(-1).v,/\|settings_npc_scene\|\d+\|2\|60$/);assert.equal(writes.at(-1).k,'settings_npc_scene');
  const debug=elements['setting-toggle-manual-start'];
  assert(debug.disabled);
  debugRaw=frame(0,[0]);timers[3]();for(let i=0;i<10;i++)await Promise.resolve();
@@ -119,11 +134,14 @@ async function checkAttachmentPreview(){
  x.value='181';x.change();
  assert.equal(writes.length,oldWrites);
  assert.match(element('-status').textContent,/-180 to 180/);
- x.value='23.5';x.change();
+ x.value='23.5';enter(x,'keydown',{keyCode:13});
+ enter(x,'keypress',{charCode:13});
+ enter(x,'keyup',{keyCode:13});
+ x.change();
  const a=request();
  assert.equal(a.ack,121);
  assert.deepEqual(a.command,{action:'rotate',participant:'5',attachment:'pack.prop.male',bone:'joint_r',rotation:[23.5,0,0]});
- y.value='-10';y.keydown({key:'Enter',preventDefault(){}});
+ y.value='-10';enter(y,'keydown',{key:'Enter'});
  assert.equal(writes.length,oldWrites+1,'Only the latest edit waits for the first acknowledgement');
  ui.retry();
  assert.equal(request().ack,a.ack);

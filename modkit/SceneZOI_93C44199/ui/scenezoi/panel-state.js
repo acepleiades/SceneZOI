@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     var root = document.getElementById('app-root');
-    var compact = false, blocked = false, reading = null, pressed = null, expandedPosition = null;
+    var compact = false, blocked = false, menuMode = 'normal', reading = null, pressed = null, expandedPosition = null;
     var readCount = 0, readStatus = 'none', nativeState = null, lastInput = null;
     var readTimeout = 2000;
     var drag = null, suppressRestoreClick = false;
@@ -30,7 +30,8 @@
     };
     function refresh() {
         root.classList.toggle('scene-compact', compact);
-        root.classList.toggle('scene-menu-blocked', blocked);
+        root.classList.toggle('scene-menu-blocked', menuMode === 'dimmed');
+        root.classList.toggle('scene-menu-hidden', menuMode === 'hidden');
         root.setAttribute('aria-disabled', blocked ? 'true' : 'false');
         // inZOI also injects a direct-to-native rect watcher. Its measurement does
         // not know about attached panels or modality; our controller reports both.
@@ -128,6 +129,15 @@
             if (blocked) consume(event);
         }, true);
     });
+    function presentation(state) {
+        if (!state.blocked) return 'normal';
+        var reasons = state.pause_reasons || [];
+        // Options pushes onto the Esc stack while GameMenu still owns native input.
+        if (state.input_block_ui_type === 'GameOption' || reasons.indexOf('GameOption') >= 0) return 'hidden';
+        var menuPopup = state.primary_kind === 'popup' && state.esc_stack_remains && reasons.indexOf('GameMenu') >= 0;
+        if (state.input_block_ui_type === 'GameMenu' && (state.primary_kind === 'modal_ui' || menuPopup)) return 'dimmed';
+        return 'normal';
+    }
     function poll() {
         refresh();
         var now = Date.now();
@@ -145,27 +155,26 @@
             readStatus = 'ok';
             nativeState = {blocked:state.blocked,primary_kind:state.primary_kind || '',primary_detail:state.primary_detail || '',
                 input_block_ui_type:state.input_block_ui_type || '',esc_stack_remains:!!state.esc_stack_remains,pause_reasons:state.pause_reasons || []};
-            // Only the Esc Game Menu owns this panel's dimming and input gate.
-            // A popup or another overlay can also report native blocking.
-            var next = state.blocked && state.primary_kind === 'modal_ui' && state.input_block_ui_type === 'GameMenu';
-            if (next !== blocked) {
+            var next = presentation(state);
+            if (next !== menuMode) {
+                var enteringMenu = !blocked && next !== 'normal';
                 // End a drag/resize before blocking document mouseup handlers.
-                if (next) {
+                if (enteringMenu) {
                     try { document.dispatchEvent(new MouseEvent('mouseup', {bubbles:true})); }
                     catch (_) {
                         var up = document.createEvent('MouseEvents');
                         up.initEvent('mouseup', true, true); document.dispatchEvent(up);
                     }
                 }
-                blocked = next; pressed = null;
-                if (blocked) release();
+                menuMode = next; blocked = next !== 'normal'; pressed = null;
+                if (enteringMenu) release();
                 refresh();
             }
         }).catch(function () { if (reading === request) readStatus = 'error'; }).then(function () { if (reading === request) reading = null; });
     }
     window.SceneZOIPanel = {
         reset: function () { reading = null; readStatus = 'reset'; collapse(false); poll(); },
-        snapshot: function () { return {blocked:blocked,compact:compact,read_status:readStatus,
+        snapshot: function () { return {blocked:blocked,compact:compact,menu_mode:menuMode,read_status:readStatus,
             request_id:readCount,request_age_ms:reading ? Math.max(0,Date.now()-reading.started) : 0,native:nativeState,last_input:lastInput}; }
     };
     setInterval(poll, 125);

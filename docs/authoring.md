@@ -150,8 +150,8 @@ Use a separate clip if the attachment needs its own movement during the scene.
    skeletal attachment with editable bones and supplies neither a clip nor
    saved angles for that attachment.
 2. Select the Zoi, the attachment, and the bone you want to adjust. Enter
-   X, Y and Z under **Local rotation (degrees)**, then click out of the edited
-   field to apply it. For the HZoi anatomy mesh, try `spline_01_x` first.
+   X, Y and Z under **Local rotation (degrees)**. Press **Enter** or click
+   out of the field to apply it. For the HZoi anatomy mesh, try `spline_01_x` first.
    Watch the loop to see if the angle works throughout the motion.
 3. Once your edits have applied, click **Export reference values**. The export
    includes attachments you edited and then hid with an outfit change. Open
