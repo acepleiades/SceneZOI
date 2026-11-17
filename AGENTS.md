@@ -6,6 +6,11 @@ changing a public API, schema or runtime lifecycle rule. For a bug, start with
 the report and diagnostics, then use [runtime troubleshooting](docs/investigations/runtime-and-ui-issues.md)
 if the symptom matches.
 
+If you can reproduce a bug, fix it and verify the fix against the reproduction.
+If you cannot reproduce it, check what evidence would distinguish the plausible
+causes. Add a diagnostic when it can capture that evidence. For player reports,
+include it in the existing scenezoi_runtime logs.
+
 - Edit Lua in `modkit/SceneZOI_93C44199/workspace/lua/`; ModKit generates prepared
   `lua/`. UI source is under `modkit/SceneZOI_93C44199/ui/`, built-in
   declarations under `packs/`, and the public SDK under `sdk/`.

@@ -582,12 +582,38 @@ function M.save_reply(actor,content)
     if fields then Save.offer(Sessions.get(fields[1]),actor,fields)end
 end
 
+local release_causes = {
+    host_request = true, lease_expired = true, simulation_save = true, simulation_load = true,
+    simulation_end = true, participant_update_error = true, participant_message_error = true,
+    retired_prepare = true, prepare_error = true, save_recovery = true,
+}
+
+local function report_participant_release(current, participant, cause, diagnostic, transport)
+    if participant.release_cause_reported then return end
+    participant.release_cause_reported = true
+    Diagnostics.record("participant_release", {session_id = current.token, scene_id = current.node.id,
+        participant_id = participant.id, role = participant.role, revision = current.revision,
+        phase = phase_of(current), cause = release_causes[cause] and cause or "unreported",
+        simulation_diagnostic = Diagnostics.detail(diagnostic), transport = transport})
+end
+
 function M.reply(actor, content)
     local fields = Protocol.unpack(content)
     if fields and fields[2] == "released_unloaded" then
         -- Relayed through the controlled Zoi: this participant's own client actor is gone.
         pcall(Save.resolve, fields[1], fields[3])
         local owner = Sessions.get(fields[1])
+        local cause = fields[4]
+        if owner and release_causes[cause] and cause ~= "host_request" then
+            for _, participants in ipairs({owner.participants, owner.unloaded or {}}) do
+                for _, participant in ipairs(participants) do
+                    if participant.id == fields[3] then
+                        report_participant_release(owner, participant, cause, fields[5], "relay")
+                        break
+                    end
+                end
+            end
+        end
         for _, participant in ipairs(owner and owner.unloaded or {}) do
             if participant.id == fields[3] then participant.released, participant.restoration = true, "released_on_unload" end
         end
@@ -649,21 +675,25 @@ function M.reply(actor, content)
         end
         return
     end
-    if fields[5] and kind ~= "outfit" then M.diagnostic("Participant preparation failed: " .. fields[5]) end
-    if current.stopping then
-        if kind ~= "released" then return end
+    if kind == "released" then
         for _, participant in ipairs(current.participants) do
             if participant.actor == actor then
-                participant.released, participant.restoration = true, "restored"
-                if fields[4] == "1" then pcall(Native.restore_position, participant) end
+                if current.stopping then
+                    participant.released, participant.restoration = true, "restored"
+                    if fields[4] == "1" then pcall(Native.restore_position, participant) end
+                    if detail ~= "ok" then current.stop_code = "restore_error" end
+                    if Session.cleanup_complete(current) then finish_stop(current, current.stop_code) end
+                else
+                    report_participant_release(current, participant, fields[5], fields[6], "direct")
+                    stop_session(current, detail == "ok" and "interrupted" or detail)
+                end
+                break
             end
-        end
-        if detail ~= "ok" then current.stop_code = "restore_error" end
-        if Session.cleanup_complete(current)then
-            finish_stop(current, current.stop_code)
         end
         return
     end
+    if fields[5] and kind ~= "outfit" then M.diagnostic("Participant preparation failed: " .. fields[5]) end
+    if current.stopping then return end
     if kind == "outfit" then OutfitControl.receive(current, actor, fields); return end
     if current.outfit_change and kind == "ready" then return end
     if kind == "rejected" then
@@ -672,7 +702,6 @@ function M.reply(actor, content)
                 simulation_diagnostic=fields[5]})
         stop_session(current, detail or "prepare_error"); return
     end
-    if kind == "released" then stop_session(current, detail == "ok" and "interrupted" or detail); return end
     if kind ~= "ready" or not current.preparing or tonumber(fields[4]) ~= current.revision then return end
     for _, participant in ipairs(current.participants) do
         if participant.actor == actor then

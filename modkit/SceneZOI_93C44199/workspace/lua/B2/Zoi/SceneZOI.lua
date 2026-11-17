@@ -10,10 +10,17 @@ local Recovery=require("SceneZOI.SaveRecovery")
 local Members=require("SceneZOI.SceneMembers")
 local M = {}
 
-local function reply(owner, token, kind, detail, revision, diagnostic)
-    local packet = Protocol.pack(token, kind, detail or "ok", revision or 0)
+local function send_reply(entity_id, packet, diagnostic)
     if diagnostic then packet = packet .. "|" .. tostring(diagnostic):gsub("[^%w_.:+%-]", "_"):sub(1, 1200) end
-    inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", packet)
+    inzoi.message.send_to_client(entity_id, "SceneZOI.Reply", packet)
+end
+
+local function reply(owner, token, kind, detail, revision, diagnostic)
+    send_reply(owner:GetEntityId(), Protocol.pack(token, kind, detail or "ok", revision or 0), diagnostic)
+end
+
+local function reply_released(owner, token, stay_refused, cause, diagnostic)
+    send_reply(owner:GetEntityId(), Protocol.pack(token, "released", "ok", stay_refused and 1 or 0, cause), diagnostic)
 end
 
 local function set_autonomy(owner, value, follow_parent)
@@ -27,14 +34,14 @@ local function set_autonomy(owner, value, follow_parent)
 end
 
 -- If this Zoi's client actor has unloaded, its own reply cannot arrive. Say so through the controlled Zoi.
-local function relay_release(owner, token)
+local function relay_release(owner, token, cause, diagnostic)
     local ok, _, data = inzoi.cli.execute("entity.get_possessed")
     local controlled = ok and data and data:match('"entity_id"%s*:%s*"?(%d+)')
     local own = Protocol.id(owner:GetEntityId())
     if not controlled or controlled == own then return end
     local target = inzoi.FB1EntityId()
     target.Value = tonumber(controlled)
-    inzoi.message.send_to_client(target, "SceneZOI.Reply", Protocol.pack(token, "released_unloaded", own))
+    send_reply(target, Protocol.pack(token, "released_unloaded", own, cause), diagnostic)
 end
 
 local function grab_state(posture, hand)
@@ -57,9 +64,13 @@ local function capture_grab_poses(owner)
     if #poses > 0 then return poses end
 end
 
-local function release(self, owner, silent)
+local function release(self, owner, silent, cause, diagnostic)
     local lease = self.lease
     if not lease then return end
+    if not lease.release_cause then
+        -- The first caller explains the release even if restoration retries later.
+        lease.release_cause, lease.release_diagnostic = cause, diagnostic
+    end
     lease.releasing = true
     local errors = {}
     -- Retain the original snapshot until every step succeeds; retries skip completed steps.
@@ -107,15 +118,15 @@ local function release(self, owner, silent)
         self.retired_order[#self.retired_order + 1] = lease.token
         if #self.retired_order > 32 then self.retired[table.remove(self.retired_order, 1)] = nil end
         if not silent then
-            reply(owner, lease.token, "released", "ok", lease.stay_refused and 1 or 0)
-            pcall(relay_release, owner, lease.token)
+            reply_released(owner, lease.token, lease.stay_refused, lease.release_cause, lease.release_diagnostic)
+            pcall(relay_release, owner, lease.token, lease.release_cause, lease.release_diagnostic)
         end
     else
         local message = table.concat(errors, "; ")
         if lease.last_error ~= message then
             lease.last_error = message
             print("[SceneZOI] Cleanup will retry: " .. message)
-            if not silent then reply(owner, lease.token, "release_pending", "restore_error", message) end
+            if not silent then reply(owner, lease.token, "release_pending", "restore_error", 0, message) end
         end
     end
 end
@@ -357,7 +368,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     local node = SceneData.simulation(Json.decode(decoded))
     assert(node.id==node_id,"Scene snapshot identity mismatch")
     assert(node and revision and revision >= 1 and revision % 1 == 0, "Invalid scene node preparation")
-    if self.retired[token] then reply(owner, token, "released", "ok"); return end
+    if self.retired[token] then reply_released(owner, token, false, "retired_prepare"); return end
     if self.lease then
         if self.lease.token ~= token then reply(owner, token, "rejected", "busy"); return end
         local lease = self.lease
@@ -427,7 +438,7 @@ local function receive(self, owner, kind, content)
     if kind == "SceneZOI.Prepare" then
         local ok, err = pcall(prepare, self, owner, token, fields[2], fields[3], fields[4], fields[5], fields[6], fields[7])
         if not ok then
-            release(self, owner, true)
+            release(self, owner, true, "prepare_error", err)
             reply(owner, token, "rejected", "prepare_error", 0, err)
         end
     elseif kind == 'SceneZOI.Commit' then
@@ -439,7 +450,7 @@ local function receive(self, owner, kind, content)
             advance_prepare(self,owner,first_commit)
         end)
         if not ok then
-            release(self,owner,true)
+            release(self,owner,true,"prepare_error",err)
             reply(owner,token,'rejected','prepare_error',0,err)
         end
     elseif kind == "SceneZOI.OverlayCut" then
@@ -456,7 +467,7 @@ local function receive(self, owner, kind, content)
         if self.lease and self.lease.token~=data.token then return end
         if not self.lease then self.lease=assert(Recovery.lease(data),'Missing recovery record')end
         self.lease.recovery_request=token
-        release(self,owner,true)
+        release(self,owner,true,"save_recovery")
     elseif kind == "SceneZOI.Outfit" then
         local lease = self.lease
         local count, revision = tonumber(fields[2]), tonumber(fields[5])
@@ -483,11 +494,11 @@ local function receive(self, owner, kind, content)
             -- Only stay if the game agrees this floor is walkable; otherwise go back as usual.
             self.lease.stay = not self.lease.recovering and fields[2] == "stay" and require("SceneZOI.Placement").walkable(owner)
             self.lease.stay_refused = fields[2] == "stay" and not self.lease.stay
-            release(self, owner)
+            release(self, owner, false, "host_request")
         else
             -- Retire even an unseen token: a delayed Prepare must not reacquire it.
             self.retired[token] = true
-            reply(owner, token, "released", "ok")
+            reply_released(owner, token, false, "host_request")
         end
     elseif self.lease and self.lease.token == token and not self.lease.releasing then
         if kind == "SceneZOI.Heartbeat" then self.lease.remaining = Config.lease_timeout
@@ -512,7 +523,7 @@ function M.on_lua_message(self, owner, kind, content)
     local ok, err = pcall(receive, self, owner, kind, content)
     if not ok then
         print("[SceneZOI] Participant message failed: " .. tostring(err))
-        release(self, owner)
+        release(self, owner, false, "participant_message_error", err)
     end
 end
 
@@ -528,7 +539,10 @@ local function update(self, owner, dt)
     if lease.overlay_settle_wait then lease.overlay_settle_wait = math.max(0, lease.overlay_settle_wait - dt) end
     if lease.overlay_poll_wait then lease.overlay_poll_wait = math.max(0, lease.overlay_poll_wait - dt) end
     if lease.overlay_settle_poll then lease.overlay_settle_poll = math.max(0, lease.overlay_settle_poll - dt) end
-    if lease.releasing or lease.remaining <= 0 then release(self, owner); return end
+    if lease.releasing or lease.remaining <= 0 then
+        release(self, owner, false, "lease_expired")
+        return
+    end
     advance_prepare(self, owner, false, dt == 0)
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
     if lease.location then owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false) end
@@ -541,7 +555,7 @@ function M.on_tick(self, owner, dt)
     local ok, err = pcall(update, self, owner, dt)
     if not ok then
         print("[SceneZOI] Participant update failed: " .. tostring(err))
-        release(self, owner)
+        release(self, owner, false, "participant_update_error", err)
     end
 end
 
@@ -549,20 +563,20 @@ end
 ---@param owner FB2Character
 function M.on_savegame(self, owner)
     -- Scene ownership is temporary; do not serialize its disabled-autonomy lease into the save.
-    release(self, owner)
+    release(self, owner, false, "simulation_save")
     return {}
 end
 
 ---@param self table
 ---@param owner FB2Character
 function M.on_loadgame(self, owner)
-    release(self, owner)
+    release(self, owner, false, "simulation_load")
 end
 
 ---@param self table
 ---@param owner FB2Character
 function M.on_end(self, owner)
-    release(self, owner)
+    release(self, owner, false, "simulation_end")
 end
 
 return M

@@ -9,6 +9,7 @@ UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)retur
 local replies,owners,waits,overlay_requests={},{},{},{}
 local clear_failure,cancel_failure=false,false
 inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},EB1ActionType={PlayLoopAnim=20},
+ FB1EntityId=function()return {}end,
  cli={execute=function(c)
   local o=owners[c:match('entity_id=(%d+)')]
   if c=='entity.get_possessed'then return true,'','{"entity_id":1}'end
@@ -363,6 +364,9 @@ local reloaded={};M.on_begin(reloaded,o)
 o.collision=false;o.AutonomyOption.AutonomyEnable.bFollowParent=false
 M.on_lua_message(reloaded,o,'SceneZOI.Release',P.pack('captured','restore',P.encode(Json.encode(record))))
 assert(not reloaded.lease and o.collision and o.AutonomyOption.AutonomyEnable.bFollowParent, tostring(reloaded.lease)..':'..tostring(o.collision)..':'..tostring(o.AutonomyOption.AutonomyEnable.bFollowParent))
+local restored_reply = P.unpack(replies[1])
+assert(restored_reply[1] == "captured" and restored_reply[2] == "released"
+    and restored_reply[5] == "host_request", replies[1])
 local release_writes=o.position_writes
 M.on_lua_message(reloaded,o,'SceneZOI.Release',P.pack('captured','restore',P.encode(Json.encode(record))))
 assert(o.position_writes==release_writes,'A duplicate Exit cannot restore the same position twice')
@@ -436,3 +440,87 @@ assert(changing.lease.ready and not actor.playing)
 release(changing, actor, token)
 actor.force_autonomy = false
 print("Scene transitions preserve participant suppression, wait for tasks, and restore original settings on Exit.")
+
+local function ready_participant(token)
+    local state, zoi = {}, owner(2)
+    M.on_begin(state, zoi)
+    start(state, zoi, token)
+    tick(state, zoi)
+    assert(state.lease.ready and not zoi.collision and not zoi:IsAutonomyEnable())
+    return state, zoi
+end
+
+local function assert_release(state, zoi, token, cause, diagnostic)
+    assert(not state.lease and zoi.collision and zoi:IsAutonomyEnable()
+        and zoi.AutonomyOption.AutonomyEnable.bFollowParent, "Release must restore participant ownership")
+    local direct, relay = P.unpack(replies[2]), P.unpack(replies[1])
+    assert(direct[1] == token and direct[2] == "released" and direct[3] == "ok"
+        and direct[4] == "0" and direct[5] == cause, replies[2])
+    assert(relay[1] == token and relay[2] == "released_unloaded" and relay[3] == "2"
+        and relay[4] == cause and relay[5] == direct[6], replies[1])
+    if diagnostic then
+        assert(direct[6] and direct[6]:find(diagnostic, 1, true) and #direct == 6, replies[2])
+    else
+        assert(direct[6] == nil, replies[2])
+    end
+end
+
+local causes = {
+    {"lease_expired", function(state, zoi)
+        tick(state, zoi, require("SceneZOI.Config").lease_timeout + .1)
+    end},
+    {"simulation_save", function(state, zoi)
+        assert(next(M.on_savegame(state, zoi)) == nil, "Release data must not be serialized into the save")
+    end},
+    {"simulation_load", M.on_loadgame},
+    {"simulation_end", M.on_end},
+    {"host_request", function(state, zoi, token)
+        M.on_lua_message(state, zoi, "SceneZOI.Release", P.pack(token))
+    end},
+}
+for _, case in ipairs(causes) do
+    local cause, trigger = case[1], case[2]
+    local tag = "release." .. cause
+    local state, zoi = ready_participant(tag)
+    trigger(state, zoi, tag)
+    assert_release(state, zoi, tag, cause)
+end
+
+local tag = "release.update"
+local state, zoi = ready_participant(tag)
+zoi.queued, clear_failure = 2, true
+tick(state, zoi)
+assert_release(state, zoi, tag, "participant_update_error", "Injected_queue_clear_failure")
+
+tag = "release.message"
+state, zoi = ready_participant(tag)
+local move = zoi.SetLocationAndRotationOnlySimul
+function zoi:SetLocationAndRotationOnlySimul(...)
+    self.SetLocationAndRotationOnlySimul = move
+    error("anchor_failed | test")
+end
+M.on_lua_message(state, zoi, "SceneZOI.Anchor", P.pack(tag, 1, 2, 3, 0, 0, 0))
+assert_release(state, zoi, tag, "participant_message_error", "anchor_failed")
+assert(zoi.position_writes == 1, "The anchor failure must still restore the original position")
+
+tag = "release.retry"
+state, zoi = ready_participant(tag)
+local original_collision_write = zoi.SetCollisionEnabled
+function zoi:SetCollisionEnabled(...)
+    self.SetCollisionEnabled = original_collision_write
+    error("transient_collision_restore")
+end
+zoi.queued, clear_failure = 2, true
+tick(state, zoi)
+local pending = P.unpack(replies[2])
+assert(state.lease and state.lease.releasing and not zoi.collision
+    and pending[2] == "release_pending" and pending[3] == "restore_error" and pending[4] == "0"
+    and pending[5]:find("transient_collision_restore", 1, true), replies[2])
+M.on_lua_message(state, zoi, "SceneZOI.Release", P.pack(tag))
+assert_release(state, zoi, tag, "participant_update_error", "Injected_queue_clear_failure")
+
+start(state, zoi, tag)
+local stale = P.unpack(replies[2])
+assert(not state.lease and stale[1] == tag and stale[2] == "released" and stale[3] == "ok"
+    and stale[4] == "0" and stale[5] == "retired_prepare", replies[2])
+print("Participant release diagnostics distinguish lifecycle and exception causes, preserve the cause through restoration retries, and identify retired Prepare packets.")

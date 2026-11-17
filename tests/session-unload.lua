@@ -53,3 +53,59 @@ for _=1,200 do R.tick(.05)end
 R.flush_notifications()
 assert(ended[fourth].code=='restore_timeout'and journal_people(fourth)['4']and not journal_people(fourth)['3'])
 print('Unload outcomes passed: missing actors end as unloaded, cleanup does not wait for them, per-participant results, deferred recovery and real timeouts.')
+
+local diagnostics = require("SceneZOI.Diagnostics")
+local record = diagnostics.record
+local releases = {}
+function diagnostics.record(name, fields)
+    if name == "participant_release" then releases[#releases + 1] = fields end
+    record(name, fields)
+end
+for id = 5, 10 do F.add_actor(id) end
+
+local normal = start(5, 5, 6)
+F.reply(normal, 7, "released")
+assert(R.snapshot(normal).phase == "preparing" and #releases == 0,
+    "A reply from outside the roster cannot interrupt a scene")
+R.stop("ok")
+F.reply(normal, 7, "released", "restore_error")
+R.reply(F.actors[5], P.pack(normal, "released", "ok", 0, "host_request"))
+F.reply(normal, 6, "released")
+R.flush_notifications()
+assert(ended[normal].code == "ok" and #releases == 0,
+    "Only roster members may acknowledge cleanup or report restoration failure")
+
+local interrupted = start(6, 5, 6)
+R.reply(F.actors[6], P.pack(interrupted, "released", "ok", 0, "participant_update_error", "Queue_clear_failed"))
+assert(R.snapshot(interrupted).phase == "exiting")
+local release = assert(releases[1])
+assert(release.session_id == interrupted and release.scene_id == F.node.id)
+assert(release.participant_id == "6" and release.role == "second" and release.revision == 1)
+assert(release.phase == "preparing" and release.transport == "direct" and
+    release.cause == "participant_update_error" and release.simulation_diagnostic == "Queue_clear_failed")
+R.reply(F.actors[5], P.pack(interrupted, "released_unloaded", "6", "participant_update_error"))
+assert(#releases == 1, "The controlled Zoi's relay does not duplicate the direct diagnostic")
+F.reply(interrupted, 6, "released")
+F.reply(interrupted, 5, "released")
+R.flush_notifications()
+assert(ended[interrupted].code == "interrupted")
+
+local unknown = start(7, 5, 6)
+F.reply(unknown, 6, "released")
+assert(releases[2].cause == "unreported" and releases[2].simulation_diagnostic == nil)
+F.reply(unknown, 6, "released")
+F.reply(unknown, 5, "released")
+R.flush_notifications()
+assert(ended[unknown].code == "interrupted")
+
+local relay = start(8, 8, 9)
+R.unregister(F.actors[9])
+R.reply(F.actors[8], P.pack(relay, "released_unloaded", "10", "simulation_end"))
+assert(#releases == 2, "A relayed release for an unrelated Zoi has no diagnostic authority")
+R.reply(F.actors[8], P.pack(relay, "released_unloaded", "9", "simulation_end"))
+assert(releases[3].transport == "relay" and releases[3].cause == "simulation_end" and
+    releases[3].phase == "exiting" and releases[3].participant_id == "9")
+F.reply(relay, 8, "released")
+R.flush_notifications()
+assert(ended[relay].code == "participant_unloaded")
+print("Participant release causes passed: sender ownership, missing cause, direct report, relay, and public stop codes.")
