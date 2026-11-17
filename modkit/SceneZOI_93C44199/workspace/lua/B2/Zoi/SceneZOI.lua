@@ -187,9 +187,27 @@ local function tasks_idle(owner, lease, interaction)
     return true
 end
 
--- Only layer motions that can conflict with the scene pose. Posture and
--- locomotion still belong to the game, as do unrelated protected motions.
+-- The sofa phone interaction uses the posture slot in place of the normal
+-- seated idle. Its montage can keep looping even after the task is cancelled.
 local task_overlay_groups = {UpperGroup = true, LeftArmGroup = true, RightArmGroup = true}
+
+local function is_sofa_phone(motion)
+    if motion.group ~= "PostureGroup" or type(motion.montage_id) ~= "string" then return false end
+    local side = motion.anim_id:match("^UseSmartPhone_Sofa_([LR])$") or
+        motion.anim_id:match("^UseSmartPhone_Sofa_([LR])_1$")
+    if not side then return false end
+    local prefix = "^ANIM_[FM]_Sofa_SelfAct_b_Phone_" .. side
+    local suffix = "_StartLoopEnd_Interaction_Montage$"
+    return motion.montage_id:match(prefix .. suffix) or motion.montage_id:match(prefix .. "_1" .. suffix)
+end
+
+local function is_dish_eating(motion)
+    -- The same stock eating montage can be assigned to the default group.
+    if motion.group ~= "DefaultGroup" or motion.anim_id ~= "Dish_Eat_Stand" or
+        type(motion.montage_id) ~= "string" then return false end
+    return motion.montage_id:match("^ANIM_[FM]_Dish_Eat_Stand_StartLoopEnd_Interaction_Montage$") or
+        motion.montage_id:match("^ANIM_[FM]_Dish_Eat_Sit_StartLoopEnd_Interaction_Montage$")
+end
 
 local function task_overlays(owner)
     local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
@@ -199,8 +217,9 @@ local function task_overlays(owner)
     if not decoded or type(state) ~= "table" or type(state.motions) ~= "table" then return {} end
     local result = {}
     for _, motion in ipairs(state.motions) do
-        if task_overlay_groups[motion.group] and motion.non_interruptible == false and
-            type(motion.anim_id) == "string" and motion.anim_id:match("^[%w_%-]+$") then
+        if motion.non_interruptible == false and type(motion.anim_id) == "string" and
+            motion.anim_id:match("^[%w_%-]+$") and
+            (task_overlay_groups[motion.group] or is_sofa_phone(motion) or is_dish_eating(motion)) then
             result[#result + 1] = motion
         end
     end
@@ -227,12 +246,32 @@ local function wait_for_overlay_cut(owner, lease)
     return lease.overlay_cut_wait > 0
 end
 
-local function stop_task_overlays(owner)
-    local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
-    for _, motion in ipairs(task_overlays(owner)) do
-        local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. motion.anim_id)
-        if not stopped then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
+local function settle_task_overlays(owner, lease, paused)
+    if not paused and (lease.overlay_poll_wait or 0) > 0 then return false end
+    local overlays = task_overlays(owner)
+    if #overlays == 0 then return true end
+    -- A native stop can send an animation into its ending section. Give the
+    -- simulation a short window to clear it after the rendered cut.
+    if lease.overlay_settle_wait == 0 then
+        print("[SceneZOI] Task overlay still reported after stop: " .. overlays[1].anim_id)
+        return true
     end
+    lease.overlay_settle_wait = lease.overlay_settle_wait or .5
+    lease.overlay_poll_wait = .1
+    local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
+    lease.overlay_stop_requested = lease.overlay_stop_requested or {}
+    for _, motion in ipairs(overlays) do
+        if not lease.overlay_stop_requested[motion.anim_id] then
+            lease.overlay_stop_requested[motion.anim_id] = true
+            local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. motion.anim_id)
+            if not stopped then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
+        end
+    end
+    -- Native end sections cannot advance on paused simulation ticks. The
+    -- rendered cut and native stop have both already been requested.
+    if paused then return true end
+    report_prepare_wait(owner, lease, "overlay_cut")
+    return false
 end
 
 local function suspend_grab_poses(owner, lease)
@@ -250,7 +289,7 @@ local function suspend_grab_poses(owner, lease)
     end
 end
 
-local function advance_prepare(self, owner, first_commit)
+local function advance_prepare(self, owner, first_commit, paused)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
     -- On Back, the aggregate autonomy query can report enabled even when the
@@ -275,8 +314,8 @@ local function advance_prepare(self, owner, first_commit)
     end
     if not lease.tasks_settled then
         -- Gameplay can keep upper-body and grab loops alive after the task is idle.
-        suspend_grab_poses(owner, lease)
-        stop_task_overlays(owner)
+        if not lease.overlay_stop_requested then suspend_grab_poses(owner, lease) end
+        if not settle_task_overlays(owner, lease, paused) then return end
         local location, rotation = owner:GetLocation(), owner:GetRotation()
         lease.entry_location = UE.FVector(location.X, location.Y, location.Z)
         lease.entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll)
@@ -461,8 +500,10 @@ local function update(self, owner, dt)
     dt = math.max(tonumber(dt) or 0, 0)
     lease.remaining = lease.remaining - dt
     if lease.overlay_cut_wait then lease.overlay_cut_wait = math.max(0, lease.overlay_cut_wait - dt) end
+    if lease.overlay_settle_wait then lease.overlay_settle_wait = math.max(0, lease.overlay_settle_wait - dt) end
+    if lease.overlay_poll_wait then lease.overlay_poll_wait = math.max(0, lease.overlay_poll_wait - dt) end
     if lease.releasing or lease.remaining <= 0 then release(self, owner); return end
-    advance_prepare(self, owner)
+    advance_prepare(self, owner, false, dt == 0)
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
     if lease.location then owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false) end
 end
