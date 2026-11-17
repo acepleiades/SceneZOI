@@ -619,16 +619,19 @@ function M.reply(actor, content)
         return
     end
     if kind == "overlay_cut" then
-        if current.stopping or current.started or not current.preparing or not current.save_ready or
-            tonumber(fields[4]) ~= current.revision or not detail then return end
+        local scan, interaction_id = fields[5], fields[6]
+        local scan_id = scan and scan:match("^[1-9]%d*$") and math.tointeger(tonumber(scan))
+        if current.stopping or not (current.preparing or current.started) or not current.save_ready or
+            tonumber(fields[4]) ~= current.revision or not detail or not scan_id then return end
         for _, participant in ipairs(current.participants) do
-            if participant.actor == actor and not participant.node_ready and not participant.overlay_cut_handled then
-                participant.overlay_cut_handled = true
-                local ok, count = pcall(Native.cut_task_overlays, participant, detail)
-                tell(participant, "SceneZOI.OverlayCut", Protocol.pack(current.token, current.revision))
-                if ok and count > 0 then
+            if participant.actor == actor and scan_id > (participant.overlay_scan_id or 0) then
+                participant.overlay_scan_id = scan_id
+                local ok, approved, count = pcall(Native.cut_task_overlays, participant, detail, interaction_id)
+                local matches = ok and #approved > 0 and table.concat(approved, "+") or "none"
+                tell(participant, "SceneZOI.OverlayCut", Protocol.pack(current.token, current.revision, scan, matches))
+                if matches ~= "none" then
                     pcall(inzoi.cli.execute, command("uimod.cfg_save", "overlay_cut") .. " value=" ..
-                        Protocol.pack(current.token, participant.id, count))
+                        Protocol.pack(current.token, participant.id, count, matches))
                 end
                 break
             end

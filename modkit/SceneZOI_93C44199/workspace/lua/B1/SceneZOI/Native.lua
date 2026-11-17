@@ -19,37 +19,110 @@ function M.capture(actor)
     }
 end
 
-local function cut_overlay(instance, anim_id, name)
-    local ok, message, raw = inzoi.cli.execute("data.table_get alias=AnimCharacter row=" .. anim_id)
-    if not ok then return false end
-    local row = Json.decode(raw or message)
+local upper_body_groups = {UpperGroup = true, LeftArmGroup = true, RightArmGroup = true}
+local hands = {LeftHand = true, RightHand = true, BothHands = true}
+
+local function row_for(alias, id)
+    local ok, message, raw = inzoi.cli.execute("data.table_get alias=" .. alias .. " row=" .. id)
+    if ok then return Json.decode(raw or message) end
+end
+
+local function overlay_assets(anim_id, name, group)
+    local row = row_for("AnimCharacter", anim_id)
+    if not row or row.playingComponentName ~= "Root" then return end
+    local paths = {}
     for _, config in ipairs(row.characterAnimConfigList or {}) do
         for _, entry in ipairs(config.animInfoList or {}) do
             local path = entry.animation
             if type(path) == "string" and path:match("%.([%w_%-]+)$") == name then
-                local montage = UE.UObject.Load(path)
-                if montage and instance:Montage_IsActive(montage) then
-                    instance:Montage_Stop(0, montage)
-                    return not instance:Montage_IsActive(montage)
+                local task = upper_body_groups[group] == true or hands[config.animBodyParts] == true
+                paths[path] = task and paths[path] ~= false
+            end
+        end
+    end
+    return next(paths) and paths or nil
+end
+
+-- An active interaction can explicitly play a full-body task without using its hands.
+-- A ChangePosture action does not identify an overlay: it also starts ordinary seats.
+local function interaction_animations(id)
+    local result = {}
+    if not id or id == "none" or not id:match("^[%w_%-]+$") then return result end
+    local row = row_for("Interaction", id)
+    local action_ids = row and row.actionIdList or {}
+    for index = 1, math.min(#action_ids, 16) do
+        local action_id = action_ids[index]
+        if type(action_id) == "string" and action_id:match("^[%w_%-]+$") then
+            local action_row = row_for("Action", action_id)
+            for _, action in ipairs(action_row and action_row.actions or {}) do
+                if action.baseObject == "Self" and action.command == "PlayAnim" and type(action.s1) == "string" then
+                    result[action.s1] = true
                 end
             end
         end
     end
-    return false
+    return result
 end
 
-function M.cut_task_overlays(record, detail)
-    local instance = record.actor.Mesh:GetAnimInstance()
-    if not instance then return 0 end
-    local count = 0
-    for pair in detail:gmatch("[^+]+") do
-        local anim_id, name = pair:match("^([%w_%-]+):([%w_%-]+)$")
-        if anim_id then
-            local ok, cut = pcall(cut_overlay, instance, anim_id, name)
-            if ok and cut then count = count + 1 end
+local function cut_rendered_overlay(instance, montage)
+    instance:Montage_Stop(0, montage)
+    return not instance:Montage_IsActive(montage)
+end
+
+local function approve_overlay(record, instance, paths, declared)
+    local active, all_task = {}, true
+    for path, task in pairs(paths) do
+        task = task or declared
+        all_task = all_task and task
+        local loaded, montage = pcall(UE.UObject.Load, path)
+        if loaded and montage then
+            if montage == record.montage then return false, 0 end
+            if instance and instance:Montage_IsActive(montage) then
+                if not task then return false, 0 end
+                active[#active + 1] = montage
+            end
         end
     end
-    return count
+    -- The simulation may report an animation that has already left the render slot.
+    -- When paths share a basename, a neutral active variant wins over an inactive task.
+    if #active == 0 and not all_task then return false, 0 end
+    local count = 0
+    for _, montage in ipairs(active) do
+        local ok, cut = pcall(cut_rendered_overlay, instance, montage)
+        if ok and cut then count = count + 1 end
+    end
+    return true, count
+end
+
+function M.cut_task_overlays(record, detail, interaction_id)
+    local mesh = record.actor.Mesh
+    local instance = mesh and mesh:GetAnimInstance()
+    local approved, seen, count = {}, {}, 0
+    local declared
+    for candidate in detail:gmatch("[^+]+") do
+        local anim_id, name, group = candidate:match("^([%w_%-]+):([%w_%-]+):([%w_%-]+)$")
+        if anim_id and not seen[candidate] then
+            seen[candidate] = true
+            local ok, paths = pcall(overlay_assets, anim_id, name, group)
+            if ok and paths then
+                if not declared then
+                    for _, task in pairs(paths) do
+                        if not task then
+                            local found, actions = pcall(interaction_animations, interaction_id)
+                            declared = found and actions or {}
+                            break
+                        end
+                    end
+                end
+                local checked, eligible, cuts = pcall(approve_overlay, record, instance, paths, declared and declared[anim_id])
+                if checked and eligible then
+                    approved[#approved + 1] = candidate
+                    count = count + cuts
+                end
+            end
+        end
+    end
+    return approved, count
 end
 
 function M.desired_transform(record, anchor)

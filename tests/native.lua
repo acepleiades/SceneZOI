@@ -51,21 +51,80 @@ UE={UObject={Load=function()return "carried"end},AStaticMeshActor={StaticClass=f
 inzoi={EB1UIInputMode={CursorMode=1},cli={execute=function()end}}
 local Native=require("SceneZOI.Native")
 do
-    local overlay = {}
+    local Json = require("SceneZOI.Json")
     local load, cli = UE.UObject.Load, inzoi.cli.execute
+    local record = Native.capture(actor)
+    local paths, rows = {}, {AnimCharacter = {}, Interaction = {}, Action = {}}
+    local function motion(id, name, body_parts, component, mount)
+        local path = (mount or "/Game") .. "/Animations/" .. name .. "." .. name
+        local montage = {}
+        paths[path], active[montage] = montage, true
+        rows.AnimCharacter[id] = {
+            playingComponentName = component or "Root",
+            characterAnimConfigList = {{
+                animBodyParts = body_parts,
+                animInfoList = {{animation = path}},
+            }},
+        }
+        return montage
+    end
     UE.UObject.Load=function(path)
-        assert(path=="/Game/Reading/ReadMontage.ReadMontage")
-        return overlay
+        return assert(paths[path], path)
     end
     inzoi.cli.execute=function(command)
-        assert(command=="data.table_get alias=AnimCharacter row=Read")
-        return true,"",[[{"characterAnimConfigList":[{"animInfoList":[{"animation":"/Game/Reading/ReadMontage.ReadMontage"}]}]}]]
+        local alias, id = command:match("^data%.table_get alias=(%w+) row=([%w_%-]+)$")
+        assert(alias and rows[alias], command)
+        local row = rows[alias][id]
+        if row then return true, "", Json.encode(row) end
+        return false, "not found"
     end
-    active[overlay]=true
-    local record=Native.capture(actor)
-    assert(Native.cut_task_overlays(record,"Read:OtherMontage")==0 and active[overlay])
-    assert(Native.cut_task_overlays(record,"Read:ReadMontage")==1 and not active[overlay] and active[unrelated])
-    assert(Native.cut_task_overlays(record,"Read:ReadMontage")==0)
+
+    local phone = motion("SofaPhone", "PhoneMontage", "BothHands")
+    local full_body = motion("Surprised", "ReactionMontage", "None")
+    local arm = motion("Read", "ReadMontage", "None")
+    local late = motion("CarryTask", "CarryTaskMontage", "LeftHand")
+    local sitting = motion("SitChair", "SitMontage", "None")
+    local unknown = motion("Unrelated", "UnrelatedInteractionMontage", "None", "Root", "/OtherMod")
+    local target = motion("TargetReaction", "TargetReactionMontage", "None")
+    local face = motion("Face", "FaceMontage", "BothHands", "Head")
+    local mismatch = motion("Mismatched", "DifferentMontage", "BothHands")
+    local other_group = motion("UnknownGroup", "UnknownGroupMontage", "None")
+    local own = motion("Owned", "OwnedMontage", "BothHands")
+    local challenge = motion("Ambiguous", "SharedMontage", "BothHands")
+    local neutral, neutral_path = {}, "/OtherMod/Animations/SharedMontage.SharedMontage"
+    paths[neutral_path], active[neutral] = neutral, true
+    rows.AnimCharacter.Ambiguous.characterAnimConfigList[2] = {
+        animBodyParts = "None", animInfoList = {{animation = neutral_path}},
+    }
+    active[challenge] = nil
+    record.montage = own
+    active[late] = nil
+
+    rows.Interaction.CurrentTask = {actionIdList = {"ReactionAction", "SitAction", "TargetAction"}}
+    rows.Action.ReactionAction = {actions = {{command = "PlayAnim", baseObject = "Self", s1 = "Surprised"}}}
+    rows.Action.SitAction = {actions = {{command = "ChangePosture", baseObject = "Self", s1 = "SitChair"}}}
+    rows.Action.TargetAction = {actions = {{command = "PlayAnim", baseObject = "Target", s1 = "TargetReaction"}}}
+
+    local approved, count = Native.cut_task_overlays(record, "Surprised:ReactionMontage:DefaultGroup", "MissingTask")
+    assert(#approved == 0 and count == 0 and active[full_body], "Full-body candidates without task evidence must be preserved")
+    local candidates = table.concat({
+        "SofaPhone:PhoneMontage:PostureGroup", "Surprised:ReactionMontage:DefaultGroup",
+        "Read:ReadMontage:RightArmGroup", "Read:ReadMontage:RightArmGroup", "CarryTask:CarryTaskMontage:DefaultGroup",
+        "SitChair:SitMontage:PostureGroup", "Unrelated:UnrelatedInteractionMontage:DefaultGroup",
+        "TargetReaction:TargetReactionMontage:DefaultGroup", "Face:FaceMontage:UpperGroup",
+        "Mismatched:OtherMontage:UpperGroup", "UnknownGroup:UnknownGroupMontage:HeadGroup", "Owned:OwnedMontage:DefaultGroup",
+        "Ambiguous:SharedMontage:DefaultGroup",
+    }, "+")
+    approved, count = Native.cut_task_overlays(record, candidates, "CurrentTask")
+    assert(table.concat(approved, "+") == table.concat({
+        "SofaPhone:PhoneMontage:PostureGroup", "Surprised:ReactionMontage:DefaultGroup",
+        "Read:ReadMontage:RightArmGroup", "CarryTask:CarryTaskMontage:DefaultGroup",
+    }, "+") and count == 3,
+        "Approve hand use, a declared full-body action and the dedicated arm layer, even if presentation has already stopped")
+    assert(not active[phone] and not active[full_body] and not active[arm])
+    assert(active[sitting] and active[unknown] and active[target] and active[face] and active[mismatch]
+        and active[other_group] and active[own] and active[neutral] and active[unrelated],
+        "Preserve ordinary posture, unrelated actions, unknown groups, other components, and SceneZOI's owned track")
     UE.UObject.Load, inzoi.cli.execute = load, cli
 end
 for _=1,20 do

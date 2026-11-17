@@ -6,7 +6,7 @@ package.loaded['SceneZOI.Outfit']={borrowable=function()end,recover=function()en
 package.loaded['SceneZOI.Wardrobe']={capture=function()end,inventory=function()return 'inventory'end}
 package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
-local replies,owners,waits={},{},{}
+local replies,owners,waits,overlay_requests={},{},{},{}
 local clear_failure,cancel_failure=false,false
 inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},EB1ActionType={PlayLoopAnim=20},
  cli={execute=function(c)
@@ -26,7 +26,7 @@ inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1Han
    return true,'',Json.encode({playing=#o.motions>0,motions=o.motions})
   end
   if c:match('^motion.stop') then
-   assert(not o.playing,'Native fallback stop must wait for cancellation')
+   assert(o.queued==0,'Clear the waiting backlog before stopping a motion')
    local anim_id=assert(c:match(' anim_id=([%w_]+)$'),'Stop only a specific motion')
    o.stopped[#o.stopped+1]=anim_id
    if not o.defer_stop then
@@ -39,9 +39,13 @@ inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1Han
   error('Unexpected command '..c)
  end},message={send_to_client=function(id,kind,packet)
     if kind~='SceneZOI.Reply' then return end
-    if P.unpack(packet) and P.unpack(packet)[2]=='prepare_wait' then
-        waits[#waits+1]=P.unpack(packet)
-    else replies[id.Value]=packet end
+    local fields=P.unpack(packet)
+    if fields and fields[2]=='prepare_wait' then
+        waits[#waits+1]=fields
+    else
+        replies[id.Value]=packet
+        if fields and fields[2]=='overlay_cut' then overlay_requests[#overlay_requests+1]=fields end
+    end
  end}}
 local function owner(id)
  local o={id=id,queued=0,playing=false,current=1,clears=0,cancels=0,collision=true,motions={},stopped={},grabs={},stopped_grabs={},restored_grabs={},grab_ids={},
@@ -55,7 +59,8 @@ local function owner(id)
         assert(not self.cancel_delay, 'Capture the action before native cancellation')
         return 20
     end,
-    GetCurrentInteractionBagId=function()return 'HasBook_Book_Read'end}end
+    GetCurrentInteractionBagId=function()return 'HasBook_Book_Read'end,
+    GetCurrentInteractionId=function()return 'NativeCurrentInteraction'end}end
   if t==4 then return {
     GetCurrentGrabObject=function(_,hand)return self.grabs[hand]end,
     GetGrabState=function(_,hand)return {EntityId={Value=self.grabs[hand]},GrabId=self.grab_ids[hand] or "Hold"}end,
@@ -97,6 +102,19 @@ end
 local function release(s,o,token)
  M.on_lua_message(s,o,'SceneZOI.Release',P.pack(token))
  assert(not s.lease and o.collision and o.AutonomyOption.AutonomyEnable.Value and o.AutonomyOption.AutonomyEnable.bFollowParent)
+end
+local function overlay_request(token,details)
+ local request=assert(overlay_requests[#overlay_requests])
+ assert(request[1]==token and request[2]=='overlay_cut' and tonumber(request[4]) and tonumber(request[5]))
+ if details then assert(request[3]==details) end
+ return request
+end
+local function approve_overlays(s,o,request,matches,revision,scan_id)
+ M.on_lua_message(s,o,'SceneZOI.OverlayCut',P.pack(
+  request[1],revision or request[4],scan_id or request[5],matches))
+end
+local function overlay_detail(motion)
+ return motion.anim_id..':'..motion.montage_id..':'..motion.group
 end
 local s,o={},owner(1);M.on_begin(s,o)
 M.on_lua_message(s,o,'SceneZOI.Prepare',P.pack('abort-snapshot','1',node.id,1,'0','lead',P.encode(Json.encode(node))))
@@ -140,131 +158,160 @@ assert(s.lease.ready and o.cancels==3);release(s,o,'talk')
 -- Waiting-only queues cannot start between idle preparation samples.
 o.queued=40;start(s,o,'waiting');tick(s,o)
 assert(s.lease.ready and o.queued==0);release(s,o,'waiting')
--- Task cleanup cuts a seated phone loop and lingering upper-body eating.
--- The usual native seat, protected dish grip, and unrelated motions stay alive.
-local phone_l={anim_id='UseSmartPhone_Sofa_L_1',montage_id='ANIM_F_Sofa_SelfAct_b_Phone_L_StartLoopEnd_Interaction_Montage',
+-- B2 reports active, interruptible motions. B1 decides which are task overlays
+-- from native declarations, even when the group also contains ordinary posture.
+local phone={anim_id='UseSmartPhone_Sofa_L_1',montage_id='ANIM_F_Sofa_SelfAct_b_Phone_L_StartLoopEnd_Interaction_Montage',
  group='PostureGroup',non_interruptible=false}
-local dish_eating={anim_id='Dish_Eat_Stand',montage_id='ANIM_F_Chopstick_Eat_Stand_Noodlebox_StartLoopEnd_Interaction_Montage',
- group='UpperGroup',non_interruptible=false}
-o.motions={
- {anim_id='SitChair',montage_id='SitChairMontage',group='PostureGroup',non_interruptible=false},
- {anim_id='OtherSofaAction',montage_id='OtherSofaMontage',group='PostureGroup',non_interruptible=false},
- {anim_id='UseSmartPhone_Sofa_L_2',montage_id=phone_l.montage_id,group='PostureGroup',non_interruptible=false},
- phone_l,
- dish_eating,
- {anim_id='DishStand',montage_id='DishStandMontage',group='RightArmGroup',non_interruptible=true},
- {anim_id='Snack_Eat_Stand',group='DefaultGroup',non_interruptible=false},
- {anim_id='ReadingLoop',montage_id='ReadMontage',group='UpperGroup',non_interruptible=false},
- {anim_id='Other_Arm_Action',group='LeftArmGroup',non_interruptible=false},
- {anim_id='NativeProtected',montage_id='ProtectedMontage',group='RightArmGroup',non_interruptible=true},
- {anim_id='Unclassified',group='UpperGroup'},
-}
+local eating={anim_id='Dish_Eat_Stand',montage_id='ANIM_F_Dish_Eat_Stand_StartLoopEnd_Interaction_Montage',
+ group='DefaultGroup',non_interruptible=false}
+local chair={anim_id='SitChair',montage_id='SitChairMontage',group='PostureGroup',non_interruptible=false}
+local avoidance={anim_id='Sidestep',montage_id='SidestepMontage',group='DefaultGroup',non_interruptible=false}
+local reading={anim_id='ReadingLoop',montage_id='ReadMontage',group='UpperGroup',non_interruptible=false}
+local protected_grip={anim_id='DishStand',montage_id='DishStandMontage',group='RightArmGroup',non_interruptible=true}
+local unclassified={anim_id='Unclassified',montage_id='NoFlagMontage',group='UpperGroup'}
+local invalid={anim_id='Unsafe+ID',montage_id='BadMontage',group='UpperGroup',non_interruptible=false}
+o.motions={chair,phone,protected_grip,eating,avoidance,reading,unclassified,invalid}
 o.grabs={[0]=9,[1]=12}
 o.playing=true;o.current=4;o.queued=3;start(s,o,'task-overlays')
 assert(o.queued==0,'Clear the backlog even while the current montage cut is pending')
 assert(#o.stopped==0 and #o.stopped_grabs==0 and o.cancels==3)
-local expected_cut=phone_l.anim_id..":"..phone_l.montage_id.."+"..dish_eating.anim_id..":"..dish_eating.montage_id
- .."+ReadingLoop:ReadMontage"
-assert(replies[1]==P.pack("task-overlays","overlay_cut",expected_cut,1),
- "Send only the phone, dish eating, and reading overlays to presentation")
-M.on_lua_message(s,o,"SceneZOI.OverlayCut",P.pack("task-overlays",2))
+local request=overlay_request('task-overlays',
+ table.concat({overlay_detail(chair),overlay_detail(phone),overlay_detail(eating),overlay_detail(avoidance),overlay_detail(reading)},'+'))
+assert(request[6]=='NativeCurrentInteraction','Expected current interaction ID, got '..tostring(request[6]))
+approve_overlays(s,o,request,overlay_detail(phone),tonumber(request[4])+1)
+approve_overlays(s,o,request,overlay_detail(phone),nil,tonumber(request[5])+1)
 o.AutonomyOption.AutonomyEnable.Value=true
-tick(s,o);assert(o.cancels==3,"A stale revision must not unblock the cut")
+tick(s,o)
+assert(o.cancels==3 and #o.stopped==0,'Only the outstanding revision and scan may approve a cut')
 assert(not o:IsAutonomyEnable(),'Disable autonomy again if it is re-enabled during preparation')
-M.on_lua_message(s,o,"SceneZOI.OverlayCut",P.pack("task-overlays",1))
-tick(s,o);assert(o.cancels==4,"Cancel after the targeted client cut")
-for _=1,5 do tick(s,o)end
-assert(s.lease.ready and table.concat(o.stopped,",")=="UseSmartPhone_Sofa_L_1,Dish_Eat_Stand,ReadingLoop,Other_Arm_Action")
+approve_overlays(s,o,request,table.concat({overlay_detail(phone),overlay_detail(eating),overlay_detail(reading)},'+'))
+for _=1,6 do tick(s,o) end
+assert(s.lease.ready and o.cancels==4 and table.concat(o.stopped,',')=='UseSmartPhone_Sofa_L_1,Dish_Eat_Stand,ReadingLoop')
 local retained={}
 for _,motion in ipairs(o.motions) do retained[#retained+1]=motion.anim_id end
-assert(table.concat(retained,",")==
- "SitChair,OtherSofaAction,UseSmartPhone_Sofa_L_2,DishStand,Snack_Eat_Stand,NativeProtected,Unclassified",
- "Keep unrelated posture, protected grip, non-interruptible, and foreign motions")
-assert(table.concat(o.stopped_grabs,",")=="0,1" and o.grab_ids[0]=="None" and o.grab_ids[1]=="None")
-assert(s.lease.save_snapshot.grab_poses[2].id=="12")
+assert(table.concat(retained,',')=='SitChair,DishStand,Sidestep,Unclassified,Unsafe+ID',
+ 'Keep ordinary posture, avoidance, the protected grip, and invalid or unknown native motions')
+assert(table.concat(o.stopped_grabs,',')=='0,1' and o.grab_ids[0]=='None' and o.grab_ids[1]=='None')
+assert(s.lease.save_snapshot.grab_poses[2].id=='12')
 o.AutonomyOption.AutonomyEnable.Value=true
 tick(s,o);assert(not o:IsAutonomyEnable(),'A ready participant still waits for the scene anchor')
-assert(#o.stopped==4 and #o.stopped_grabs==2,'Do not repeatedly stop the same leftover motion')
+assert(#o.stopped==3 and #o.stopped_grabs==2,'Do not stop the same leftover motion twice')
+
+-- A new task overlay can appear while the SceneZOI montage is already playing.
+M.on_lua_message(s,o,'SceneZOI.Anchor',P.pack('task-overlays',1,2,3,0,0,0))
+local late={anim_id='FoldTowel',montage_id='TowelFoldMontage',group='PostureGroup',non_interruptible=false}
+o.motions={chair,late};o.defer_stop=true
+tick(s,o,.3)
+local late_request=overlay_request('task-overlays',overlay_detail(late))
+assert(late_request[5]~=request[5] and s.lease.ready,'Late scans do not block the playing scene')
+approve_overlays(s,o,late_request,overlay_detail(late))
+local requests=#overlay_requests
+local late_stops=#o.stopped
+assert(late_stops==4 and o.stopped[late_stops]==late.anim_id)
+for _=1,3 do tick(s,o,.3) end
+assert(#overlay_requests==requests and #o.stopped==late_stops,'Do not cut a still-reported occurrence twice')
+o.motions={chair};tick(s,o,.3)
+o.motions={chair,late};tick(s,o,.3)
+local fresh_request=overlay_request('task-overlays',overlay_detail(late))
+assert(fresh_request[5]~=late_request[5],'A new occurrence is eligible for a new cut')
+approve_overlays(s,o,late_request,overlay_detail(late))
+assert(#o.stopped==late_stops)
+approve_overlays(s,o,fresh_request,overlay_detail(late))
+assert(#o.stopped==late_stops+1)
 o.grabs[0]=13
 release(s,o,'task-overlays')
 assert(#o.restored_grabs==1 and o.restored_grabs[1]==1,'Restore only the same carried object')
-o.motions={};o.grabs={};o.grab_ids={}
--- Missing client delivery falls through to native cancellation on a short deadline.
-o.playing=true;o.current=5
-o.motions={{anim_id="ReadingLoop",montage_id="ReadMontage",group="UpperGroup",non_interruptible=false}}
-start(s,o,"cut-timeout")
+o.motions={};o.grabs={};o.grab_ids={};o.defer_stop=false
+
+o.motions={chair}
+start(s,o,'no-conflicts')
+approve_overlays(s,o,overlay_request('no-conflicts',overlay_detail(chair)),'none')
+for _=1,3 do tick(s,o) end
+assert(s.lease.ready and #o.stopped==late_stops+1 and o.motions[1]==chair,
+ 'A negative decision ends the entry wait without stopping ordinary posture')
+release(s,o,'no-conflicts')
+
+-- No client decision is not permission to stop a native motion.
+o.playing=true;o.current=5;o.motions={reading}
+local stop_count=#o.stopped
+start(s,o,'cut-timeout')
+overlay_request('cut-timeout',overlay_detail(reading))
 tick(s,o);assert(o.cancels==4)
 for _=1,6 do tick(s,o) end
-assert(s.lease.ready and o.cancels==5 and o.stopped[#o.stopped]=="ReadingLoop")
-release(s,o,"cut-timeout")
--- The phone can still play after the interaction that started it has gone idle.
-local phone_r={anim_id='UseSmartPhone_Sofa_R_1',montage_id='ANIM_F_Sofa_SelfAct_b_Phone_R_StartLoopEnd_Interaction_Montage',
- group='PostureGroup',non_interruptible=false}
-local preceding_cancels=o.cancels
-o.motions={phone_r};start(s,o,"idle-phone")
-assert(replies[1]==P.pack("idle-phone","overlay_cut",phone_r.anim_id..":"..phone_r.montage_id,1))
-M.on_lua_message(s,o,"SceneZOI.OverlayCut",P.pack("idle-phone",1))
-for _=1,6 do tick(s,o) end
-assert(s.lease.ready and #o.motions==0 and o.stopped[#o.stopped]==phone_r.anim_id and o.cancels==preceding_cancels,
- "Clear an orphaned phone overlay without cancelling an already idle interaction")
-release(s,o,"idle-phone")
--- The stock standalone eating motion also uses DefaultGroup when the game
--- starts it directly. Other motions in that group are outside this exception.
-local default_dish={anim_id='Dish_Eat_Stand',montage_id='ANIM_F_Dish_Eat_Stand_StartLoopEnd_Interaction_Montage',
- group='DefaultGroup',non_interruptible=false}
-o.motions={default_dish,
- {anim_id='Snack_Eat_Stand',montage_id='SnackEatMontage',group='DefaultGroup',non_interruptible=false},
- {anim_id='ForeignDishAction',montage_id=default_dish.montage_id,group='DefaultGroup',non_interruptible=false}}
-start(s,o,"default-dish")
-assert(replies[1]==P.pack("default-dish","overlay_cut",default_dish.anim_id..":"..default_dish.montage_id,1))
-M.on_lua_message(s,o,"SceneZOI.OverlayCut",P.pack("default-dish",1))
-for _=1,5 do tick(s,o) end
-assert(s.lease.ready and o.stopped[#o.stopped]==default_dish.anim_id
- and #o.motions==2 and o.motions[1].anim_id=='Snack_Eat_Stand' and o.motions[2].anim_id=='ForeignDishAction')
-release(s,o,"default-dish")
--- Native motion.stop can return before the overlay has disappeared.
-local function start_delayed_overlay(token, motion)
- local stop_count=#o.stopped
+assert(s.lease.ready and o.cancels==5 and #o.stopped==stop_count and o.motions[1]==reading)
+release(s,o,'cut-timeout')
+
+-- An ACK must never stop a motion B2 did not submit, including a protected ID.
+o.motions={chair,protected_grip};stop_count=#o.stopped
+start(s,o,'out-of-scope-cut')
+request=overlay_request('out-of-scope-cut',overlay_detail(chair))
+approve_overlays(s,o,request,overlay_detail(protected_grip))
+for _=1,7 do tick(s,o) end
+assert(s.lease.ready and #o.stopped==stop_count and #o.motions==2)
+release(s,o,'out-of-scope-cut')
+
+-- A motion that became protected while the client was approving it stays native.
+o.motions={phone}
+start(s,o,'stale-motion-cut')
+request=overlay_request('stale-motion-cut',overlay_detail(phone))
+local changed={anim_id=phone.anim_id,montage_id=phone.montage_id,group=phone.group,non_interruptible=true}
+o.motions={changed}
+approve_overlays(s,o,request,overlay_detail(phone))
+for _=1,3 do tick(s,o) end
+assert(s.lease.ready and #o.stopped==stop_count and o.motions[1]==changed)
+release(s,o,'stale-motion-cut')
+
+-- A native ID can address multiple montages; exact client approval of one must
+-- not cause the simulation to stop a different one sharing that ID.
+local shared={anim_id=phone.anim_id,montage_id=chair.montage_id,group=chair.group,non_interruptible=false}
+o.motions={phone,shared}
+start(s,o,'shared-animation-id')
+request=overlay_request('shared-animation-id',overlay_detail(phone)..'+'..overlay_detail(shared))
+approve_overlays(s,o,request,overlay_detail(phone))
+assert(#o.stopped==stop_count)
+for _=1,3 do tick(s,o) end
+release(s,o,'shared-animation-id')
+o.motions={phone,shared}
+start(s,o,'changed-animation-variant')
+request=overlay_request('changed-animation-variant',overlay_detail(phone)..'+'..overlay_detail(shared))
+o.motions={shared}
+approve_overlays(s,o,request,overlay_detail(phone))
+assert(#o.stopped==stop_count and o.motions[1]==shared)
+for _=1,3 do tick(s,o) end
+release(s,o,'changed-animation-variant')
+
+-- Native stop may return before the motion finishes its ending section.
+local function start_delayed_overlay(token,motion)
+ local previous=#o.stopped
  o.motions={motion};o.defer_stop=true
  start(s,o,token)
- M.on_lua_message(s,o,"SceneZOI.OverlayCut",P.pack(token,1))
- for _=1,4 do
-  tick(s,o)
-  if #o.stopped>stop_count then break end
- end
- assert(#o.stopped==stop_count+1 and o.stopped[#o.stopped]==motion.anim_id)
- assert(s.lease and not s.lease.ready and waits[#waits][3]=="overlay_cut",
-  "Wait for the targeted overlay to disappear before acknowledging readiness")
- return stop_count+1
+ local request=overlay_request(token,overlay_detail(motion))
+ assert(request[6]=='none','An already idle participant has no current interaction provenance')
+ approve_overlays(s,o,request,overlay_detail(motion))
+ assert(#o.stopped==previous+1 and o.stopped[#o.stopped]==motion.anim_id)
+ return previous+1
 end
-local stop_count=start_delayed_overlay("delayed-overlay",dish_eating)
-tick(s,o)
-assert(not s.lease.ready and #o.stopped==stop_count,"Allow the dish animation to settle without stopping it again")
+local stopped=start_delayed_overlay('delayed-overlay',eating)
+for _=1,2 do tick(s,o) end
+assert(not s.lease.ready and #o.stopped==stopped and waits[#waits][3]=='overlay_cut')
 o.motions={}
 for _=1,2 do tick(s,o) end
-assert(s.lease.ready and #o.stopped==stop_count)
-release(s,o,"delayed-overlay")
+assert(s.lease.ready and #o.stopped==stopped)
+release(s,o,'delayed-overlay')
 
-local phone_m={anim_id='UseSmartPhone_Sofa_L',montage_id='ANIM_M_Sofa_SelfAct_b_Phone_L_StartLoopEnd_Interaction_Montage',
- group='PostureGroup',non_interruptible=false}
-stop_count=start_delayed_overlay("persistent-overlay",phone_m)
+stopped=start_delayed_overlay('persistent-overlay',phone)
 for _=1,3 do tick(s,o) end
-assert(not s.lease.ready and #o.stopped==stop_count)
+assert(not s.lease.ready and #o.stopped==stopped)
 for _=1,4 do tick(s,o) end
-assert(s.lease.ready and #o.stopped==stop_count and #o.motions==1,
- "Finish preparation when the short grace expires, even if the native motion is still reported")
-release(s,o,"persistent-overlay")
--- A prepared renderer can already have cut the overlay while its native
--- ending section is frozen by the game pause.
-stop_count=#o.stopped
-o.motions={phone_r}
-start(s,o,"paused-overlay")
-assert(replies[1]==P.pack("paused-overlay","overlay_cut",phone_r.anim_id..":"..phone_r.montage_id,1))
-M.on_lua_message(s,o,"SceneZOI.OverlayCut",P.pack("paused-overlay",1))
+assert(s.lease.ready and #o.stopped==stopped and #o.motions==1,
+ 'Finish preparation once the short grace expires, even if the native motion is still reported')
+release(s,o,'persistent-overlay')
+
+stopped=start_delayed_overlay('paused-overlay',phone)
 for _=1,4 do tick(s,o,0) end
-assert(s.lease.ready and #o.stopped==stop_count+1 and o.stopped[#o.stopped]==phone_r.anim_id and #o.motions==1,
- "A paused native end section must allow readiness after the acknowledged render cut and targeted stop")
-release(s,o,"paused-overlay")
+assert(s.lease.ready and #o.stopped==stopped and #o.motions==1,
+ 'A paused native end section must allow readiness after the acknowledged render cut and native stop')
+release(s,o,'paused-overlay')
 o.motions={};o.defer_stop=false
 -- Save recovery restores the original grip only for the same still-held object.
 local recovery=require("SceneZOI.SaveRecovery")

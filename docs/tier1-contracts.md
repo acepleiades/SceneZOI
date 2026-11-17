@@ -17,9 +17,18 @@ changing. See the [source map](architecture.md) for entry points.
 | UI | Acknowledged state and absolute session/revision-scoped requests, not restoration or animation ownership |
 | B2 participant/furniture leases | Task interruption, original autonomy/inheritance, collision/position restoration and exclusive furniture reservation |
 
-Playback retires the montages SceneZOI owns and keeps the game's animation
-instance. Participant preparation separately interrupts gameplay overlays
-that would carry through from the cancelled task. Leave Smart Zoi untouched. Membership and named-role assignments remain fixed until Exit. The picker supports one to three Zois with compatible authored roles, including repeated body types. The bundled neutral library includes two solo standing hubs and three adult-compatible male/female paired hubs.
+Playback keeps the game's animation instance and retires the montages SceneZOI
+owns. While a participant is in a scene, the simulation checks interruptible
+native montages before task cancellation and at short intervals during playback.
+The client resolves each candidate to the game's animation declaration. Dedicated
+upper-body layers, declared hand activity, and an interaction's explicit
+self-targeted `PlayAnim` action identify task montages. The client cuts the
+identified montage and the simulation stops the matching motion. Ordinary
+postures can share a slot with task montages, so the slot alone is insufficient.
+Leave Smart Zoi untouched. Membership and named-role assignments remain fixed
+until Exit. The picker supports one to three Zois with compatible authored roles,
+including repeated body types. The bundled neutral library includes two solo
+standing hubs and three adult-compatible male/female paired hubs.
 
 The B1 actor registry maps each Zoi ID to its latest registered native actor.
 An ending object removes that entry only if it still owns it; late or repeated

@@ -165,10 +165,9 @@ local function report_prepare_wait(owner, lease, phase, queue_id, interaction)
     end)
 end
 
-local function tasks_idle(owner, lease, interaction)
-    if owner:IsPlayingInteraction() then
+local function tasks_idle(owner, lease, interaction, queue_id)
+    if queue_id then
         lease.idle_ticks = 0
-        local queue_id = tostring(interaction:GetCurrentInteractionQueueId())
         -- Read the task before cancellation can clear the native interaction.
         report_prepare_wait(owner, lease, "interaction_cancelling", queue_id, interaction)
         if lease.cancel_queue_id ~= queue_id then
@@ -187,91 +186,109 @@ local function tasks_idle(owner, lease, interaction)
     return true
 end
 
--- The sofa phone interaction uses the posture slot in place of the normal
--- seated idle. Its montage can keep looping even after the task is cancelled.
-local task_overlay_groups = {UpperGroup = true, LeftArmGroup = true, RightArmGroup = true}
-
-local function is_sofa_phone(motion)
-    if motion.group ~= "PostureGroup" or type(motion.montage_id) ~= "string" then return false end
-    local side = motion.anim_id:match("^UseSmartPhone_Sofa_([LR])$") or
-        motion.anim_id:match("^UseSmartPhone_Sofa_([LR])_1$")
-    if not side then return false end
-    local prefix = "^ANIM_[FM]_Sofa_SelfAct_b_Phone_" .. side
-    local suffix = "_StartLoopEnd_Interaction_Montage$"
-    return motion.montage_id:match(prefix .. suffix) or motion.montage_id:match(prefix .. "_1" .. suffix)
+local function native_id(value)
+    return type(value) == "string" and #value <= 128 and value:match("^[%w_%-]+$")
 end
 
-local function is_dish_eating(motion)
-    -- The same stock eating montage can be assigned to the default group.
-    if motion.group ~= "DefaultGroup" or motion.anim_id ~= "Dish_Eat_Stand" or
-        type(motion.montage_id) ~= "string" then return false end
-    return motion.montage_id:match("^ANIM_[FM]_Dish_Eat_Stand_StartLoopEnd_Interaction_Montage$") or
-        motion.montage_id:match("^ANIM_[FM]_Dish_Eat_Sit_StartLoopEnd_Interaction_Montage$")
-end
-
-local function task_overlays(owner)
+local function current_montages(owner)
     local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
     local ok, _, data = inzoi.cli.execute("motion.get_current" .. target)
     if not ok or type(data) ~= "string" then return {} end
     local decoded, state = pcall(Json.decode, data)
     if not decoded or type(state) ~= "table" or type(state.motions) ~= "table" then return {} end
-    local result = {}
-    for _, motion in ipairs(state.motions) do
-        if motion.non_interruptible == false and type(motion.anim_id) == "string" and
-            motion.anim_id:match("^[%w_%-]+$") and
-            (task_overlay_groups[motion.group] or is_sofa_phone(motion) or is_dish_eating(motion)) then
-            result[#result + 1] = motion
-        end
-    end
-    return result
+    return state.motions
 end
 
-local function wait_for_overlay_cut(owner, lease)
-    if lease.overlay_cut_wait ~= nil then return lease.overlay_cut_wait > 0 end
-    lease.overlay_cut_wait = 0
-    local rows = {}
-    for _, motion in ipairs(task_overlays(owner)) do
-        local name = motion.montage_id
-        if type(name) == "string" and #name <= 128 and name:match("^[%w_%-]+$") then
-            rows[#rows + 1] = motion.anim_id .. ":" .. name
-            if #rows == 8 then break end
+local function interruptible(motion)
+    return motion.non_interruptible == false and native_id(motion.anim_id) and
+        native_id(motion.montage_id) and native_id(motion.group)
+end
+
+local function montage_key(motion)
+    return motion.anim_id .. ":" .. motion.montage_id .. ":" .. motion.group
+end
+
+local function scan_task_overlays(owner, lease, interaction, queue_id)
+    if lease.overlay_scan then return true end
+    local new_task = queue_id and lease.overlay_queue ~= queue_id
+    if not new_task and (lease.overlay_poll_wait or 0) > 0 then return false end
+    local previous = not new_task and lease.overlay_seen or {}
+    lease.overlay_poll_wait, lease.overlay_queue = .25, queue_id
+    local seen, rows, requested = {}, {}, {}
+    for _, motion in ipairs(current_montages(owner)) do
+        if interruptible(motion) then
+            local key = montage_key(motion)
+            if previous[key] then
+                seen[key] = true
+            elseif not seen[key] and #rows < 8 then
+                seen[key], requested[key] = true, true
+                rows[#rows + 1] = key
+            end
         end
     end
+    lease.overlay_seen = seen
     if #rows == 0 then return false end
-    -- The rendered montage is still active here. Native cancellation can start
-    -- blending it before a later presentation-side stop can find it.
-    lease.overlay_cut_wait = .3
-    local sent = pcall(reply, owner, lease.token, "overlay_cut", table.concat(rows, "+"), lease.revision)
-    if not sent then lease.overlay_cut_wait = 0 end
-    return lease.overlay_cut_wait > 0
+    local source = queue_id and interaction:GetCurrentInteractionId()
+    lease.overlay_sequence = (lease.overlay_sequence or 0) + 1
+    local scan = {id = lease.overlay_sequence, requested = requested, remaining = .3}
+    lease.overlay_scan = scan
+    -- B1 has the native animation declarations and rendered instances. Ask it
+    -- before cancelling the interaction, which can put a montage into blend-out.
+    local packet = Protocol.pack(lease.token, "overlay_cut", table.concat(rows, "+"), lease.revision,
+        scan.id, native_id(source) and source or "none")
+    local sent = pcall(inzoi.message.send_to_client, owner:GetEntityId(), "SceneZOI.Reply", packet)
+    if not sent then lease.overlay_scan = nil end
+    return lease.overlay_scan ~= nil
+end
+
+local function stop_approved_overlays(owner, lease, fields)
+    local scan = lease.overlay_scan
+    if not scan or tonumber(fields[2]) ~= lease.revision or tonumber(fields[3]) ~= scan.id then return end
+    lease.overlay_scan = nil
+    if not fields[4] or fields[4] == "none" then return end
+    local accepted, counts = {}, {}
+    for key in fields[4]:gmatch("[^+]+") do
+        if scan.requested[key] then accepted[key] = true end
+    end
+    local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
+    local motions = current_montages(owner)
+    for _, motion in ipairs(motions) do
+        local id = motion.anim_id
+        if native_id(id) then counts[id] = (counts[id] or 0) + 1 end
+    end
+    for _, motion in ipairs(motions) do
+        local id = motion.anim_id
+        -- Native simulation can stop only by animation ID. When an ID is
+        -- shared, leave its other variants alone after the exact render cut.
+        if counts[id] == 1 and interruptible(motion) and accepted[montage_key(motion)] then
+            local ok, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. id)
+            if not ok then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
+            if not lease.tasks_settled then
+                lease.overlay_settling = lease.overlay_settling or {}
+                lease.overlay_settling[montage_key(motion)] = true
+                lease.overlay_settle_wait = lease.overlay_settle_wait or .5
+            end
+        end
+    end
 end
 
 local function settle_task_overlays(owner, lease, paused)
-    if not paused and (lease.overlay_poll_wait or 0) > 0 then return false end
-    local overlays = task_overlays(owner)
-    if #overlays == 0 then return true end
-    -- A native stop can send an animation into its ending section. Give the
-    -- simulation a short window to clear it after the rendered cut.
-    if lease.overlay_settle_wait == 0 then
-        print("[SceneZOI] Task overlay still reported after stop: " .. overlays[1].anim_id)
-        return true
-    end
-    lease.overlay_settle_wait = lease.overlay_settle_wait or .5
-    lease.overlay_poll_wait = .1
-    local target = " entity_id=" .. Protocol.id(owner:GetEntityId())
-    lease.overlay_stop_requested = lease.overlay_stop_requested or {}
-    for _, motion in ipairs(overlays) do
-        if not lease.overlay_stop_requested[motion.anim_id] then
-            lease.overlay_stop_requested[motion.anim_id] = true
-            local stopped, message = inzoi.cli.execute("motion.stop" .. target .. " anim_id=" .. motion.anim_id)
-            if not stopped then print("[SceneZOI] Could not stop task overlay: " .. tostring(message)) end
+    -- The native end section cannot advance while paused. The client-side cut
+    -- and the simulation's stop request have already happened.
+    if not lease.overlay_settling or paused then return true end
+    if (lease.overlay_settle_poll or 0) > 0 then return false end
+    lease.overlay_settle_poll = .1
+    for _, motion in ipairs(current_montages(owner)) do
+        if interruptible(motion) and lease.overlay_settling[montage_key(motion)] then
+            if lease.overlay_settle_wait == 0 then
+                print("[SceneZOI] Task overlay still reported after stop: " .. motion.anim_id)
+                return true
+            end
+            report_prepare_wait(owner, lease, "overlay_cut")
+            return false
         end
     end
-    -- Native end sections cannot advance on paused simulation ticks. The
-    -- rendered cut and native stop have both already been requested.
-    if paused then return true end
-    report_prepare_wait(owner, lease, "overlay_cut")
-    return false
+    return true
 end
 
 local function suspend_grab_poses(owner, lease)
@@ -303,19 +320,24 @@ local function advance_prepare(self, owner, first_commit, paused)
     end
     local interaction = assert(owner:GetComponent(inzoi.EB2ComponentType.Interaction), "Missing interaction component")
     clear_task_queue(owner, interaction)
-    if wait_for_overlay_cut(owner, lease) then
+    local queue_id = owner:IsPlayingInteraction() and tostring(interaction:GetCurrentInteractionQueueId())
+    if scan_task_overlays(owner, lease, interaction, queue_id) and (not lease.ready or queue_id) then
         report_prepare_wait(owner, lease, "overlay_cut")
         return
     end
-    if not tasks_idle(owner, lease, interaction) or lease.ready then return end
+    if not tasks_idle(owner, lease, interaction, queue_id) or lease.ready then return end
     if option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then
         report_prepare_wait(owner, lease, "autonomy_enabled")
         return
     end
     if not lease.tasks_settled then
         -- Gameplay can keep upper-body and grab loops alive after the task is idle.
-        if not lease.overlay_stop_requested then suspend_grab_poses(owner, lease) end
+        if not lease.grab_suspended then
+            suspend_grab_poses(owner, lease)
+            lease.grab_suspended = true
+        end
         if not settle_task_overlays(owner, lease, paused) then return end
+        lease.overlay_settling, lease.overlay_settle_wait, lease.overlay_settle_poll = nil, nil, nil
         local location, rotation = owner:GetLocation(), owner:GetRotation()
         lease.entry_location = UE.FVector(location.X, location.Y, location.Z)
         lease.entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll)
@@ -344,6 +366,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
         if revision == lease.revision + 1 then
             if unmerged == "1" then Outfit.keep_unmerged(owner, lease) end
             lease.node, lease.revision, lease.ready = node, revision, false
+            lease.overlay_scan, lease.overlay_seen, lease.overlay_poll_wait = nil, nil, nil
             assert(role == lease.role, "Session role cannot change")
             Binding.validate(node, role, lease.body)
             advance_prepare(self, owner)
@@ -421,9 +444,8 @@ local function receive(self, owner, kind, content)
         end
     elseif kind == "SceneZOI.OverlayCut" then
         local lease = self.lease
-        if lease and lease.token == token and not lease.releasing and lease.overlay_cut_wait and
-            lease.overlay_cut_wait > 0 and tonumber(fields[2]) == lease.revision then
-            lease.overlay_cut_wait = 0
+        if lease and lease.token == token and not lease.releasing then
+            stop_approved_overlays(owner, lease, fields)
         end
     elseif kind == 'SceneZOI.Recover' then
         self.recovery_done=self.recovery_done or {}
@@ -499,9 +521,13 @@ local function update(self, owner, dt)
     if not lease then return end
     dt = math.max(tonumber(dt) or 0, 0)
     lease.remaining = lease.remaining - dt
-    if lease.overlay_cut_wait then lease.overlay_cut_wait = math.max(0, lease.overlay_cut_wait - dt) end
+    if lease.overlay_scan then
+        lease.overlay_scan.remaining = lease.overlay_scan.remaining - dt
+        if lease.overlay_scan.remaining <= 0 then lease.overlay_scan = nil end
+    end
     if lease.overlay_settle_wait then lease.overlay_settle_wait = math.max(0, lease.overlay_settle_wait - dt) end
     if lease.overlay_poll_wait then lease.overlay_poll_wait = math.max(0, lease.overlay_poll_wait - dt) end
+    if lease.overlay_settle_poll then lease.overlay_settle_poll = math.max(0, lease.overlay_settle_poll - dt) end
     if lease.releasing or lease.remaining <= 0 then release(self, owner); return end
     advance_prepare(self, owner, false, dt == 0)
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
