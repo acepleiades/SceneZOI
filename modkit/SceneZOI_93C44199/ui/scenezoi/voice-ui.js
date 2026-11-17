@@ -58,7 +58,8 @@
             o.write('voice',pending).catch(function(){});render();o.changed();
         });
         setInterval(function(){
-            var s=state();if(!s.active||s.exiting||reading)return;
+            var s=state();
+            if(!s.active||s.exiting||reading||(!o.visible()&&!pending))return;
             var requested=s.client+':'+s.sequence;reading=true;
             o.cfg('uimod.cfg_load','voice_state').then(function(value){
                 var n=state(),raw=value&&value.value!==undefined?value.value:value;

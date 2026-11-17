@@ -16,10 +16,13 @@ function fixture(options = {}) {
   const classes=new Set(),documentListeners={};
   const root = {id:'app-root',style: {},classList:{toggle(name,on){on?classes.add(name):classes.delete(name);}},setAttribute(){}, offsetLeft:100, offsetTop:100, offsetWidth:410, offsetHeight:210,appendChild(el){elements[el.id]=el;},insertAdjacentHTML(){}};
   const timers = {}, deferred = [], hover = [], rects = [], commands = [];
+  let time = Date.now();
+  class TestDate extends Date { static now() { return time; } }
   let controlled = options.controlled === undefined ? 20524 : options.controlled;
   const genders = {20522:'Male',20524:'Female',...(options.genders || {})};
   let characterFailure = options.characterFailure || false;
   let activated, navigationState = '', playbackState = '', wardrobeState = '', state = '', hidden = 0, blurred = 0, failWrite = false;
+  const limited = {};
   let personalityState = '';let catalogState='';let taskState='';let focusState='';let planState='';
   let deferNavigation = false, resolveNavigation;
   const context = {
@@ -43,11 +46,14 @@ function fixture(options = {}) {
         if (command==='uimod.cfg_load' && params?.key==='navigation_state' && deferNavigation) {
           deferNavigation=false;return new Promise(resolve=>{resolveNavigation=resolve;});
         }
+        if (limited[params?.key]>0) {
+          limited[params.key]--; return Promise.resolve({success:false,message:'요청 제한 초과'});
+        }
         if (failWrite && params?.key==='request') { failWrite=false; return Promise.reject(Error('Injected bridge failure')); }
         return Promise.resolve({success:true,data:command==='entity.get_possessed'?{entity_id:20524}:{value:params?.key==='navigation_state'?navigationState:params?.key==='playback_state'?playbackState:params?.key==='outfit_state'?wardrobeState:params?.key==='personality_state'?personalityState:params?.key==='catalog_state'?catalogState:params?.key==='task_state'?taskState:state}});
       }}
     },
-    setInterval(cb,time){const earlier=timers[time];timers[time]=earlier?()=>{earlier();cb();}:cb;},setTimeout(cb){deferred.push(cb);},Promise,Date,Math,String,Number,Error,JSON
+    setInterval(cb,time){const earlier=timers[time];timers[time]=earlier?()=>{earlier();cb();}:cb;},setTimeout(cb){deferred.push(cb);},Promise,Date:TestDate,Math,String,Number,Error,JSON
   };
   context.window = context;
   context.addEventListener = function() {};
@@ -61,17 +67,18 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/addon-bridge.js'),'utf8'),context);
   vm.runInNewContext(source,context);
 
-  return {elements,root,timers,commands,hover,rects,classes,clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{
+  return {elements,root,timers,commands,hover,rects,classes,advanceTime(ms){time+=ms;},clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{
       const [,client,sequence,revision,node]=s.split('|');
       focusState=`SZ2|1|test.session|${client}|${sequence}|${revision}|${node}|playing`;
       navigationState=s+'|test.session';
     },setRawNavigation:s=>{navigationState=s;},setPlayback:s=>{playbackState=s;},setWardrobe:s=>{wardrobeState=s;},setPersonality:s=>{personalityState=s;},
     deferNavigation:()=>{deferNavigation=true;},resolveNavigation:value=>resolveNavigation({success:true,data:{value}}),
     setControlled:value=>{controlled=value;},setGender:(entity,value)=>{genders[entity]=value;},setCharacterFailure:value=>{characterFailure=value;},
-    catalog:context.SceneZOICatalog,setCatalog:value=>{catalogState=value;},readCatalog:()=>context.SceneZOICatalog,refreshCatalog:()=>context.SceneZOIControls.refreshCatalog(),decline:(...args)=>context.SceneZOIControls.decline(...args),content:context.wf.content,hidden:()=>hidden,blurred:()=>blurred,failWrite:()=>{failWrite=true;},runDeferred:()=>deferred.splice(0).forEach(cb=>cb())};
+    catalog:context.SceneZOICatalog,setCatalog:value=>{catalogState=value;},readCatalog:()=>context.SceneZOICatalog,refreshCatalog:()=>context.SceneZOIControls.refreshCatalog(),decline:(...args)=>context.SceneZOIControls.decline(...args),content:context.wf.content,hidden:()=>hidden,blurred:()=>blurred,failWrite:()=>{failWrite=true;},limit:(key,count)=>{limited[key]=count;},runDeferred:()=>deferred.splice(0).forEach(cb=>cb())};
 }
 async function flush(){for(let i=0;i<60;i++)await Promise.resolve();}
 const writes=(ui,key)=>ui.commands.filter(c=>c.params?.key===key).map(c=>c.params.value);
+const reads=(ui,...keys)=>ui.commands.filter(c=>c.command==='uimod.cfg_load' && keys.includes(c.params.key)).length;
 async function run(){
   const hiddenPanel=fixture();await hiddenPanel.start();await flush();hiddenPanel.clickHide();
   assert(hiddenPanel.classes.has('scene-compact'));
@@ -148,6 +155,21 @@ async function run(){
   discovery.setCatalog(encode({nodes:{}}));await discovery.refreshCatalog();assert.equal(Object.keys(discovery.readCatalog().nodes).length,0);
   discovery.setCatalog('not hex');await assert.rejects(discovery.refreshCatalog());assert.equal(Object.keys(discovery.readCatalog().nodes).length,0);
   discovery.decline('20522','picker.test');await flush();assert.match(writes(discovery,'focus').at(-1),/\|rejected\|20522\|picker.test$/);
+  const binding=fixture();await flush();
+  binding.setCatalog(encode({nodes:{'addon.scoped':{id:'addon.scoped',label:'Scoped',navigation:[]}}}));
+  binding.limit('catalog_state',1);
+  const catalogReads=reads(binding,'catalog_state');
+  binding.setState('SZ2|live.client|3|playing|ok');
+  binding.setFocus('SZ2|2|live.addon.session|live.client|3|1|addon.scoped|playing');
+  binding.setRawNavigation('SZ2|live.client|3|1|addon.scoped|0|ok|live.addon.session');
+  binding.timers[250]();await flush();
+  assert.equal(binding.elements['title-text'].textContent,'SceneZOI');
+  binding.advanceTime(250);binding.timers[250]();await flush();
+  assert.equal(reads(binding,'catalog_state'),catalogReads+1,'A throttled refresh must respect its retry cadence');
+  binding.advanceTime(250);binding.timers[250]();await flush();
+  assert.equal(binding.elements['title-text'].textContent,'Scoped','A throttled catalog refresh must retry for the current focus');
+  binding.advanceTime(1000);binding.timers[250]();await flush();
+  assert.equal(reads(binding,'catalog_state'),catalogReads+2,'A successful refresh stops retrying');
   const ui=fixture();
   let client;
   for(let sequence=1;sequence<=20;sequence++){
@@ -183,21 +205,79 @@ async function run(){
   assert.match(retry.elements['scene-status'].textContent,/Retrying/);
   retry.timers[1000]();await flush();assert.equal(writes(retry,'request')[0],writes(retry,'request')[1]);
   assert(ui.hover.length>0 && ui.hover.every(v=>v===false));
+  const rate=fixture();rate.limit('request',1);
+  let startCompleted=false;
+  const rateStart=rate.start().then(result=>{startCompleted=true;return result;});
+  await flush();assert.equal(startCompleted,false,'A throttled Start remains pending while a quick retry is scheduled');
+  const firstRequest=writes(rate,'request')[0];rate.runDeferred();await flush();
+  assert.equal(await rateStart,true);
+  assert.deepEqual(writes(rate,'request'),[firstRequest,firstRequest],'Quick retry reuses the same Start packet');
+  const rateClient=firstRequest.split('|')[1];
+  rate.setState(`SZ2|${rateClient}|1|playing|ok`);rate.timers[250]();await flush();
+  rate.limit('playback',2);
+  rate.elements['speed-down'].listeners.click();await flush();
+  rate.timers[1000]();await flush();
+  assert.equal(writes(rate,'playback').length,1,'The periodic retry must not duplicate an in-flight quick retry');
+  for(let i=0;i<2;i++){rate.runDeferred();await flush();}
+  const speedPacket=writes(rate,'playback')[0];
+  assert.deepEqual(writes(rate,'playback'),[speedPacket,speedPacket,speedPacket]);
+  rate.limit('playback',1);
+  rate.elements['speed-up'].listeners.click();await flush();
+  rate.elements['speed-up'].listeners.click();await flush();
+  rate.runDeferred();await flush();
+  assert.equal(writes(rate,'playback').length,5,'A superseded speed retry must not overwrite the new preset');
+  rate.limit('playback',1);
+  rate.elements['speed-down'].listeners.click();await flush();
+  rate.elements['scene-exit'].listeners.click();await flush();
+  assert.match(writes(rate,'request').at(-1),/\|exit$/,'A pending speed retry must not hold up Exit');
+  rate.runDeferred();await flush();
+  assert.equal(writes(rate,'playback').length,6,'A speed retry after Exit must be discarded');
   const nav=fixture();nav.start();await flush();
   const id=writes(nav,'request').at(-1).split('|')[1];
   nav.setState(`SZ2|${id}|1|playing|ok`);nav.timers[250]();await flush();
   nav.setNavigation(`SZ2|${id}|1|1|scenezoi.standing_idle|0|ok`);nav.timers[250]();await flush();nav.timers[300]();await flush();
   assert.match(nav.elements['scene-navigation'].innerHTML,/Example/);
+  const catalogLoads = () => nav.commands.filter(({command,params}) => command === 'uimod.cfg_load' && params.key === 'catalog_state').length;
+  const initialCatalogLoads = catalogLoads(), initialRects = nav.rects.length;
+  nav.timers[300]();await flush();
+  assert.equal(nav.rects.length,initialRects,'Repeated navigation replies must not update hit bounds');
+  nav.setState(`SZ2|${id}|1|preparing|ok`);nav.timers[250]();await flush();
+  nav.setState(`SZ2|${id}|1|playing|ok`);nav.timers[250]();await flush();
+  assert.equal(catalogLoads(),initialCatalogLoads,'Scene phase changes must reuse the catalog');
+  const catalogNodes = nav.readCatalog().nodes;
+  nav.setCatalog(encode({nodes:{...catalogNodes,'example.standing_idle':{...catalogNodes['example.standing_idle'],label:'Renamed destination'}}}));
+  await nav.refreshCatalog();nav.timers[300]();await flush();
+  assert.equal(nav.elements['title-text'].textContent,'Standing Idle Hub');
+  assert.match(nav.elements['scene-navigation'].innerHTML,/Renamed destination/,'An unchanged navigation reply must use the new snapshot');
+  const navigationReads = () => reads(nav,'state','navigation_state');
+  let afterReads = navigationReads();
+  nav.timers[100]();await flush();
+  assert.equal(navigationReads(),afterReads,'Idle navigation does not poll faster');
   nav.elements['scene-navigation'].listeners.click({target:{getAttribute:()=> 'example.enter'}});await flush();
   const request=writes(nav,'navigation').at(-1);
   assert.equal(request,`SZ2|${id}|1|navigate|1|example.enter|1|test.session`);
   nav.timers[1000]();await flush();assert.equal(writes(nav,'navigation').at(-1),request);
-  nav.setNavigation(`SZ2|${id}|1|1|scenezoi.standing_idle|0|ok`);nav.timers[300]();await flush();
+  nav.setNavigation(`SZ2|${id}|1|1|scenezoi.standing_idle|0|ok`);nav.timers[100]();await flush();
   assert.equal(nav.elements['scene-navigation'].innerHTML,'','Old navigation state must not unlock a pending command');
-  nav.setRawNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok|old.session`);nav.timers[300]();await flush();
+  nav.setRawNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok|old.session`);nav.timers[100]();await flush();
   assert.equal(nav.elements['scene-navigation'].innerHTML,'','A reply from an old session cannot unlock a pending click');
-  nav.setNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok`);nav.timers[300]();await flush();
+  nav.setState(`SZ2|${id}|1|preparing|ok`);nav.timers[250]();await flush();
+  nav.setNavigation(`SZ2|${id}|1|2|example.standing_idle|1|ok`);nav.timers[100]();await flush();
+  assert.equal(nav.elements['scene-navigation'].innerHTML,'','Navigation waits for playback after its acknowledgement');
+  nav.setState(`SZ2|${id}|1|playing|ok`);nav.timers[100]();await flush();
   assert.match(nav.elements['scene-navigation'].innerHTML,/Bow/);
+  afterReads = navigationReads();
+  nav.timers[100]();await flush();
+  assert.equal(navigationReads(),afterReads,'A complete navigation stops polling faster');
+  nav.setRawNavigation(`SZ2|${id}|1|2|example.standing_idle|1|navigation_error|test.session`);
+  nav.timers[300]();await flush();
+  nav.setPlayback(`SZ2|${id}|1|0|2|1.0000|1.0000`);nav.timers[350]();await flush();
+  assert.match(nav.elements['scene-status'].textContent,/That scene could not load/,'Steady playback must preserve a navigation error');
+  nav.elements['scene-navigation'].listeners.click({target:{getAttribute:()=> 'back'}});await flush();
+  nav.advanceTime(2100);
+  afterReads = navigationReads();
+  nav.timers[100]();await flush();
+  assert.equal(navigationReads(),afterReads,'A slow navigation returns to normal polling');
   nav.deferNavigation();nav.timers[300]();await flush();
   nav.elements['scene-exit'].listeners.click();await flush();
   const count=writes(nav,'navigation').length;nav.timers[1000]();await flush();
@@ -282,11 +362,19 @@ async function run(){
   clickPiece();wardrobe.timers[1000]();await flush();
   assert(writes(wardrobe,'outfit').every(v=>v===outfitCommand),'A retry must reuse the absolute outfit command');
   assert.equal(wardrobe.elements['scene-navigation'].innerHTML,'','Navigation overtook a manual outfit update');
-  wardrobe.setWardrobe(inventory(0,true));wardrobe.timers[400]();await flush();
+  const beforeRegularOutfitReads = reads(wardrobe,'outfit_state');
+  wardrobe.timers[400]();await flush();
+  assert.equal(reads(wardrobe,'outfit_state'),beforeRegularOutfitReads,'Fast outfit checks replace regular checks while pending');
+  wardrobe.setWardrobe(inventory(0,true));wardrobe.timers[100]();await flush();
   assert.match(wardrobe.elements['outfit-pieces'].innerHTML,/disabled/,'Old acknowledgement unlocked a pending edit');
-  wardrobe.setWardrobe(inventory(1,false));wardrobe.timers[400]();await flush();
+  wardrobe.setWardrobe(inventory(1,false,'ok',2));wardrobe.timers[100]();await flush();
+  assert.match(wardrobe.elements['outfit-pieces'].innerHTML,/disabled/,'An outfit reply from a different session cannot settle the click');
+  wardrobe.setWardrobe(inventory(1,false));wardrobe.timers[100]();await flush();
   assert.match(wardrobe.elements['outfit-pieces'].innerHTML,/aria-checked="false"/);
   assert(!wardrobe.elements['outfit-pieces'].innerHTML.includes(' disabled'));
+  const afterOutfitReads = reads(wardrobe,'outfit_state');
+  wardrobe.timers[100]();await flush();
+  assert.equal(reads(wardrobe,'outfit_state'),afterOutfitReads,'A completed outfit edit stops polling faster');
   // Selecting another participant preserves the first person's starting rows.
   wardrobe.elements['outfit-participants'].listeners.click({target:{getAttribute:k=>k==='data-participant'?'20522':null}});
   assert.equal(wardrobe.elements['outfit-pieces'].innerHTML,'');
@@ -294,6 +382,11 @@ async function run(){
   assert.match(wardrobe.elements['outfit-pieces'].innerHTML,/aria-checked="false"/);
   wardrobe.elements['outfit-toggle'].listeners.click();assert.equal(wardrobe.elements['outfit-panel'].style.display,'none');
   wardrobe.elements['outfit-toggle'].listeners.click();clickPiece();await flush();
+  wardrobe.advanceTime(2100);
+  wardrobe.timers[100]();await flush();
+  assert.equal(reads(wardrobe,'outfit_state'),afterOutfitReads,'A slow outfit edit returns to normal polling');
+  wardrobe.timers[400]();await flush();
+  assert.equal(reads(wardrobe,'outfit_state'),afterOutfitReads+1,'Regular outfit checks resume after the fast window');
   wardrobe.elements['scene-exit'].listeners.click();await flush();
   assert.equal(wardrobe.elements['outfit-panel'].style.display,'none');
   assert.equal(wardrobe.elements['scene-tools'].style.display,'none');
@@ -301,6 +394,22 @@ async function run(){
   assert.equal(writes(wardrobe,'outfit').length,manualWrites,'Exit left outfit retries active');
   wardrobe.setWardrobe(inventory(2,true));wardrobe.timers[400]();await flush();
   assert.equal(wardrobe.elements['outfit-panel'].style.display,'none','Late outfit acknowledgement reopened a closed panel');
+  const rebind=fixture();await rebind.start();await flush();
+  const rebindClient=writes(rebind,'request')[0].split('|')[1];
+  rebind.setState(`SZ2|${rebindClient}|1|playing|ok`);
+  rebind.setNavigation(`SZ2|${rebindClient}|1|1|scenezoi.standing_idle|0|ok`);
+  rebind.timers[250]();await flush();
+  rebind.setWardrobe(`SZ2|${rebindClient}|1|1|0|ok|20524:${hex('Zoi')}:${hex(row(true))}`);
+  rebind.timers[400]();await flush();
+  rebind.elements['outfit-toggle'].listeners.click();
+  rebind.limit('outfit',1);
+  rebind.elements['outfit-pieces'].listeners.click({target:{getAttribute:k=>k==='data-piece'?'piece1':null}});await flush();
+  assert.equal(writes(rebind,'outfit').length,1,'The edit must reach the throttled bridge before focus changes');
+  rebind.setFocus('SZ2|2|none');rebind.timers[250]();await flush();
+  rebind.setFocus(`SZ2|3|test.session|${rebindClient}|1|1|scenezoi.standing_idle|playing`);
+  rebind.timers[250]();await flush();
+  rebind.runDeferred();await flush();
+  assert.equal(writes(rebind,'outfit').length,1,'A retry must not survive detaching and reopening the same scene');
   const personality=fixture();personality.start();await flush();
   const pc=writes(personality,'request').at(-1).split('|')[1];
   personality.setState(`SZ2|${pc}|1|playing|ok`);personality.timers[250]();await flush();
@@ -310,8 +419,10 @@ async function run(){
   const metadata=[['example.pleasure_face','Pleasure face','female'],['example.downer','Downer','female'],['example.grinning_face','Grinning face','female'],['example.troubled_face','Troubled face','female'],['example.confident','Confident','male']].map(([id,label,body])=>`${hex(id)}:${hex(label)}:${body}`).join('+');
   const ps=(ack,set='example.pleasure_face',rev=1,code='ok',available=metadata)=>`SZ2|${pc}|1|${rev}|${ack}|${code}|20524:${hex('ZoÃ«')}:female:${hex(set)||'00'}:00+20522:${hex('Jonovan')}:male:${available==='none'?'00':hex('example.confident')}:00|${available}`;
   personality.setPersonality(ps(0));personality.timers[450]();await flush();
+  assert.equal(reads(personality,'personality_state'),0,'Closed Personality must leave expression state alone');
   personality.elements['outfit-toggle'].listeners.click();
   personality.elements['view-options'].listeners.click();
+  personality.timers[450]();await flush();
   assert.equal(personality.elements['outfit-title'].textContent,'Personality Management');
   assert.equal(personality.elements['outfit-pieces'].style.display,'none');
   assert.equal(personality.elements['personality-fields'].style.display,'block');
@@ -325,7 +436,12 @@ async function run(){
   personality.timers[1000]();await flush();assert.equal(writes(personality,'personality').at(-1),pp);
   personality.setPersonality(ps(0));personality.timers[450]();await flush();
   assert(personality.elements['expression-set'].disabled,'Old acknowledgement must not finish a pending preference');
+  personality.elements['outfit-close'].listeners.click();
   personality.setPersonality(ps(1,'example.downer'));personality.timers[450]();await flush();
+  const expressionReads = reads(personality,'personality_state');
+  personality.timers[450]();await flush();
+  assert.equal(reads(personality,'personality_state'),expressionReads,'A hidden expression edit can finish and stop polling');
+  personality.elements['view-options'].listeners.click();
   assert.equal(personality.elements['expression-set'].textContent,'Downer');assert(!personality.elements['expression-set'].disabled);
   personality.setPersonality(ps(0));personality.timers[450]();await flush();
   assert.equal(personality.elements['expression-set'].textContent,'Downer','An older preference packet rolled back the acknowledged selection');

@@ -117,7 +117,8 @@
         window.addEventListener('blur',function(){dragging=null;update();});
         function retry(){if(pending && state().active && !state().exiting)options.write('settings_'+group,pending).catch(function(){});}
         setInterval(function(){
-            update();var s=state();if(!s.active || s.exiting || reading)return;
+            update();var s=state();
+            if(!s.active || s.exiting || reading || (!options.visible() && !pending))return;
             var requested=session;reading=true;
             options.cfg('uimod.cfg_load','settings_'+group+'_state').then(function(data){
                 var now=state(),raw=data && data.value!==undefined?data.value:data;

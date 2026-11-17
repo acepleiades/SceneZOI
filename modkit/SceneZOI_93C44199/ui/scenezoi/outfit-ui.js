@@ -11,7 +11,7 @@
     window.SceneZOIOutfitUI = {create: function (options) {
         var root = options.root, opened = false, choosing = false, selected = null;
         var mode = 'outfit', personality = {}, personalityCount = 0, personalityAck = 0, personalityPending = null, personalityReading = false;
-        var sessionKey = '', participants = [], count = 0, pending = null, reading = false;
+        var sessionKey = '', participants = [], count = 0, pending = null, reading = false, quickOutfitUntil = 0;
         var serverBusy = true, serverRevision = 0, listMarkup = null, selectorMarkup = null;
         root.insertAdjacentHTML('beforeend',
             '<div id="scene-tools" data-i18n-aria="Scene tools" aria-label="'+window.SceneZOILocalization.html("Scene tools")+'">' +
@@ -54,7 +54,7 @@
         function busy() { var s = state(); return voices.busy() || !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting; }
         function reset() {
             opened = false; choosing = false; selected = null; participants = []; count = state().counterBase || 0; pending = null;
-            serverBusy = true; serverRevision = 0; listMarkup = null; selectorMarkup = null;
+            serverBusy = true; serverRevision = 0; quickOutfitUntil = 0; listMarkup = null; selectorMarkup = null;
             outfitMessage='';personalityMessage='';mode = 'outfit'; personality = Object.create(null); library = {sets:Object.create(null)}; personalityCount = state().counterBase || 0; personalityAck = 0; personalityPending = null; expressionMarkup = null; expressionChoosing = false;
         }
         function layout() {
@@ -199,11 +199,12 @@
             if (!item) return;
             pending = ['SZ2', s.client, String(s.sequence), 'outfit', String(++count), person.id, item.id,
                 item.enabled ? '0' : '1', String(s.revision)].join('|');
+            quickOutfitUntil = Date.now() + 2000;
             options.write('outfit', pending).catch(function () {});
             changed();
         });
         function retry() { settings.retry(); voices.retry(); if (personalityPending && state().active && !state().exiting) options.write('personality', personalityPending).catch(function () {}); if (pending && state().active && !state().exiting) options.write('outfit', pending).catch(function () {}); }
-        setInterval(function () {
+        function pollOutfit() {
             var s = state(); if (!s.active || s.exiting || reading) return;
             var requestedSession = s.client + ':' + s.sequence;
             reading = true;
@@ -231,10 +232,15 @@
                 outfitMessage = fields[5] === 'outfit_invalid' || fields[5] === 'outfit_stale' ? window.SceneZOILocalization.text('Could not change that piece. Try again.') : '';
                 changed();
             }).catch(function () {}).then(function () { reading = false; });
-        }, 400);
+        }
+        function quickOutfitPoll() { return pending && Date.now() < quickOutfitUntil; }
+        setInterval(function () { if (!quickOutfitPoll()) pollOutfit(); }, 400);
+        setInterval(function () { if (quickOutfitPoll()) pollOutfit(); }, 100);
         update();
         setInterval(function () {
-            var s = state(); if (!s.active || s.exiting || personalityReading) return;
+            var s = state();
+            if (!s.active || s.exiting || personalityReading ||
+                (!personalityPending && (!opened || mode !== 'personality'))) return;
             var requested = s.client + ':' + s.sequence; personalityReading = true;
             options.cfg('uimod.cfg_load','personality_state').then(function (data) {
                 var now = state(), raw = data && data.value !== undefined ? data.value : data;

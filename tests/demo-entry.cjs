@@ -7,7 +7,7 @@ async function flush(){for(let i=0;i<45;i++)await Promise.resolve();}
 function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},fault={}){
  const values={state:'SZ2|none|0|idle|ok',selection_request:'SZ2|old|open|1',selection_host_ready:'SZ2|host|ready|none'};
  if(fault.delayedReceiver){values.selection_ui_ready='SZ2|host|ready|ui.old|launcher.99.1';values.selection_launcher_ready='SZ2|launcher.99.1|ready|ui.old|old';}
- const starts=[],declines=[],declineTokens=[],notices=[],toasts=[];let available=true,activate,timer,visible=false,hides=0,tick=0;const retries=[];
+ const starts=[],declines=[],declineTokens=[],notices=[],toasts=[],reads=[];let available=true,activate,timer,visible=false,hides=0,tick=0;const retries=[];
  function cli(command,p){
   if(command==='toast.show'){toasts.push(p);return Promise.resolve({data:{}});}
   if(command==='entity.get_possessed')return Promise.resolve({data:{entity_id:controlled}});
@@ -17,6 +17,8 @@ function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},f
    values[p.key]=p.value;return Promise.resolve({data:{}});
   }
   if(command==='uimod.cfg_load'){
+   reads.push(p.key);
+   if(p.key==='selection_host_ready'&&fault.hostReads>0){fault.hostReads--;return Promise.resolve({success:false,message:'Request limit exceeded'});}
    if(p.key==='selection_request'&&fault.requestReads>0){fault.requestReads--;return Promise.resolve({success:false,message:'Temporary read failure'});}
    if(!(p.key in values))return Promise.resolve({success:false,message:'Key not found: '+p.key});
    return Promise.resolve({data:{value:values[p.key]}});
@@ -25,7 +27,7 @@ function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},f
  }
  const common={Promise,Math,JSON,String,Number,Set,Error,Date:{now:()=>++tick}};
  const c={...common,wf:{MOD_ID:'mod'},window:null,
-  SceneZOIControls:{bootId:'ui.new',available:()=>available,decline:(id,token)=>{declines.push(id);declineTokens.push(token);},reject:(...a)=>notices.push(a),start:e=>{starts.push(e);return Promise.resolve(true);}},
+  SceneZOIControls:{bootId:'ui.new',available:()=>available,sceneActive:()=>!available,decline:(id,token)=>{declines.push(id);declineTokens.push(token);},reject:(...a)=>notices.push(a),start:e=>{starts.push(e);return Promise.resolve(true);}},
   inzoi:{cli:{execute:cli}},setInterval:(f,t)=>{assert.equal(t,200);timer=f;}};
  c.window=c;function startReceiver(){vm.runInNewContext(receiver,c);}
  if(!fault.delayedReceiver)startReceiver();
@@ -33,7 +35,7 @@ function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},f
  vm.runInNewContext(launcher,l);
  return {activate:(id=controlled,kind='scenezoi_demo')=>{if(visible){visible=false;return Promise.resolve();}visible=true;return activate({triggerId:kind,targetEntityId:id});},
   poll:()=>timer(),set:(kind,ids,node='scenezoi.standing_idle',roles='female:3+male:1',bed='none')=>values.selection_state=['SZ2',values.selection_request.split('|')[1],kind,ids,node,roles,bed].join('|'),
-  starts,declines,declineTokens,notices,toasts,restartHost:(name='nextHost')=>{values.selection_host_ready='SZ2|'+name+'|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get ready(){return values.selection_ui_ready;},get launcher(){return values.selection_launcher_ready;},startReceiver,get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
+  starts,declines,declineTokens,notices,toasts,reads,advanceTime:ms=>{tick+=ms;},setRequest:raw=>{values.selection_request=raw;},idle:()=>{available=true;},restartHost:(name='nextHost')=>{values.selection_host_ready='SZ2|'+name+'|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get ready(){return values.selection_ui_ready;},get launcher(){return values.selection_launcher_ready;},startReceiver,get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
 }
 async function boot(f){
  await flush();
@@ -74,6 +76,16 @@ async function run(){
  const wrong=await boot(fixture());await wrong.activate('3');await flush();assert.equal(wrong.request,'SZ2|old|open|1');assert.equal(wrong.hides,2);
  const busy=await boot(fixture());busy.busy();await busy.activate();assert.equal(busy.request,'SZ2|old|open|1');assert.equal(busy.hides,2);assert.equal(busy.toasts.length,1);assert.match(busy.toasts[0].message,/already in progress/);
  for(const phase of ['preparing','exiting']){const f=await boot(fixture());f.busy();f.setPhase(phase);await f.activate();assert.equal(f.toasts.length,1);assert.equal(f.request,'SZ2|old|open|1');}
+ const quietFault={};const quiet=await boot(fixture('1',undefined,quietFault));quiet.busy();quiet.setRequest('SZ2|while.busy|open|1|none');
+ const firstReads=quiet.reads.length;await quiet.poll();
+ assert.deepEqual(quiet.reads.slice(firstReads),['selection_request'],'Active scenes keep draining picker requests without three reads per tick');
+ quiet.idle();await quiet.poll();quiet.set('selected','1+3');await quiet.poll();
+ assert.equal(quiet.starts.length,0,'A request made during a scene cannot open after Exit');
+ quiet.busy();quiet.advanceTime(1000);await quiet.poll();
+ assert(quiet.reads.slice(-3).includes('selection_host_ready'),'Still check for host changes during an active scene');
+ quietFault.hostReads=1;quiet.advanceTime(1000);await quiet.poll();
+ const afterRejection=quiet.reads.length;quiet.advanceTime(200);await quiet.poll();
+ assert.deepEqual(quiet.reads.slice(afterRejection),['selection_request'],'Throttling must not increase active picker readiness polling');
  const failed=await boot(fixture());await failed.activate();await failed.poll();failed.set('error','departure_failed');await failed.poll();await flush();assert.equal(failed.starts.length,0);assert.equal(failed.declines.length,1);
  const repeated=await boot(fixture());
  for(let n=0;n<8;n++){

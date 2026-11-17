@@ -31,11 +31,26 @@
             if(f[2]==='cancelled' || f[2]==='error' || f[2]==='unavailable')stop(p);
         }).catch(function(){}).then(function(){p.reading=false;});
     }
-    var lastRequest, hostToken, launcherToken, watching=false;
+    var lastRequest, hostToken, launcherToken, lastReadinessCheck=0, watching=false;
     function value(data){return String(data && data.value!==undefined?data.value:data || '');}
+    function readRequest(){
+        if(pending)return poll();
+        return cfg('uimod.cfg_load','selection_request').then(function(data){
+            var raw=value(data);if(raw===lastRequest)return;lastRequest=raw;
+            var f=raw.split('|');
+            if(f[0]!=='SZ2' || f[2]!=='open' || !/^\d+$/.test(f[3]) || !window.SceneZOIControls.available())return;
+            pending={token:f[1],initiator:f[3]};return poll();
+        });
+    }
     function watch(){
         if(watching)return Promise.resolve();
         watching=true;
+        var checkReadiness=!hostToken || !window.SceneZOIControls.sceneActive() || Date.now()-lastReadinessCheck>=1000;
+        if(checkReadiness)lastReadinessCheck=Date.now();
+        var result=checkReadiness?refreshReadiness():readRequest();
+        return result.catch(function(){}).then(function(){watching=false;});
+    }
+    function refreshReadiness(){
         return Promise.all([cfg('uimod.cfg_load','selection_host_ready'),
             cfg('uimod.cfg_load','selection_launcher_ready').catch(function(){return null;})]).then(function(data){
             var host=value(data[0]).split('|'), launcher=value(data[1]).split('|');
@@ -54,14 +69,9 @@
                     });
                 });
             }
-            if(pending)return poll();
-            return cfg('uimod.cfg_load','selection_request').then(function(data){
-                var raw=value(data);if(raw===lastRequest)return;lastRequest=raw;
-                var f=raw.split('|');
-                if(f[0]!=='SZ2' || f[2]!=='open' || !/^\d+$/.test(f[3]) || !window.SceneZOIControls.available())return;
-                pending={token:f[1],initiator:f[3]};return poll();
-            });
-        }).catch(function(){}).then(function(){watching=false;});
+            // Consume requests made during a scene so they cannot open a picker after Exit.
+            return readRequest();
+        });
     }
     watch();
     setInterval(watch,200);

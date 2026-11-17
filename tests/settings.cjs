@@ -7,13 +7,13 @@ elements['setting-toggle-manual-start']={addEventListener(k,f){this[k]=f;},setAt
 for(const suffix of ['','-editor','-person','-mesh','-bone','-X','-Y','-Z','-export','-status']){
  elements['attachment-preview'+suffix]={style:{},value:'',addEventListener(k,f){this[k]=f;}};
 }
-let taskRaw='',npcRaw='',debugRaw='';
+let taskRaw='',npcRaw='',debugRaw='',settingsReads=0;
 let previewRaw='',previewReads=0,previewDeferred=null;
 let s={client:'test',sequence:1,revision:2,active:true,exiting:false,pendingNavigation:null},raw='',visible=true,deferred=null;
 const document={getElementById:k=>elements[k],activeElement:null,addEventListener(k,f){(docEvents[k]??=[]).push(f);}};
 const context={window:{addEventListener(){}},document,setInterval(f){timers.push(f);},Number,String,Object,Math,Promise};
 vm.runInNewContext(fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8'),context);
-const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='settings_npc_scene_state')return Promise.resolve({value:npcRaw});if(key==='attachment_preview_state'){previewReads++;return previewDeferred?new Promise(resolve=>{previewDeferred=resolve;}):Promise.resolve({value:previewRaw});}return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
+const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key.startsWith('settings_'))settingsReads++;if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='settings_npc_scene_state')return Promise.resolve({value:npcRaw});if(key==='attachment_preview_state'){previewReads++;return previewDeferred?new Promise(resolve=>{previewDeferred=resolve;}):Promise.resolve({value:previewRaw});}return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
 const number=k=>elements['volume-number-'+k],slider=k=>elements['volume-slider-'+k];
 const event=x=>({button:0,clientX:x,preventDefault(){}});
 function frame(ack=0,values=[100,100,100],code='ok',rev=s.revision){return ['SZ2',s.client,s.sequence,rev,ack,code,...values].join('|');}
@@ -25,6 +25,10 @@ function enter(input,type,fields){
  assert(prevented,`Handled Enter event must prevent default: ${type}`);
 }
 (async()=>{
+ visible=false;
+ for (const tick of timers.slice(0,4)) tick();
+ assert.equal(settingsReads,0,'A closed settings panel must leave settings state alone');
+ visible=true;
  assert(number('sfx').disabled);raw=frame();await poll();assert(!number('sfx').disabled);
  slider('sfx').mousedown(event(175));assert.equal(number('sfx').value,'75');assert.equal(writes.length,0,'Dragging previews without flooding persistent storage');
  docEvents.mousemove.forEach(f=>f(event(240)));docEvents.mouseup.forEach(f=>f());assert.equal(writes.at(-1).v,'SZ2|test|1|settings_audio|1|2|140|100|100');
@@ -37,7 +41,10 @@ function enter(input,type,fields){
  assert.equal(writes.length,3,'A complete legacy Enter sequence applies the value once');
  assert.equal(writes.at(-1).v,'SZ2|test|1|settings_audio|2|2|140|0|100');
  raw=frame(1,[140,100,100]);await poll();assert.equal(number('female').value,'0','Older acknowledgements must not replace a newer full snapshot');
+ visible=false;
  raw=frame(2,[140,0,100]);await poll();assert.match(elements['settings-status-audio'].textContent,/Saved/);
+ const closedReads=settingsReads;await poll();assert.equal(settingsReads,closedReads,'A hidden edit may finish without restoring background settings reads');
+ visible=true;
  typed('male','201');typed('male','-1');typed('male','1.5');typed('male','');assert.equal(writes.length,3);assert.match(elements['settings-status-audio'].textContent,/whole number/);
  raw=frame(2,[140,0,100]);await poll();assert.match(elements['settings-status-audio'].textContent,/whole number/,'Polling must not erase validation feedback before it can be read');
  slider('male').keydown({key:'End',preventDefault(){}});assert.match(writes.at(-1).v,/\|140\|0\|200$/);

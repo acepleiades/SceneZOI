@@ -5,6 +5,7 @@
     var sequence = 0;
     // The panel may show a session it did not start: these keep this panel's own identity for new starts.
     var ownClient = client, ownSequence = 0, counterBase = 0, lastFocus = null, sessionToken = null;
+    var panelGeneration = 0, scopedCatalogRead = null;
     var hasPlan = false, autoMode = false, autoSpeed = false, autoCount = 0, lastPlan = null, autoButton = null;
     var heartbeat = 0;
     var pendingCommand = null;
@@ -14,9 +15,10 @@
     var exiting = false;
     var reading = false;
     var lastState = '';
-    var pendingNavigation = null;
+    var pendingNavigation = null, quickNavigationUntil = 0;
     var navigationCount = 0;
     var revision = 0;
+    var lastNavigation = null;
     var currentNode = null;
     var playing = false;
     var speeds = [0.50, 1.00, 1.50, 2.00];
@@ -27,6 +29,9 @@
     var gameScale = 1;
     var navigationMarkup = null;
     var writes = Promise.resolve();
+    var playerWrites = Object.create(null);
+    var retryableWrites = {request:true, navigation:true, playback:true, outfit:true, auto_mode:true};
+    var retryDelays = [100, 200, 350];
     var root = wf.root;
     root.style.visibility = 'hidden';
     document.getElementById('close-btn').style.display = 'none';
@@ -91,6 +96,7 @@
         renderPlayback();
     }
     function openPanel() {
+        panelGeneration++;
         // Keep the always-on native view running; hiding it suspends its timers.
         if (window.SceneZOIPanel) window.SceneZOIPanel.reset();
         root.style.visibility = 'visible';
@@ -105,6 +111,8 @@
             hidden ? 1 : root.offsetHeight);
     }
     function closePanel() {
+        panelGeneration++;
+        scopedCatalogRead = null;
         var closedSequence = sequence;
         if (window.SceneZOIPanel) window.SceneZOIPanel.reset();
         root.style.visibility = 'hidden';
@@ -132,11 +140,42 @@
             writePacket('focus', focusFields.join('|')).catch(function () {});
         }, 50);
     }
-    function writePacket(key, packet) {
+    function enqueueWrite(key, packet, current) {
         writes = writes.catch(function () {}).then(function () {
+            if (current && !current()) throw new Error('Scene command superseded');
             return cfg('uimod.cfg_save', key, packet);
         });
         return writes;
+    }
+    function writePacket(key, packet) {
+        if (!retryableWrites[key]) return enqueueWrite(key, packet);
+        var previous = playerWrites[key];
+        if (previous && previous.packet === packet && previous.generation === panelGeneration) return previous.promise;
+        var job = {packet:packet, client:client, sequence:sequence, revision:revision, generation:panelGeneration};
+        playerWrites[key] = job;
+        function current() {
+            if (playerWrites[key] !== job || client !== job.client || sequence !== job.sequence ||
+                panelGeneration !== job.generation) return false;
+            if (key === 'request') return pendingCommand === packet;
+            if (!active || exiting) return false;
+            if (key === 'playback') return pendingPlayback === packet;
+            if (key === 'navigation') return pendingNavigation === packet;
+            return revision === job.revision;
+        }
+        function attempt(index) {
+            return enqueueWrite(key, packet, index ? current : null).catch(function (error) {
+                // Retail can reject the request before writing anything. Keep the original counter.
+                if (index === retryDelays.length || !current() ||
+                        !/요청 제한 초과|(?:request|rate) limit exceeded|too many requests/i.test(String(error.message))) throw error;
+                // Waiting is local to this command so it cannot delay Exit or a newer click.
+                return new Promise(function (resolve) { setTimeout(resolve, retryDelays[index]); })
+                    .then(function () { return attempt(index + 1); });
+            });
+        }
+        function forget() { if (playerWrites[key] === job) delete playerWrites[key]; }
+        job.promise = attempt(0).then(function (result) { forget(); return result; },
+            function (error) { forget(); throw error; });
+        return job.promise;
     }
     function send(action, initiator, roster, node, furniture, apiToken) {
         var fields = ['SZ2', client, String(sequence), action];
@@ -212,6 +251,7 @@
         refreshCatalog: refreshCatalog,
         decline: declineStart,
         available: function(){return !active && !checkingStart && saveGuard.available();},
+        sceneActive: function(){return active;},
         reject: function(message,initiator,token){
             if(active || checkingStart)return;
             noticeInitiator=entityId(initiator);noticeToken=token;currentNode=null;
@@ -232,7 +272,7 @@
                 client=ownClient;sequence=++ownSequence;counterBase=0;sessionToken=null;
                 hasPlan=false;autoMode=false;autoSpeed=false;lastPlan=null;
                 active=true;exiting=false;noticeInitiator=null;noticeToken=null;
-                pendingNavigation=null;navigationCount=0;revision=0;currentNode=null;playing=false;
+                pendingNavigation=null;quickNavigationUntil=0;navigationCount=0;revision=0;currentNode=null;playing=false;
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
                 openPanel();show(window.SceneZOILocalization.text('Preparing Scene Mode…'));
@@ -295,16 +335,12 @@
             }
         }
     }, 1000);
-    setInterval(function () {
-        saveGuard.poll();
-        // The generated window scaffold can report layout later; keep its hidden hit area off-screen.
-        if (root.style.visibility === 'hidden') updateHitRect();
+    function pollState() {
         if (reading) return;
         reading = true;
         cfg('uimod.cfg_load', 'state').then(function (data) {
             var value = data && data.value !== undefined ? data.value : data;
             if (typeof value !== 'string' || value === lastState) return;
-            refreshCatalog().then(function(){renderNavigation();}).catch(function(){});
             lastState = value;
             var fields = value.split('|');
             // Late status from an older panel/session must not close or reset the current one.
@@ -325,6 +361,12 @@
                 else show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));
             }
         }).catch(function () {}).then(function () { reading = false; });
+    }
+    setInterval(function () {
+        saveGuard.poll();
+        // The generated window scaffold can report layout later; keep its hidden hit area off-screen.
+        if (root.style.visibility === 'hidden') updateHitRect();
+        pollState();
     }, 250);
     // The panel follows the controlled Zoi: it shows that Zoi's scene, or nothing.
     function detachPanel() {
@@ -341,6 +383,7 @@
         client = f[3]; sequence = Number(f[4]) || 0;
         active = true; exiting = f[7] === 'exiting'; playing = f[7] === 'playing'; heartbeat = 0;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
+        quickNavigationUntil = 0;
         noticeInitiator = null; noticeToken = null; lastState = ''; gameScale = 1;
         hasPlan = false; autoMode = false; autoSpeed = false; lastPlan = null;
         // Counters must beat anything this session has already acknowledged from an earlier binding.
@@ -348,22 +391,31 @@
         navigationCount = counterBase; playbackCounter = counterBase; acknowledgedPlayback = 0;
         revision = Number(f[5]) || 0;
         currentNode = window.SceneZOICatalog.nodes[f[6]] || null;
-        refreshCatalog().then(function () {
-            currentNode = window.SceneZOICatalog.nodes[f[6]] || currentNode;
-            if (active) show(playing ? playingMessage() : window.SceneZOILocalization.text('Preparing all participants…'));
-        }).catch(function () {});
         openPanel();
         show(playing ? playingMessage() : window.SceneZOILocalization.text('Preparing all participants…'));
     }
+    function pollScopedCatalog() {
+        var request = scopedCatalogRead;
+        if (!request || !active || exiting || request.reading || Date.now() < request.retryAt) return;
+        request.reading = true;
+        refreshCatalog().then(function () {
+            if (scopedCatalogRead !== request) return;
+            scopedCatalogRead = null;
+            pollNavigation();
+        }, function () {
+            // Until the current scene's catalog arrives, avoid showing navigation from an older scope.
+            request.reading = false;
+            request.retryAt = Date.now() + 500;
+        });
+    }
     function applyFocus(f) {
         if (f[0] !== 'SZ2') return;
-        if (f[2] === 'none') { detachPanel(); return; }
-        if (active && client === f[3] && String(sequence) === f[4] && (!sessionToken || sessionToken === f[2])) {
-            sessionToken = f[2];
-            return;
-        }
+        if (f[2] === 'none') { scopedCatalogRead = null; detachPanel(); return; }
+        var samePanel = active && client === f[3] && String(sequence) === f[4] && (!sessionToken || sessionToken === f[2]);
+        if (samePanel && sessionToken) return;
         sessionToken = f[2];
-        attachPanel(f);
+        scopedCatalogRead = {reading:false, retryAt:0};
+        if (!samePanel) attachPanel(f);
     }
     var readingFocus = false;
     setInterval(function () {
@@ -374,7 +426,7 @@
             if (typeof value !== 'string' || value === lastFocus) return;
             lastFocus = value;
             applyFocus(value.split('|'));
-        }).catch(function () {}).then(function () { readingFocus = false; });
+        }).catch(function () {}).then(function () { readingFocus = false; pollScopedCatalog(); });
     }, 250);
     function escapeText(value) {
         return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -421,7 +473,7 @@
         var html = '';
         ensureAutoButton();
         renderAutoMode();
-        if (active && playing && !exiting && !pendingNavigation && !autoMode && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
+        if (active && playing && !exiting && !scopedCatalogRead && !pendingNavigation && !autoMode && !outfits.busy() && currentNode && currentNode.kind !== 'transition') {
             html = currentNode.navigation.map(function (edge) {
                 var target = window.SceneZOICatalog.nodes[edge.target];
                 var caption = typeof edge.label === 'string' && edge.label.trim()
@@ -435,15 +487,16 @@
     }
     navigation.addEventListener('click', function (event) {
         var option = event.target && event.target.getAttribute('data-option');
-        if (!option || !sessionToken || !active || !playing || exiting || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
+        if (!option || !sessionToken || !active || !playing || exiting || scopedCatalogRead || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
         if (!currentNode.navigation.some(function (edge) { return edge.id === option; })) return;
         pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision), sessionToken].join('|');
+        quickNavigationUntil = Date.now() + 2000;
         writePacket('navigation', pendingNavigation).catch(function () {});
         show(window.SceneZOILocalization.text('Changing scene…'));
     });
     var readingNavigation = false;
-    setInterval(function () {
-        if (!active || exiting || readingNavigation) return;
+    function pollNavigation() {
+        if (!active || exiting || scopedCatalogRead || readingNavigation) return;
         readingNavigation = true;
         cfg('uimod.cfg_load', 'navigation_state').then(function (data) {
             if (!active || exiting) return;
@@ -453,18 +506,29 @@
             if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
             if (!sessionToken || fields[7] !== sessionToken) return;
             var nextRevision = Number(fields[3]), acknowledged = Number(fields[5]);
-            if (nextRevision < revision || !window.SceneZOICatalog.nodes[fields[4]]) return;
+            var node = window.SceneZOICatalog.nodes[fields[4]];
+            if (nextRevision < revision || !node) return;
             if (pendingNavigation && acknowledged < navigationCount) return;
-            revision = nextRevision; currentNode = window.SceneZOICatalog.nodes[fields[4]];
+            // A fresh catalog can rename destinations without changing the navigation packet.
+            if (value === lastNavigation && node === currentNode) return;
+            lastNavigation = value;
+            revision = nextRevision; currentNode = node;
             if (pendingNavigation && acknowledged === navigationCount) pendingNavigation = null;
             if (fields[6] === 'task_route_error') show(window.SceneZOILocalization.text('The automatic scene could not load. The current scene continues.'));
             else if (fields[6] === 'navigation_error') show(window.SceneZOILocalization.text('That scene could not load. The current scene continues.'));
             else if (fields[6] === 'navigation_locked') show(playingMessage());
             else if (fields[6] === 'stale_navigation') show(window.SceneZOILocalization.text('Scene navigation changed. Choose again.'));
             else if (playing) show(playingMessage());
-            renderNavigation();
+            else renderNavigation();
         }).catch(function () {}).then(function () { readingNavigation = false; });
-    }, 300);
+    }
+    setInterval(pollNavigation, 300);
+    setInterval(function () {
+        // The node acknowledgement is published after playback starts. Finish reading the phase if it is still preparing.
+        if (!active || exiting || Date.now() >= quickNavigationUntil || (!pendingNavigation && playing)) return;
+        if (pendingNavigation) pollNavigation();
+        else pollState();
+    }, 100);
     function playingMessage() {
         return gameScale === 0 ? window.SceneZOILocalization.text('Paused with the game clock') : currentNode && currentNode.kind === 'transition' ? window.SceneZOILocalization.text('Transition in progress') : '';
     }
@@ -501,9 +565,10 @@
             if (pendingPlayback && acknowledged < playbackCounter) return;
             acknowledgedPlayback = acknowledged;
             if (pendingPlayback && acknowledged >= playbackCounter) pendingPlayback = null;
+            var pausedChanged = (gameScale === 0) !== (scale === 0);
             speedIndex = index; gameScale = scale;
             renderPlayback();
-            if (playing && !pendingNavigation) status.textContent = playingMessage();
+            if (playing && !pendingNavigation && pausedChanged) status.textContent = playingMessage();
         }).catch(function () {}).then(function () { readingPlayback = false; });
     }, 350);
     renderPlayback();

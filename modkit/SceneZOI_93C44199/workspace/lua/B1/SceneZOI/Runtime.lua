@@ -1007,13 +1007,14 @@ local function update_focus()
     local old = Sessions.focused()
     if target == old then return end
     Sessions.focus(target)
-    publish_focus()
     if target then bind_panel(target)
     else
         publish("none", 0, "idle", "ok")
         if Catalog.publish then pcall(Catalog.publish) end
         if old and M.actors[id] then pending_focus = {actor = M.actors[id], age = 0, client = old.client, sequence = old.sequence} end
     end
+    -- The panel reads the scoped catalog once when it binds to this focus.
+    publish_focus()
     reconcile_autosave()
 end
 
