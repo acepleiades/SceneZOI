@@ -1,27 +1,29 @@
 # Body, attachment and solo-scene integration questions
 
-Use this guide to choose bodies and skeletal attachments for individual Zois,
-keep clothing changes working, and start solo scenes for NPCs or several
-independent groups. Your mod chooses the meshes and gameplay rules; SceneZOI
-handles playback, clothing updates and cleanup.
+> Temporary guide: these questions will be folded into SceneZOI's main authoring documentation.
 
-These examples describe the current development build. Negotiate `get_version`
-and check `features.appearance_variants == 1` before making appearance calls.
-For background solo starts, check `features.background_sessions == 1`.
+Use your own body and anatomy meshes, choose them for each Zoi, and start solo
+scenes for NPCs. Your mod decides who takes part and which meshes they use.
+SceneZOI handles animation playback, clothing changes and restoring the characters
+when the scene ends.
 
-`designer` and `/Designer/...` below are placeholders. Replace them with your
-pack's actual declaration namespace and imported Unreal object paths. The names
-are examples, not assets supplied by SceneZOI. SDK examples assume you have already [wired the client](addon-authoring.md#wire-the-sdk).
+Requires SceneZOI **1.5.0 or newer**. Before using these calls, request
+`get_version`. Appearance selection requires
+`features.appearance_variants == 1`. Background solo scenes require
+`features.background_sessions == 1`.
+
+`designer`, `/Designer/...` and the Zoi IDs below are examples. Replace them with
+your pack ID, imported Unreal object paths and the Zois taking part. The meshes
+in the examples are not included with SceneZOI. First, [set up the SDK client](addon-authoring.md#wire-the-sdk).
 
 ## I want my own anatomy meshes to take priority over HZoi. How do I do that?
 
-Register each size or model as an `attachment_variant`, then select its ID for
-the individual Zoi through the API. Put a region-replacing anatomy attachment
-in the `body_region` slot. SceneZOI selects one owner for that region before
-creating its components, so HZoi's automatic attachment does not compete with
-your explicit choice.
+Give each size or model its own `attachment_variant` declaration. Select its ID
+for the Zoi when starting the scene. Use the `body_region` slot for anatomy that
+replaces a body region. Your explicit choice takes priority over HZoi's automatic
+attachment, so both meshes won't be added at once.
 
-Add the declaration files to your pack manifest's existing `data_files` array:
+Add the files to your pack manifest's existing `data_files` list:
 
 ```json
 {
@@ -34,7 +36,7 @@ Add the declaration files to your pack manifest's existing `data_files` array:
 }
 ```
 
-An attachment declaration looks like this:
+Example of an attachment variant:
 
 ```json
 {
@@ -55,13 +57,12 @@ An attachment declaration looks like this:
 }
 ```
 
-Give the other size its own ID and mesh path. The referenced `body_profile` and
-`material_profile` are separate declarations that must describe your actual
-mesh and its skin coverage. Do not copy HZoi's profile IDs unless its geometry
-and material contract genuinely apply to your assets.
-[Coverage and material profiles](package-split.md#presentation-and-compatibility-profiles)
+Give the other size its own ID and mesh path. `body_profile` describes the skin
+region being replaced; `material_profile` describes how to match its skin and
+hair. Declare profiles that fit your mesh. Only reuse HZoi's profiles if your
+geometry and materials follow the same rules. See [coverage and material profiles](package-split.md#presentation-and-compatibility-profiles).
 
-When starting a scene, supply choices under Zoi IDs:
+Select the attachment for a Zoi when starting a scene:
 
 ```lua
 client:request(owner, "start.with_appearance", "start_scene", {
@@ -76,36 +77,36 @@ client:request(owner, "start.with_appearance", "start_scene", {
 })
 ```
 
-Replace the scene and Zoi IDs with the scene you intend to play and its loaded
-participants. The ordinary foreground start requires the controlled Zoi as
-initiator. Background starts are described below.
+For a normal foreground start, `initiator` must be the controlled Zoi. For NPCs,
+use the background start explained below.
 
-Keep this selection path separate from an old `add_attachment` call or direct
-scene attachment that adds the same mesh. Remove that duplicate request when
-migrating. Ordinary props remain independent; SceneZOI cannot infer that an
-arbitrary prop is meant to replace anatomy.
+Attention: if your mod already adds this mesh through `add_attachment` or a
+direct scene attachment, remove that old request when switching to variant
+selection. Keeping both requests adds the mesh twice. Ordinary props are still
+separate attachments; SceneZOI doesn't assume that every attached mesh replaces
+anatomy.
 
 ## I want different Zois to use different sizes, including female characters. How do I do that?
 
-Choose independently for each participant ID in the same `appearance` map.
-For example, one Zoi can use `designer.anatomy_medium`, while another uses
-`designer.anatomy_large`. The choice does not depend on a role being named
-`male`, nor does selecting an attachment change the character's body type or
-make a different body animation compatible.
+Choose a variant for each Zoi ID in the same `appearance` map. For example, one
+can use `designer.anatomy_medium`, and another can use `designer.anatomy_large`.
+The scene role doesn't have to be named `male` for a Zoi to use an anatomy mesh.
 
-Declare `body: "male"` or `body: "female"` on the variant if the mesh fits only
-that native body. Omit `body` only when it actually fits both. This permits a
-compatible penis attachment on a female character through the same API. If the fit differs, register separate compatible variants.
+Use `body: "male"` or `body: "female"` if the attachment only fits that body type.
+Omit `body` if it fits both. A compatible penis mesh can therefore be attached
+to a female character through the same API. If each body needs a different fit,
+register a variant for each one.
 
-The attachment must still align correctly with the target body, its anchor and
-the scene motion. Similar bone names do not prove that another mesh or animation
-is compatible. Match the native body-age and life-stage restrictions to the
-assets you support.
+Attention: the attachment still needs to line up with the body, its anchor and
+the scene's motion. Similar bone names don't guarantee compatibility. Set
+`body_age` and `growth_steps` to the ages and life stages your assets support.
+Choosing an attachment doesn't change the Zoi's body type or make an incompatible
+body animation work.
 
 ## I want to choose female bodies with and without a vulva, and keep the choice through clothing changes. How do I do that?
 
-Register the body with a vulva and the version without it as separate
-`body_variant` declarations. For example, the detailed body file can contain:
+Give the body with a vulva and the version without it separate `body_variant`
+declarations. Example:
 
 ```json
 {
@@ -119,8 +120,8 @@ Register the body with a vulva and the version without it as separate
 }
 ```
 
-Declare `designer.female_plain` in the same way with its own mesh. Select the
-desired body when starting the scene, or change it in an existing session:
+Declare `designer.female_plain` with the other mesh path. Choose the body when
+starting the scene, or use `set_appearance` to change it during a scene:
 
 ```lua
 client:request(owner, "appearance.detailed_body", "set_appearance", {
@@ -134,30 +135,29 @@ client:request(owner, "appearance.detailed_body", "set_appearance", {
 })
 ```
 
-Here `body_region = false` deliberately disables a separate region attachment.
-Use that when the selected whole body already contains what the scene needs.
-Body and attachment choices are independent: you can instead choose a plain
-body plus a compatible separate attachment.
+`body_region = false` disables the separate anatomy attachment. Use this if the
+whole body already includes the anatomy you need. You can also choose a plain
+body and a separate attachment; the two choices are independent.
 
-SceneZOI reapplies the selected mesh after native clothing updates. It keeps the
-existing animation instance and uses the game's resolved clothing coverage, so
-skin covered by clothing stays hidden during undressing and redressing.
+SceneZOI reapplies the chosen body after clothing changes and keeps the existing
+animation instance. It uses the game's clothing coverage to hide skin under
+shirts, trousers and socks. Removing clothes exposes those regions again;
+redressing hides them again.
 
-The body must use the same Skeleton asset as the native character and retain
-the native body's 32 region material-slot names. Slots can be reordered and
-extra slots can exist. A one-section or incompatible mesh cannot safely follow
-the clothing mask and falls back to a valid body with a diagnostic. A whole-body
-variant is not the small skin patch used by a `body_profile`.
+Requirements: the body must use the same Skeleton asset as the native character
+and keep its 32 region material-slot names. You can change their order or add
+extra slots. A body with collapsed or missing regions cannot follow the clothing
+mask and falls back to a valid body, with a warning in the logs. Supply a whole
+body mesh here, not the small skin patch used by a `body_profile`.
 
-The changing call must come from the add-on/client that created the session.
-Do not use another add-on's integration capabilities to replace its selected
-appearance. After an accepted change, wait for `get_appearance.phase` to become
-`ready` before issuing another appearance or clothing change.
+Only the add-on/client that started the session can change its appearance.
+After a change is accepted, wait until `get_appearance.phase` is `ready` before
+sending the next clothing or appearance change.
 
 ## I want a default body or attachment in a scene JSON, with a safe fallback. How do I do that?
 
-Add an `appearance` object beside `tracks`. Scene JSON uses **role names**;
-API calls use **Zoi IDs**:
+Add `appearance` beside `tracks` in your scene JSON. Use **role names** in the
+scene file, and **Zoi IDs** in API calls:
 
 ```json
 {
@@ -173,39 +173,38 @@ API calls use **Zoi IDs**:
 }
 ```
 
-Use roles that actually exist in that scene. The order is evaluated independently
-for the body and each attachment slot:
+Use roles that exist in your scene. SceneZOI chooses the body and each attachment
+slot in this order:
 
-1. The session's explicit API choice for the Zoi.
-2. The current scene's `appearance` default for its role.
-3. The scene's existing attachment or a compatible automatic coverage fallback,
-   where applicable; otherwise the native body or no attachment.
+1. The explicit API choice for that Zoi in the session.
+2. The current scene's `appearance` default.
+3. The scene's existing attachment or a compatible automatic fallback. Otherwise,
+   the native body or no attachment.
 
-If a requested variant is missing, unavailable or incompatible, SceneZOI logs a
-warning and tries the valid defaults. Listing an ID does not turn an optional
-missing asset into a valid choice. Inspect `get_appearance` to see what actually
-resolved.
+If a requested variant is missing or incompatible, SceneZOI logs a warning and
+tries the valid defaults. Use `get_appearance` to see which choice was actually
+applied.
 
-Keep defaults limited to appearance the scene needs. For an individual's
-preferred anatomy or body, make the explicit API selection so navigating to
-another pack does not replace that preference. A scene's defaults are evaluated
-again on navigation; the explicit session selection carries across it.
+Keep scene defaults to meshes that the animation needs. Use the
+API for a Zoi's preferred body or anatomy, so changing to another pack's scene
+doesn't replace that preference. Scene defaults are checked on each navigation;
+explicit API choices stay until you change or clear them.
 
 ## I want HZoi to remain the fallback when I do not choose anything. How do I do that?
 
-Omit the body or slot from a new session's `appearance` map. Existing compatible
-coverage declarations remain automatic fallbacks. Installing an
-`attachment_variant` by itself does not make it a global default.
+Leave that body or attachment slot out of the new session's `appearance` map.
+Existing compatible coverage declarations remain the fallback. Installing an
+`attachment_variant` alone doesn't make it the default for every Zoi.
 
-These values mean different things:
+Attention: leaving a choice out, disabling it and clearing it do different things:
 
-| Choice | Result |
+| Value | What happens |
 | --- | --- |
-| Omit a field on a new start | Inherit the scene's default or normal fallback. |
-| `body_variant = false` | Explicitly use the native body. |
-| `attachment_variants = {body_region = false}` | Disable that attachment slot, including its automatic fallback. |
-| Omit a field in `set_appearance` | Keep its existing explicit selection. |
-| `clear_appearance` for the Zoi | Remove that Zoi's explicit choices and inherit again. |
+| Omit a field when starting a session | Use the scene's default or normal fallback. |
+| `body_variant = false` | Use the native body. |
+| `attachment_variants = {body_region = false}` | Disable that attachment slot, including its fallback. |
+| Omit a field in `set_appearance` | Keep its existing explicit choice. |
+| Call `clear_appearance` for the Zoi | Remove their explicit choices and use the current defaults again. |
 
 ```lua
 client:request(owner, "appearance.inherit_again", "clear_appearance", {
@@ -214,53 +213,53 @@ client:request(owner, "appearance.inherit_again", "clear_appearance", {
 })
 ```
 
-Clearing is different from disabling. Requesting the native body does not also
-disable an anatomy attachment. HZoi can be selected explicitly using its
-registered `hzoi.region_attachment` ID, but only if it is installed and compatible.
+Using the native body doesn't also disable an anatomy attachment. To choose
+HZoi explicitly, use `hzoi.region_attachment`, provided it is installed and
+compatible with that Zoi.
 
 ## I want to remember an individual's choice without making their save depend on my body mesh. How do I do that?
 
-Store the stable variant ID in your gameplay mod's own preference data and pass
-it to SceneZOI on later starts. Discover available definitions with
-`get_appearance_variants`, and inspect `get_appearance` after resolution. Keep
-your preference data independent of a permanent CAS/body selection.
+Save the stable variant ID in your gameplay mod's own preference data. Check
+available choices with `get_appearance_variants`, then pass the preferred ID on
+later starts. Use `get_appearance` to check what was applied.
 
-SceneZOI applies the body temporarily to the rendered component. It does not put
-the custom mesh path into the saved `Body` or `FinalBody` mesh references. It
-restores the latest native body on Exit. The session temporarily changes merge
-flags to handle clothing and restores those flags during cleanup.
+SceneZOI temporarily changes the rendered body. It doesn't write the custom
+mesh into the saved `Body` or `FinalBody` mesh references. Exit restores the
+latest native body. The temporary merge flags used for clothing are also restored.
 
-This avoids creating a new missing-body dependency when saving during a scene.
-It cannot repair a save where another mod already selected a custom mesh as the
-permanent body. Verify your own assets by saving with a selection active, then
-loading that test save with SceneZOI and the provider disabled. The game's
-missing-mods warning is expected; the body should still be visible. For ordinary
-uninstallation, Exit, wait for cleanup and save outside scene mode first.
+This avoids adding the temporary body mesh as a requirement for the character's
+saved appearance. It doesn't repair a save where another mod already selected
+a custom mesh as the permanent body.
+
+Test your own assets: save with the selection active, close the game, disable
+SceneZOI and the body provider, then load that test save. A missing-mods warning
+is expected; the body should still be visible. For ordinary removal, Exit the
+scene, wait for cleanup and save outside scene mode first.
 
 ## I want to use a ported animation without a separate anatomy clip. How do I do that?
 
-Omit the scene from the variant's optional `node_animations`. The attachment
-uses its rest pose instead of continuing the previous scene's attachment clip.
-If the pose needs a fixed angle, use **Attachment pose preview** in Scene
-Settings, export the reference values, then put them into the scene's
-`attachment_rest_rotations`.
+Leave that scene out of the variant's optional `node_animations` map. The
+attachment uses its rest pose instead of carrying over the previous scene's clip.
 
-The values target the resolved attachment ID, not just the selected variant ID.
-For example, variant `designer.anatomy_medium` on role `giving` resolves as
-`designer.anatomy_medium.giving`. Use the ID returned by `get_appearance` or the
-exported CFG rather than guessing it.
+To adjust the angle, open **Attachment pose preview** in Scene Settings. Try the
+bone rotations, export the reference values, and add them to the scene's
+`attachment_rest_rotations`. See the [porting and pose-preview instructions](authoring.md#port-an-animation-without-a-separate-attachment-track).
 
-A compatible attachment clip takes precedence over fixed angles. Add
-`node_animations` only for clips made for that attachment's skeleton and the
-scene's duration. Sharing bone names does not automatically make HZoi's clips
-fit your own mesh. [Full porting and pose-preview workflow](authoring.md#port-an-animation-without-a-separate-attachment-track)
+Attention: the rotations use the resolved attachment ID. For example,
+`designer.anatomy_medium` on role `giving` becomes
+`designer.anatomy_medium.giving`. Copy the ID from `get_appearance` or the exported
+CFG rather than guessing it.
+
+If a compatible clip is supplied, it takes priority over fixed angles. Only add
+clips that fit the attachment's skeleton and the scene's duration. Sharing bone
+names doesn't automatically make HZoi's clips compatible with another mesh.
 
 ## I want an NPC to start a solo scene. How do I do that?
 
-Use a one-Zoi roster and `background: true` on `start_scene`,
+Use a one-Zoi roster and set `background: true` on `start_scene`,
 `start_random_scene` or `start_at_hub`. The initiator must be that loaded,
-eligible participant. An ordinary foreground call without the flag still
-requires the controlled initiator.
+eligible participant. A foreground start without this flag still requires the
+controlled Zoi.
 
 ```lua
 client:request(owner, "solo.npc_one", "start_scene", {
@@ -273,20 +272,20 @@ client:request(owner, "solo.npc_one", "start_scene", {
 })
 ```
 
-Replace the bundled idle with your own installed solo scene. The two-minute
-lifetime is an explicit example, not a required duration. Autonomous starts
-already use the background path; supply their normal goals or end policy.
+Replace the bundled idle with your installed solo scene. The two-minute lifetime
+is only an example; choose the duration your mod needs. Autonomous starts
+already use the background path. Supply their usual goals or end policy.
 
-`owner` is the loaded B2 character carrying the SDK message.
-`arguments.initiator` is the Zoi starting the scene. They need not be the same
-Zoi, and the message carrier need not belong to the roster. Do not put the
-controlled character into every roster just because it carries your requests.
+`owner` is the loaded B2 character carrying the SDK message. `initiator` is the
+Zoi starting the scene. They can be different characters, and the message carrier
+doesn't need to join the scene. Don't add the controlled character to every
+roster just because it sends your requests.
 
 ## I want another solo scene while one is already playing. How do I do that?
 
-Make another background start with a different participant. You can use the
-same SDK client and message carrier. Each session has its own roster, playback,
-appearance and cleanup. Stopping one does not require stopping the other.
+Start another background session with a different participant. You can use the
+same SDK client and message carrier. Each session keeps its own participants,
+playback, appearance and cleanup. Ending one doesn't end the others.
 
 ```lua
 client:request(owner, "solo.npc_two", "start_scene", {
@@ -299,37 +298,36 @@ client:request(owner, "solo.npc_two", "start_scene", {
 })
 ```
 
-Wait for each `session_started`; `accepted: true` only means the start was queued.
-Use the resulting session ID for subsequent controls. The panel follows the
-controlled Zoi's session and need not be visible for an NPC-only session to play.
+Wait for each `session_started` event before using its session ID for controls.
+`accepted: true` only tells you that the start was queued. The scene panel
+follows the controlled Zoi; an NPC-only scene can run without showing a panel.
 
-Reusing a participant already held by a scene is still refused with
-`participant_busy`. Reusing reserved furniture returns `furniture_unavailable`.
-NPC-only scenes have the cap returned as `maximum_npc_sessions` by `get_version`.
-Do not interpret `maximum_sessions: 1` as a ban on background concurrency: it
-describes the player's single focused session.
-[Background placement, limits and lifetime](addons.md#concurrent-and-background-sessions)
+A Zoi already in another scene is still rejected with `participant_busy`.
+Reserved furniture returns `furniture_unavailable`. Read `maximum_npc_sessions`
+from `get_version` for the NPC-session limit. `maximum_sessions: 1` describes the
+player's single focused session; it doesn't prohibit background sessions.
+[Background placement and lifetime](addons.md#concurrent-and-background-sessions)
 
 ## I want to find out why my choice or start failed. What should I check?
 
-Read the API reply and later start outcome. Use a new request ID for each new
-operation, and retry an identical request only with its original ID. An accepted
-start can still fail during preparation.
+Read the API reply and the later start outcome. Use a new request ID for each
+new operation. Retry the same request with its original ID. A start can be
+accepted and still fail during preparation.
 
-| Symptom or reply | Check |
+| Reply or problem | What to check |
 | --- | --- |
-| `initiator_not_controlled` | An ordinary start needs the controlled initiator; use the background path for an NPC. |
-| `participant_busy` | Another scene already holds at least one requested Zoi. |
-| `furniture_unavailable` | The requested furniture is unavailable or reserved. |
-| `no_matching_scenes` | Installed scenes, role/body requirements, required assets, furniture and restrictions. |
-| `session_not_owned` | Appearance changes must use the add-on/client that created the session. |
-| `session_not_ready` | Wait for preparation or the previous clothing/appearance edit to finish. |
-| The call succeeded but a default mesh appears | Inspect `get_appearance`; an optional variant may have fallen back after a compatibility or asset warning. |
+| `initiator_not_controlled` | Use the controlled initiator for a foreground start, or the background path for an NPC. |
+| `participant_busy` | A requested Zoi is already in another scene. |
+| `furniture_unavailable` | The furniture is unavailable or reserved. |
+| `no_matching_scenes` | Check installed scenes, body requirements, required assets, furniture and restrictions. |
+| `session_not_owned` | Use the add-on/client that started the session for appearance changes. |
+| `session_not_ready` | Wait for the current preparation or appearance change to finish. |
+| The call succeeded, but a default mesh appears | Use `get_appearance` and read the warning. An optional variant may have fallen back. |
 
-Ask the player for their complete `scenezoi_runtime` folder. Its rolling API and
-scene histories record caller requests, rejected starts, resolved appearance and
-fallback warnings. A missing optional variant does not necessarily make the
-whole API call fail; inspect the resolved selection and diagnostic explanation.
+Ask the player for the complete `scenezoi_runtime` folder. The rolling API and
+scene histories record requests, rejected starts, resolved appearance and
+fallback warnings. A missing optional variant doesn't always make the call fail;
+the resolved result and warning explain what happened.
 
-For the full contract, see [appearance variants](appearance-variants.md),
-[the API reference](addons.md) and [live controls](addon-controls.md).
+For more details: [Appearance variants](appearance-variants.md),
+[API reference](addons.md), [Live controls](addon-controls.md).
