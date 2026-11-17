@@ -9,6 +9,9 @@ function fixture(options = {}) {
   for (const id of ['title-text', 'close-btn', 'scene-status', 'scene-exit', 'scene-navigation', 'speed-down', 'speed-up', 'speed-label', 'speed-dots', 'scene-tools', 'outfit-toggle', 'view-options', 'scene-settings', 'outfit-panel', 'outfit-close', 'outfit-selector', 'outfit-participants', 'outfit-status', 'outfit-pieces', 'outfit-title', 'personality-fields', 'personality-status', 'expression-set', 'expression-choices', 'voice-fields', 'settings-fields', 'outfit-selector-wrap', 'settings-status-audio', 'settings-status-task_rates', 'settings-status-npc_scene', 'task-rate-settings', 'audio-volume-settings', 'npc-scene-settings', 'debug-start-settings', 'settings-status-debug_start', 'setting-toggle-manual-start', ...['sfx','female','male','task-female','task-male','npc-scene-length'].flatMap(k=>['slider','number','fill','thumb'].map(v=>'volume-'+v+'-'+k))]) {
     elements[id] = {style: {}, listeners: {}, setAttribute(k,v){this[k]=v;}, addEventListener(k, cb) { this.listeners[k] = cb; }};
   }
+  for (const suffix of ['', '-editor', '-person', '-mesh', '-bone', '-X', '-Y', '-Z', '-export', '-status']) {
+    elements['attachment-preview'+suffix] = {style: {}, addEventListener(){}};
+  }
   elements['scene-navigation'].parentNode={insertBefore(el){elements[el.id]=el;}};
   const classes=new Set(),documentListeners={};
   const root = {id:'app-root',style: {},classList:{toggle(name,on){on?classes.add(name):classes.delete(name);}},setAttribute(){}, offsetLeft:100, offsetTop:100, offsetWidth:410, offsetHeight:210,appendChild(el){elements[el.id]=el;},insertAdjacentHTML(){}};

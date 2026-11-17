@@ -51,7 +51,7 @@
         changed:function(){updateHitRect();}}) : null;
     var outfits = window.SceneZOIOutfitUI.create({root:root, cfg:cfg, write:writePacket, tasks:tasks,
         state:function () { return {active:active, playing:playing, exiting:exiting, client:client, sequence:sequence,
-            revision:revision, pendingNavigation:pendingNavigation, counterBase:counterBase}; },
+            revision:revision, pendingNavigation:pendingNavigation, counterBase:counterBase, token:sessionToken}; },
         changed:function () { renderNavigation(); renderPlayback(); }});
 
     function decode(response) {

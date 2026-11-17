@@ -4,12 +4,16 @@ const elements={},docEvents={},timers=[],writes=[];
 for(const key of ['sfx','female','male','task-female','task-male','npc-scene-length'])for(const part of ['slider','number','fill','thumb'])elements['volume-'+part+'-'+key]={style:{},value:'',setAttribute(k,v){this[k]=v;},addEventListener(k,f){this[k]=f;},getBoundingClientRect(){return {left:100,width:200};}};
 for(const k of ['settings-status-audio','settings-status-task_rates','settings-status-npc_scene','audio-volume-settings','task-rate-settings','npc-scene-settings','debug-start-settings','settings-status-debug_start'])elements[k]={};
 elements['setting-toggle-manual-start']={addEventListener(k,f){this[k]=f;},setAttribute(k,v){this[k]=v;}};
+for(const suffix of ['','-editor','-person','-mesh','-bone','-X','-Y','-Z','-export','-status']){
+ elements['attachment-preview'+suffix]={style:{},value:'',addEventListener(k,f){this[k]=f;}};
+}
 let taskRaw='',npcRaw='',debugRaw='';
+let previewRaw='',previewReads=0,previewDeferred=null;
 let s={client:'test',sequence:1,revision:2,active:true,exiting:false,pendingNavigation:null},raw='',visible=true,deferred=null;
 const document={getElementById:k=>elements[k],activeElement:null,addEventListener(k,f){(docEvents[k]??=[]).push(f);}};
 const context={window:{addEventListener(){}},document,setInterval(f){timers.push(f);},Number,String,Object,Math,Promise};
 vm.runInNewContext(fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8'),context);
-const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='settings_npc_scene_state')return Promise.resolve({value:npcRaw});return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
+const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='settings_npc_scene_state')return Promise.resolve({value:npcRaw});if(key==='attachment_preview_state'){previewReads++;return previewDeferred?new Promise(resolve=>{previewDeferred=resolve;}):Promise.resolve({value:previewRaw});}return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
 const number=k=>elements['volume-number-'+k],slider=k=>elements['volume-slider-'+k];
 const event=x=>({button:0,clientX:x,preventDefault(){}});
 function frame(ack=0,values=[100,100,100],code='ok',rev=s.revision){return ['SZ2',s.client,s.sequence,rev,ack,code,...values].join('|');}
@@ -79,5 +83,108 @@ function typed(k,value){number(k).value=value;number(k).change();}
  debug.click();assert.match(writes.at(-1).v,/\|settings_debug_start\|1\|2\|1$/);
  debugRaw=frame(1,[1]);timers[3]();for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(debug['aria-checked'],'true');debug.click();assert.match(writes.at(-1).v,/\|settings_debug_start\|2\|2\|0$/);
+ await checkAttachmentPreview();
  console.log('Settings UI passed: drag/keyboard/numeric input, bounded values, coalesced persistence, retry/ack ordering, stale/foreign frames, failure feedback, panel/Exit cancellation and cross-session settings.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+async function checkAttachmentPreview(){
+ const element=(suffix='')=>elements['attachment-preview'+suffix];
+ const frame=(ack,rows,code='ok',token=s.token)=>['SZ2',s.client,s.sequence,s.revision,ack,code,token,Buffer.from(JSON.stringify(rows)).toString('hex')].join('|');
+ const poll=async()=>{timers[4]();for(let i=0;i<10;i++)await Promise.resolve();};
+ const request=()=>{
+  const packet=writes.filter(row=>row.k==='attachment_preview').at(-1);
+  assert(packet);
+  const [version,client,seq,op,ack,revision,token,hex]=packet.v.split('|');
+  assert.deepEqual([version,client,seq,op,revision,token],['SZ2',s.client,String(s.sequence),'attachment_preview',String(s.revision),s.token]);
+  return {ack:Number(ack),command:JSON.parse(Buffer.from(hex,'hex').toString())};
+ };
+ const select=(kind,value)=>element().click({target:{getAttribute(k){return k==='data-preview-select'?kind:k==='data-preview-option'?value:null;}}});
+ assert.equal(element().style.display,'none');
+ s={...s,playing:true,token:'current-token',counterBase:120};
+ const first={participant:'5',name:'A <B>',role:'male',attachment:'pack.prop.male',mesh:'/Pack/Preview.MeshName',bones:['joint_l','joint_r'],rotations:{}};
+ const second={participant:'6',name:'Second Zoi',role:'partner',attachment:'pack.prop.partner',mesh:'/Pack/Other.OtherMesh',bones:['base'],rotations:{}};
+ previewRaw=frame(0,[first,second],'ok','older-token');
+ await poll();
+ assert.equal(element().style.display,'none','Older tokens cannot load controls');
+ previewRaw=frame(0,[first,second]);
+ await poll();
+ assert.equal(element().style.display,'block');
+ assert.match(element('-person').innerHTML,/A &lt;B&gt;/);
+ assert.match(element('-mesh').innerHTML,/MeshName/);
+ assert.match(element('-bone').innerHTML,/joint_l/);
+ assert(element('-export').disabled,'A scene with no preview edits has nothing to export');
+ select('bone','joint_r');
+ const x=element('-X'), y=element('-Y');
+ const oldWrites=writes.length;
+ x.value='181';x.change();
+ assert.equal(writes.length,oldWrites);
+ assert.match(element('-status').textContent,/-180 to 180/);
+ x.value='23.5';x.change();
+ const a=request();
+ assert.equal(a.ack,121);
+ assert.deepEqual(a.command,{action:'rotate',participant:'5',attachment:'pack.prop.male',bone:'joint_r',rotation:[23.5,0,0]});
+ y.value='-10';y.keydown({key:'Enter',preventDefault(){}});
+ assert.equal(writes.length,oldWrites+1,'Only the latest edit waits for the first acknowledgement');
+ ui.retry();
+ assert.equal(request().ack,a.ack);
+ first.rotations.joint_r=[23.5,0,0];
+ previewRaw=frame(a.ack,[first,second]);
+ await poll();
+ const b=request();
+ assert.equal(b.ack,a.ack+1);
+ assert.deepEqual(b.command.rotation,[23.5,-10,0]);
+ first.rotations.joint_r=b.command.rotation;
+ previewRaw=frame(b.ack,[first,second]);
+ await poll();
+ select('person','6');
+ assert.match(element('-mesh').innerHTML,/OtherMesh/);
+ assert.equal(x.value,'0','Other targets have separate rotations');
+ assert(!element('-export').disabled,'All scene edits can be exported regardless of the selected target');
+ element('-export').click();
+ const exported=request();
+ assert.deepEqual(exported.command,{action:'export'});
+ previewRaw=frame(exported.ack,[first,second],'preview_exported');
+ await poll();
+ assert.match(element('-status').textContent,/scenezoi_runtime\/attachment_pose_reference\.cfg/);
+
+ first.hidden=true;
+ previewRaw=frame(exported.ack,[first,second]);
+ await poll();
+ assert.doesNotMatch(element('-person').innerHTML,/A &lt;B&gt;/);
+ assert(!element('-export').disabled,'An edited hidden mesh can be exported while other meshes stay visible');
+ previewRaw=frame(exported.ack,[first]);
+ await poll();
+ assert.equal(element().style.display,'block');
+ assert.equal(element('-editor').style.display,'none');
+ assert(x.disabled&&!element('-export').disabled,'An edited hidden mesh leaves only Export available');
+ for(const [code,pattern] of [
+  ['preview_export_empty',/no attachment pose edits/],
+  ['preview_export_read',/read the existing/],
+  ['preview_export_full',/64 KiB/],
+  ['preview_export_write',/write the attachment/]
+ ]){
+  element('-export').click();
+  const attempt=request();
+  assert.deepEqual(attempt.command,{action:'export'});
+  previewRaw=frame(attempt.ack,[first],code);
+  await poll();
+  assert.match(element('-status').textContent,pattern);
+  assert(!element('-export').disabled,'A failed export can be retried');
+ }
+
+ s.pendingNavigation='pending';ui.update();
+ assert(x.disabled);
+ s.pendingNavigation=null;
+ previewDeferred=true;timers[4]();const finishRead=previewDeferred;await Promise.resolve();
+ s={...s,revision:s.revision+1};ui.update();
+ finishRead({value:previewRaw});for(let i=0;i<10;i++)await Promise.resolve();
+ assert.equal(element().style.display,'none','A late previous revision cannot expose the old attachments');
+ previewDeferred=null;
+ previewRaw=frame(0,[]);
+ await poll();
+ assert.equal(element().style.display,'none','The panel disappears when no attachments qualify');
+ visible=false;
+ const readsBefore=previewReads;
+ await poll();
+ assert.equal(previewReads,readsBefore,'Preview polling only runs while Scene Settings is open');
+}

@@ -50,17 +50,18 @@ function M.format(fields, separator)
 end
 
 function M.save(key, data)
-    if data:find('"', 1, true) then return false end
-    local ok, saved = pcall(inzoi.cli.execute, "uimod.cfg_save" .. command .. " key=" .. key
+    if data:find('"', 1, true) then return false, "Unescaped quote in CFG value" end
+    local ok, saved, message = pcall(inzoi.cli.execute, "uimod.cfg_save" .. command .. " key=" .. key
         .. ' value="' .. data .. '"')
-    return ok and saved
+    if not ok then return false, saved end
+    return saved, message
 end
 
-local function load(key)
+function M.load(key)
     local ok, message, data = inzoi.cli.execute("uimod.cfg_load" .. command .. " key=" .. key)
     if not ok then
         if message and message:find("Key not found", 1, true) then return "" end
-        return nil
+        return nil, message
     end
     local raw = data or message
     if not raw or raw == "" then return "" end
@@ -324,7 +325,7 @@ local function inventory()
         task_conflict_count = #task_conflicts, task_conflicts = conflict_sample(task_conflicts),
         localization_conflict_count = #label_conflicts, localization_conflicts = conflict_sample(label_conflicts),
         game_phase = game.phase, map_id = game.map_id,
-        ui_build = query(load, "ui_build"), ui_boot = query(load, "ui_boot"),
+        ui_build = query(M.load, "ui_build"), ui_boot = query(M.load, "ui_boot"),
         registered_content_files = declarations.file_count,
     }
     local signature = M.format(report, "\n")
@@ -349,7 +350,7 @@ local function flush(journal)
     if not journal.loaded then
         -- A transient read failure leaves the previous run's history unknown.
         -- Keep the new entries pending so the first write cannot erase it.
-        local previous = query(load, journal.key)
+        local previous = query(M.load, journal.key)
         if previous == nil then
             if not journal.read_failed then
                 print("[SceneZOI] Could not read " .. journal.key .. ". Will retry.")

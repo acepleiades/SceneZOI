@@ -13,6 +13,20 @@ Use the [framework manifest](../packs/scenezoi.json) and [neutral scenes](../pac
 New to character animation? Start with [Make your first SceneZOI animation](first-animation.md)
 for the Maya and Blender rigs, exporters and a first in-game test.
 
+## Port existing animations
+
+1. Identify which source clip belongs to each Zoi. Retarget the body motion
+   to the inZOI skeleton and keep the clips on the same frame range, frame
+   rate and origin so they stay in sync. [Rigs, export and import](first-animation.md#4-export-each-participant)
+2. Copy a compatible scene as a starting point and replace its tracks with
+   your imports. Check which hub the scene connects to and whether the scene
+   needs furniture or a separate attachment. [Scenes and participants](#scenes-and-participants) · [Furniture](furniture.md)
+3. Test the port in game. Check contact between Zois and furniture through a
+   full loop. If your source lacks a separate track for a skeletal attachment,
+   you can [set its rest angles in game](#port-an-animation-without-a-separate-attachment-track).
+   An AI assistant can help adapt the scene JSON using your clips, role
+   assignments and [attachment pose export](#find-the-angles-in-game).
+
 ## Files and native project
 
 Create and register your own project through ModKit. Give your pack a namespace,
@@ -108,6 +122,90 @@ double authored root offset. Resources have independent ownership and cleanup.
 See [head attachments and fixed facial poses](facial-poses.md) and
 [coverage/material profiles](package-split.md#presentation-and-compatibility-profiles).
 
+### Port an animation without a separate attachment track
+
+**I'm porting an animation and don't have a separate track for the penis or
+strap-on mesh. What can I do?**
+
+A source animation may animate those bones directly on the character's
+skeleton. In SceneZOI, the anatomy or strap-on is a separate skeletal
+attachment. Retarget the character motion to inZOI and import the body
+tracks as usual. Attach a compatible skeletal mesh through a scene
+attachment or coverage rule. Without a clip, the mesh uses its rest pose.
+If it points the wrong way, you can set fixed bone angles for that scene.
+The same feature works for other skeletal attachments, such as a tongue.
+[Export and import body tracks](first-animation.md#4-export-each-participant) ·
+[Attachments and coverage rules](package-split.md#presentation-and-compatibility-profiles)
+
+Omit `animation` for the inline attachment, or leave the scene out of the
+coverage rule's `node_animations`. Check that `retained_tracks` isn't supplying
+a clip for this scene. An attachment clip takes precedence over fixed angles.
+Use a separate clip if the attachment needs its own movement during the scene.
+
+#### Find the angles in game
+
+1. Launch the scene using the [debug picker](group-support.md#solo-launcher-and-debug-picker).
+   Once the mesh is visible on the Zoi, open **Scene Settings** from the cog.
+   **Attachment pose preview** appears at the top when the scene owns a visible
+   skeletal attachment with editable bones and supplies neither a clip nor
+   saved angles for that attachment.
+2. Select the Zoi, the attachment, and the bone you want to adjust. Enter
+   X, Y and Z under **Local rotation (degrees)**, then click out of the edited
+   field to apply it. For the HZoi anatomy mesh, try `spline_01_x` first.
+   Watch the loop to see if the angle works throughout the motion.
+3. Once your edits have applied, click **Export reference values**. The export
+   includes attachments you edited and then hid with an outfit change. Open
+   `attachment_pose_reference.cfg` inside SceneZOI's `scenezoi_runtime` folder.
+   The file records the scene ID, role, attachment ID, bone and angles.
+   Exporting the same scene again replaces all its rows and keeps exports for
+   other scene IDs. Preview edits clear when you switch scenes or exit.
+
+If the preview is missing, check that the mesh is actually visible and
+that a retained track or coverage rule isn't supplying an animation. To
+preview new angles for an attachment that already has them, temporarily
+remove its `attachment_rest_rotations` entry from your test build or leave its
+bone map empty. If export reports that the file would exceed 64 KiB, move the
+existing CFG out of `scenezoi_runtime` and export again. For read or write
+errors, check the export warning in `scene_history.cfg` for details.
+
+#### Put the angles in your scene JSON
+
+SceneZOI reads the angles from the scene JSON. The CFG gives you a record of
+your in-game adjustments to copy over. Find the scene by its ID and add
+`attachment_rest_rotations` at the same level as `tracks`. Use the role from
+the scene JSON, such as `male`, and the exact attachment ID from the export.
+An inline attachment uses its key under `attachments`. A coverage attachment
+uses the rule ID followed by the role, so `hzoi.region_attachment` on the
+`male` role becomes `hzoi.region_attachment.male`.
+
+```json
+{
+  "attachment_rest_rotations": {
+    "male": {
+      "hzoi.region_attachment.male": {
+        "spline_01_x": [0, -35, 0],
+        "spline_02_x": [0, 0, 22.5]
+      }
+    }
+  }
+}
+```
+
+Each array contains X, Y and Z offsets in the bone's local axes, in degrees
+from -180 to 180. Zero leaves that axis at rest. Unlisted bones keep their
+local rest rotations and follow their parents. The alignment bone, such as
+HZoi's `pelvis`, and its ancestors stay protected so the mesh stays aligned
+to the Zoi. SceneZOI logs and skips unknown bones, protected bones, and
+attachment IDs that don't resolve for the given scene role.
+
+If you're porting several scenes, hand the CFG and your pack's scene files
+to an AI assistant. Ask it to match each CFG row by scene ID and merge the
+XYZ values under the exact role, attachment ID and bone, keeping the other
+scene fields intact. Have it show you the diff and flag any IDs it can't
+match. Rebuild your pack and check the alignment through a full loop in
+game. Switch to another scene to verify that its own clip, angles or rest
+pose take effect.
+
 ## Verify your pack
 
 1. Run the catalog build above. Use [isolated packaging](development.md#isolated-packaging)
@@ -148,6 +246,10 @@ For a first standing pair, point the agent to the
 Ask it to import your tracks, adapt the JSON in your own pack, and build and
 [filter a test package](development.md#isolated-packaging) to its owned assets.
 
+If you're porting clips without separate attachment tracks, include the
+[attachment pose reference export](#find-the-angles-in-game) for any meshes
+you aligned in game.
+
 A successful first test means the scene appears at the intended entry, all
 tracks play together, and Exit restores gameplay. Test with SceneZOI and your
 pack enabled, plus any dependencies you actually declared. Have the agent report
@@ -167,6 +269,7 @@ volume separately from the effects slider, then watch the task finish.
 | Eye targets | [Gaze](gaze.md) |
 | A Zoi's voice | [Make a voice set](voice-set-authoring.md), [scene instructions and responses](voices.md) |
 | Props, contact sounds and ambience | [Sound effects](sfx.md) |
+| A skeletal attachment without a clip | [Rest pose and preview](#port-an-animation-without-a-separate-attachment-track) |
 | Numerical tasks, completion routes and one-shot actions | [Scene tasks](scene-tasks.md) |
 | Authored one-shot transition nodes | [Transitions](transitions.md) |
 | Procedural completion effects and timing | [Completion responses](completion-effects.md) |

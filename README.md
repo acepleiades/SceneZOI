@@ -28,7 +28,8 @@ SceneZOI runs on its own. Animation packs can add new scenes to its built-in idl
 
 ## Make a mod for SceneZOI
 
-- **Animation packs.** Get the Maya or Blender rig and exporter, then take a short loop from your editor into the game. [Make your first animation](docs/first-animation.md) · [Write and package a content pack](docs/authoring.md)
+- **Port existing animations.** Retarget the body tracks to inZOI and build a scene around them. If you're missing a separate track for anatomy or another attachment, pose the mesh in game and use an AI assistant to transfer the preview values into your scene JSON. [Porting workflow](docs/authoring.md#port-existing-animations) · [Missing attachment tracks](docs/authoring.md#port-an-animation-without-a-separate-attachment-track)
+- **Create animations.** Get the Maya or Blender rig and exporter, then take a short loop from your editor into the game. [Make your first animation](docs/first-animation.md) · [Write and package a content pack](docs/authoring.md)
 - **Voice sets.** Give Zois their own voices for existing scenes or new ones. [Make a voice set](docs/voice-set-authoring.md)
 - **Expression sets.** Give Zois different facial reactions in the same scene. You can use the game's facial animation clips. [Make an expression set](docs/expressions.md#authoring-your-own-sets)
 - **Gameplay mods.** Find compatible scenes, start one for the player or NPCs, and react to what happens in it. [Make a gameplay add-on](docs/addon-authoring.md) · [API reference](docs/addons.md)

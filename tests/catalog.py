@@ -63,6 +63,23 @@ class FrameworkCatalogTests(unittest.TestCase):
     self.pack['attachment_extensions']=value
     with self.assertRaisesRegex(ValueError,'attachment_extensions.*coverage_attachment'):
      compile_packs([self.pack],link=False)
+ def test_attachment_rest_rotations_are_role_and_attachment_specific(self):
+  node=self.pack['nodes'][0]
+  node['attachments']={'prop':{'participant':'male','socket':'pelvis','reference_bone':'pelvis',
+                              'mesh':'/Test/Mesh.Mesh'}}
+  node['attachment_rest_rotations']={'male':{'prop':{'joint_1':[0,-20,5]}},
+                                     'female':{'example.coverage.female':{'joint_2':[180,0,-180]}}}
+  compiled=compile_packs([self.pack])['nodes'][node['id']]
+  self.assertEqual(compiled['attachment_rest_rotations'],node['attachment_rest_rotations'])
+  bones=node['attachment_rest_rotations']['male']['prop']
+  for bad in ([0,0], [0,0,0,0], [181,0,0], [False,0,0], [float('inf'),0,0], [float('nan'),0,0], {'x':0,'y':0,'z':0}):
+   with self.subTest(rotation=bad):
+    bones['joint_1']=bad
+    with self.assertRaisesRegex(ValueError,'Attachment rotation requires three'):
+     compile_packs([self.pack])
+  bones['joint_1']=[0,0,0]
+  node['attachment_rest_rotations']['unbound']={}
+  with self.assertRaises(ValueError):compile_packs([self.pack])
  def test_native_stage_has_no_static_catalog(self):
   with tempfile.TemporaryDirectory()as directory:
    project=Path(directory);(project/'workspace').mkdir()

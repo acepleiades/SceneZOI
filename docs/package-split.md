@@ -107,6 +107,8 @@ snapshots and anchor/furniture context remain session-owned.
 section, attachment asset/bones, profile IDs, optional per-node animation mappings
 and retained lifetime. Each matching role receives its own named resource. Manual
 outfit changes can activate it without visiting a particular pack scene first.
+When the rule supplies no clip for a scene, use the
+[rest pose or optional per-scene bone angles](authoring.md#port-an-animation-without-a-separate-attachment-track).
 
 `body_profile` data describes actual coverage, render-section/mesh layout, material
 requirements and replacement patch. `material_profile` maps source textures or

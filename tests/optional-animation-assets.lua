@@ -17,6 +17,7 @@ end
 local hub = scene('hub')
 hub.hub = hub.id
 hub.task_completion_routes = {lead = {charge = 'test.optional'}}
+hub.attachment_rest_rotations = {lead = {['test.rule.lead'] = {joint_1 = {0, -20, 5}}}}
 local target = scene('optional')
 target.hide_if_tracks_missing = true
 target.starting_hub = true
@@ -126,4 +127,54 @@ check(false)
 assets[named_track] = 10
 assert(not Catalog.get_snapshot().nodes[target.id], 'Ongoing requests use the cached catalog')
 assert(Catalog.refresh(true).nodes[target.id], 'Startup rechecks mounted assets even when declarations are unchanged')
-print('Optional tracks passed: no tracks, partial tracks, all tracks, invalid duration, attachment assets and catalog graph pruning.')
+local resolved_hub, resolved_target = Catalog.get(hub.id), Catalog.get(target.id)
+local trackless = resolved_hub.attachments['test.rule.lead']
+assert(trackless and not trackless.animation)
+assert(V.equal(resolved_hub.attachment_rest_rotations.lead['test.rule.lead'].joint_1, {0, -20, 5}))
+assert(resolved_target.attachments['test.rule.lead'].animation == accessory)
+local SceneData = require('SceneZOI.SceneData')
+for _,rotation in ipairs({{0, 0}, {0, 0, 0, 0}, {0, math.huge, 0}, {0, 0/0, 0}, {false, 0, 0},
+                           {0, 0, -181}, {x = 0, y = 0, z = 0}}) do
+    local invalid = V.copy(hub)
+    invalid.attachment_rest_rotations.lead['test.rule.lead'].joint_1 = rotation
+    assert(not pcall(SceneData.node, invalid, 'test'), 'Invalid attachment rotation was accepted')
+end
+local unbound = V.copy(hub)
+unbound.attachment_rest_rotations.stranger = unbound.attachment_rest_rotations.lead
+local accepted, error_message = pcall(SceneData.node, unbound, 'test')
+assert(not accepted and error_message:find('Unbound attachment rotation owner stranger in test.hub', 1, true))
+
+local Subsystems = require('SceneZOI.Subsystems')
+local Diagnostics = require('SceneZOI.Diagnostics')
+local warnings = {}
+Diagnostics.record = function(event, fields)
+    assert(event == 'attachment_rest_pose_warning')
+    assert(fields.scene_id == hub.id)
+    warnings[fields.attachment_id] = fields
+end
+resolved_hub.attachment_rest_rotations.lead.absent = {joint_1 = {0, 5, 0}}
+resolved_hub.attachment_rest_rotations.lead.empty = {}
+resolved_hub.attachment_rest_rotations.partner = {['test.rule.lead'] = {joint_1 = {0, 5, 0}}}
+local loaded = Subsystems.load(resolved_hub, hub.duration)
+assert(loaded[1].engine.id ~= 'attachment', 'Covered attachments can be declared without being instantiated')
+assert(warnings.absent.participant_role == 'lead' and warnings.absent.detail == 'No attachment with this ID is declared for the scene.')
+assert(warnings['test.rule.lead'].participant_role == 'partner' and warnings['test.rule.lead'].declared_role == 'lead')
+assert(not warnings.empty, 'An empty map must not create a dangling reference warning')
+assert(not warnings['test.rule.lead'].bone, 'Ownership warnings describe an attachment, not a bone')
+
+warnings = {}
+resolved_hub.attachment_rest_rotations.lead.absent = nil
+resolved_hub.attachment_rest_rotations.partner = {prop = {joint_1 = {0, 5, 0}}}
+local retained = {id='prop', owner_id=partner.id, engine={id='attachment'},
+    context={node={attachment={participant='partner', mesh=named_mesh,
+        socket='hand_l', reference_bone='root', retain_for_session=true}}}}
+lead.AppearanceComponent = {AppearanceSetting={FinalStyle={Outfit={Garments={
+    ToTable=function() return {{BodyFlags=1 << 1}} end,
+}}}}}
+loaded = Subsystems.load(resolved_hub, hub.duration, {
+    participants={{id=lead.id, role='lead', body=lead.body, actor=lead}, {id=partner.id, role='partner', body=partner.body, actor=partner}},
+    retained_subsystems={['attachment:prop']=retained},
+})
+assert(loaded[1].retained == retained and next(warnings) == nil,
+    'Valid coverage and retained declarations must satisfy ownership before outfit filtering')
+print('Optional tracks passed: asset availability, catalog pruning, and attachment pose ownership diagnostics.')

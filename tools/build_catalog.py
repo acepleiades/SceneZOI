@@ -54,6 +54,22 @@ def edge(value):
               and not any(ord(c) < 32 for c in caption), 'Invalid navigation label')
 
 
+def validate_attachment_rest_rotations(value, participants):
+    fields(value, participants.keys(), [])
+    for attachments in value.values():
+        check(isinstance(attachments, dict), 'Expected attachment rest rotations by attachment ID')
+        for attachment_id, bones in attachments.items():
+            check(isinstance(attachment_id, str) and len(attachment_id) <= 193
+                  and ID.fullmatch(attachment_id), 'Invalid attachment ID')
+            check(isinstance(bones, dict), 'Expected attachment rest rotations by bone')
+            for bone, rotation in bones.items():
+                check(isinstance(bone, str) and 0 < len(bone.encode('utf-8')) <= 160 and bone.strip()
+                      and not any(ord(c) < 32 for c in bone), 'Invalid attachment bone name')
+                check(isinstance(rotation, list) and len(rotation) == 3
+                      and all(type(degrees) in (int, float) and -180 <= degrees <= 180 for degrees in rotation),
+                      'Attachment rotation requires three finite angles in [-180, 180] degrees')
+
+
 def compile_packs(packs, link=True):
     nodes, pack_ids, extensions = {}, set(), []
     sounds = {}
@@ -72,7 +88,7 @@ def compile_packs(packs, link=True):
         check(isinstance(pack['nodes'], list) and isinstance(pack['extensions'], list), 'Expected pack arrays')
         for node in pack['nodes']:
             fields(node, ['id', 'label', 'kind', 'destination', 'hub', 'duration', 'fps', 'participants', 'anchor_participant',
-                          'tracks', 'hide_if_tracks_missing', 'outfits', 'attachments', 'gaze', 'expressions', 'voices', 'tasks', 'task_providers', 'task_completion_sounds', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
+                          'tracks', 'hide_if_tracks_missing', 'outfits', 'attachments', 'attachment_rest_rotations', 'gaze', 'expressions', 'voices', 'tasks', 'task_providers', 'task_completion_sounds', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
                    ['id', 'label', 'kind', 'duration', 'fps', 'participants', 'anchor_participant', 'tracks', 'navigation'])
             from scene_metadata import validate_scene
             validate_scene(node)
@@ -187,6 +203,8 @@ def compile_packs(packs, link=True):
                         identifier(target); path(animation)
                 check(not spec.get('body_profile') or spec['participant'] in outfits or spec.get('when_undressed'),
                       'Body preparation requires an outfit directive or undressed-owner condition')
+            if 'attachment_rest_rotations' in node:
+                validate_attachment_rest_rotations(node['attachment_rest_rotations'], participants)
             check(isinstance(node['navigation'], list), 'Expected navigation array')
             for item in node['navigation']:
                 edge(item)

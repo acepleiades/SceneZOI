@@ -3,12 +3,31 @@ local M = {}
 local Body = require("SceneZOI.BodyRegion")
 local Color = require("SceneZOI.MaterialMatch")
 local Config = require("SceneZOI.Config")
+local Diagnostics = require("SceneZOI.Diagnostics")
 local OutfitState = require("SceneZOI.OutfitState")
+local RestPose = require("SceneZOI.AttachmentRestPose")
 local COMPONENT_SPACE = 2
 local KEEP_RELATIVE = 0
 local function attachment_parent(actor,spec)
     if spec.component=="head"then return require("SceneZOI.GazeNative").head(actor)end
     return actor.Mesh
+end
+
+local function warn(session, bone, reason)
+    local explanation = reason == "protected_attachment_anchor" and
+        "Changing the reference bone or an ancestor would move the attachment off its anchor."
+        or tostring(reason)
+    Diagnostics.record("attachment_rest_pose_warning", {scene_id=session.node.id,
+        attachment_id=session.node.attachment_id, participant_role=session.node.attachment.participant,
+        revision=session.scene_revision, bone=bone, detail=Diagnostics.detail(explanation)})
+    print("[SceneZOI] Attachment rest pose: " .. explanation .. (bone and (" (" .. bone .. ")") or ""))
+end
+
+local function authored_rotations(session)
+    local spec = session.node.attachment
+    local role = (session.node.attachment_rest_rotations or {})[spec.participant]
+    local bones = role and role[session.node.attachment_id]
+    return bones and next(bones) and bones or nil
 end
 
 function M.load(node, duration)
@@ -79,53 +98,97 @@ function M.status(session)
     return "waiting_participants"
 end
 
-function M.prepare(session, actor)
-    if not session.node.attachment then return true end
-    local clothes_ready, detail = clothes_removed(actor, session)
-    if not clothes_ready then session.attachment_wait = detail; return false end
-    if session.node.attachment.body_profile and not Body.prepare(session, actor) then
-        session.attachment_wait = "body_prepare:" .. Body.status(session)
-        return false
-    end
+local function create_component(session, slot, actor, parent, poseable)
     local spec = session.node.attachment
-    local parent = attachment_parent(actor,spec)
-    if not parent then session.attachment_wait = "parent"; return false end
-    session.attachment_wait = nil
-    assert(parent and parent:GetBoneIndex(spec.socket) >= 0, "Participant has no configured socket bone")
-    if session.attachment then
-        local attachment = session.attachment
-        if attachment.parent ~= parent then
-            if attachment.component.RemoveTickPrerequisiteComponent then attachment.component:RemoveTickPrerequisiteComponent(attachment.parent)end
-            assert(attachment.component:K2_AttachToComponent(parent, spec.socket, KEEP_RELATIVE, KEEP_RELATIVE, KEEP_RELATIVE, false))
-            attachment.component:K2_SetRelativeTransform(attachment.offset, false, nil, true)
-            attachment.component:AddTickPrerequisiteComponent(parent)
-            attachment.parent, attachment.ready_frames = parent, 0
-        end
-        return true
-    end
+    local class = poseable and assert(UE.UPoseableMeshComponent, "PoseableMeshComponent is unavailable") or UE.USkeletalMeshComponent
     -- AddComponentByClass with deferred finish=false registers the component with its owner.
-    local component = actor:AddComponentByClass(UE.USkeletalMeshComponent:StaticClass(), true, UE.FTransform(), false)
+    local component = actor:AddComponentByClass(class:StaticClass(), true, UE.FTransform(), false)
     assert(component, "Could not create the attachment skeletal component")
-    session.attachment = {component = component, actor = actor, parent = parent, ready_frames = 0}
+    local attachment = {component = component, actor = actor, parent = parent, ready_frames = 0, poseable = poseable}
+    session[slot] = attachment
     component:SetHiddenInGame(true, true)
     component:SetCollisionEnabled(0)
     component:SetGenerateOverlapEvents(false)
     component:SetSimulatePhysics(false)
-    component:SetSkeletalMeshAsset(session.attachment_asset)
+    if poseable then
+        component:SetSkinnedAssetAndUpdate(session.attachment_asset, true)
+        assert(component:GetSkinnedAsset() == session.attachment_asset, "Poseable attachment mesh could not be assigned")
+    else
+        component:SetSkeletalMeshAsset(session.attachment_asset)
+        -- The mesh's skeleton is independent of its parent's animation.
+        component:SetAnimationMode(1)
+    end
     assert(component:GetBoneIndex(spec.reference_bone) >= 0, "Attachment skeleton has no configured reference bone")
-    -- This component has an independent skeleton; do not set the Zoi as a LeaderPose component.
-    component:SetAnimationMode(1)
-    local rest_reference = component:GetSocketTransform(spec.reference_bone, COMPONENT_SPACE)
+    local rest_reference
+    if poseable then
+        attachment.pose, rest_reference = RestPose.bind(component, spec.reference_bone)
+    else
+        rest_reference = component:GetSocketTransform(spec.reference_bone, COMPONENT_SPACE)
+    end
     local offset = UE.UKismetMathLibrary.InvertTransform(rest_reference)
-    session.attachment.offset = offset
+    attachment.offset = offset
     assert(component:K2_AttachToComponent(parent, spec.socket, KEEP_RELATIVE, KEEP_RELATIVE, KEEP_RELATIVE, false),
         "Could not attach attachment to the configured socket")
     -- Inverse bind offset cancels the attachment's own root-to-reference transform; snapping only its
     -- component origin to the target socket would apply the authored reference offset a second time.
     component:K2_SetRelativeTransform(offset, false, nil, true)
     component:AddTickPrerequisiteComponent(parent)
-    M.change_animation(session)
     component:PrestreamTextures(3, true, 0)
+end
+
+local function reparent(attachment, parent, spec)
+    if attachment.parent == parent then return end
+    local component = attachment.component
+    if component.RemoveTickPrerequisiteComponent then component:RemoveTickPrerequisiteComponent(attachment.parent) end
+    assert(component:K2_AttachToComponent(parent, spec.socket, KEEP_RELATIVE, KEEP_RELATIVE, KEEP_RELATIVE, false))
+    component:K2_SetRelativeTransform(attachment.offset, false, nil, true)
+    component:AddTickPrerequisiteComponent(parent)
+    attachment.parent, attachment.ready_frames = parent, 0
+end
+
+local function destroy_component(session, slot)
+    local attachment = session[slot]
+    if attachment then
+        attachment.component:K2_DestroyComponent(attachment.actor)
+        session[slot] = nil
+    end
+end
+
+function M.prepare(session, actor)
+    local spec = session.node.attachment
+    if not spec then return true end
+    local clothes_ready, detail = clothes_removed(actor, session)
+    if not clothes_ready then session.attachment_wait = detail; return false end
+    if spec.body_profile and not Body.prepare(session, actor) then
+        session.attachment_wait = "body_prepare:" .. Body.status(session)
+        return false
+    end
+    local parent = attachment_parent(actor,spec)
+    if not parent then session.attachment_wait = "parent"; return false end
+    session.attachment_wait = nil
+    assert(parent:GetBoneIndex(spec.socket) >= 0, "Participant has no configured socket bone")
+    local attachment = session.attachment
+    if attachment then reparent(attachment, parent, spec) end
+    if session.pending_attachment then
+        reparent(session.pending_attachment, parent, spec)
+        return true
+    end
+
+    -- Scene data and the preview editor address named scene-owned attachments.
+    -- Add-on effects without that identity can use the ordinary skeletal rest pose.
+    local poseable = session.node.attachment_id ~= nil and not session.attachment_animation and not session.attachment_pose_unavailable
+    if attachment and attachment.poseable == poseable then return true end
+    local slot = attachment and "pending_attachment" or "attachment"
+    if poseable then
+        local ok, err = pcall(create_component, session, slot, actor, parent, true)
+        if ok then return false end
+        destroy_component(session, slot)
+        session.attachment_pose_unavailable = true
+        warn(session, nil, "Bone rotations are unavailable on this attachment: " .. tostring(err))
+        if attachment then return true end
+    end
+    create_component(session, slot, actor, parent, false)
+    if not attachment then M.change_animation(session) end
     return false
 end
 
@@ -157,6 +220,7 @@ end
 -- Switch only the animation on the retained component; preserve bind offset, body patch and colors.
 function M.change_animation(session)
     local attachment = assert(session.attachment, "Attachment component is missing")
+    if attachment.poseable then return end
     local animation = session.attachment_animation
     if attachment.animation == animation then return end
     local component = attachment.component
@@ -168,20 +232,22 @@ function M.change_animation(session)
         component:SetPosition(0, false)
         assert(component:GetAnimInstance(), "Attachment animation instance was not initialized")
     else
-        -- A static definition holds the previous frame-zero pose without an independent clock.
-        component:SetPlayRate(0)
-        component:SetPosition(0, false)
+        -- When using a regular skeletal component, clear the outgoing clip so
+        -- the single-node component can evaluate its reference pose.
+        component:SetAnimation(nil)
     end
     attachment.animation, attachment.position, attachment.ready_frames = animation, 0, 0
 end
 
 function M.ready(session)
     if not session.node.attachment then return true end
-    local attachment = session.attachment
+    local attachment = session.pending_attachment or session.attachment
     if not attachment then session.attachment_wait = "component"; return false end
     local component = attachment.component
     assert(attachment_parent(attachment.actor,session.node.attachment) == attachment.parent, "Participant attachment parent changed during preparation")
-    assert(component:GetSkeletalMeshAsset() == session.attachment_asset, "Attachment mesh was replaced")
+    local mesh
+    if attachment.poseable then mesh = component:GetSkinnedAsset() else mesh = component:GetSkeletalMeshAsset() end
+    assert(mesh == session.attachment_asset, "Attachment mesh was replaced")
     local clothes_ready, detail = clothes_removed(attachment.actor, session)
     if component:GetNumBones() == 0 or not clothes_ready then
         session.attachment_wait = clothes_ready and "bones" or detail
@@ -211,17 +277,72 @@ function M.ready(session)
     session.attachment_wait = nil
     -- This is a post-load component warm-up, not a guessed delay in place of asset loading.
     -- Framework-managed attachments warm up hidden until the body-track handoff.
-    if not session.defer_visibility then component:SetHiddenInGame(false, true) end
+    if not session.defer_visibility and not session.pending_attachment and not attachment.poseable then
+        component:SetHiddenInGame(false, true)
+    end
     attachment.ready_frames = attachment.ready_frames + 1
     return attachment.ready_frames >= 3
+end
+
+local function apply_rotation(session, bone, rotation)
+    local ok, applied, result = pcall(RestPose.apply, session.attachment, bone, rotation)
+    if ok and applied then return true, result end
+    warn(session, bone, ok and result or applied)
+    return false, ok and result or "pose_update_failed"
+end
+
+local function enter_pose(session, attachment)
+    if attachment.rotations and attachment.pose_scene == session.node.id and
+        attachment.pose_revision == session.scene_revision then return end
+    for bone in pairs(attachment.rotations or {}) do
+        local ok, reason = RestPose.apply(attachment, bone, nil)
+        assert(ok, reason)
+    end
+    attachment.rotations = {}
+    attachment.pose_scene, attachment.pose_revision = session.node.id, session.scene_revision
+    local authored = authored_rotations(session) or {}
+    local names = {}
+    for bone in pairs(authored) do names[#names+1] = bone end
+    table.sort(names)
+    for _, bone in ipairs(names) do
+        local applied, name = apply_rotation(session, bone, authored[bone])
+        if applied then attachment.rotations[name] = authored[bone] end
+    end
 end
 
 -- Commit with the body tracks in one B1 update. A retained component keeps its
 -- outgoing pose throughout preparation; a new component warms up while hidden.
 function M.enter(session)
+    if session.pending_attachment then
+        local previous = session.attachment
+        previous.component:SetHiddenInGame(true, true)
+        session.attachment, session.pending_attachment = session.pending_attachment, previous
+    end
     M.change_animation(session)
+    local attachment = session.attachment
+    if attachment.poseable then enter_pose(session, attachment) end
     session.outfit_visibility_hold = nil
-    session.attachment.component:SetHiddenInGame(session.hide_attachment == true, true)
+    attachment.component:SetHiddenInGame(session.hide_attachment == true, true)
+    destroy_component(session, "pending_attachment")
+end
+
+function M.preview(session, include_hidden_edits)
+    local attachment = session.attachment
+    if not attachment or not attachment.poseable or
+        session.pending_attachment or session.attachment_animation or authored_rotations(session) or
+        not attachment.rotations or attachment.pose_scene ~= session.node.id or
+        attachment.pose_revision ~= session.scene_revision or #attachment.pose.bones == 0 then return nil end
+    local hidden = attachment.component.bHiddenInGame
+    if hidden and (not include_hidden_edits or not next(attachment.rotations)) then return nil end
+    return {mesh=session.node.attachment.mesh, bones=attachment.pose.bones, rotations=attachment.rotations,
+        hidden=hidden and true or nil}
+end
+
+function M.preview_rotation(session, bone, rotation)
+    if not M.preview(session) then return false, "preview_unavailable" end
+    local ok, result = apply_rotation(session, bone, rotation)
+    if ok then session.attachment.rotations[result] = rotation end
+    return ok, result
 end
 
 function M.sample(session, position)
@@ -236,10 +357,8 @@ end
 
 function M.restore(session)
     Body.restore(session)
-    local attachment = session.attachment
-    if not attachment then return end
-    attachment.component:K2_DestroyComponent(attachment.actor)
-    session.attachment = nil
+    destroy_component(session, "pending_attachment")
+    destroy_component(session, "attachment")
 end
 
 return M

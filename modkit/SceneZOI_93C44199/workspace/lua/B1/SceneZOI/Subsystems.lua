@@ -2,6 +2,7 @@
 -- Pack data selects assets and conditions, never executable hooks.
 local Attachment = require("SceneZOI.Attachment")
 local Body = require("SceneZOI.BodyRegion")
+local Diagnostics = require("SceneZOI.Diagnostics")
 local Binding = require("SceneZOI.Binding")
 local OutfitState = require("SceneZOI.OutfitState")
 local Gaze = require("SceneZOI.Gaze")
@@ -52,6 +53,22 @@ local attachment_engine = {
     begin_outfit = Attachment.begin_outfit,
 }
 
+local function warn_unresolved_poses(node, specs)
+    for role, rotations in pairs(node.attachment_rest_rotations or {}) do
+        for id, bones in pairs(rotations) do
+            local spec = specs[id]
+            if next(bones) and (not spec or spec.participant ~= role) then
+                Diagnostics.record("attachment_rest_pose_warning", {
+                    scene_id=node.id, attachment_id=id, participant_role=role,
+                    declared_role=spec and spec.participant,
+                    detail=spec and "The attachment belongs to another role." or
+                        "No attachment with this ID is declared for the scene.",
+                })
+            end
+        end
+    end
+end
+
 -- Each adapter context owns one physical attachment; the host owns a named collection.
 local function attachments(node, duration, session, present)
     local retained = session and session.retained_subsystems or {}
@@ -62,13 +79,15 @@ local function attachments(node, duration, session, present)
         if item.engine.id == "attachment" and not specs[item.id] then
             local spec = copy(item.context.node.attachment)
             spec.animation = spec.retained_tracks and spec.retained_tracks[node.id]
-            assert(spec._condition or spec.animation,"Retained attachment has no animation for the target node")
             spec.participant = nil
             for role, owner in pairs(bindings) do if owner.id == item.owner_id then spec.participant = role end end
             assert(spec.participant, "Retained attachment owner is absent from the target node")
             specs[item.id] = spec
         end
     end
+    -- Resolve coverage and retained declarations before checking ownership. A
+    -- covered attachment is still declared, and the outfit retry needn't relog.
+    if not present then warn_unresolved_poses(node, specs) end
     local ids = {}
     for id in pairs(specs) do ids[#ids+1] = id end
     table.sort(ids)
@@ -92,6 +111,7 @@ local function attachments(node, duration, session, present)
             end
             local effective = copy(node)
             effective.attachment = spec
+            effective.attachment_id = id
             result[#result+1] = {id = id, key = key, engine = attachment_engine,
                 resources = attachment_engine.load(effective, duration), node = effective,
                 retained = previous, owner_id = owner and owner.id}
@@ -168,6 +188,7 @@ function M:prepare(session)
     local ready = true
     for _, item in ipairs(self.items) do
         if item.engine.id == "attachment" then
+            item.context.scene_revision = session.revision
             local owner = session.bindings[item.context.node.attachment.participant]
             item.owner_id = item.owner_id or owner.id
             assert(item.owner_id == owner.id, "Attachment participant changed during the session")

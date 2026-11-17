@@ -112,13 +112,195 @@
         },425);
         update();return {update:update,retry:retry};
     }
+    function previewHex(value){
+        return encodeURIComponent(JSON.stringify(value)).replace(/%([0-9a-f]{2})|([^%])/gi,function(_,byte,char){
+            return byte||('0'+char.charCodeAt(0).toString(16)).slice(-2);
+        });
+    }
+    function previewLabel(value){return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function rotationValues(value){
+        return Array.isArray(value)&&value.length===3&&value.every(function(v){
+            return Number.isFinite(v)&&v>=-180&&v<=180;
+        });
+    }
+    function previewRows(encoded){
+        if(encoded.length>262144||!/^(?:[0-9a-f]{2})+$/i.test(encoded))throw Error('Invalid attachment preview state');
+        var rows=JSON.parse(decodeURIComponent(encoded.replace(/../g,function(byte){return '%'+byte;})));
+        function label(v){return typeof v==='string'&&v.length>0&&v.length<=512&&!/[\x00-\x1f]/.test(v);}
+        if(!Array.isArray(rows)||!rows.every(function(row){
+            return row&&['participant','name','role','attachment','mesh'].every(function(field){return label(row[field]);})
+                &&(row.hidden===undefined||typeof row.hidden==='boolean')
+                &&Array.isArray(row.bones)&&row.bones.every(label)&&row.rotations&&typeof row.rotations==='object'
+                &&!Array.isArray(row.rotations)&&Object.keys(row.rotations).every(function(bone){
+                    return row.bones.indexOf(bone)>=0&&rotationValues(row.rotations[bone]);
+                });
+        }))throw Error('Invalid attachment preview rows');
+        return rows.filter(function(row){return row.bones.length>0;});
+    }
+    function createAttachmentPreview(options){
+        var container=options.container, local=window.SceneZOILocalization;
+        var title='Attachment pose preview', hint='Use local rotation offsets from the rest pose. Preview edits reset when you leave this scene.';
+        var exportLabel='Export reference values';
+        var selectors={person:'Zoi',mesh:'Attachment',bone:'Bone'};
+        var axes=['X','Y','Z'];
+        container.innerHTML='<h3 class="settings-section-title" data-i18n="'+title+'">'+local.html(title)+'</h3>'+
+            '<p class="audio-settings-note" data-i18n="'+hint+'">'+local.html(hint)+'</p>'+
+            '<div id="attachment-preview-editor">'+Object.keys(selectors).map(function(id){return '<div id="attachment-preview-'+id+'"></div>';}).join('')+
+            '<fieldset class="attachment-preview-rotation"><legend data-i18n="Local rotation (degrees)">'+local.html('Local rotation (degrees)')+'</legend>'+
+            '<div class="attachment-preview-axes">'+axes.map(function(axis){
+                return '<label>'+axis+'<input id="attachment-preview-'+axis+'" type="text" inputmode="decimal" maxlength="12" autocomplete="off"></label>';
+            }).join('')+'</div></fieldset></div>'+
+            '<button id="attachment-preview-export" type="button" data-i18n="'+exportLabel+'">'+local.html(exportLabel)+'</button>'+
+            '<div id="attachment-preview-status" role="status" aria-live="polite"></div>';
+        var editor=document.getElementById('attachment-preview-editor'), groups={}, markup={};
+        Object.keys(selectors).forEach(function(key){groups[key]=document.getElementById('attachment-preview-'+key);});
+        var inputs=axes.map(function(axis){return document.getElementById('attachment-preview-'+axis);});
+        var exportButton=document.getElementById('attachment-preview-export'), status=document.getElementById('attachment-preview-status');
+        var identity='', revision=-1, count=0, ack=0, reading=false, pending=null, queued=null, serverBusy=true;
+        var rows=[], person=null, mesh=null, bone=null, choosing=null, displayed='', message='';
+        function sessionKey(state){return state.active&&!state.exiting&&state.token?[state.client,state.sequence,state.token].join('|'):'';}
+        function available(){
+            var state=options.state();
+            return !!identity&&sessionKey(state)===identity&&state.revision===revision&&state.playing&&
+                !state.pendingNavigation&&options.visible()&&!serverBusy;
+        }
+        function selectedRow(){return rows.find(function(row){return !row.hidden&&row.participant===person&&row.attachment===mesh;});}
+        function angles(row){
+            return Object.prototype.hasOwnProperty.call(row.rotations,bone)?row.rotations[bone]:[0,0,0];
+        }
+        function dropdown(id,selected,entries,disabled){
+            var value=entries.find(function(entry){return entry.value===selected;});
+            var label=local.html(selectors[id]), choicesId='attachment-preview-'+id+'-choices';
+            var html='<div class="attachment-preview-label" data-i18n="'+selectors[id]+'">'+label+'</div>';
+            if(entries.length<=1)html+='<div class="attachment-preview-value">'+(value?previewLabel(value.label):'')+'</div>';
+            else html+='<button type="button" class="attachment-preview-picker" data-preview-open="'+id+'" aria-expanded="'+(choosing===id)+'" aria-controls="'+choicesId+'"'+(disabled?' disabled':'')+'>'+
+                previewLabel(value.label)+'</button><div id="'+choicesId+'" class="voice-choices" style="display:'+(choosing===id?'block':'none')+'">'+
+                entries.map(function(entry){return '<button type="button" data-preview-select="'+id+'" data-preview-option="'+previewLabel(entry.value)+'">'+previewLabel(entry.label)+'</button>';}).join('')+'</div>';
+            if(html!==markup[id]){groups[id].innerHTML=html;markup[id]=html;}
+        }
+        function update(){
+            var state=options.state(), next=sessionKey(state);
+            if(next!==identity){identity=next;revision=-1;count=state.counterBase||0;}
+            if(revision!==state.revision||!identity){
+                revision=state.revision;ack=0;pending=null;queued=null;serverBusy=true;
+                rows=[];person=null;mesh=null;bone=null;choosing=null;displayed='';message='';
+            }
+            var visibleRows=rows.filter(function(row){return !row.hidden;});
+            var hasEdits=rows.some(function(row){return Object.keys(row.rotations).length>0;});
+            container.style.display=visibleRows.length||hasEdits?'block':'none';
+            editor.style.display=visibleRows.length?'block':'none';
+            if(!visibleRows.length&&!hasEdits)return;
+            var disabled=!available();
+            if(disabled||pending||!visibleRows.length)choosing=null;
+            if(visibleRows.length){
+                var people=[];
+                visibleRows.forEach(function(row){
+                    if(!people.some(function(entry){return entry.value===row.participant;}))people.push({value:row.participant,label:row.name});
+                });
+                if(!people.some(function(entry){return entry.value===person;}))person=people[0].value;
+                var meshes=visibleRows.filter(function(row){return row.participant===person;});
+                if(!meshes.some(function(row){return row.attachment===mesh;}))mesh=meshes[0].attachment;
+                var row=selectedRow();
+                if(row.bones.indexOf(bone)<0)bone=row.bones[0];
+                dropdown('person',person,people,disabled||!!pending);
+                dropdown('mesh',mesh,meshes.map(function(row){
+                    return {value:row.attachment,label:row.mesh.split('.').pop().split('/').pop()};
+                }),disabled||!!pending);
+                dropdown('bone',bone,row.bones.map(function(name){return {value:name,label:name};}),disabled||!!pending);
+                var values=angles(row), renderKey=JSON.stringify([person,mesh,bone,values]);
+                if(renderKey!==displayed&&!pending&&!inputs.some(function(input){return document.activeElement===input;})){
+                    inputs.forEach(function(input,i){input.value=String(values[i]);});
+                    displayed=renderKey;
+                }
+            }else displayed='';
+            inputs.forEach(function(input){input.disabled=disabled||!visibleRows.length||!!(pending&&pending.command.action==='export');});
+            exportButton.disabled=disabled||!!pending||!hasEdits;
+            status.textContent=local.text(pending?
+                (pending.command.action==='export'?'Exporting reference values…':'Applying preview…'):message);
+        }
+        function send(command){
+            var state=options.state(), next=++count;
+            var packet=['SZ2',state.client,String(state.sequence),'attachment_preview',String(next),String(revision),state.token,previewHex(command)].join('|');
+            pending={count:next,packet:packet,command:command};message='';
+            options.write('attachment_preview',packet).catch(function(){});update();
+        }
+        function applyAngles(){
+            if(!available()||!selectedRow()||(pending&&pending.command.action==='export'))return;
+            var values=inputs.map(function(input){
+                var raw=input.value.trim().replace(',','.');
+                return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)?Number(raw):NaN;
+            });
+            if(!rotationValues(values)){message='Enter angles from -180 to 180 degrees.';update();return;}
+            var command={action:'rotate',participant:person,attachment:mesh,bone:bone,rotation:values};
+            if(pending)queued=command;
+            else if(JSON.stringify(angles(selectedRow()))!==JSON.stringify(values))send(command);
+            else {message='';update();}
+        }
+        inputs.forEach(function(input){
+            input.addEventListener('change',applyAngles);
+            input.addEventListener('keydown',function(event){if(event.key==='Enter'){event.preventDefault();applyAngles();}});
+        });
+        container.addEventListener('click',function(event){
+            if(!available()||pending)return;
+            var target=event.target;
+            while(target&&target!==container){
+                var open=target.getAttribute&&target.getAttribute('data-preview-open');
+                if(open){choosing=choosing===open?null:open;update();return;}
+                var select=target.getAttribute&&target.getAttribute('data-preview-select');
+                if(select){
+                    var value=target.getAttribute('data-preview-option');
+                    if(select==='person'&&person!==value){person=value;mesh=null;bone=null;}
+                    else if(select==='mesh'&&mesh!==value){mesh=value;bone=null;}
+                    else if(select==='bone')bone=value;
+                    choosing=null;message='';update();return;
+                }
+                target=target.parentNode;
+            }
+        });
+        exportButton.addEventListener('click',function(){if(available()&&!exportButton.disabled)send({action:'export'});});
+        var results={
+            preview_invalid:'Could not apply the preview.',
+            preview_stale:'The scene changed. Try again.',
+            preview_export_empty:'There are no attachment pose edits to export.',
+            preview_export_read:'Could not read the existing attachment pose reference file.',
+            preview_export_full:'The attachment pose reference file would exceed 64 KiB.',
+            preview_export_write:'Could not write the attachment pose reference file.',
+            preview_exported:'Exported to scenezoi_runtime/attachment_pose_reference.cfg.'
+        };
+        setInterval(function(){
+            update();
+            var state=options.state(), requested=identity, requestedRevision=revision;
+            if(!requested||!state.playing||!options.visible()||reading)return;
+            reading=true;
+            options.cfg('uimod.cfg_load','attachment_preview_state').then(function(data){
+                var now=options.state(), raw=data&&data.value!==undefined?data.value:data;
+                if(requested!==sessionKey(now)||requestedRevision!==now.revision||typeof raw!=='string')return;
+                var fields=raw.split('|'), received=Number(fields[4]), code=fields[5];
+                if(fields.length!==8||fields[0]!=='SZ2'||fields[1]!==now.client||fields[2]!==String(now.sequence)||
+                    fields[3]!==String(now.revision)||fields[6]!==now.token||!/^\d+$/.test(fields[4])||!Number.isSafeInteger(received)||
+                    received<ack||(code!=='ok'&&code!=='busy'&&!Object.prototype.hasOwnProperty.call(results,code)))return;
+                rows=previewRows(fields[7]);ack=received;count=Math.max(count,received);serverBusy=code==='busy';
+                if(pending&&received>=pending.count){
+                    // Read the host's rotation before applying edits queued during its acknowledgement.
+                    pending=null;message=results[code]||'';
+                    if(queued&&available()&&rows.some(function(row){return !row.hidden&&row.participant===queued.participant&&row.attachment===queued.attachment&&row.bones.indexOf(queued.bone)>=0;})){
+                        var command=queued;queued=null;send(command);
+                    }
+                    queued=null;
+                }
+                update();
+            }).catch(function(){}).then(function(){reading=false;});
+        },480);
+        return {update:update,retry:function(){if(pending&&available())options.write('attachment_preview',pending.packet).catch(function(){});}};
+    }
     window.SceneZOISettingsUI={create:function(options){
-        options.container.innerHTML='<h3 class="settings-section-title"><span data-i18n="Task Progress">'+window.SceneZOILocalization.html("Task Progress")+'</span></h3><div id="task-rate-settings"></div><h3 class="settings-section-title"><span data-i18n="Audio Volume">'+window.SceneZOILocalization.html("Audio Volume")+'</span></h3><div id="audio-volume-settings"></div><h3 class="settings-section-title"><span data-i18n="NPC Scenes">'+window.SceneZOILocalization.html("NPC Scenes")+'</span></h3><div id="npc-scene-settings"></div><h3 class="settings-section-title" data-i18n="Debug">'+window.SceneZOILocalization.html('Debug')+'</h3><div id="debug-start-settings"></div>';
+        options.container.innerHTML='<section id="attachment-preview" style="display:none"></section><h3 class="settings-section-title"><span data-i18n="Task Progress">'+window.SceneZOILocalization.html("Task Progress")+'</span></h3><div id="task-rate-settings"></div><h3 class="settings-section-title"><span data-i18n="Audio Volume">'+window.SceneZOILocalization.html("Audio Volume")+'</span></h3><div id="audio-volume-settings"></div><h3 class="settings-section-title"><span data-i18n="NPC Scenes">'+window.SceneZOILocalization.html("NPC Scenes")+'</span></h3><div id="npc-scene-settings"></div><h3 class="settings-section-title" data-i18n="Debug">'+window.SceneZOILocalization.html('Debug')+'</h3><div id="debug-start-settings"></div>';
         function groupOptions(id){return {container:document.getElementById(id),state:options.state,visible:options.visible,write:options.write,cfg:options.cfg};}
         var tasks=createGroup(groupOptions('task-rate-settings'),'task_rates',['task-female','task-male'],['Female Task Progress Rate','Male Task Progress Rate'],'100% uses authored progress. Choose 10% to 500%.',10,500);
         var audio=createGroup(groupOptions('audio-volume-settings'),'audio',['sfx','female','male'],['Sound Effects','Female Voice Sets','Male Voice Sets'],'100% uses the authored volume. 0% mutes the channel.',0,200);
         var npc=createGroup(groupOptions('npc-scene-settings'),'npc_scene',['npc-scene-length'],['Default NPC Scene Length'],'How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.',5,120,{unit:'in-game min',translated:true,initial:15});
         var debugStart=createGroup(groupOptions('debug-start-settings'),'debug_start',['manual-start'],['SceneZOI manual start'],'Use the picker to start scenes from your Zoi or supported furniture.',0,1,{toggle:true,initial:0});
-        return {update:function(){tasks.update();audio.update();npc.update();debugStart.update();},retry:function(){tasks.retry();audio.retry();npc.retry();debugStart.retry();}};
+        var preview=createAttachmentPreview(groupOptions('attachment-preview'));
+        return {update:function(){preview.update();tasks.update();audio.update();npc.update();debugStart.update();},retry:function(){preview.retry();tasks.retry();audio.retry();npc.retry();debugStart.retry();}};
     }};
 })();

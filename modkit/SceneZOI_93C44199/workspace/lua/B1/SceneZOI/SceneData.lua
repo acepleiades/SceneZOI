@@ -45,6 +45,23 @@ local function attachment(v,roles)
   for id,path in pairs(v.retained_tracks)do V.id(id);V.asset(path)end
  end
 end
+local function attachment_rest_rotations(value,roles,scene_id)
+ assert(V.object(value),'Expected attachment rest rotations by role')
+ for role,attachments in pairs(value)do
+  assert(roles[role],'Unbound attachment rotation owner '..tostring(role)..' in '..scene_id)
+  assert(V.object(attachments),'Expected attachment rest rotations by attachment ID')
+  for id,bones in pairs(attachments)do
+   -- A coverage attachment ID joins the rule ID and role with a period.
+   assert(type(id)=='string'and #id<=193 and id:match('^[a-z][a-z0-9_.%-]*$'),'Invalid attachment ID')
+   assert(V.object(bones),'Expected attachment rest rotations by bone')
+   for bone,rotation in pairs(bones)do
+    V.name(bone);V.array(rotation,3)
+    assert(#rotation==3,'An attachment rotation requires x, y and z')
+    for _,degrees in ipairs(rotation)do V.number(degrees,-180,180)end
+   end
+  end
+ end
+end
 local function edge(v)
  V.fields(v,{'id','label','target'},{'id','target'});V.id(v.id);V.id(v.target)
  if v.label~=nil and v.label~=false then assert(type(v.label)=='string'and #v.label<=400 and not v.label:find('[%z\1-\31]'),'Invalid edge label')end
@@ -54,7 +71,7 @@ function M.node(v,owner)
  local tracks=v.tracks;local placeholder={}
  for role in pairs(v.participants or {})do placeholder[#placeholder+1]=role end
  -- Run the remaining validation without treating dynamic track keys as schema fields.
- V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','attachments','gaze','expressions','voices','tasks','task_providers','task_completion_sounds','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
+ V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','attachments','attachment_rest_rotations','gaze','expressions','voices','tasks','task_providers','task_completion_sounds','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
  require('SceneZOI.FurnitureData').scene(v.furniture)
  require('SceneZOI.MetadataShape').validate(v)
  V.id(v.id);assert(v.id:sub(1,#owner+1)==owner..'.','Node namespace mismatch');V.name(v.label);assert(v.kind=='loop'or v.kind=='transition','Unsupported scene kind')
@@ -74,6 +91,7 @@ function M.node(v,owner)
   V.id(id);attachment(spec,v.participants)
   if spec.body_profile then assert(not profiled[spec.participant],'Multiple region replacement owners');profiled[spec.participant]=true end
  end
+ if v.attachment_rest_rotations~=nil then attachment_rest_rotations(v.attachment_rest_rotations,v.participants,v.id)end
  assert(V.object(v.gaze or {}),'Expected gaze settings');for role,p in pairs(v.gaze or {})do assert(v.participants[role],'Unbound gaze owner');V.point(p,v.participants)end
  assert(V.object(v.expressions or {}),'Expected expression settings')
  for role,spec in pairs(v.expressions or {})do
