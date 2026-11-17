@@ -45,6 +45,7 @@ local poll_elapsed = 0
 local state_value
 local boot_request, last_save_request
 local direct_serial, focus_serial = 0, 0
+local background_client
 local completed, completion_order = {}, {}
 local pending_focus, last_focus
 local last_start_packet
@@ -448,7 +449,7 @@ function M.start_background(row)
     for role, id in pairs(entry.bindings) do assignments[#assignments + 1] = role .. ":" .. id end
     table.sort(assignments)
     direct_serial = direct_serial + 1
-    local current = create_session("host", tostring(direct_serial), entry.initiator, entry.node,
+    local current = create_session(background_client, tostring(direct_serial), entry.initiator, entry.node,
         table.concat(assignments, "+"), entry.furniture, row)
     -- NPCs nobody asked a length for run for the player's default, counted on the game's calendar.
     local lifetime = npc_only and row.default_length and {game_minutes = Settings.npc_scene_minutes()} or row.lifetime
@@ -973,7 +974,8 @@ function M.boot()
     publish_focus()
     Localization.refresh()
     Settings.boot()
-    Addons.boot()
+    -- Panel commands persist on disk and use the client and sequence to identify a scene.
+    background_client, direct_serial = Addons.boot(), 0
     Autosave.boot()
     Save.boot()
     -- Persisted Start/Exit packets belong to the previous runtime, not a new session.

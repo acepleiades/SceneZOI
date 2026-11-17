@@ -345,6 +345,7 @@ function M.boot()
    for _,row in pairs(cache)do if row.status and row.status.session_id==event.id then row.status={phase=event.phase,session_id=event.id,event=event.name,code=event.code}end end
   end
  end)
+ return instance
 end
 local function depart(row)
  for id,done in pairs(row.departures)do if not done then

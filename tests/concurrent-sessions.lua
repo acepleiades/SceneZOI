@@ -84,9 +84,12 @@ playing(second,{5,6})
 -- A player's own start is never refused because of NPC scenes: it is limited only by its own roster.
 R.stop('ok',family);release(family,{7,8})
 -- The panel and autosave follow the controlled Zoi.
-F.controlled=3;heartbeat('host','1');R.tick(.25)
-assert(R.snapshot().id==npc and cfg.focus_session:find(npc,1,true),'Controlling a participant shows that scene')
-assert(cfg.state:find('|host|',1,true)or cfg.state:find('host',1,true),'The panel state now belongs to that scene')
+F.controlled=3;R.tick(.25)
+local focus=P.unpack(cfg.focus_session)
+assert(R.snapshot().id==npc and focus[2]==npc,'Controlling a participant shows that scene')
+heartbeat(focus[3],focus[4])
+local phase=P.unpack(cfg.state)
+assert(phase[1]==focus[3] and phase[2]==focus[4],'The panel state now belongs to that scene')
 assert(F.autosave.enabled==false and require('SceneZOI.Autosave').owner()==npc,'The suspension moves with the controlled Zoi')
 -- This scene never wrote a Start packet, and its panel still works.
 panel_reaches_focused(7)
