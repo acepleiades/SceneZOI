@@ -2,8 +2,12 @@
 
 These controls extend the version-1 native-message contract. Negotiate `get_version.features`: `explicit_bindings`, `preflight`,
 `furniture_discovery`, `session_results`, `integration_leases`, `live_controls`,
-`presentation_overrides`, `facial_poses`, `head_attachments`, `addon_data`, and `events: 2`. For background starts and automatic navigation, see the
+`presentation_overrides`, `facial_poses`, `head_attachments`, `appearance_variants`, `addon_data`, and `events: 2`. For background starts and automatic navigation, see the
 [session and plan API](addons.md#concurrent-and-background-sessions).
+
+For bodies and skeletal attachments selected per Zoi, see
+[appearance variants](appearance-variants.md). These temporary choices remain
+independent of clothing edits and the permanent body stored in the save.
 
 ## Starting and finding
 

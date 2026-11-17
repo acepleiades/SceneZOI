@@ -124,6 +124,19 @@ local function roster(args)
  end
  return rows
 end
+local function appearance(value,ids)
+ if value==nil then return nil end
+ assert(V.object(value),'Expected appearance selections by participant ID')
+ local known,count,selections={},0,{}
+ for _,id in ipairs(ids)do known[id]=true end
+ for id,spec in pairs(value)do
+  assert(type(id)=='string'and id:match('^%d+$')and known[id],'participant_not_found')
+  count=count+1
+  selections[id]=require('SceneZOI.VariantData').validate_selection(spec)
+ end
+ assert(count<=#ids,'Too many appearance selections')
+ return selections
+end
 local function profile(args)
  if args.furniture_id then
   assert(type(args.furniture_id)=='string'and args.furniture_id:match('^%d+$'),'Invalid furniture ID')
@@ -137,7 +150,7 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','start_mode','background','placement','lifetime','goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','lifetime','goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
  local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
  if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
@@ -151,6 +164,7 @@ local function start(actor,req,row,data,preflight)
  local placement=M.placement(args.placement)
  local people=assert(roster(args));local member=false;for _,person in ipairs(people)do if person.id==args.initiator then member=true end end;assert(member,'Initiator must participate')
  local ids={};for _,person in ipairs(people)do ids[#ids+1]=person.id end
+ local selections=appearance(args.appearance,ids)
  assert(not require('SceneZOI.SaveBridge').restore_waiting(),'restore_pending')
  assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id),'restore_pending')
  local Sessions=require('SceneZOI.Sessions')
@@ -180,7 +194,7 @@ local function start(actor,req,row,data,preflight)
  local reserved,reason=Sessions.reserve(row.token,ids,args.furniture_id);assert(reserved,reason)
  for _,p in ipairs(people)do row.departures[p.id]=false end
  row.entry={initiator=args.initiator,node=chosen.scene_id,bindings=chosen.bindings,furniture=args.furniture_id,api_token=row.token}
- row.restrictions=restrictions;row.context=V.copy(args.context);row.status={phase='accepted',scene_id=chosen.scene_id}
+ row.restrictions=restrictions;row.context=V.copy(args.context);row.appearance=selections;row.status={phase='accepted',scene_id=chosen.scene_id}
  row.placement,row.lifetime,row.plan=placement,lifetime,spec
  -- Without a length or a plan the runtime applies the player's NPC default once it knows nobody is household.
  row.default_length=args.lifetime==nil and not spec
@@ -199,7 +213,7 @@ local function execute(actor,req,row)
   return result
  end
  -- Backward compatibility with add-ons that read maximum_sessions as the single focused session limit.
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end

@@ -72,7 +72,32 @@ Requests, resolved appearance and session-entry originals are distinct. B2 ackno
 
 Coverage attachments are declared by content through coverage_attachment, body_profile and material_profile. Resolved garment coverage, not slot names or “all clothes removed”, controls activation/visibility; already exposed bodies and manual edits at neutral hubs use the same generic rule. The retired attachment_extensions authoring field is rejected. Specific coverage bits, mesh layouts and replacement geometry belong to the content owner.
 
+Unmerged native bodies retain all 32 region sections. `ClothingCoverage` mirrors
+the game's resolved `BodyFlags` mask before attachment guards run, including the
+native whole-body exception. It maps native source slots to the rendered body by
+slot name, across every LOD. Clothing removal releases only owned masks; native
+and other owners' hidden sections stay hidden. Body swaps recover the underlying
+visibility before reapplying clothing and attachment masks in the same tick.
+An unsupported or still-merged layout must never be treated as one editable body
+region. Preparation waits for the native layout; incompatible optional body
+variants fall back to a valid body with a diagnostic.
+
 Retained attachments keep independent owner/component/material/body snapshots across navigation. Their tracks share the participant clock; unrelated non-covering edits can preserve visible playback through readiness. Covering or unknown edits retain hide-before-ready. Mesh rebuilds reassert required layout without recapturing originals. Parent native structs remain alive while borrowed fields are read. Missing readiness and partial cleanup must remain retryable.
+
+Body variants change the existing B1 mesh component after native clothing has
+settled. They keep the same Skeleton asset and animation instance. Neither B1
+nor B2 receives a custom mesh in its saved body description. An invisible owned
+component retains the current native mesh and skin materials: Lua references
+alone cannot keep generated Unreal assets alive for restoration. Clothing
+rebuilds replace that baseline; selected meshes are never captured as native.
+Exit restores the latest native body and independently retries keeper cleanup.
+
+The participant lease requests unmerged rendering only after the save-journal
+acknowledgement. A changed merge request must send a native appearance refresh
+even when the scene changes no clothing. Per-Zoi variant choices are session
+state. Appearance edits hold the current pose and preserve clocks, tasks and
+ongoing completion responses. Resolve a single body-region owner before loading
+attachments, including retained resources. See [appearance variants](appearance-variants.md).
 
 ## Events and UI lifecycle
 

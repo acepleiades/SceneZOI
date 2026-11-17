@@ -33,7 +33,7 @@ function M.all(current, field)
 end
 
 function M.cleanup_complete(current)
-    return current.addon_effects_restored and current.subsystems_restored and
+    return current.addon_effects_restored and current.subsystems_restored and current.temporary_bodies_restored and current.clothing_coverage_restored and
         M.all(current,'released')and M.all(current,'client_restored')and
         (not current.furniture or current.furniture_released and not current.furniture_deferred)or false
 end
@@ -47,13 +47,26 @@ end
 function M.change_node(current, node, assets, duration, subsystems)
     current.node, current.assets, current.duration, current.subsystems = node, assets, duration, subsystems
     current.revision, current.age, current.appearance_frames = current.revision + 1, 0, 0
-    current.appearance_wait, current.preparation_stage = nil, nil
+    current.appearance_wait, current.preparation_stage, current.appearance_refresh = nil, nil, nil
     current.preparing, current.participants_ready, current.navigation_code = true, false, "ok"
     current.clock:reset_node()
     current.transition_finished = nil
     current.bindings, current.tracks = nil, {}
     for _, participant in ipairs(current.participants) do participant.node_ready = false end
     if current.tasks then Tasks.enter_node(current.tasks,node) end
+end
+
+-- A mesh choice needs the native readiness handshake, but remains the same
+-- scene visit: preserve its clock, tasks, plan and completion-response state.
+function M.refresh_appearance(current, node)
+    assert(node.id == current.node.id, "Appearance refresh cannot navigate scenes")
+    current.node = node
+    current.revision, current.age, current.appearance_frames = current.revision + 1, 0, 0
+    current.appearance_wait, current.preparation_stage = nil, nil
+    current.preparing, current.participants_ready, current.appearance_refresh = true, false, true
+    for _, participant in ipairs(current.participants) do
+        participant.node_ready, participant.between_nodes = false, true
+    end
 end
 
 function M.snapshot(current)

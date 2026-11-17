@@ -2,6 +2,8 @@
 local Files=require('SceneZOI.DataFiles')
 local Data=require('SceneZOI.SceneData')
 local ProfileData=require('SceneZOI.ProfileData')
+local VariantData=require('SceneZOI.VariantData')
+local VariantSelection=require('SceneZOI.VariantSelection')
 local Profiles=require('SceneZOI.Profiles')
 local V=require('SceneZOI.DataValidation')
 local Json=require('SceneZOI.Json')
@@ -19,23 +21,11 @@ local function load_track(path,duration)
  return asset,length
 end
 
-local function check_tracks(node,rules)
+local function check_tracks(node)
  M.load(node)
  for _,spec in pairs(node.attachments or {})do
   assert(UE.UObject.Load(spec.mesh),"Scene attachment mesh is unavailable: "..spec.mesh)
   if spec.animation then load_track(spec.animation,node.duration)end
- end
- for _,rule in pairs(rules)do
-  local path=(rule.node_animations or {})[node.id]
-  if path then
-   for _,participant in pairs(node.participants)do
-    if participant.body==rule.body then
-     assert(UE.UObject.Load(rule.attachment.mesh),"Scene attachment mesh is unavailable: "..rule.attachment.mesh)
-     load_track(path,node.duration)
-     break
-    end
-   end
-  end
  end
 end
 
@@ -43,7 +33,7 @@ function M.refresh(force)
  local source=Files.get()
  if not force and M.source==source and M.value then return M.value end
  local profiles=ProfileData.compile(source)
- local data=Data.compile(source.by_kind.scene_pack or {},function(node)check_tracks(node,profiles.rules)end)
+ local data=Data.compile(source.by_kind.scene_pack or {},check_tracks)
  data.metadata=Meta.compile(source)
  for _,warning in ipairs(data.metadata.warnings)do data.warnings[#data.warnings+1]=warning end
  for id,node in pairs(data.nodes)do
@@ -86,6 +76,21 @@ function M.refresh(force)
  for _,warning in ipairs(data.furniture.warnings)do data.warnings[#data.warnings+1]=warning end
  data.profiles=profiles
  for _,warning in ipairs(data.profiles.warnings)do data.warnings[#data.warnings+1]=warning end
+ data.variants=VariantData.compile(source)
+ for id,rule in pairs(profiles.rules)do
+  if data.variants.attachments[id]then
+   data.variants.warnings[#data.variants.warnings+1]='Attachment variant '..id..' shadows the selectable coverage declaration with the same ID; use distinct namespaced IDs'
+  else
+   local variant=V.copy(rule)
+   variant.automatic_fallback=true
+   for _,document in ipairs(source.by_kind.coverage_attachment or {})do
+    if V.equal(document.data,rule)then variant._owner=document.owner;break end
+   end
+   data.variants.attachments[id]=variant
+  end
+ end
+ table.sort(data.variants.warnings)
+ for _,warning in ipairs(data.variants.warnings)do data.warnings[#data.warnings+1]=warning end
  for _,warning in ipairs(data.warnings)do print('[SceneZOI] Catalog warning: '..warning)end
  M.source,M.value=source,data;Profiles.set(data.profiles)
  require('SceneZOI.Diagnostics').catalog_changed()
@@ -103,6 +108,7 @@ function M.public_node(node,current)
  end
  return {id=node.id,label=Localization.label('scene',node.id,node.label),kind=node.kind,destination=node.destination,starting_hub=node.starting_hub==true,
   addon_data=V.copy(node.addon_data or {}),participant_addon_data=V.copy(node.participant_addon_data or {}),
+  appearance=V.copy(node.appearance or {}),
   navigation=Json.array(navigation),participants=V.copy(node.participants),furniture=V.copy(node.furniture),
   tags=Json.array(V.copy(node.tags or {})),participant_tags=V.copy(node.participant_tags or {}),actions=Json.array(V.copy(node.actions or {})),content_rating=node.content_rating}
 end
@@ -118,26 +124,33 @@ end
 
 function M.get_snapshot()return M.value or M.refresh()end
 
-function M.get(id,current)
-    local node=V.copy(assert(M.get_snapshot().nodes[id], "Unknown scene node: " .. tostring(id)))
-    if current then assert(Search.allowed(M.get_snapshot().nodes,node,current.session_restrictions),'Scene is restricted for this session')end
-    local rules=M.get_snapshot().profiles.rules
-    for rule_id,rule in pairs(rules)do
-        for role,requirement in pairs(node.participants)do
-            if requirement.body==rule.body then
-                local attachment_id=rule_id..'.'..role
-                node.attachments=node.attachments or {}
-                assert(not node.attachments[attachment_id],'Conflicting exposure attachment ID')
-                local spec=V.copy(rule.attachment)
-                spec.participant,spec.when_undressed=role,true
-                spec.animation=(rule.node_animations or {})[node.id]
-                spec.retained_tracks=V.copy(rule.node_animations or {})
-                spec._condition={body=rule.body,mesh_name=rule.mesh_name,body_age=rule.body_age,growth_steps=V.copy(rule.growth_steps)}
-                spec._cleanup_layers=V.copy(rule.legacy_layers)
-                node.attachments[attachment_id]=spec
+function M.resolve_appearance(node,participants,explicit)
+    local data=M.get_snapshot()
+    return VariantSelection.resolve(node,participants,explicit,data.profiles,data.variants)
+end
+
+function M.variants(body)
+    assert(body==nil or body=='male' or body=='female','Unsupported appearance body')
+    local registry=M.get_snapshot().variants or {bodies={},attachments={}}
+    local result={bodies=Json.array({}),attachments=Json.array({})}
+    for _,kind in ipairs({'bodies','attachments'})do
+        local ids={};for id in pairs(registry[kind])do ids[#ids+1]=id end;table.sort(ids)
+        for _,id in ipairs(ids)do
+            local definition=registry[kind][id]
+            if not body or not definition.body or definition.body==body then
+                local view=V.copy(definition)
+                view.provider,view._owner=view._owner,nil
+                result[kind][#result[kind]+1]=view
             end
         end
     end
+    return result
+end
+
+function M.get(id,current)
+    local node=V.copy(assert(M.get_snapshot().nodes[id], "Unknown scene node: " .. tostring(id)))
+    if current then assert(Search.allowed(M.get_snapshot().nodes,node,current.session_restrictions),'Scene is restricted for this session')end
+    M.resolve_appearance(node,current and current.participants,current and current.appearance_selections)
     for index=#node.navigation,1,-1 do
         local target=M.get_snapshot().nodes[node.navigation[index].target]
         if not target or not V.equal(node.furniture,target.furniture)or(current and not Search.allowed(M.get_snapshot().nodes,target,current.session_restrictions))then table.remove(node.navigation,index)end

@@ -8,7 +8,7 @@ local sequence = 0
 local request_fields = {"addon_id", "client_id", "request_id", "operation", "api_version", "expected_instance_id"}
 local argument_fields = {
     "participants", "initiator", "furniture_id", "scene_id", "search", "session_restrictions",
-    "bindings", "start_mode", "background", "placement", "lifetime", "goals", "restrictions",
+    "bindings", "appearance", "body", "start_mode", "background", "placement", "lifetime", "goals", "restrictions",
     "end_policy", "post_completion_stay_seconds", "task_progress_multiplier", "stages",
     "required_stages", "stage_preferences", "auto_speed", "session_id", "participant_id",
     "task_id", "enabled", "speed_index", "multiplier", "value", "amount", "rate_multiplier",
@@ -20,7 +20,7 @@ local result_fields = {
     "accepted", "valid", "code", "scene_id", "start_request_id", "autonomous", "stages",
     "route_uncertain", "phase", "session_id", "event", "count", "auto_mode", "speed_index",
     "multiplier", "subscribed", "scope", "runtime_build", "value", "percent", "completions",
-    "renewed", "released", "locked", "reservation", "event_cursor", "muted",
+    "renewed", "released", "locked", "reservation", "event_cursor", "muted", "temporary", "appearance", "cleared",
 }
 local session_fields = {
     "id", "node_id", "phase", "revision", "focused", "addon_id", "addon_client_id",

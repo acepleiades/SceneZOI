@@ -42,7 +42,7 @@ executable pack script, author list or generated runtime catalog is required.
 
 An envelope contains `schema_version`, `kind`, `owner` and inert `data`. Consumers
 include `scene_pack`, `expression_set`, `facial_pose`, `body_profile`,
-`material_profile`, `coverage_attachment`, `voice_archetype`, `voice_context`,
+`material_profile`, `coverage_attachment`, `body_variant`, `attachment_variant`, `voice_archetype`, `voice_context`,
 `voice_set`, `scene_task`, `furniture_profile`, `tag_dictionary` and
 `action_dictionary` and `localization`. Unknown kinds remain inert. Executable add-ons use the
 [versioned API](addons.md) instead of private runtime modules.
@@ -116,6 +116,10 @@ appearance colors to declared material parameters. Bone names, coverage bits,
 regions and layout IDs are pack-specific compatibility data, not universal maps.
 Test new profiles against the actual target meshes. Region replacement currently
 permits one adapter per participant; ordinary attachments support multiple owners.
+
+For explicit per-Zoi selection and scene defaults, see
+[appearance variants](appearance-variants.md). A selected body-region variant
+replaces the automatic coverage attachment rather than competing with it.
 
 Body profiles use `schema_version: 2`. A profile declares `section` (the shared
 render/material index), `coverage_bit`, optional `full_coverage_exception`,

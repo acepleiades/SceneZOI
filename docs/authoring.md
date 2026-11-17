@@ -270,6 +270,7 @@ volume separately from the effects slider, then watch the task finish.
 | A Zoi's voice | [Make a voice set](voice-set-authoring.md), [scene instructions and responses](voices.md) |
 | Props, contact sounds and ambience | [Sound effects](sfx.md) |
 | A skeletal attachment without a clip | [Rest pose and preview](#port-an-animation-without-a-separate-attachment-track) |
+| Per-Zoi body and attachment choices | [Appearance variants](appearance-variants.md) |
 | Numerical tasks, completion routes and one-shot actions | [Scene tasks](scene-tasks.md) |
 | Authored one-shot transition nodes | [Transitions](transitions.md) |
 | Procedural completion effects and timing | [Completion responses](completion-effects.md) |

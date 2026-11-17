@@ -88,12 +88,15 @@ def compile_packs(packs, link=True):
         check(isinstance(pack['nodes'], list) and isinstance(pack['extensions'], list), 'Expected pack arrays')
         for node in pack['nodes']:
             fields(node, ['id', 'label', 'kind', 'destination', 'hub', 'duration', 'fps', 'participants', 'anchor_participant',
-                          'tracks', 'hide_if_tracks_missing', 'outfits', 'attachments', 'attachment_rest_rotations', 'gaze', 'expressions', 'voices', 'tasks', 'task_providers', 'task_completion_sounds', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
+                          'tracks', 'hide_if_tracks_missing', 'outfits', 'appearance', 'attachments', 'attachment_rest_rotations', 'gaze', 'expressions', 'voices', 'tasks', 'task_providers', 'task_completion_sounds', 'task_completion_routes', 'movement_timing', 'completion_responses', 'task_completion_voices', 'sfx', 'navigation', 'starting_hub', 'furniture', 'tags', 'participant_tags', 'actions', 'addon_data', 'participant_addon_data'],
                    ['id', 'label', 'kind', 'duration', 'fps', 'participants', 'anchor_participant', 'tracks', 'navigation'])
             from scene_metadata import validate_scene
             validate_scene(node)
             from furniture_data import scene as furniture_scene
             furniture_scene(node.get('furniture'))
+            from appearance_data import scene as appearance_scene
+            if 'appearance' in node:
+                appearance_scene(node['appearance'], node['participants'])
             identifier(node['id']); label(node['label'])
             check(node['id'].startswith(pack['id'] + '.'), 'Node must belong to its pack namespace')
             check(node['id'] not in nodes, 'Duplicate node ID')
@@ -293,6 +296,8 @@ def build(pack_paths, project, expression_paths=None, expression_project=None, p
     documents=pack_documents(pack_paths,expression_paths,packs=packs)
     from localization_data import validate_documents
     validate_documents(documents)
+    from appearance_data import validate_documents as validate_variants
+    validate_variants(documents)
     from voice_data import validate as validate_voice
     voice_ids = {}
     for owner, kind, source, data in documents:

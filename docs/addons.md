@@ -101,6 +101,7 @@ Extended operations are detailed in [the controls reference](addon-controls.md):
 | `get_task_state`, `set_task_progress`, `modify_task_progress`, `set_task_controls` | Complete normalized tasks, real engine progress/rate/completion holds. |
 | `set_voice_mute`, `get_expression_sets`, `get_facial_poses`, `set_expression_override`, `clear_expression_override` | Temporary participant voice/facial presentation. |
 | `get_outfit_state`, `set_outfit_item`, `add_attachment`, `remove_attachment` | Acknowledged clothing and independently owned compatible props. |
+| `get_appearance_variants`, `get_appearance`, `set_appearance`, `clear_appearance` | [Temporary per-Zoi body and attachment choices](appearance-variants.md). |
 
 `get_scene` describes the library, including unrestricted authored edges. For
 session-specific choices, use `get_navigation {session_id}`; the host applies
@@ -147,6 +148,41 @@ Pass `background: true` to `start_scene`, `start_random_scene` or `start_at_hub`
 allow an eligible loaded Zoi, including an NPC, to initiate the session. The panel
 appears when the player controls a participant. Background starts accept two
 optional objects.
+
+### Start concurrent solo scenes
+
+Solo scenes use a one-Zoi roster. To start one for a loaded NPC or while another
+disjoint session runs, pass `background: true` on an ordinary start. Autonomous
+starts already use the background path. This does not change foreground starts:
+without the flag, an ordinary start still requires the controlled initiator.
+
+The SDK's `owner` argument is the loaded Zoi carrying the API message. It is
+separate from `arguments.initiator`, which identifies the Zoi starting the scene.
+The message carrier need not join the roster. For example, an add-on can send
+both requests through one loaded owner:
+
+```lua
+client:request(owner, "solo.female", "start_scene", {
+    scene_id = "scenezoi.solo_idle_female",
+    initiator = "20526", participants = {"20526"},
+    bindings = {female = "20526"}, background = true,
+    lifetime = {deadline_seconds = 120},
+})
+client:request(owner, "solo.male", "start_scene", {
+    scene_id = "scenezoi.solo_idle_male",
+    initiator = "20522", participants = {"20522"},
+    bindings = {male = "20522"}, background = true,
+    lifetime = {deadline_seconds = 120},
+})
+```
+
+Replace the example Zoi IDs with eligible loaded characters. The two rosters
+are disjoint, so both starts can proceed. A participant already reserved by a
+session still returns `participant_busy`; reserved furniture still returns
+`furniture_unavailable`. Wait for each `session_started` before treating it as
+playing. The panel follows whichever participant the player controls.
+
+### Background placement and lifetime
 
 | Field | Meaning |
 | --- | --- |

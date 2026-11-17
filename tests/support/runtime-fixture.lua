@@ -12,7 +12,8 @@ function M.new()
         restore = function(person) person.was_restored = true end, release_input = noop}
     package.loaded["SceneZOI.Subsystems"] = {load = function() return {} end, new = function()
         return {guard = noop, prepare = yes, enter = noop, status = function() return "ok" end, leave_node = noop,
-            begin_outfit = noop, keep_body_unmerged = function() return false end, restore = noop}
+            begin_outfit = noop, keep_body_unmerged = function() return false end, restore = noop,
+            refresh_appearance = noop, enter_appearance = noop}
     end}
     package.loaded["SceneZOI.Playback"] = {enter = noop, hold = yes, leave_node = noop, refresh_subsystem_tracks = noop,
         sample = function(current)
@@ -20,8 +21,12 @@ function M.new()
             fixture.samples[current.token] = (fixture.samples[current.token] or 0) + 1
         end}
     package.loaded["SceneZOI.Appearance"] = {capture = noop, ready = yes, status = function() return "" end}
+    package.loaded["SceneZOI.ClothingCoverage"] = {guard = yes, restore = noop, status = function() return "" end,
+        original_visibility = noop, compatible_body = yes}
+    package.loaded["SceneZOI.VariantSelection"] = {report = noop}
     local tasks = require("SceneZOI.TaskData").compile({by_kind = {}})
     package.loaded["SceneZOI.Catalog"] = {refresh = noop, get = function() return node end,
+        resolve_appearance = function(target) return target end,
         load = function() return {first = "a", second = "b"}, 4 end, simulation = function() return {} end,
         get_snapshot = function() return {nodes = {}, tasks = tasks} end, publish = noop}
     package.loaded["SceneZOI.Binding"] = {resolve = function(people)

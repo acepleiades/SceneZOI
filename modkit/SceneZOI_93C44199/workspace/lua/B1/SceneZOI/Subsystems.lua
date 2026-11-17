@@ -41,6 +41,7 @@ local attachment_engine = {
     end,
     prepare = function(context, session)
         local owner = assert(session.bindings[context.node.attachment.participant], "Attachment owner is unavailable")
+        context.scene_session, context.coverage_owner = session, owner
         context.removed_slots = owner.removed_slots
         local hidden, flags = covered(context.node.attachment, owner)
         context.hide_attachment = context.node.attachment.when_undressed and hidden or false
@@ -69,22 +70,54 @@ local function warn_unresolved_poses(node, specs)
     end
 end
 
+local function selection_slot(spec)
+    return spec._selection_slot or spec.body_profile and "body_region"
+end
+
+local function selected(node, role, id, spec)
+    local slots = node._attachment_slots and node._attachment_slots[role]
+    local slot = selection_slot(spec)
+    if not slots or not slot or slots[slot] == nil then return true end
+    return slots[slot] == id
+end
+
+local function same_attachment(first, second)
+    for _, field in ipairs({"mesh", "component", "socket", "reference_bone", "body_profile", "material_profile"}) do
+        if first[field] ~= second[field] then return false end
+    end
+    return true
+end
+
 -- Each adapter context owns one physical attachment; the host owns a named collection.
 local function attachments(node, duration, session, present)
     local retained = session and session.retained_subsystems or {}
     local bindings = session and Binding.resolve(session.participants, node)
-    local specs, result = {}, {}
-    for id, spec in pairs(node.attachments or {}) do specs[id] = spec end
+    local specs, result, retiring = {}, {}, {}
+    for id, spec in pairs(node.attachments or {}) do
+        if selected(node, spec.participant, id, spec) then specs[id] = spec end
+    end
     for _, item in pairs(retained) do
-        if item.engine.id == "attachment" and not specs[item.id] then
+        if item.engine.id == "attachment" then
             local spec = copy(item.context.node.attachment)
-            spec.animation = spec.retained_tracks and spec.retained_tracks[node.id]
             spec.participant = nil
             for role, owner in pairs(bindings) do if owner.id == item.owner_id then spec.participant = role end end
             assert(spec.participant, "Retained attachment owner is absent from the target node")
-            specs[item.id] = spec
+            if not selected(node, spec.participant, item.id, spec) then
+                retiring[item.key] = item
+            elseif not specs[item.id] then
+                spec.animation = spec.retained_tracks and spec.retained_tracks[node.id]
+                if spec._variant_generated then
+                    spec.animation = require("SceneZOI.VariantSelection").animation(node, spec.retained_tracks,
+                        spec.participant, selection_slot(spec), item.id, bindings[spec.participant])
+                end
+                specs[item.id] = spec
+            elseif not same_attachment(specs[item.id], spec) and
+                node._attachment_slots and selection_slot(specs[item.id]) then
+                retiring[item.key] = item
+            end
         end
     end
+    result.retiring = retiring
     -- Resolve coverage and retained declarations before checking ownership. A
     -- covered attachment is still declared, and the outfit retry needn't relog.
     if not present then warn_unresolved_poses(node, specs) end
@@ -94,7 +127,7 @@ local function attachments(node, duration, session, present)
     for _, id in ipairs(ids) do
         local spec, key = specs[id], "attachment:" .. id
         if not (present and present[key]) then
-        local previous = retained[key]
+        local previous = not retiring[key] and retained[key] or nil
         local owner = bindings and bindings[spec.participant]
         local directive = node.outfits and node.outfits[spec.participant]
         local removed = OutfitState.merge(owner and owner.removed_slots, directive and directive.remove_slots)
@@ -104,9 +137,7 @@ local function attachments(node, duration, session, present)
         if not skip then
             if previous then
                 assert(owner and owner.id == previous.owner_id, "Attachment owner cannot change during retention")
-                for _, field in ipairs({"mesh", "component", "socket", "reference_bone", "body_profile", "material_profile"}) do
-                    assert(spec[field] == previous.context.node.attachment[field], "Retained attachment configuration changed: " .. field)
-                end
+                assert(same_attachment(spec, previous.context.node.attachment), "Retained attachment configuration changed")
                 assert(spec.retain_for_session, "A retained attachment must keep session ownership")
             end
             local effective = copy(node)
@@ -163,17 +194,76 @@ local function add(host, session, loaded_item)
     context.node, context.participants = loaded_item.node, session.participants
     context.defer_visibility = true
     item.owner_id = loaded_item.owner_id or item.owner_id
+    if item.engine.id == "attachment" and not item.owner_id then
+        local bindings = Binding.resolve(session.participants, loaded_item.node)
+        item.owner_id = bindings[context.node.attachment.participant].id
+    end
     item.retain_for_session = loaded_item.retain_for_session == true or
         (item.engine.id == "attachment" and context.node.attachment.retain_for_session == true)
     if item.retain_for_session then host.retained[item.key] = item end
     host.items[#host.items + 1] = item
 end
 
+local function retire(host, retiring)
+    local errors = {}
+    for key, item in pairs(retiring or {}) do
+        local ok, err = true, nil
+        if not item.restored then ok, err = pcall(item.engine.restore, item.context) end
+        if ok then
+            item.restored = true
+            if host.retained[key] == item then host.retained[key] = nil end
+        else
+            errors[#errors + 1] = tostring(err)
+        end
+    end
+    if #errors > 0 then error(table.concat(errors, "; ")) end
+end
+
 function M.new(session, loaded)
     session.retained_subsystems = session.retained_subsystems or {}
     local host = setmetatable({items = {}, retained = session.retained_subsystems, session=session}, M)
+    -- Loading is read-only. Retire the outgoing selected replacement only after
+    -- the caller has committed to the handoff and held its outgoing body tracks.
+    retire(host, loaded.retiring)
     for _, loaded_item in ipairs(loaded) do add(host, session, loaded_item) end
     return host
+end
+
+function M:refresh_appearance(loaded)
+    local existing, desired, retiring = {}, {}, copy(loaded.retiring or {})
+    for _, item in ipairs(self.items) do
+        if item.engine.id == "attachment" then existing[item.key] = item end
+    end
+    for _, entry in ipairs(loaded) do
+        if entry.engine.id == "attachment" then
+            desired[entry.key] = true
+            local previous = existing[entry.key] or entry.retained
+            if previous and not previous.restored and previous.owner_id == entry.owner_id and
+                same_attachment(previous.context.node.attachment, entry.node.attachment) then
+                entry.retained = previous
+            else
+                entry.retained = nil
+                if previous then retiring[previous.key] = previous end
+            end
+        end
+    end
+    for key, item in pairs(existing) do if not desired[key] then retiring[key] = item end end
+    -- A live appearance edit is not a scene transition. Keep completion, sound,
+    -- voice and expression contexts intact while replacing only owned components.
+    retire(self, retiring)
+    local unchanged = {}
+    for _, item in ipairs(self.items) do if item.engine.id ~= "attachment" then unchanged[#unchanged + 1] = item end end
+    self.items = unchanged
+    for _, entry in ipairs(loaded) do
+        if entry.engine.id == "attachment" then add(self, self.session, entry) end
+    end
+    return self
+end
+
+function M:enter_appearance()
+    for _, item in ipairs(self.items) do
+        if item.engine.id == "attachment" then item.engine.enter(item.context) end
+    end
 end
 
 function M:prepare(session)
@@ -212,20 +302,45 @@ function M:keep_body_unmerged(participant, node, bindings)
     end
     -- A manual edit may be the first activation. This does not load the optional
     -- assets or alter entry behavior; it only keeps that edit's native body layout.
-    for _, spec in pairs(node and node.attachments or {}) do
-        if spec.body_profile and bindings[spec.participant] == participant and compatible(spec,participant) then return true end
+    for id, spec in pairs(node and node.attachments or {}) do
+        if selected(node, spec.participant, id, spec) and spec.body_profile and
+            bindings[spec.participant] == participant and compatible(spec,participant) then return true end
     end
     return false
+end
+
+function M:body_visibility(participant, mesh, asset)
+    local result, seen
+    seen = {}
+    local function capture(item)
+        if seen[item] or item.restored or item.owner_id ~= participant.id then return end
+        seen[item] = true
+        local body = item.context.body_region
+        if not body then return end
+        for _, record in ipairs(body.masked or {}) do
+            if record.mesh == mesh and record.asset == asset then
+                -- Report only our original masks. A false garment/native mask
+                -- remains false; another body asset's section layout is unrelated.
+                result = result or {}
+                local section = body.profile.section
+                result[section] = result[section] or {}
+                for _, state in ipairs(record.visibility) do result[section][state.lod] = state.shown end
+            end
+        end
+    end
+    for _, item in ipairs(self.items) do capture(item) end
+    for _, item in pairs(self.retained) do capture(item) end
+    return result
 end
 
 function M:guard()
     -- A covering outfit deliberately prevents attachment creation. Its native
     -- body mask still needs protection throughout/after appearance handoffs.
     local session=self.session;local seen={};local bindings=session.bindings
-    for _,spec in pairs(session.node.attachments or {})do
+    for id,spec in pairs(session.node.attachments or {})do
         bindings=bindings or Binding.resolve(session.participants,session.node)
         local owner=bindings[spec.participant]
-        if owner and spec.body_profile and compatible(spec,owner)then
+        if owner and selected(session.node, spec.participant, id, spec) and spec.body_profile and compatible(spec,owner)then
             local key=owner.id..'|'..spec.body_profile
             if not seen[key]then
                 seen[key]=true

@@ -35,6 +35,28 @@ class FrameworkCatalogTests(unittest.TestCase):
   with self.assertRaises(ValueError):compile_packs([self.pack])
 
  def setUp(self):self.pack=standing_pack()
+ def test_appearance_variants_and_role_defaults(self):
+  import appearance_data
+  body={'schema_version':1,'id':'example.body','body':'female','mesh':'/Example/Body.Body'}
+  prop={'schema_version':1,'id':'example.prop','attachment':{'mesh':'/Example/Prop.Prop','socket':'pelvis','reference_bone':'pelvis'}}
+  appearance_data.body_variant(body,'example');appearance_data.attachment_variant(prop,'example')
+  appearance_data.validate_documents([('example','body_variant',Path('body.json'),body),('example','attachment_variant',Path('prop.json'),prop)])
+  changed=copy.deepcopy(body);changed['mesh']='/Example/Other.Other'
+  with self.assertRaisesRegex(ValueError,'Conflicting appearance variant'):
+   appearance_data.validate_documents([('example','body_variant',Path('one.json'),body),('example','body_variant',Path('two.json'),changed)])
+  with self.assertRaisesRegex(ValueError,'namespace'):appearance_data.body_variant(body,'other')
+  node=self.pack['nodes'][0]
+  node['appearance']={'female':{'body_variant':False,'attachment_variants':{'body_region':False,'tongue':'example.prop'}}}
+  self.assertEqual(compile_packs([self.pack])['nodes'][node['id']]['appearance'],node['appearance'])
+  for invalid in [None,{'unknown':{}},{'female':{'body_variant':True}},{'female':{'body_variant':'bad id'}},{'female':{'attachment_variants':{'body_region':True}}},{'female':{'attachment_variants':{str(i):False for i in range(17)}}}]:
+   node['appearance']=invalid
+   with self.subTest(appearance=invalid),self.assertRaises(ValueError):compile_packs([self.pack])
+  for invalid in [dict(body,id='example.'),dict(body,schema_version=True),dict(body,mesh='Body'),dict(body,growth_steps=[]),dict(body,growth_steps=['Adult','Adult'])]:
+   with self.assertRaises(ValueError):appearance_data.body_variant(invalid,'example')
+  for mutate in [lambda x:x['attachment'].update(component='head',body_profile='example.region'),lambda x:x['attachment'].update(material_profile='example.skin'),lambda x:x['attachment'].update(animation='/Example/Clip.Clip'),lambda x:x.update(node_animations=False)]:
+   invalid=copy.deepcopy(prop);mutate(invalid)
+   with self.assertRaises(ValueError):appearance_data.attachment_variant(invalid,'example')
+
  def test_neutral_inventory(self):
   result=compile_packs([self.pack]);self.assertEqual(list(result['nodes']),['scenezoi.standing_idle'])
   self.assertTrue(result['nodes']['scenezoi.standing_idle']['starting_hub'])

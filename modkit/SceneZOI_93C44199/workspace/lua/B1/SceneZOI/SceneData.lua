@@ -71,7 +71,7 @@ function M.node(v,owner)
  local tracks=v.tracks;local placeholder={}
  for role in pairs(v.participants or {})do placeholder[#placeholder+1]=role end
  -- Run the remaining validation without treating dynamic track keys as schema fields.
- V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','attachments','attachment_rest_rotations','gaze','expressions','voices','tasks','task_providers','task_completion_sounds','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
+ V.fields(v,{'id','label','kind','destination','hub','starting_hub','duration','fps','participants','anchor_participant','tracks','hide_if_tracks_missing','outfits','appearance','attachments','attachment_rest_rotations','gaze','expressions','voices','tasks','task_providers','task_completion_sounds','task_completion_routes','movement_timing','completion_responses','task_completion_voices','sfx','navigation','furniture','tags','participant_tags','actions','addon_data','participant_addon_data'},{'id','label','kind','duration','fps','participants','anchor_participant','tracks','navigation'})
  require('SceneZOI.FurnitureData').scene(v.furniture)
  require('SceneZOI.MetadataShape').validate(v)
  V.id(v.id);assert(v.id:sub(1,#owner+1)==owner..'.','Node namespace mismatch');V.name(v.label);assert(v.kind=='loop'or v.kind=='transition','Unsupported scene kind')
@@ -86,6 +86,7 @@ function M.node(v,owner)
  V.fields(tracks,placeholder,placeholder);for _,path in pairs(tracks)do V.asset(path)end
  if v.hide_if_tracks_missing~=nil then V.boolean(v.hide_if_tracks_missing)end
  V.outfits(v.outfits or {},v.participants)
+ require('SceneZOI.VariantData').validate_scene(v.appearance,v.participants)
  assert(V.object(v.attachments or {}),'Expected named attachments');local profiled={}
  for id,spec in pairs(v.attachments or {})do
   V.id(id);attachment(spec,v.participants)

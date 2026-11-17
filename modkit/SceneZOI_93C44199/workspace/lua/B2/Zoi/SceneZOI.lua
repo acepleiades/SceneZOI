@@ -355,6 +355,9 @@ local function advance_prepare(self, owner, first_commit, paused)
         lease.tasks_settled = true
         owner:SetCollisionEnabled(false)
     end
+    -- The requested layout is inert until the host cached our save snapshot.
+    -- Initial acquisition and later revisions use the same committed path.
+    if lease.keep_unmerged then Outfit.keep_unmerged(owner, lease) end
     local directive = lease.node.outfits and lease.node.outfits[lease.role]
     Outfit.apply(owner, lease, directive and directive.remove_slots or {})
     lease.ready = true
@@ -368,6 +371,8 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     local node = SceneData.simulation(Json.decode(decoded))
     assert(node.id==node_id,"Scene snapshot identity mismatch")
     assert(node and revision and revision >= 1 and revision % 1 == 0, "Invalid scene node preparation")
+    assert(unmerged == "0" or unmerged == "1", "Invalid participant body layout")
+    local requested_unmerged = unmerged == "1"
     if self.retired[token] then reply_released(owner, token, false, "retired_prepare"); return end
     if self.lease then
         if self.lease.token ~= token then reply(owner, token, "rejected", "busy"); return end
@@ -375,17 +380,24 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
         lease.remaining = Config.lease_timeout
         if lease.releasing then return end
         if revision == lease.revision + 1 then
-            if unmerged == "1" then Outfit.keep_unmerged(owner, lease) end
+            lease.keep_unmerged = requested_unmerged
             lease.node, lease.revision, lease.ready = node, revision, false
             lease.overlay_scan, lease.overlay_seen, lease.overlay_poll_wait = nil, nil, nil
             assert(role == lease.role, "Session role cannot change")
             Binding.validate(node, role, lease.body)
             advance_prepare(self, owner)
-        elseif revision == lease.revision and not lease.committed then
-            Save.offer(owner,lease)
-        elseif revision == lease.revision and lease.ready then
-            reply(owner, token, "ready", lease.body .. ":" .. lease.control, lease.revision)
-            inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
+        elseif revision == lease.revision then
+            lease.keep_unmerged = requested_unmerged
+            if not lease.committed then Save.offer(owner, lease)
+            elseif requested_unmerged then
+                -- A same-node appearance refresh can introduce a body/region
+                -- after the first Ready. Recheck flags through the normal gate.
+                lease.ready = false
+                advance_prepare(self, owner)
+            elseif lease.ready then
+                reply(owner, token, "ready", lease.body .. ":" .. lease.control, lease.revision)
+                inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
+            end
         end
         return
     end
@@ -410,7 +422,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     local option = owner:GetAutonomyOption().AutonomyEnable
     local location, rotation = owner:GetLocation(), owner:GetRotation()
     self.lease = {
-        token = token, role = role, body = body, control = controlled==Protocol.id(owner:GetEntityId()) and "controlled" or "npc", node = node, revision = revision, remaining = Config.lease_timeout, restored = {}, idle_ticks = 0,
+        token = token, role = role, body = body, control = controlled==Protocol.id(owner:GetEntityId()) and "controlled" or "npc", node = node, revision = revision, keep_unmerged = requested_unmerged, remaining = Config.lease_timeout, restored = {}, idle_ticks = 0,
         collision = owner:IsCollisionEnabled(), local_value = option.Value, follow_parent = option.bFollowParent,
         entry_location = UE.FVector(location.X, location.Y, location.Z),
         entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll),

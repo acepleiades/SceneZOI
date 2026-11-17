@@ -18,6 +18,7 @@
 | Voice and sound in a scene | [Voice instructions](voices.md#scene-instructions) · [Sound effects](sfx.md) |
 | A progress meter, an effect at completion or a transition | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
 | Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
+| A temporary body or a choice of anatomy and other skeletal attachments | [Appearance variants](appearance-variants.md) |
 
 ## Make a voice or expression set
 

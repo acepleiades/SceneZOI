@@ -9,6 +9,8 @@ local Events = require("SceneZOI.Events")
 local Diagnostics = require("SceneZOI.Diagnostics")
 local Catalog = require("SceneZOI.Catalog")
 local Appearance = require("SceneZOI.Appearance")
+local TemporaryBody = require("SceneZOI.TemporaryBody")
+local ClothingCoverage = require("SceneZOI.ClothingCoverage")
 local OutfitControl = require("SceneZOI.OutfitControl")
 local AttachmentPreview = require("SceneZOI.AttachmentPreview")
 local Settings = require("SceneZOI.Settings")
@@ -223,10 +225,20 @@ local function request_release(old)
         local ok,err=pcall(Effects.restore,old);old.addon_effects_restored=ok
         if not ok then M.diagnostic('Add-on effect cleanup will retry: '..tostring(err))end
     end
+    if not old.clothing_coverage_restored then
+        local ok, err = pcall(ClothingCoverage.restore, old)
+        old.clothing_coverage_restored = ok
+        if not ok then M.diagnostic("Clothing coverage cleanup will retry: " .. tostring(err)) end
+    end
     if not old.subsystems_restored then
         local ok, err = pcall(old.subsystems.restore, old.subsystems)
         old.subsystems_restored = ok
         if not ok then M.diagnostic("Attachment cleanup failed: " .. tostring(err)) end
+    end
+    if not old.temporary_bodies_restored then
+        local ok, err = pcall(TemporaryBody.restore, old)
+        old.temporary_bodies_restored = ok
+        if not ok then M.diagnostic("Temporary body cleanup will retry: " .. tostring(err)) end
     end
     local stay = stays_in_place(old)
     for _, participant in ipairs(old.participants) do
@@ -304,9 +316,23 @@ local function publish_plan(current)
     current.plan_state = packet
 end
 
+local function guard_presentation(current)
+    -- Native merging normally omits clothing-covered body regions. Unmerged
+    -- bodies need that same mask before region attachments add their own mask.
+    local ready = ClothingCoverage.guard(current)
+    current.subsystems:guard()
+    return ready
+end
+
+local function keep_body_unmerged(current, participant)
+    return current.node._body_variants and current.node._body_variants[participant.role] ~= nil or
+        current.subsystems:keep_body_unmerged(participant, current.node,
+            require("SceneZOI.Binding").resolve(current.participants, current.node))
+end
+
 local function prepare_packet(current, participant)
     return Protocol.pack(current.token, current.initiator, current.node.id, current.revision,
-        current.subsystems:keep_body_unmerged(participant, current.node, require("SceneZOI.Binding").resolve(current.participants, current.node)) and 1 or 0, participant.role,
+        keep_body_unmerged(current, participant) and 1 or 0, participant.role,
         Protocol.encode(Json.encode(Catalog.simulation(current.node,participant))))
 end
 
@@ -323,13 +349,14 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         assert(not holder or (addon and holder == addon.token), "A participant is already in a scene")
         local actor = assert(M.actors[id], "All participants must be loaded nearby")
         local participant = Native.capture(actor)
-        participant.role = role
+        participant.id, participant.role = id, role
         Appearance.capture(participant)
         participants[#participants+1], participant_ids[#participant_ids+1] = participant, id
         roles[role], seen[id] = true, true
     end
     assert(seen[initiator], "Scene initiator must belong to the fixed roster")
     require("SceneZOI.Binding").resolve(participants, node)
+    Catalog.resolve_appearance(node, participants, addon and addon.appearance or {})
     local assets, duration = Catalog.load(node)
     local loaded_subsystems = Subsystems.load(node, duration)
     serial = serial + 1
@@ -337,12 +364,14 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         token = client .. "." .. sequence .. "." .. serial, client = client, sequence = sequence,
         initiator = initiator, participant_ids = participant_ids, participants = participants,
         assets = assets, node = node, duration = duration, require_resolved_outfit = true,furniture=furniture,anchor=furniture and furniture.anchor,
+        appearance_selections = require('SceneZOI.DataValidation').copy(addon and addon.appearance or {}),
     })
     current.tasks=Tasks.new(Catalog.get_snapshot().tasks,participants,node)
     for _,person in ipairs(participants) do
         person.task_name = person.outfit_name and Protocol.decode(person.outfit_name) or person.id
     end
     current.subsystems = Subsystems.new(current, loaded_subsystems)
+    require('SceneZOI.VariantSelection').report(current)
     if furniture then
         current.furniture_owner=participants[1]
         for _,participant in ipairs(participants)do if participant.id==initiator then current.furniture_owner=participant end end
@@ -730,6 +759,7 @@ local function change_node(current, node, assets, duration, loaded_subsystems)
     Playback.leave_node(current)
     local subsystems = Subsystems.new(current, loaded_subsystems)
     Session.change_node(current, node, assets, duration, subsystems)
+    require('SceneZOI.VariantSelection').report(current)
     -- A verdict on an older node ("Scene navigation changed. Choose again.") must not come back with every later move.
     current.navigation_code = nil
     notify(current, "node_preparing")
@@ -833,7 +863,7 @@ end
 local function outfit_packet(current)
     local change = current.outfit_change
     return Protocol.pack(current.token, change.counter, change.item, change.enabled, current.revision,
-        current.subsystems:keep_body_unmerged(change.participant, current.node, current.bindings) and 1 or 0)
+        keep_body_unmerged(current, change.participant) and 1 or 0)
 end
 
 local function begin_outfit(current,change)
@@ -871,6 +901,19 @@ local function finish_outfit(current)
     for _, participant in ipairs(current.participants) do participant.between_nodes = false end
     notify(current, "outfit_changed")
     publish_phase(current, "playing", "ok")
+end
+
+local function finish_appearance(current)
+    -- Held body tracks already target the current native instance at their last
+    -- sample. Enter only attachments; ordinary voices and completion effects
+    -- belong to the existing scene visit and must not restart here.
+    current.subsystems:enter_appearance()
+    Playback.refresh_subsystem_tracks(current)
+    current.preparing, current.appearance_refresh, current.age = false, nil, 0
+    for _, participant in ipairs(current.participants) do participant.between_nodes = false end
+    notify(current, 'appearance_changed')
+    publish_node(current)
+    publish_phase(current, 'playing', 'ok')
 end
 
 local function set_auto_mode(current, enabled)
@@ -1168,7 +1211,16 @@ local function advance(current, dt)
         local valid,detail=Furniture.valid(current.furniture)
         if not valid then M.diagnostic('Furniture changed: '..tostring(detail));stop_session(current,'furniture_changed');return end
     end
-    current.subsystems:guard()
+    if current.started and not current.preparing and not TemporaryBody.guard(current) then
+        -- A native clothing rebuild can replace FinalBody outside our outfit
+        -- request. Hold the existing pose and resume its clock after readiness.
+        current.preparing, current.appearance_refresh, current.age, current.appearance_frames = true, true, 0, 0
+        current.appearance_wait, current.preparation_stage = nil, 'temporary_body'
+        for _, participant in ipairs(current.participants) do participant.between_nodes = true end
+        notify(current, 'appearance_changing')
+        publish_phase(current, 'preparing', 'ok')
+    end
+    local clothing_ready = guard_presentation(current)
     if has_panel(current) then
         current.ui_age = current.ui_age + dt
         if current.ui_age > Config.lease_timeout then stop_session(current, "ui_disconnected"); return end
@@ -1192,7 +1244,8 @@ local function advance(current, dt)
             stage = current.preparation_stage, participants = waiting, placement_pending = current.placement_pending ~= nil,
             furniture_id = current.furniture and current.furniture.id, furniture_ready = current.furniture_ready == true,
             save_ready = current.save_ready == true, journal_revision = current.journal_revision,
-            appearance = Appearance.status(current), subsystems = ok and status or nil})
+            appearance = Appearance.status(current), temporary_bodies = TemporaryBody.status(current),
+            clothing_coverage = ClothingCoverage.status(current), subsystems = ok and status or nil})
         M.diagnostic("Preparation failed: node=" .. current.node.id .. " stage=" .. code .. operation
             .. " " .. Appearance.status(current) .. (ok and " " .. status or " subsystem_status_unavailable"))
         stop_session(current, code)
@@ -1222,20 +1275,25 @@ local function advance(current, dt)
     local pose_ready = true
     if current.preparing and current.started then pose_ready = Playback.hold(current) end
     if current.preparing and current.participants_ready and (not current.outfit_change or current.outfit_change.acknowledged) then
-        if pose_ready and Appearance.ready(current) then
+        local bodies_ready = pose_ready and TemporaryBody.prepare(current)
+        -- A body swap installs native section visibility before its attachment
+        -- can hide the new mesh. Capture and reassert owned masks this same tick.
+        if pose_ready and not bodies_ready then clothing_ready = guard_presentation(current) end
+        if bodies_ready and clothing_ready and Appearance.ready(current) then
             current.preparation_stage = "attachment"
             local resources_ready = current.subsystems:prepare(current)
             -- Body-region preparation can itself rebuild appearance. Reapply the
             -- held pose after that mutation, and wait if no instance exists yet.
             if current.started then pose_ready = Playback.hold(current) end
             if resources_ready and pose_ready and not current.placement_pending then
-                if current.outfit_change then finish_outfit(current)
+                if current.appearance_refresh then finish_appearance(current)
+                elseif current.outfit_change then finish_outfit(current)
                 elseif not current.started and not participants_close(current) then
                     stop_session(current, "participant_too_far")
                     return
                 else start_playback(current) end
             end
-        else current.preparation_stage = "appearance" end
+        else current.preparation_stage = not bodies_ready and "temporary_body" or not clothing_ready and "clothing_coverage" or "appearance" end
     end
     Effects.tick(current,dt,function(p,item,enabled)
         begin_outfit(current,{participant=p,item=item,piece=p.outfit_items[item],enabled=enabled and '1'or '0',acknowledged=false})
@@ -1390,6 +1448,85 @@ function M.release_integration(key)
     Control.release(Sessions.focused(),key)
     for _,current in ipairs(Sessions.list())do Effects.release(current,key);Control.release(current,key)end
 end
+
+function M.api_get_appearance(current)
+    local V = require('SceneZOI.DataValidation')
+    local resolved = {}
+    local data = Catalog.get_snapshot()
+    for _, participant in ipairs(current.participants) do
+        local role = participant.role
+        local body = current.node._body_variants and current.node._body_variants[role]
+        local row = {role=role,body_variant=body and body.id or false,body_provider=body and body._owner,
+            attachment_variants={}}
+        for slot, id in pairs(current.node._attachment_slots and current.node._attachment_slots[role] or {}) do
+            if id == false then row.attachment_variants[slot] = false
+            else
+                local suffix = '.' .. role
+                local variant_id = id:sub(-#suffix) == suffix and id:sub(1, -#suffix - 1) or nil
+                local definition = variant_id and ((data.variants and data.variants.attachments[variant_id]) or
+                    (data.profiles and data.profiles.rules[variant_id]))
+                row.attachment_variants[slot] = {attachment_id=id,variant_id=definition and variant_id,
+                    provider=definition and definition._owner}
+            end
+        end
+        resolved[participant.id] = row
+    end
+    return {appearance=V.copy(current.appearance_selections or {}),resolved=resolved,temporary=true,
+        phase=current.preparing and 'preparing' or 'ready'}
+end
+
+local function refresh_appearance(current, selections)
+    local V = require('SceneZOI.DataValidation')
+    assert(not current.preparing and not current.stopping, 'session_not_ready')
+    if V.equal(current.appearance_selections or {}, selections) then return {accepted=true,unchanged=true,temporary=true} end
+    -- Resolve/load before changing a valid selection or retiring any resource.
+    local target = Catalog.get(current.node.id, current)
+    Catalog.resolve_appearance(target, current.participants, selections)
+    local loaded = Subsystems.load(target, current.duration, current)
+    assert(Playback.hold(current), 'session_not_ready')
+    current.subsystems:refresh_appearance(loaded)
+    current.appearance_selections = V.copy(selections)
+    Session.refresh_appearance(current, target)
+    require('SceneZOI.VariantSelection').report(current)
+    notify(current, 'appearance_changing')
+    publish_phase(current, 'preparing', 'ok')
+    for _, participant in ipairs(current.participants) do tell(participant, 'SceneZOI.Prepare', prepare_packet(current, participant)) end
+    return {accepted=true,temporary=true}
+end
+
+function M.api_set_appearance(current, patch)
+    local V = require('SceneZOI.DataValidation')
+    assert(V.object(patch), 'Expected appearance selections by participant ID')
+    local selections = V.copy(current.appearance_selections or {})
+    local known, count = {}, 0
+    for _, participant in ipairs(current.participants) do known[participant.id] = true end
+    for id, spec in pairs(patch) do
+        assert(type(id)=='string' and id:match('^%d+$') and known[id], 'participant_not_found')
+        count = count + 1
+        local validated = require('SceneZOI.VariantData').validate_selection(spec)
+        local selected = selections[id] or {}
+        if validated.body_variant ~= nil then selected.body_variant = validated.body_variant end
+        if validated.attachment_variants ~= nil then
+            selected.attachment_variants = selected.attachment_variants or {}
+            for slot, variant in pairs(validated.attachment_variants) do selected.attachment_variants[slot] = variant end
+        end
+        selections[id] = selected
+    end
+    assert(count <= #current.participants, 'Too many appearance selections')
+    return refresh_appearance(current, selections)
+end
+
+function M.api_clear_appearance(current, participant_id)
+    local selections = require('SceneZOI.DataValidation').copy(current.appearance_selections or {})
+    local known = false
+    for _, participant in ipairs(current.participants) do if participant.id == participant_id then known = true end end
+    assert(known, 'participant_not_found')
+    selections[participant_id] = nil
+    local result = refresh_appearance(current, selections)
+    result.cleared, result.participant_id = true, participant_id
+    return result
+end
+
 function M.api_speed(current,index)
     assert(not Plan.speed_index(current), "speed_locked")
     select_playback_speed(current, index, "api")

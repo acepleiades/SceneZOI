@@ -10,7 +10,8 @@ local operations={register_integration=true,renew_integration=true,release_integ
  get_session_result=true,get_navigation=true,get_task_state=true,set_speed=true,set_speed_multiplier=true,
  modify_task_progress=true,set_task_progress=true,set_task_controls=true,set_voice_mute=true,
  set_expression_override=true,clear_expression_override=true,set_outfit_item=true,get_outfit_state=true,
- add_attachment=true,remove_attachment=true,get_overrides=true,release_overrides=true,get_expression_sets=true,get_facial_poses=true}
+ add_attachment=true,remove_attachment=true,get_overrides=true,release_overrides=true,get_expression_sets=true,get_facial_poses=true,
+ get_appearance_variants=true,get_appearance=true,set_appearance=true,clear_appearance=true}
 function M.execute(actor,req)
  local op,args=req.operation,req.arguments
  if not operations[op]then return false end
@@ -23,6 +24,10 @@ function M.execute(actor,req)
  if op=='get_session_result'then V.fields(args,{'session_id'},{'session_id'});V.name(args.session_id);return true,{result=Control.result(args.session_id)or J.null}end
  if op=='get_expression_sets'then V.fields(args,{});return true,{sets=V.copy(require('SceneZOI.ExpressionLibrary').get().sets)}end
  if op=='get_facial_poses'then V.fields(args,{});return true,{poses=V.copy(require('SceneZOI.FacialPoseLibrary').get().poses)}end
+ if op=='get_appearance_variants'then
+  V.fields(args,{'body'});if args.body~=nil then assert(args.body=='male'or args.body=='female','Unsupported appearance body')end
+  return true,V.copy(require('SceneZOI.Catalog').variants(args.body))
+ end
  local s=runtime().api_session(args.session_id)
  local function authorize(cap)assert(not s.stopping,'session_not_ready');Control.authorize(s,key,cap,runtime().is_addon_owner(req.addon_id,req.client_id,s.token))end
  local function fields(names,required)
@@ -34,6 +39,21 @@ function M.execute(actor,req)
   for _,p in ipairs(s.participants)do if p.id==args.participant_id then return p end end;error('participant_not_found')
  end
  local function ready()assert(not s.preparing and not s.stopping,'session_not_ready')end
+ if op=='get_appearance'then fields({});return true,runtime().api_get_appearance(s)end
+ if op=='set_appearance'then
+  fields({'appearance'},{'appearance'})
+  -- Body and attachment variants belong to the session creator. Integration
+  -- capabilities may control effects, but cannot replace another add-on's choices.
+  assert(runtime().is_addon_owner(req.addon_id,req.client_id,s.token),'session_not_owned')
+  ready();assert(V.object(args.appearance),'Expected appearance selections')
+  return true,runtime().api_set_appearance(s,args.appearance)
+ end
+ if op=='clear_appearance'then
+  fields({'participant_id'},{'participant_id'})
+  assert(runtime().is_addon_owner(req.addon_id,req.client_id,s.token),'session_not_owned')
+  ready();local p=participant()
+  return true,runtime().api_clear_appearance(s,p.id)
+ end
  if op=='request_stop'then
   fields({'reason'},{'reason'});authorize('interrupt');V.id(args.reason)
   s.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason=args.reason};runtime().stop('addon_requested',s.token);return true,{accepted=true}

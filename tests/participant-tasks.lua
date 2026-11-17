@@ -359,6 +359,55 @@ local count=restored;M.on_lua_message(loaded,o,'SceneZOI.Recover',P.pack('restor
 assert(restored==count,'Duplicate recovery must not replay completed restoration')
 print('Save leases passed: no mutation before UI cache, original false/inherited flags, body layout, stale-field recovery and duplicate acknowledgement.')
 
+-- Body-only acquisition must preserve the journal barrier and send its layout
+-- to B1 even when no clothing directive changes the sparse outfit signature.
+local real_outfit=assert(loadfile('modkit/SceneZOI_93C44199/workspace/lua/B2/SceneZOI/Outfit.lua'))()
+inzoi.EB1ChangeOutfitReason={Script=2}
+local stub_outfit=package.loaded['SceneZOI.Outfit']
+local old_apply,old_restore=stub_outfit.apply,stub_outfit.restore
+stub_outfit.apply,stub_outfit.restore,stub_outfit.keep_unmerged=real_outfit.apply,real_outfit.restore,real_outfit.keep_unmerged
+local body_actor=owner(50)
+local native_component=body_actor.GetComponent
+local appearance={setting={Gender=1,Body={bUseMeshMerge=true},FinalBody={bUseMeshMerge=false},Outfit={ActiveStyleList={}}},refreshes=0,writes=0}
+function appearance:GetAppearanceSetting()return self.setting end
+function appearance:SetAppearanceSetting(value)self.setting=value;self.writes=self.writes+1 end
+function appearance:RefreshAppearance()self.refreshes=self.refreshes+1 end
+function body_actor:GetComponent(kind)if kind==inzoi.EB2ComponentType.Appearance then return appearance end return native_component(self,kind)end
+local body_state={};M.on_begin(body_state,body_actor)
+local function body_prepare(token,revision,flag)
+ M.on_lua_message(body_state,body_actor,'SceneZOI.Prepare',P.pack(token,'50',node.id,revision,flag,'lead',P.encode(Json.encode(node))))
+end
+body_prepare('body-only',1,'1')
+local original_snapshot=body_state.lease.save_snapshot
+assert(body_state.lease.keep_unmerged and not body_state.lease.committed and appearance.writes==0 and appearance.refreshes==0)
+assert(appearance.setting.Body.bUseMeshMerge and not appearance.setting.FinalBody.bUseMeshMerge)
+body_prepare('body-only',2,'1')
+assert(body_state.lease.revision==2 and body_state.lease.save_snapshot==original_snapshot and appearance.writes==0,
+ 'A new revision before journal acknowledgement must not change native merge flags')
+M.on_lua_message(body_state,body_actor,'SceneZOI.Commit',P.pack('body-only'));tick(body_state,body_actor)
+assert(body_state.lease.ready and not appearance.setting.Body.bUseMeshMerge and not appearance.setting.FinalBody.bUseMeshMerge)
+assert(appearance.refreshes==1 and not body_state.lease.body_merge_refresh_pending,
+ 'A body-only start must publish its unmerged layout once even with no outfit changes')
+assert(body_state.lease.body_merge.base and not body_state.lease.body_merge.final)
+body_prepare('body-only',2,'1')
+assert(body_state.lease.ready and appearance.refreshes==1,'An unchanged Prepare retry must not refresh again')
+appearance.setting.FinalBody.bUseMeshMerge=true
+body_prepare('body-only',2,'1')
+assert(body_state.lease.ready and not appearance.setting.FinalBody.bUseMeshMerge and appearance.refreshes==2,
+ 'A same-revision appearance refresh must reapply and send a rebuilt native layout')
+assert(body_state.lease.save_snapshot==original_snapshot and not body_state.lease.body_merge.final)
+release(body_state,body_actor,'body-only')
+assert(appearance.setting.Body.bUseMeshMerge and not appearance.setting.FinalBody.bUseMeshMerge and appearance.refreshes==3)
+body_prepare('late-body',1,'0')
+M.on_lua_message(body_state,body_actor,'SceneZOI.Commit',P.pack('late-body'));tick(body_state,body_actor)
+assert(body_state.lease.ready and appearance.refreshes==3)
+body_prepare('late-body',1,'1')
+assert(body_state.lease.ready and body_state.lease.keep_unmerged and appearance.refreshes==4,
+ 'A same-revision request can add an unmerged body after the participant was already ready')
+release(body_state,body_actor,'late-body')
+stub_outfit.apply,stub_outfit.restore=old_apply,old_restore
+print('Initial body layout passed: stored request, commit-only mutation, no-outfit refresh, same-revision introduction/rebuild, original snapshot and Exit restoration.')
+
 -- A B2-only reload loses the participant lease but the live B1 host still owns the original.
 local reloaded={};M.on_begin(reloaded,o)
 o.collision=false;o.AutonomyOption.AutonomyEnable.bFollowParent=false

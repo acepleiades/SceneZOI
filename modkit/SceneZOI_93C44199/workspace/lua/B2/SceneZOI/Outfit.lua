@@ -20,11 +20,28 @@ function M.keep_unmerged(owner, lease)
     local appearance = assert(owner:GetComponent(inzoi.EB2ComponentType.Appearance))
     local setting = appearance:GetAppearanceSetting()
     if not lease.body_merge then
-        lease.body_merge = {base = setting.Body.bUseMeshMerge, final = setting.FinalBody.bUseMeshMerge}
+        local captured = lease.save_snapshot and lease.save_snapshot.body_merge
+        if captured then lease.body_merge = {base = captured.base, final = captured.final}
+        else lease.body_merge = {base = setting.Body.bUseMeshMerge, final = setting.FinalBody.bUseMeshMerge} end
     end
     if not setting.Body.bUseMeshMerge and not setting.FinalBody.bUseMeshMerge then return end
+    -- A body-only scene may not change clothing. Its layout update still has
+    -- to reach B1; apply() consumes this flag through exactly one refresh.
+    lease.body_merge_refresh_pending = true
     setting.Body.bUseMeshMerge, setting.FinalBody.bUseMeshMerge = false, false
     appearance:SetAppearanceSetting(setting)
+end
+
+local function refresh(appearance, lease)
+    appearance:RefreshAppearance()
+    -- A failed native call leaves the pending update owned for retry/Exit.
+    lease.body_merge_refresh_pending = nil
+end
+
+local function refresh_body_if_needed(owner, lease, appearance)
+    if lease.body_merge_refresh_pending then
+        refresh(appearance or assert(owner:GetComponent(inzoi.EB2ComponentType.Appearance)), lease)
+    end
 end
 
 ---@param owner FB2Character
@@ -63,7 +80,10 @@ function M.apply(owner, lease, slots)
     local removed = State.merge(lease.removed_slots, slots)
     slots = State.slots(removed)
     local signature = table.concat(slots, ":") .. ":manual" .. (lease.wardrobe and lease.wardrobe.version or 0)
-    if signature == (lease.outfit_signature or ":manual0") then return end
+    if signature == (lease.outfit_signature or ":manual0") then
+        refresh_body_if_needed(owner, lease)
+        return
+    end
     -- Expanding our sparse layer is the only node change that needs an appearance refresh.
     -- Omitted instructions keep the current layer and its already-built body mesh.
     local appearance = assert(owner:GetComponent(inzoi.EB2ComponentType.Appearance),
@@ -72,7 +92,10 @@ function M.apply(owner, lease, slots)
     remove_layer(appearance)
     lease.outfit = false
     lease.removed_slots = removed
-    if #slots == 0 and not (lease.wardrobe and lease.wardrobe.version > 0) then return end
+    if #slots == 0 and not (lease.wardrobe and lease.wardrobe.version > 0) then
+        refresh_body_if_needed(owner, lease, appearance)
+        return
+    end
     local reason = inzoi.EB1ChangeOutfitReason.Script
     local style = inzoi.FB1StyleSetting()
     -- The game stacks Script layers by costume ID. This sparse layer leaves existing outfits in place.
@@ -93,7 +116,7 @@ function M.apply(owner, lease, slots)
         "The game did not accept the prototype outfit layer")
     -- Emplace edits simulation data only; explicitly send the resolved appearance to B1.
     if lease.body_merge then M.keep_unmerged(owner, lease) end
-    appearance:RefreshAppearance()
+    refresh(appearance, lease)
     lease.outfit_signature, lease.removed_slots = signature, removed
 end
 
@@ -125,7 +148,7 @@ function M.restore(owner, lease)
         lease.lent_costume = nil
     end
     if lease.refresh_pending then
-        appearance:RefreshAppearance()
+        refresh(appearance, lease)
         lease.refresh_pending = nil
     end
     lease.body_merge = nil

@@ -147,6 +147,28 @@ local refreshes=appearance.refresh_count
 outfit.restore(owner,lease)
 assert(appearance.refresh_count==refreshes+1 and appearance.setting.Body.bUseMeshMerge,
     "A body-only lease must restore even with no outfit overlay")
+-- Body layout and clothing can change independently. Flush the native layout
+-- once on an empty/unchanged outfit and retain a failed refresh for retry.
+lease={save_snapshot={body_merge={base=false,final=false}}}
+appearance.setting.Body.bUseMeshMerge,appearance.setting.FinalBody.bUseMeshMerge=true,true
+refreshes=appearance.refresh_count
+outfit.keep_unmerged(owner,lease)
+assert(not lease.body_merge.base and not lease.body_merge.final,'Keep the journal baseline, including false values')
+appearance.fail_refresh=true
+assert(not pcall(outfit.apply,owner,lease,{}) and lease.body_merge_refresh_pending)
+outfit.apply(owner,lease,{})
+assert(appearance.refresh_count==refreshes+2 and not lease.body_merge_refresh_pending)
+outfit.apply(owner,lease,{})
+assert(appearance.refresh_count==refreshes+2,'An unchanged body/outfit retry must not send another appearance refresh')
+outfit.restore(owner,lease)
+assert(not appearance.setting.Body.bUseMeshMerge and not appearance.setting.FinalBody.bUseMeshMerge)
+appearance.setting.Body.bUseMeshMerge,appearance.setting.FinalBody.bUseMeshMerge=true,false
+lease={};outfit.keep_unmerged(owner,lease)
+refreshes=appearance.refresh_count
+enter(owner,lease)
+assert(appearance.refresh_count==refreshes+1 and not lease.body_merge_refresh_pending,
+    'A normal clothing refresh must consume the pending layout without a second refresh')
+outfit.restore(owner,lease)
 local legacy_layers={
     {Reason=0,Outfit={CostumeId="SceneZOI_Prototype_MaleAnatomy"}},
     {Reason=0,Outfit={CostumeId="OtherMod"}},

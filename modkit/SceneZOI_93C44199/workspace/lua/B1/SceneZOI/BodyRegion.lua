@@ -1,6 +1,7 @@
 -- Optional pack-declared region replacement. Geometry/layout assumptions are data.
 local M = {}
 local Profiles=require("SceneZOI.Profiles")
+local ClothingCoverage=require("SceneZOI.ClothingCoverage")
 
 -- A profile declares the section convention, not a list of body replacers.
 -- Preparation and both masking guards operate on the actual unmerged body.
@@ -74,8 +75,15 @@ local function visibility_record(body, mesh)
         if record.mesh == mesh and record.asset == asset then return record end
     end
     local record = {mesh = mesh, asset = asset, visibility = {}}
+    local clothing = body.scene_session and body.coverage_owner and
+        ClothingCoverage.original_visibility(body.scene_session,body.coverage_owner,mesh,asset)
+    clothing = clothing and clothing[SECTION]
     for lod = 0, mesh:GetNumLODs() - 1 do
-        record.visibility[#record.visibility + 1] = {lod = lod, shown = mesh:IsMaterialSectionShown(SECTION, lod)}
+        local shown = mesh:IsMaterialSectionShown(SECTION,lod)
+        -- Clothes and an attachment can hide the same region. Capturing the
+        -- clothes' current false would leave a hole after both owners release.
+        if clothing and clothing[lod] ~= nil then shown = clothing[lod] end
+        record.visibility[#record.visibility + 1] = {lod=lod,shown=shown}
     end
     body.masked[#body.masked + 1] = record
     return record
@@ -153,7 +161,8 @@ function M.prepare(session, actor)
     if not session.body_region then
         local setting = actor.AppearanceComponent.AppearanceSetting
         session.body_region = {actor = actor, profile=profile, base_merge = setting.Body.bUseMeshMerge,
-            final_merge = setting.FinalBody.bUseMeshMerge, frames = 0}
+            final_merge = setting.FinalBody.bUseMeshMerge, frames = 0,
+            scene_session=session.scene_session,coverage_owner=session.coverage_owner}
         -- Runtime merging collapses all skin sections into one material slot. Ask the game's
         -- appearance builder for its unmerged body before Runtime captures the settled instance.
         setting.Body.bUseMeshMerge = false
@@ -162,6 +171,8 @@ function M.prepare(session, actor)
         return false
     end
     local body = session.body_region
+    body.scene_session = session.scene_session or body.scene_session
+    body.coverage_owner = session.coverage_owner or body.coverage_owner
     if body.mesh and (actor.Mesh ~= body.mesh or actor.Mesh:GetSkeletalMeshAsset() ~= body.asset) then
         if body.patch then body.patch:K2_DestroyComponent(actor); body.patch = nil end
         -- Keep retired geometry masked until final release. Re-enabling it here
@@ -258,7 +269,16 @@ function M.restore(session)
     end
     for _, record in ipairs(body.masked or {}) do
         if record.mesh:GetSkeletalMeshAsset() == record.asset then
-            for _, state in ipairs(record.visibility) do record.mesh:ShowMaterialSection(SECTION, SECTION, state.shown, state.lod) end
+            local clothing = body.scene_session and body.coverage_owner and
+                ClothingCoverage.original_visibility(body.scene_session,body.coverage_owner,record.mesh,record.asset)
+            clothing = clothing and clothing[SECTION]
+            for _, state in ipairs(record.visibility) do
+                local shown = state.shown
+                -- Releasing the replacement must not expose skin still covered
+                -- by clothing. Full Exit restores the clothing owner separately.
+                if clothing and clothing[state.lod] ~= nil then shown = false end
+                record.mesh:ShowMaterialSection(SECTION,SECTION,shown,state.lod)
+            end
         end
     end
     local setting = body.actor.AppearanceComponent.AppearanceSetting

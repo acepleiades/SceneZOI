@@ -114,9 +114,13 @@ assets[female] = 10
 assets[mesh] = true
 assets[named_mesh] = true
 assets[named_track] = 10
-check(false)
+check(true)
+assert(not Catalog.get(target.id).attachments['test.rule.lead'].animation,
+    'A missing optional fallback clip must keep its mesh at rest without pruning the scene')
 assets[accessory] = 9
-check(false)
+check(true)
+assert(not Catalog.get(target.id).attachments['test.rule.lead'].animation,
+    'A mismatched optional fallback clip must also keep its mesh at rest')
 assets[accessory] = 10
 check(true)
 assets[named_mesh] = nil
