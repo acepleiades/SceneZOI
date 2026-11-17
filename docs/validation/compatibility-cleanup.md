@@ -26,10 +26,11 @@ reported 1.3.12. HZoi 1.3.2 and VelvetZOI 0.13.0-alpha were enabled.
 - All three exits cleared the recovery journal and released the same queen bed.
   VelvetZOI found and reused it on both repeat runs. The runtime history
   retained start, navigation and Exit records for the tests.
-- In one run, the Zois appeared to retain the previous pose after the HZoi
-  Bed Idle menu had loaded. A follow-up from a different HZoi bed scene
-  visibly changed to the idle pose. The original visual behavior remains
-  unconfirmed against the published 1.3.12 build.
+- The first run raised a visual question about the transition to HZoi Bed
+  Idle. The game reported successful navigation. A follow-up from another
+  bed scene visibly changed to the idle pose, and the maintainer could not
+  reproduce the reported behavior in two attempts. The initial observation
+  remains unconfirmed.
 
 Autosave was suspended during the interactions and restored afterward. No manual
 save was made.
