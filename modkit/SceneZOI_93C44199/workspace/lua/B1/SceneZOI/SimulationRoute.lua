@@ -16,6 +16,18 @@ function M.forget(id)
     pending[id], attached[id] = nil, nil
 end
 
+-- A host-side observation only: attached means the receiver acknowledged its
+-- installation, not that it received or processed a later lease heartbeat.
+function M.status(actor)
+    if not generation then return {state = "direct", pending_messages = 0} end
+    local id = Protocol.id(actor:GetEntityId())
+    local queue = pending[id]
+    if queue and queue.actor == actor then
+        return {state = "pending", pending_messages = math.min(#queue.messages, 1000000000)}
+    end
+    return {state = attached[id] == actor and "attached" or "unattached", pending_messages = 0}
+end
+
 function M.send(actor, kind, content)
     local native_id = actor:GetEntityId()
     local id = Protocol.id(native_id)

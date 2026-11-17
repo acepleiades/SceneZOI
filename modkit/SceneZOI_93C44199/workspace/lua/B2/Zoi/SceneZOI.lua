@@ -10,6 +10,34 @@ local Recovery=require("SceneZOI.SaveRecovery")
 local Members=require("SceneZOI.SceneMembers")
 local M = {}
 
+local function renew_lease(lease, kind)
+    lease.renewed_at = os.time()
+    local timing = lease.lease_timing
+    if not timing then
+        timing = {prepare_received = 0, heartbeat_received = 0, tick_count = 0,
+            total_tick_seconds = 0, since_renew_tick_seconds = 0, last_dt = 0, max_dt = 0, clock_rollbacks = 0}
+        lease.lease_timing = timing
+    end
+    timing[kind] = timing[kind] + 1
+    timing.since_renew_tick_seconds = 0
+    timing.acquired_at = timing.acquired_at or lease.renewed_at
+end
+
+local function lease_expiry_detail(lease, now)
+    -- No per-tick writes: send this bounded sample only if the watchdog fires.
+    local ok, detail = pcall(function()
+        local timing = lease.lease_timing or {}
+        -- Compact names keep the complete sample within Diagnostics.detail's cap.
+        return ("timeout:%.3f+elapsed:%.3f+prepares:%d+heartbeats:%d+ticks:%d+tick_total:%.3f" ..
+            "+tick_since_renew:%.3f+last_dt:%.3f+max_dt:%.3f+age:%.3f+clock_rollbacks:%d"):format(
+            Config.lease_timeout, now - lease.renewed_at, timing.prepare_received or 0,
+            timing.heartbeat_received or 0, timing.tick_count or 0, timing.total_tick_seconds or 0,
+            timing.since_renew_tick_seconds or 0, timing.last_dt or 0, timing.max_dt or 0,
+            math.max(0, now - (timing.acquired_at or lease.renewed_at)), timing.clock_rollbacks or 0)
+    end)
+    return ok and detail or "lease_timing_unavailable"
+end
+
 local function send_reply(entity_id, packet, diagnostic)
     if diagnostic then packet = packet .. "|" .. tostring(diagnostic):gsub("[^%w_.:+%-]", "_"):sub(1, 1200) end
     inzoi.message.send_to_client(entity_id, "SceneZOI.Reply", packet)
@@ -377,7 +405,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     if self.lease then
         if self.lease.token ~= token then reply(owner, token, "rejected", "busy"); return end
         local lease = self.lease
-        lease.remaining = Config.lease_timeout
+        renew_lease(lease, "prepare_received")
         if lease.releasing then return end
         if revision == lease.revision + 1 then
             lease.keep_unmerged = requested_unmerged
@@ -422,11 +450,12 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     local option = owner:GetAutonomyOption().AutonomyEnable
     local location, rotation = owner:GetLocation(), owner:GetRotation()
     self.lease = {
-        token = token, role = role, body = body, control = controlled==Protocol.id(owner:GetEntityId()) and "controlled" or "npc", node = node, revision = revision, keep_unmerged = requested_unmerged, remaining = Config.lease_timeout, restored = {}, idle_ticks = 0,
+        token = token, role = role, body = body, control = controlled==Protocol.id(owner:GetEntityId()) and "controlled" or "npc", node = node, revision = revision, keep_unmerged = requested_unmerged, restored = {}, idle_ticks = 0,
         collision = owner:IsCollisionEnabled(), local_value = option.Value, follow_parent = option.bFollowParent,
         entry_location = UE.FVector(location.X, location.Y, location.Z),
         entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll),
     }
+    renew_lease(self.lease, "prepare_received")
     Members.add(owner:GetEntityId())
     Outfit.recover(owner,node.cleanup_layers)
     self.lease.grab_snapshot = capture_grab_poses(owner)
@@ -513,7 +542,7 @@ local function receive(self, owner, kind, content)
             reply_released(owner, token, false, "host_request")
         end
     elseif self.lease and self.lease.token == token and not self.lease.releasing then
-        if kind == "SceneZOI.Heartbeat" then self.lease.remaining = Config.lease_timeout
+        if kind == "SceneZOI.Heartbeat" then renew_lease(self.lease, "heartbeat_received")
         elseif kind == "SceneZOI.Anchor" and #fields == 7 then
             local values = {}
             for index = 2, 7 do
@@ -542,8 +571,15 @@ end
 local function update(self, owner, dt)
     local lease = self.lease
     if not lease then return end
+    if lease.releasing then release(self, owner, false, "lease_expired"); return end
     dt = math.max(tonumber(dt) or 0, 0)
-    lease.remaining = lease.remaining - dt
+    local timing = lease.lease_timing
+    if timing then
+        timing.tick_count = timing.tick_count + 1
+        timing.total_tick_seconds = timing.total_tick_seconds + dt
+        timing.since_renew_tick_seconds = timing.since_renew_tick_seconds + dt
+        timing.last_dt, timing.max_dt = dt, math.max(timing.max_dt, dt)
+    end
     if lease.overlay_scan then
         lease.overlay_scan.remaining = lease.overlay_scan.remaining - dt
         if lease.overlay_scan.remaining <= 0 then lease.overlay_scan = nil end
@@ -551,8 +587,16 @@ local function update(self, owner, dt)
     if lease.overlay_settle_wait then lease.overlay_settle_wait = math.max(0, lease.overlay_settle_wait - dt) end
     if lease.overlay_poll_wait then lease.overlay_poll_wait = math.max(0, lease.overlay_poll_wait - dt) end
     if lease.overlay_settle_poll then lease.overlay_settle_poll = math.max(0, lease.overlay_settle_poll - dt) end
-    if lease.releasing or lease.remaining <= 0 then
-        release(self, owner, false, "lease_expired")
+    -- NPC callbacks may contain accumulated time from before the last renewal.
+    -- A lease measures the host's absence, using real time instead. The supported
+    -- wall clock has whole-second resolution: > grants its rounding grace.
+    local now = os.time()
+    if now < lease.renewed_at then
+        lease.renewed_at = now
+        if timing then timing.clock_rollbacks = timing.clock_rollbacks + 1 end
+    end
+    if now - lease.renewed_at > Config.lease_timeout then
+        release(self, owner, false, "lease_expired", lease_expiry_detail(lease, now))
         return
     end
     advance_prepare(self, owner, false, dt == 0)

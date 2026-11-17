@@ -52,6 +52,8 @@ local completed, completion_order = {}, {}
 local pending_focus, last_focus
 local last_start_packet
 local rejected_focus = {}
+local host_diagnostic_seconds = 0
+local DIAGNOSTIC_LIMIT = 1000000000
 
 local function command(name, key)
     return name .. " mod_id=" .. Config.mod_id .. " section=" .. Config.section .. " key=" .. key
@@ -89,6 +91,18 @@ local function remember(client, sequence, phase, code, actor, silent)
 end
 
 local function tell(participant, kind, content)
+    if kind == "SceneZOI.Prepare" or kind == "SceneZOI.Heartbeat" then
+        local observed = participant.lease_send_diagnostic
+        if not observed then
+            observed = {prepare_attempts = 0, heartbeat_attempts = 0}
+            participant.lease_send_diagnostic = observed
+        end
+        local count = kind == "SceneZOI.Prepare" and "prepare_attempts" or "heartbeat_attempts"
+        observed[count] = math.min(observed[count] + 1, DIAGNOSTIC_LIMIT)
+        observed.last_kind, observed.last_attempt_at = kind, host_diagnostic_seconds
+        -- The route may queue the message, or native delivery may fail later.
+        -- These counters describe host attempts, never simulation receipt.
+    end
     require("SceneZOI.SimulationRoute").send(participant.actor, kind, content)
 end
 
@@ -617,13 +631,43 @@ local release_causes = {
     retired_prepare = true, prepare_error = true, save_recovery = true,
 }
 
+local function diagnostic_seconds(value)
+    return math.floor(math.min(math.max(value or 0, 0), DIAGNOSTIC_LIMIT) * 1000 + .5) / 1000
+end
+
+local function lease_send_diagnostic(current)
+    local people, seen = Json.array({}), {}
+    for _, roster in ipairs({current.participants, current.unloaded or {}}) do
+        for _, person in ipairs(roster) do
+            if not seen[person.id] then
+                seen[person.id] = true
+                local observed = person.lease_send_diagnostic or {}
+                local ok, route = pcall(function()
+                    return require("SceneZOI.SimulationRoute").status(person.actor)
+                end)
+                people[#people + 1] = {participant_id = person.id, role = person.role,
+                    actor_registered = M.actors[person.id] == person.actor,
+                    prepare_attempts = observed.prepare_attempts or 0,
+                    heartbeat_attempts = observed.heartbeat_attempts or 0,
+                    last_kind = observed.last_kind,
+                    seconds_since_last_attempt = observed.last_attempt_at and
+                        diagnostic_seconds(host_diagnostic_seconds - observed.last_attempt_at) or nil,
+                    route = ok and route or {state = "unavailable"}}
+            end
+        end
+    end
+    return {last_dt = diagnostic_seconds(current.lease_host_last_dt),
+        max_dt = diagnostic_seconds(current.lease_host_max_dt), participants = people}
+end
+
 local function report_participant_release(current, participant, cause, diagnostic, transport)
     if participant.release_cause_reported then return end
     participant.release_cause_reported = true
     Diagnostics.record("participant_release", {session_id = current.token, scene_id = current.node.id,
         participant_id = participant.id, role = participant.role, revision = current.revision,
         phase = phase_of(current), cause = release_causes[cause] and cause or "unreported",
-        simulation_diagnostic = Diagnostics.detail(diagnostic), transport = transport})
+        simulation_diagnostic = Diagnostics.detail(diagnostic), transport = transport,
+        host_lease_diagnostic = lease_send_diagnostic(current)})
 end
 
 function M.reply(actor, content)
@@ -1045,6 +1089,7 @@ local function poll()
 end
 
 function M.boot()
+    host_diagnostic_seconds = 0
     -- A crash can leave an old focus packet on disk even though the new registry is empty.
     publish_focus()
     Localization.refresh()
@@ -1184,6 +1229,8 @@ local function apply_plan(current, action)
 end
 
 local function advance(current, dt)
+    current.lease_host_last_dt = math.min(dt, DIAGNOSTIC_LIMIT)
+    current.lease_host_max_dt = math.max(current.lease_host_max_dt or 0, current.lease_host_last_dt)
     current.age, current.heartbeat = current.age + dt, current.heartbeat + dt
     if current.stopping then
         if current.age > Config.prepare_timeout then finish_stop(current, "restore_timeout")
@@ -1364,10 +1411,11 @@ end
 
 ---@param dt number
 function M.tick(dt)
+    local step = Clock.delta(dt)
+    host_diagnostic_seconds = math.min(host_diagnostic_seconds + step, DIAGNOSTIC_LIMIT)
     -- A failure in the shared poll must not end a scene, and one scene must not end another.
     local polled, poll_err = pcall(update, dt)
     if not polled then M.diagnostic("Runtime poll failed: " .. tostring(poll_err)) end
-    local step = Clock.delta(dt)
     for _, current in ipairs(Sessions.list()) do
         local ok, err = pcall(advance, current, step)
         if not ok then

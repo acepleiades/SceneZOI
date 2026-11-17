@@ -83,6 +83,17 @@ assert(release.session_id == interrupted and release.scene_id == F.node.id)
 assert(release.participant_id == "6" and release.role == "second" and release.revision == 1)
 assert(release.phase == "preparing" and release.transport == "direct" and
     release.cause == "participant_update_error" and release.simulation_diagnostic == "Queue_clear_failed")
+local function lease_person(observation, id)
+    for _, person in ipairs(observation.participants) do if person.participant_id == id then return person end end
+end
+local host = assert(release.host_lease_diagnostic)
+assert(#host.participants == 2 and host.last_dt == .05 and host.max_dt == .25)
+for _, id in ipairs({"5", "6"}) do
+    local observed = assert(lease_person(host, id))
+    assert(observed.actor_registered and observed.prepare_attempts == 1 and observed.heartbeat_attempts == 0)
+    assert(observed.last_kind == "SceneZOI.Prepare" and observed.seconds_since_last_attempt == .05)
+    assert(observed.route.state == "direct")
+end
 R.reply(F.actors[5], P.pack(interrupted, "released_unloaded", "6", "participant_update_error"))
 assert(#releases == 1, "The controlled Zoi's relay does not duplicate the direct diagnostic")
 F.reply(interrupted, 6, "released")
@@ -105,7 +116,56 @@ assert(#releases == 2, "A relayed release for an unrelated Zoi has no diagnostic
 R.reply(F.actors[8], P.pack(relay, "released_unloaded", "9", "simulation_end"))
 assert(releases[3].transport == "relay" and releases[3].cause == "simulation_end" and
     releases[3].phase == "exiting" and releases[3].participant_id == "9")
+host = assert(releases[3].host_lease_diagnostic)
+assert(#host.participants == 2 and lease_person(host, "8").actor_registered and
+    not lease_person(host, "9").actor_registered,
+    "A relayed release must retain host observations for the unloaded roster member")
+assert(lease_person(host, "9").prepare_attempts == 1)
 F.reply(relay, 8, "released")
 R.flush_notifications()
 assert(ended[relay].code == "participant_unloaded")
 print("Participant release causes passed: sender ownership, missing cause, direct report, relay, and public stop codes.")
+
+-- Host attempts are not proof of receipt. Drop one native send while keeping
+-- both participants' host counts and unscaled ages independently observable.
+local timing = start(9, 5, 6)
+F.reply(timing, 5, "ready", "female:controlled", 1)
+F.reply(timing, 6, "ready", "female:npc", 1)
+R.tick(.05)
+assert(R.snapshot(timing).phase == "playing")
+local send, dropped = inzoi.message.send_to_sim, 0
+function inzoi.message.send_to_sim(id, kind, content)
+    if id.Value == 6 and kind == "SceneZOI.Heartbeat" then dropped = dropped + 1; return end
+    return send(id, kind, content)
+end
+F.clear_sent()
+R.tick(.7)
+R.tick(.25)
+assert(dropped == 1 and #releases == 3,
+    "Heartbeat observations must not create log records during ordinary ticks")
+local sent_first, sent_second = 0, 0
+for _, message in ipairs(F.sent) do if message.kind == "SceneZOI.Heartbeat" then
+    if message.id == 5 then sent_first = sent_first + 1 end
+    if message.id == 6 then sent_second = sent_second + 1 end
+end end
+assert(sent_first == 1 and sent_second == 0)
+local simulation = "prepare_received:1+heartbeat_received:0+last_dt:6.1+wall_since_renew_seconds:0"
+R.reply(F.actors[6], P.pack(timing, "released", "ok", 0, "lease_expired", simulation))
+local timed_release = assert(releases[4])
+assert(timed_release.cause == "lease_expired" and timed_release.phase == "playing" and
+    timed_release.simulation_diagnostic == simulation)
+host = timed_release.host_lease_diagnostic
+assert(host.last_dt == .25 and host.max_dt == .7 and #host.participants == 2)
+for _, id in ipairs({"5", "6"}) do
+    local observed = assert(lease_person(host, id))
+    assert(observed.prepare_attempts == 1 and observed.heartbeat_attempts == 1)
+    assert(observed.last_kind == "SceneZOI.Heartbeat" and observed.seconds_since_last_attempt == .25)
+end
+R.reply(F.actors[5], P.pack(timing, "released_unloaded", "6", "lease_expired", simulation))
+assert(#releases == 4, "Direct and relay timing diagnostics must be recorded once per participant")
+inzoi.message.send_to_sim = send
+F.reply(timing, 6, "released")
+F.reply(timing, 5, "released")
+R.flush_notifications()
+assert(ended[timing].code == "interrupted")
+print("Host lease observations passed: per-participant attempts, missing native delivery, unscaled ages, tick deltas and direct/relay deduplication.")

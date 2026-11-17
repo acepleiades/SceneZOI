@@ -1,7 +1,9 @@
 -- Queue ownership must stop a backlog without waiting for every queued task.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B2/?.lua;'..package.path
 local P=require('SceneZOI.Protocol');local Json=require('SceneZOI.Json')
-local restored=0
+local restored, real_seconds=0, 10000
+local original_time=os.time
+os.time=function()return math.floor(real_seconds)end
 package.loaded['SceneZOI.Outfit']={borrowable=function()end,recover=function()end,apply=function()end,restore=function()restored=restored+1 end}
 package.loaded['SceneZOI.Wardrobe']={capture=function()end,inventory=function()return 'inventory'end}
 package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
@@ -332,7 +334,7 @@ o.queued=0;o.playing=true;o.current=4;cancel_failure=true;start(s,o,'cancel-fail
 assert(not s.lease and o.AutonomyOption.AutonomyEnable.Value)
 o.playing=false
 -- Lease expiry cleans up even without an Exit message.
-start(s,o,'expired');M.on_tick(s,o,7)
+start(s,o,'expired');real_seconds=real_seconds+7;M.on_tick(s,o,7)
 assert(not s.lease and o.AutonomyOption.AutonomyEnable.Value)
 assert(restored>=6)
 print('Participant tasks passed: backlog, delayed/single cancellation, waiting/new work, independent restoration, failure and lease expiry.')
@@ -516,6 +518,7 @@ end
 
 local causes = {
     {"lease_expired", function(state, zoi)
+        real_seconds = real_seconds + require("SceneZOI.Config").lease_timeout + 1
         tick(state, zoi, require("SceneZOI.Config").lease_timeout + .1)
     end},
     {"simulation_save", function(state, zoi)
@@ -532,11 +535,57 @@ for _, case in ipairs(causes) do
     local tag = "release." .. cause
     local state, zoi = ready_participant(tag)
     trigger(state, zoi, tag)
-    assert_release(state, zoi, tag, cause)
+    assert_release(state, zoi, tag, cause, cause == "lease_expired" and "timeout:6.000+elapsed:7.000" or nil)
 end
 
-local tag = "release.update"
+-- A sparse NPC tick can cover time from before a newly delivered renewal.
+local tag = "release.accumulated_tick"
 local state, zoi = ready_participant(tag)
+real_seconds = real_seconds + .5
+M.on_lua_message(state, zoi, "SceneZOI.Heartbeat", P.pack(tag))
+tick(state, zoi, 30)
+assert(state.lease and state.lease.ready and not zoi.collision,
+    "Accumulated simulation time must not consume a freshly renewed real-time lease")
+-- Invalid/stale packets cannot keep a participant held after the host disappears.
+real_seconds = real_seconds + 6
+M.on_lua_message(state, zoi, "SceneZOI.Heartbeat", P.pack("another.session"))
+tick(state, zoi, 0)
+assert(state.lease, "The coarse real clock gets rounding grace at exactly six seconds")
+real_seconds = real_seconds + 1
+tick(state, zoi, 0)
+assert_release(state, zoi, tag, "lease_expired", "timeout:6.000+elapsed:7.000")
+local detail = P.unpack(replies[2])[6]
+assert(detail:find("prepares:1+heartbeats:1", 1, true) and detail:find("last_dt:0.000+max_dt:30.000", 1, true)
+    and detail:find("+age:7.000+clock_rollbacks:0", 1, true) and #detail <= 240, detail)
+
+tag = "release.renewals"
+state, zoi = ready_participant(tag)
+for _ = 1, 10 do
+    real_seconds = real_seconds + 1
+    M.on_lua_message(state, zoi, "SceneZOI.Heartbeat", P.pack(tag))
+    tick(state, zoi, 10)
+    assert(state.lease, "Normal heartbeats survive arbitrarily accelerated simulation deltas")
+end
+-- Repeating Prepare also renews the same lease, without resetting its evidence.
+start(state, zoi, tag)
+assert(state.lease.lease_timing.prepare_received == 2 and state.lease.lease_timing.heartbeat_received == 10)
+real_seconds = real_seconds + 7
+tick(state, zoi, 0)
+assert_release(state, zoi, tag, "lease_expired", "prepares:2+heartbeats:10")
+tag = "release.clock_rollback"
+state, zoi = ready_participant(tag)
+real_seconds = real_seconds - 3600
+tick(state, zoi, 0)
+assert(state.lease and state.lease.lease_timing.clock_rollbacks == 1,
+    "A backward system-clock change must not expire the lease or delay cleanup for an hour")
+real_seconds = real_seconds + 7
+tick(state, zoi, 0)
+assert_release(state, zoi, tag, "lease_expired", "prepares:1+heartbeats:0")
+assert(P.unpack(replies[2])[6]:find("clock_rollbacks:1", 1, true))
+print("Participant watchdog uses real time: accumulated/accelerated ticks, pause, renewals, stale packets, rounding grace, clock rollback and real host loss.")
+
+tag = "release.update"
+state, zoi = ready_participant(tag)
 zoi.queued, clear_failure = 2, true
 tick(state, zoi)
 assert_release(state, zoi, tag, "participant_update_error", "Injected_queue_clear_failure")
@@ -573,3 +622,4 @@ local stale = P.unpack(replies[2])
 assert(not state.lease and stale[1] == tag and stale[2] == "released" and stale[3] == "ok"
     and stale[4] == "0" and stale[5] == "retired_prepare", replies[2])
 print("Participant release diagnostics distinguish lifecycle and exception causes, preserve the cause through restoration retries, and identify retired Prepare packets.")
+os.time=original_time

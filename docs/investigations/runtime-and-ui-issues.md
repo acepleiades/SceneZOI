@@ -19,5 +19,32 @@ were enabled with the player.
 | A scene ends after nearby gameplay interrupts a montage | Check whether the owned track was interrupted on the same animation instance. B1 can reacquire it at the shared sample when a native avoidance animation takes the slot. [Native playback tests](../../tests/native.lua) |
 | Auto-mode picks an unexpected scene or runs too long | Read the initiating call in `api_trace.cfg`. Check its restrictions, goals, clock and end policy. An accepted API call only starts the asynchronous entry path. [Autonomous API](../addons.md#autonomous-scenes) · [Plan runtime tests](../../tests/plan-runtime.lua) |
 
+For `participant_release` with `cause=lease_expired`, compare both sides of the
+lease. The participant watchdog measures elapsed time since the latest received
+renewal with the supported real-time wall clock. A native per-character tick delta can include
+time before that renewal; subtracting that whole delta from a fresh lease could
+expire it immediately. The watchdog does not use that accumulated delta. The
+whole-second clock gets a rounding grace period before the six-second timeout
+expires. A backward clock change rebases the deadline and is counted in the
+diagnostic; it does not count as a received renewal.
+
+`host_lease_diagnostic` gives each roster member's Prepare and Heartbeat
+**send attempts**, the last kind and its age in unscaled host seconds, the
+session's last/largest host tick delta, and the route's pending/attached state.
+An attached route only confirms receiver installation; it does not prove that a
+heartbeat reached or ran on the simulation side. These observations are kept in
+memory and written when a participant unexpectedly releases.
+
+`simulation_diagnostic` records the participant's received Prepare/Heartbeat
+counts, tick count and accumulated tick time, last/largest delta, timeout and
+wall-clock seconds since acquisition and the latest renewal. Missing renewals
+despite recent host attempts point toward routing or simulation delivery.
+Compare `tick_since_renew` with `elapsed`: a large accumulated delta with much
+less actual time since renewal indicates the scheduling mismatch that the
+real-time watchdog avoids. These fields narrow the investigation rather than
+establish the cause of a reported interruption by themselves. Compare other
+roster members and the same session's timestamps before blaming hardware, a
+particular native task or another mod.
+
 The [old issue ledger](https://github.com/acepleiades/SceneZOI/blob/e0cb40d64bb8c313d5c7309c3c5605b231569892/docs/investigations/runtime-and-ui-issues.md)
 has earlier reproductions and measurements for regressions that need more history.
