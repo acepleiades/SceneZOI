@@ -1,8 +1,7 @@
 package.path = "modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;" .. package.path
 local Json = require("SceneZOI.Json")
-local Protocol = require("SceneZOI.Protocol")
 local release_version = require("SceneZOI.ReleaseVersion")
-local cfg = {scene_history = Protocol.encode('{"event":"legacy_start","timestamp":1}\n'), release_version = "old"}
+local cfg = {scene_history = "event=previous_start timestamp=1\n", release_version = "old"}
 local fail_read, fail_write, fail_version_write = false, false, false
 local snapshot = {nodes = {["hzoi.idle"] = {}, ["scenezoi.idle"] = {}}, warnings = {"one"},
     excluded = {["hzoi.optional"] = {code = "asset_unavailable", asset = "/Game/Optional.Asset"}}}
@@ -53,7 +52,7 @@ includes(inventory, "hzoi={scene_pack=1}",
     "declared_scenes_by_namespace={hzoi=2}", "hzoi.optional={asset='/Game/Optional.Asset', code=asset_unavailable}")
 local initial = read_history()
 assert(#initial == 2)
-includes(initial[1], "event=legacy_start")
+assert(initial[1] == "event=previous_start timestamp=1")
 includes(initial[2], "event=start_requested", [[name \u0022example\u0022\nnew line \\ with an apostrophe: it\u0027s saved]])
 
 package.loaded[mod] = nil

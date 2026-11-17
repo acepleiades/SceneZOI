@@ -68,7 +68,7 @@ end
 
 -- Equal definitions share one key. Distinct definitions keep their own rules.
 function M.compile(source)
- local result={definitions={},variants={},by_owner={},defaults={},providers={},conflicts={},warnings={}}
+ local result={definitions={},variants={},defaults={},providers={},conflicts={},warnings={}}
  local docs,by_id={},{}
  for i,doc in ipairs(source.by_kind.scene_task or {})do docs[i]=doc end
  table.sort(docs,function(a,b)return a.source<b.source end)
@@ -76,7 +76,7 @@ function M.compile(source)
   local ok,value=pcall(M.validate,doc.data)
   if ok then
    local rows=by_id[value.id] or {};by_id[value.id]=rows
-   local owner=doc.owner or ''
+   local owner=doc.owner
    if rows[owner] and not V.equal(rows[owner],value)then
     result.warnings[#result.warnings+1]=doc.source..': conflicting task ID '..value.id..' within '..owner
    else rows[owner]=value end
@@ -96,10 +96,7 @@ function M.compile(source)
   for _,group in ipairs(groups)do
    local key=#groups==1 and id or group.owner..':'..id
    result.variants[key]=group.definition
-   for _,owner in ipairs(group.owners)do
-    result.by_owner[owner]=result.by_owner[owner] or {}
-    result.by_owner[owner][id]=key;keys[owner]=key
-   end
+   for _,owner in ipairs(group.owners)do keys[owner]=key end
   end
   -- Match API discovery and keep the fallback independent of load order.
   local fallback_owner=keys.scenezoi and 'scenezoi' or owners[1]
@@ -134,6 +131,6 @@ end
 
 function M.directive(node,role,id,key)
  local directive=((node.tasks or {})[role] or {})[id]
- if directive and (not node._task_keys or node._task_keys[id]==(key or id))then return directive end
+ if directive and (not node._task_keys or node._task_keys[id]==key)then return directive end
 end
 return M

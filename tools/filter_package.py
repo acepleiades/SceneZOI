@@ -46,7 +46,6 @@ for entry in data_inventory['files']:
     exported=original/'non_ufs'/Path(entry['path']).relative_to('Content')
     assert json.loads(exported.read_text(encoding='utf-8-sig'))==json.loads((mod/entry['path']).read_text(encoding='utf-8-sig')),'Native declaration patch mismatch'
     assert 'non_ufs/'+Path(entry['path']).relative_to('Content').as_posix()in {p.lstrip('/')for p in json.loads((original/'mod_manifest.json').read_text(encoding='utf-8-sig'))['NonAssets']},'Native patch missing from manifest'
-data_sidecars=[]
 assert not(final/'scenezoi_data').exists(),'Retired shared declarations in raw package'
 
 response=args.modkit_root.resolve()/'Engine/Programs/AutomationTool/Saved/ResponseFiles'/f'PakListIoStore_{plugin}inZOIModKit-Windows.txt'
@@ -67,7 +66,7 @@ if not expected_packages and not any(original.rglob('*.utoc')):
     assert not any(Path(name).suffix.lower()in forbidden for name in present), 'Cooked/native payload in assetless package'
     (final/'mod_manifest.json').write_text(json.dumps(package_manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     report={'source_response_entries':0,'retained_entries':0,'asset_package_count':0,
-        'texture_bulk_chunks':0,'audio_asset_packages':0,'audio_bulk_chunks':0,'data_sidecars':[],
+        'texture_bulk_chunks':0,'audio_asset_packages':0,'audio_bulk_chunks':0,
         'asset_payloads':[],'final_directory':str(final),'dependencies':package_manifest['Dependencies'],
         'companion_pak_is_mod_asset_registry_only':True,'no_game_or_engine_asset_payloads':True,
         'assetless_native_package':True,'cooked_containers_present':False,'non_asset_files_verified':len(present)}
@@ -128,7 +127,7 @@ manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',e
 report={'source_response_entries':len(response.read_text(encoding='utf-8-sig').splitlines()),
         'retained_entries':len(selected),'asset_package_count':expected_package_count,'texture_bulk_chunks':texture_bulk_count,
         'audio_asset_packages':len(audio_payloads),'audio_bulk_chunks':audio_bulk_count,
-        'data_sidecars':data_sidecars,'asset_payloads':filenames,'final_directory':str(final),'dependencies':manifest['Dependencies'],
+        'asset_payloads':filenames,'final_directory':str(final),'dependencies':manifest['Dependencies'],
         'companion_pak_is_mod_asset_registry_only':True,
         'no_game_or_engine_asset_payloads':True}
 (workspace/'outputs/compat-package-audit.json').write_text(json.dumps(report,indent=2),encoding='utf-8')

@@ -76,8 +76,7 @@ function M.offer(current,actor,fields)
   current.journal_revision=result
  else
   local record=records[fields[1]];if not record then return end
-  if fields[2]=='lent'and record.people[id]then record.people[id].lent_costume=fields[3]
-  elseif fields[2]=='recovered'and record.people[id]then
+  if fields[2]=='recovered'and record.people[id]then
    record.people[id]=nil
    Diagnostics.record('participant_recovered',{session_id=record.token,participant_id=id})
   elseif fields[2]=='furniture_recovered'then
@@ -138,6 +137,7 @@ end
 local function index_journal(raw)
  local journal=decoded(raw);assert(type(journal)=='table','Invalid saved SceneZOI journal')
  local rows
+ -- Backward compatibility with version 1 single-session save journals.
  if journal.version==1 then
   assert(type(journal.participants)=='table'and type(journal.furniture)=='table','Incomplete saved SceneZOI journal')
   rows={{token=journal.token,participants=journal.participants,furniture=journal.furniture}}

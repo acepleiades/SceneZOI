@@ -65,6 +65,7 @@ function M.trigger(ctx,payload)
  local body=person.body or person.expression_body or(session.node.participants[person.role]or {}).body
  local sounds=((session.node.task_completion_sounds or {})[person.role]or {})[payload.task.id]
  local pool_key=task_key..':'..person.id..(sounds and ':'..session.node.id or '')
+ -- The definition-level fallback supports packs written before scene-level completion sounds.
  for i,spec in ipairs(sounds or definition.on_completion or {})do
   if not spec.when or not spec.when.body or spec.when.body==body then
    local ok,err=pcall(play,ctx,pool_key..':'..i,person,spec)

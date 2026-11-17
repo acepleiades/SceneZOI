@@ -155,9 +155,10 @@ local function start(actor,req,row,data,preflight)
  assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id),'restore_pending')
  local Sessions=require('SceneZOI.Sessions')
  for _,id in ipairs(ids)do assert(not Sessions.holder(id),'participant_busy')end
+ -- Backward compatibility with add-ons that use session_restrictions on the original start operations.
  local restrictions=Search.criteria(data.metadata,args.restrictions or args.session_restrictions)
  local search=Search.criteria(data.metadata,args.search)
- local spec=autonomous and Plan.parse(args,(data.tasks or {}).definitions or {},ids,data.metadata)or nil
+ local spec=autonomous and Plan.parse(args,data.tasks.definitions,ids,data.metadata)or nil
  local lifetime=M.lifetime(args.lifetime,spec)
  local mode=preflight and(args.start_mode or(args.scene_id and 'start_scene'or 'start_at_hub'))or req.operation
  assert(mode=='start_at_hub'or mode=='start_scene'or mode=='start_random_scene'or mode=='start_autonomous_scene','Invalid start mode')
@@ -197,11 +198,13 @@ local function execute(actor,req,row)
   if runtime().api_control_event and not op:match('^get_')and op~='renew_integration'and op~='register_integration'then runtime().api_control_event(req)end
   return result
  end
+ -- Backward compatibility with add-ons that read maximum_sessions as the single focused session limit.
  if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
   V.array(args.events or {'*'},32);local names={};for _,n in ipairs(args.events or {'*'})do if n~='*'then V.id(n)end;names[n]=true end
+  -- Backward compatibility with subscriptions made before scope was added.
   local scope=args.scope or 'focused';assert(scope=='focused'or scope=='owned'or scope=='all','Invalid subscription scope')
   subscribers[sk]={addon_id=req.addon_id,client_id=req.client_id,actor=actor,names=names,scope=scope};return {subscribed=true,scope=scope,event_cursor=cursor,session=runtime().snapshot()or J.null}
  end
@@ -245,7 +248,7 @@ local function execute(actor,req,row)
   local known={session_already_running=true,restore_pending=true,initiator_not_controlled=true,no_matching_scenes=true,furniture_unavailable=true,participant_busy=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,participant_not_found=true,task_not_found=true,task_provider_unavailable=true}
   return {valid=false,code=known[code]and code or 'invalid_request',message=message,reservation=false}
  end
- if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy((data.tasks or {}).definitions or {}),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
+ if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy(data.tasks.definitions),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
  if op=='get_scene'then V.fields(args,{'scene_id'},{'scene_id'});return Catalog.public_node(Catalog.get(args.scene_id))end
  if op=='find_scenes'or op=='choose_random_scene'then
   V.fields(args,{'participants','furniture_id','search','bindings'});local rows=find(args,data)

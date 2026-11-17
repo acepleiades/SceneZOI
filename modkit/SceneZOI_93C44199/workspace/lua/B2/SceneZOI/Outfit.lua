@@ -33,8 +33,8 @@ function M.recover(owner, legacy_layers)
     if not next(legacy)then return end
     local appearance = owner:GetComponent(inzoi.EB2ComponentType.Appearance)
     if not appearance then return end
-    -- Earlier live fixtures left a namespaced layer with the default Invalid reason. Remove
-    -- only that exact fixture ID; never remove a generic Undressed layer owned by another mod.
+    -- Older saves can retain outfit layers listed by a content pack. Match only those IDs
+    -- so layers owned by other mods are left alone.
     local setting = appearance:GetAppearanceSetting()
     local layers = setting.Outfit.ActiveStyleList
     -- BlueLua's native TArray supports ipairs but not Lua's length operator.
@@ -102,7 +102,8 @@ function M.restore(owner, lease)
     local appearance = owner:GetComponent(inzoi.EB2ComponentType.Appearance)
     local script = inzoi.EB1ChangeOutfitReason.Script
     lease.refresh_pending = lease.refresh_pending or lease.outfit or lease.body_merge or lease.lent_costume
-    -- Older saves may name a uniform the scene never took: our own layer is the proof it did.
+    -- Backward compatibility with saves that recorded a borrowed work uniform.
+    -- The scene layer confirms SceneZOI actually borrowed the uniform.
     if lease.lent_costume and lease.recovering and has_scene_layer(appearance) then
         lease.recovery_confirmed = true
     end

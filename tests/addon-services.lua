@@ -1,8 +1,9 @@
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local J=require('SceneZOI.Json');local V=require('SceneZOI.DataValidation');local Control=require('SceneZOI.AddonControl');local Tasks=require('SceneZOI.Tasks')
+local task_registry=dofile('tests/support/task-registry.lua')
 local p={id='1',body='male',role='giver',outfit_items={shirt={enabled=true}}}
 local s={token='s.1',participants={p,{id='2',body='male',role='receiver'}},node={id='n.1',kind='loop',participants={giver={},receiver={}}},clock={session_elapsed=0},revision=1}
-Control.init(s);s.tasks=Tasks.new({energy={maximum=10,initial=0,label='Energy'}},s.participants)
+Control.init(s);s.tasks=Tasks.new(task_registry({energy={maximum=10,initial=0,label='Energy'}}),s.participants,s.node)
 local ended,speed,events=false,nil,{}
 local Runtime={api_session=function(id)assert(id==s.token,'session_not_found');return s end,
  is_addon_owner=function(addon,client)return addon=='owner'and client=='a'end,

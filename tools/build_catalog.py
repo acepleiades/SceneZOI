@@ -55,10 +55,12 @@ def edge(value):
 
 
 def compile_packs(packs, link=True):
-    nodes, pack_ids, extensions, attachment_extensions = {}, set(), [], []
+    nodes, pack_ids, extensions = {}, set(), []
     sounds = {}
     for pack in packs:
-        fields(pack, ['schema_version', 'id', 'nodes', 'extensions', 'attachment_extensions', 'sound_sets', 'expression_files', 'data_files'], ['schema_version', 'id', 'nodes', 'extensions'])
+        if isinstance(pack, dict) and 'attachment_extensions' in pack:
+            raise ValueError('Remove retired attachment_extensions and use coverage_attachment data')
+        fields(pack, ['schema_version', 'id', 'nodes', 'extensions', 'sound_sets', 'expression_files', 'data_files'], ['schema_version', 'id', 'nodes', 'extensions'])
         check(isinstance(pack.get('expression_files',[]),list)and all(isinstance(x,str)for x in pack.get('expression_files',[])), 'Invalid expression_files list')
         check(type(pack['schema_version']) is int and pack['schema_version'] == 3, 'Unsupported schema version')
         identifier(pack['id'])
@@ -200,33 +202,11 @@ def compile_packs(packs, link=True):
             edge({k: v for k, v in extension.items() if k != 'hub'})
             check(extension['id'].startswith(pack['id'] + '.'), 'Extension ID must belong to its pack')
             extensions.append(extension)
-        check(isinstance(pack.get('attachment_extensions', []), list), 'Expected attachment extension array')
-        for extension in pack.get('attachment_extensions', []):
-            fields(extension, ['hub', 'source', 'attachment', 'participant'], ['hub', 'source', 'attachment', 'participant'])
-            identifier(extension['attachment']); identifier(extension['participant'])
-            identifier(extension['hub']); identifier(extension['source'])
-            check(extension['source'].startswith(pack['id'] + '.'), 'Attachment extension source must belong to its pack')
-            attachment_extensions.append(extension)
     for extension in extensions:
         hub = nodes.get(extension['hub'])
         if not hub and not link:continue
         check(hub and hub.get('hub'), 'Navigation extension must reference a registered hub')
         hub['navigation'].append({k: v for k, v in extension.items() if k != 'hub'})
-    for extension in attachment_extensions:
-        hub, source = nodes.get(extension['hub']), nodes.get(extension['source'])
-        check(hub and hub.get('hub'), 'Attachment extension must reference a registered hub')
-        key = extension['attachment']
-        check(source and key in source.get('attachments', {}), 'Attachment extension source has no named attachment')
-        check(key not in hub.get('attachments', {}), 'Conflicting hub attachment providers')
-        spec = copy.deepcopy(source['attachments'][key])
-        check(spec.get('when_undressed') and spec.get('retain_for_session'), 'Hub attachment extensions must be conditional and session-owned')
-        check(hub['id'] in spec.get('retained_tracks', {}), 'Hub attachment extension has no matching track')
-        role = extension['participant']
-        check(role in hub['participants'] and hub['participants'][role] == source['participants'][spec['participant']],
-              'Attachment extension must explicitly name a compatible hub role')
-        spec['participant'] = role
-        spec['animation'] = spec['retained_tracks'][hub['id']]
-        hub.setdefault('attachments', {})[key] = spec
     checked,visiting=set(),set()
     def transition_path(node):
         if node['kind']!='transition' or node['id']in checked:return
@@ -288,7 +268,6 @@ def lua(value):
 def build(pack_paths, project, expression_paths=None, expression_project=None, projects=None):
     packs=[load_pack(p)for p in pack_paths]
     catalog=compile_packs(packs,link=False)
-    check(not any(p.get("attachment_extensions")for p in packs),"Use coverage_attachment data instead of retired attachment_extensions")
     from expression_data import compile_expression_sets
     from data_files import expression_sources,pack_documents,prepare_documents,write,retire_shared
     sources=expression_sources(pack_paths,expression_paths)

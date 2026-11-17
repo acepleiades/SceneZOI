@@ -13,9 +13,9 @@ function M.resolve(id,body)
  local data=Library.get();id=Keys.normalize(id);id=id and(data.aliases[id]or id)
  return id and data.sets[id]and data.sets[id].body==body and id or nil
 end
-function M.valid(id,body)return M.resolve(id,body)~=nil end
 function M.load(person,body)
  local ok,_,data=command('load',person.id);local f=ok and Protocol.unpack(data);local selected
+ -- Backward compatibility with version 1 saved expression preferences.
  if f and f[1]=='1'then selected=f[2]elseif f and f[1]=='2'then selected=Protocol.decode(f[2])end
  person.expression_set=M.resolve(selected,body)or Library.get().defaults[body]
  person.expression_body=body;person.expression_profile_loaded=true
@@ -25,12 +25,12 @@ end
 function M.request(session,raw)
  if session.stopping or session.ended then return end
  local f=Protocol.unpack(raw)
- if not f or f[1]~=session.client or f[2]~=session.sequence or(f[3]~='personality'and f[3]~='personality2')then return end
+ if not f or f[1]~=session.client or f[2]~=session.sequence or f[3]~='personality2' then return end
  local count,revision=tonumber(f[4]),tonumber(f[7])
  if not count or count%1~=0 or count<=0 or count<=(session.personality_ack or 0)or session.preparing then return end
  session.personality_ack=count;session.personality_code='personality_invalid'
  if revision~=session.revision then session.personality_code='personality_stale';return end
- local requested=f[6];if f[3]=='personality2'then requested=Protocol.decode(f[6])end
+ local requested=Protocol.decode(f[6])
  for _,person in ipairs(session.participants)do
   if person.id==f[5]then
    local id=M.resolve(requested,person.expression_body)

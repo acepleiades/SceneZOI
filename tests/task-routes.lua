@@ -33,12 +33,12 @@ assert(captured.task_route.target=='mutated'and first.target=='test.finish'and c
 print('Task routes passed: per-role/per-task matching, repeated-body identities, target validation/isolation, deterministic ties, stale revision/node guards, preparation/Exit/transition locks and copied event details.')
 
 -- Registry integration removes only routes whose task is not currently registered.
-local snapshot={by_kind={scene_pack={{source='pack',data={schema_version=3,id='test',nodes={origin,finish,other,idle},extensions={}}}}}}
+local snapshot={by_kind={scene_pack={{owner='test',source='pack',data={schema_version=3,id='test',nodes={origin,finish,other,idle},extensions={}}}}}}
 package.loaded['SceneZOI.DataFiles']={get=function()return snapshot end}
 inzoi.cli={execute=function()return true end}
 local C=require('SceneZOI.Catalog');local registry=C.refresh()
 assert(registry.nodes[origin.id]and not registry.nodes[origin.id].task_completion_routes.lead.charge and #registry.warnings==2)
-snapshot=V.copy(snapshot);snapshot.by_kind.scene_task={{source='charge',data={schema_version=1,id='charge',label='Charge',maximum=10}}}
+snapshot=V.copy(snapshot);snapshot.by_kind.scene_task={{owner='test',source='charge',data={schema_version=1,id='charge',label='Charge',maximum=10}}}
 registry=C.refresh();assert(registry.nodes[origin.id].task_completion_routes.lead.charge==finish.id and not registry.nodes[origin.id].task_completion_routes.other.training)
 local target=C.task_destination(registry.nodes[origin.id],first);assert(target.id==finish.id)
 print('Task route registry passed: absent tasks isolated; valid independent task declarations enable exact registered IDs.')

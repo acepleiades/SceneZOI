@@ -20,9 +20,10 @@ function M.new()
             fixture.samples[current.token] = (fixture.samples[current.token] or 0) + 1
         end}
     package.loaded["SceneZOI.Appearance"] = {capture = noop, ready = yes, status = function() return "" end}
+    local tasks = require("SceneZOI.TaskData").compile({by_kind = {}})
     package.loaded["SceneZOI.Catalog"] = {refresh = noop, get = function() return node end,
         load = function() return {first = "a", second = "b"}, 4 end, simulation = function() return {} end,
-        get_snapshot = function() return {nodes = {}, tasks = {}} end, publish = noop}
+        get_snapshot = function() return {nodes = {}, tasks = tasks} end, publish = noop}
     package.loaded["SceneZOI.Binding"] = {resolve = function(people)
         local out = {}
         for _, person in ipairs(people) do out[person.role] = person end

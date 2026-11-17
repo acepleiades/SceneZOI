@@ -1,5 +1,6 @@
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local Clock=require('SceneZOI.Clock');local V=require('SceneZOI.DataValidation');local S=require('SceneZOI.SceneData');local T=require('SceneZOI.Tasks')
+local task_registry=dofile('tests/support/task-registry.lua')
 local function node(id,kind,destination)
  local v={id=id,label=id,kind=kind,duration=10,fps=60,anchor_participant='lead',participants={lead={body='male'},other={body='male'},helper={body='female'}},tracks={lead='/Test/A.A',other='/Test/A.A',helper='/Test/B.B'},navigation={}}
  if kind=='transition'then v.destination=destination end;return v
@@ -30,7 +31,8 @@ c:advance(100,4);assert(c:position(10,'transition')>9.99 and c:position(10,'tran
 -- Task progression, decay, holds and negative rates all freeze for any roster.
 local people={};for role in pairs(t.participants)do people[#people+1]={id=role,role=role}end
 local session={node=t,participants=people};t.tasks={lead={charge={rate=100}},other={charge={rate=-100}},helper={charge={rate=0}}}
-local progress=T.new({charge={maximum=90,initial=20,decay=2},omitted={maximum=90,initial=20,decay=2}},people)
+local registry=task_registry({charge={maximum=90,initial=20,decay=2},omitted={maximum=90,initial=20,decay=2}})
+local progress=T.new(registry,people,t)
 T.update(progress,session,100,function()error('Task completed during transition')end)
 for _,p in ipairs(people)do assert(progress.participants[p.id].charge.value==20 and progress.participants[p.id].omitted.value==20)end
 print('Transitions passed: validation/isolation, repeated-body rosters, finite chains/cycles, native/scene speed changes, pause, clamped final pose, unchanged looping and all-task freeze.')

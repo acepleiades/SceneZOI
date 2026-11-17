@@ -53,17 +53,20 @@ for _=1,100 do E.sample(ctx);E.guard(ctx) end
 assert(calls["1"]==1 and calls["2"]==1 and calls["3"]==1)
 session.clock.session_elapsed=12;E.sample(ctx);assert(calls["1"]==2 and calls["2"]==2)
 local before=writes
-Profiles.request(session,P.pack("test",1,"personality",1,"2","example.downer",1));assert(writes==before+1)
+local function select_expression(count,id,set,revision)
+ Profiles.request(session,P.pack("test",1,"personality2",count,id,P.encode(set),revision))
+end
+select_expression(1,"2","example.downer",1);assert(writes==before+1)
 assert(b.expression_set=="example.downer" and a.expression_set=="example.pleasure_face")
 E.sample(ctx);assert(calls["2"]==3 and calls["1"]==2)
-Profiles.request(session,P.pack("test",1,"personality",1,"2","example.downer",1));assert(writes==before+1)
-Profiles.request(session,P.pack("test",1,"personality",2,"3","example.pleasure_face",1));assert(session.personality_code=="personality_invalid")
-Profiles.request(session,P.pack("test",1,"personality",3,"1","example.downer",0));assert(session.personality_code=="personality_stale")
+select_expression(1,"2","example.downer",1);assert(writes==before+1)
+select_expression(2,"3","example.pleasure_face",1);assert(session.personality_code=="personality_invalid")
+select_expression(3,"1","example.downer",0);assert(session.personality_code=="personality_stale")
 fail_save=true
-Profiles.request(session,P.pack("test",1,"personality",4,"1","example.downer",1))
+select_expression(4,"1","example.downer",1)
 assert(session.personality_code=="personality_storage" and a.expression_set=="example.pleasure_face");fail_save=false
 session.stopping=true;local previous_ack=session.personality_ack
-Profiles.request(session,P.pack("test",1,"personality",5,"1","example.downer",1))
+select_expression(5,"1","example.downer",1)
 assert(a.expression_set=="example.pleasure_face" and session.personality_ack==previous_ack,"An exiting session persisted a queued personality edit")
 session.stopping=false
 local replacement=person("2","new_role","female")

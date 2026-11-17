@@ -26,10 +26,10 @@ local transition = scene('handoff')
 transition.kind, transition.destination = 'transition', target.id
 hub.navigation = {{id = 'handoff', target = transition.id}}
 local source = {by_kind = {
-    scene_pack = {{source = 'test', data = {schema_version = 3, id = 'test',
+    scene_pack = {{owner = 'test', source = 'test', data = {schema_version = 3, id = 'test',
         nodes = {hub, target, transition},
         extensions = {{hub = hub.id, id = 'test.optional', target = target.id}}}}},
-    scene_task = {{source = 'task', data = {schema_version = 1, id = 'charge', label = 'Charge', maximum = 10}}},
+    scene_task = {{owner = 'test', source = 'task', data = {schema_version = 1, id = 'charge', label = 'Charge', maximum = 10}}},
     body_profile = {{source = 'profile', data = {schema_version = 2, id = 'test.profile', section = 1,
         coverage_bit = 1, patch_mesh = mesh, patch_material_slot = 'skin'}}},
     coverage_attachment = {{source = 'rule', data = {schema_version = 1, id = 'test.rule', body = 'male',

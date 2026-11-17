@@ -2,14 +2,15 @@ package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local P=require('SceneZOI.Protocol')
 inzoi={cli={execute=function()return true end}}
 local Settings=require('SceneZOI.Settings');local Tasks=require('SceneZOI.Tasks');local Controls=require('SceneZOI.AddonControl')
+local task_registry=dofile('tests/support/task-registry.lua')
 local people={{id='1',role='male_role',body='female',expression_body='male',bio_gender='male'},
  {id='2',role='female_role',body='male',bio_gender='female'}, {id='3',role='third',body='female'}}
 local s={client='test',sequence='1',revision=1,participants=people,node={kind='loop',id='test.scene',participants={},tasks={}}}
-local defs={charge={id='charge',label='Charge',maximum=100,initial=0,decay=3}}
+local registry=task_registry({charge={label='Charge',maximum=100,decay=3}})
 local function rates(female,male,count)Settings.request(s,'task_rates',P.pack('test','1','settings_task_rates',count,1,female,male))end
 local function fresh(rate)
  for _,p in ipairs(people)do s.node.tasks[p.role]={charge={rate=rate}}end
- return Tasks.new(defs,people)
+ return Tasks.new(registry,people,s.node)
 end
 local events={};local function tick(t,dt)Tasks.update(t,s,dt,function(e)events[#events+1]=e end)end
 rates(50,200,1);local t=fresh(10);tick(t,1)

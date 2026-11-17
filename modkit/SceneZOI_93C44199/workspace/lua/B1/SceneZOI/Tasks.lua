@@ -8,25 +8,19 @@ local Data=require('SceneZOI.TaskData')
 local function appearance_body(p,session)return p.body or p.expression_body or((session.node.participants or {})[p.role]or {}).body end
 local M={}
 local function sorted(t)local ids={};for id in pairs(t)do ids[#ids+1]=id end;table.sort(ids);return ids end
-function M.new(definitions,participants,registry,node)
- local public=registry and registry.definitions or definitions
- local result={registry=registry,definitions=V.copy(definitions),task_ids=sorted(public),last_keys={},
-  participants={},warnings={},warned={}}
+function M.new(registry,participants,node)
+ local result={registry=registry,definitions=V.copy(registry.variants),task_ids=sorted(registry.definitions),last_keys={},
+  participants={},warned={}}
  for _,p in ipairs(participants)do
   local entries={}
-  for id,definition in pairs(public)do entries[id]={value=definition.initial or 0,completions=0}end
+  for _,id in ipairs(result.task_ids)do entries[id]={value=0,completions=0}end
   result.participants[p.id]=entries
  end
- if node then M.enter_node(result,node)
- elseif not registry then
-  for _,id in ipairs(result.task_ids)do result.last_keys[id]=id end
- end
+ M.enter_node(result,node)
  return result
 end
 function M.key(state,node,id)
- if state.registry then return Data.resolve(state.registry,node,id) end
- if state.definitions[id]then return id end
- return nil,'task_not_found'
+ return Data.resolve(state.registry,node,id)
 end
 -- Keep one meter per participant and task ID. Its units follow the last
 -- resolved definition, even while a scene with a missing provider hides it.
@@ -81,8 +75,8 @@ function M.update(state,session,dt,emit)
  for role,tasks in pairs(directives)do for id in pairs(tasks)do
   local key=session.node.id..':'..role..':'..id
   if not M.key(state,session.node,id)and not state.warned[key]then
-   state.warned[key]=true;state.warnings[#state.warnings+1]='Unavailable task '..id..' for '..role..' in '..session.node.id
-   print('[SceneZOI] '..state.warnings[#state.warnings])
+   state.warned[key]=true
+   print('[SceneZOI] Unavailable task '..id..' for '..role..' in '..session.node.id)
   end
  end end
  for _,p in ipairs(session.participants)do

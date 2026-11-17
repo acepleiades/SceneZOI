@@ -115,7 +115,6 @@ local function targets(node,with_completion_routes)
  return out
 end
 local function goal_directive(node,role,id,registry)
- if not registry then return TaskData.directive(node,role,id) end
  local key,reason=TaskData.resolve(registry,node,id)
  if key then return TaskData.directive(node,role,id,key) end
  return nil,reason
@@ -123,7 +122,7 @@ end
 
 -- Walks the authored graph from a proposed entry. A node counts only if the fixed roster can play it.
 local function explore(data,entry,spec,people,restrictions,with_completion_routes)
- local nodes=data.nodes;local registry=data.tasks or {}
+ local nodes=data.nodes;local registry=data.tasks
  local Search=search();local Binding=require('SceneZOI.Binding')
  local start=nodes[entry.scene_id];local roles={}
  for role,id in pairs(entry.bindings)do roles[id]=role end
@@ -140,7 +139,7 @@ local function explore(data,entry,spec,people,restrictions,with_completion_route
    for _,goal in ipairs(spec.goals)do
     local declared=((node.tasks or {})[roles[goal.participant_id]]or {})[goal.task_id]
     if TaskData.can_finish(declared)then
-     local directive,reason=goal_directive(node,roles[goal.participant_id],goal.task_id,registry.variants and registry or nil)
+     local directive,reason=goal_directive(node,roles[goal.participant_id],goal.task_id,registry)
      if directive then
       local candidates=finishable[goal]or {};finishable[goal]=candidates
       candidates[id]=true
@@ -223,7 +222,7 @@ end
 local function entry_score(data,row,spec,seed)
  local node,score=data.nodes[row.scene_id],0
  local roles={};for role,id in pairs(row.bindings)do roles[id]=role end
- local registry=data.tasks and data.tasks.variants and data.tasks
+ local registry=data.tasks
  for _,goal in ipairs(spec.goals)do
   local directive=goal_directive(node,roles[goal.participant_id],goal.task_id,registry)
   if directive and directive.rate>0 then score=score+10;if TaskData.can_finish(directive)then score=score+1 end end

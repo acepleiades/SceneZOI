@@ -1,6 +1,7 @@
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local V=require('SceneZOI.DataValidation');local J=require('SceneZOI.Json')
 local C=require('SceneZOI.AddonControl');local Tasks=require('SceneZOI.Tasks');local Search=require('SceneZOI.SceneSearch')
+local task_registry=dofile('tests/support/task-registry.lua')
 package.loaded['SceneZOI.Traits']={matches=function(r,p)return r.body==p.body end}
 local node={id='test.hub',kind='loop',participants={giving={body='male'},receiving={body='male'}},navigation={},
  actions={{type='hug',actor='giving',target='receiving',performer='giving'}},content_rating='GENERAL',tasks={giving={['test.energy']={rate=1}},receiving={['test.energy']={rate=2}}}}
@@ -8,7 +9,7 @@ local roster={{id='1',body='male',role='giving'},{id='2',body='male',role='recei
 local bindings=assert(Search.bind(node,roster,{giving='2',receiving='1'}));assert(bindings.giving=='2'and bindings.receiving=='1')
 assert(not Search.bind(node,roster,{giving='1',receiving='1'}));assert(not Search.bind(node,roster,{giving='3'}))
 local s={token='session.test',node=node,participants=roster,revision=1,clock={session_elapsed=0},addon_controls={}}
-C.init(s);s.tasks=Tasks.new({['test.energy']={label='Energy',maximum=10,initial=0}},roster)
+C.init(s);s.tasks=Tasks.new(task_registry({['test.energy']={label='Energy',maximum=10,initial=0}}),roster,node)
 local events={};local function tick(dt)Tasks.update(s.tasks,s,dt,function(e)events[#events+1]=e end)end
 C.register('a',{'tasks','presentation','speed'});C.register('b',{'tasks','presentation'})
 local a=C.layer(s,'a');local b=C.layer(s,'b')

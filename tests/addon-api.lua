@@ -1,12 +1,13 @@
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local J=require('SceneZOI.Json');local V=require('SceneZOI.DataValidation');local Meta=require('SceneZOI.Metadata')
+local task_registry=dofile('tests/support/task-registry.lua')
 local function read(p)local f=assert(io.open(p,'rb'));local v=J.decode(f:read('*a'));f:close();return v end
 local source={by_kind={}}
 for kind,file in pairs({tag_dictionary='tags',action_dictionary='actions'})do source.by_kind[kind]={{owner='scenezoi',source=file,data=read('packs/scenezoi/metadata/'..file..'.json')}}end
 local registry=Meta.compile(source)
 local neutral=Meta.resolve_scene(registry,{id='test.hub',label='Hub',kind='loop',starting_hub=true,navigation={{id='next',target='test.explicit'}},participants={first={body='male'},second={body='female'}},actions={{type='hug',actor='first',target='second'}}})
 local explicit=V.copy(neutral);explicit.id='test.explicit';explicit.actions={{type='vaginal_sex',actor='first',target='second',performer='second'}};explicit.content_rating='EXPLICIT'
-local data={metadata=registry,nodes={[neutral.id]=neutral,[explicit.id]=explicit}}
+local data={metadata=registry,nodes={[neutral.id]=neutral,[explicit.id]=explicit},tasks=task_registry({})}
 local a={id='1',body='male',GetEntityId=function()return {Value=1}end};local b={id='2',body='female',GetEntityId=function()return {Value=2}end}
 UE={UGameplayStatics={GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=1}end}end}}
 local current,stops,navigations=nil,0,0;local cfg,responses,events={},{},{};local API

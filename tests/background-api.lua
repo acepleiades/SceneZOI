@@ -1,12 +1,13 @@
 -- The public API starts background scenes without touching the single-session contract add-ons already rely on.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local J=require('SceneZOI.Json');local P=require('SceneZOI.Protocol');local Sessions=require('SceneZOI.Sessions')
+local task_registry=dofile('tests/support/task-registry.lua')
 local function actor(id,body)return {id=tostring(id),body=body,GetEntityId=function()return {Value=id}end}end
 local a,b,c,d,e,f=actor(1,'male'),actor(2,'female'),actor(3,'male'),actor(4,'female'),actor(5,'male'),actor(6,'female')
 local actors={['1']=a,['2']=b,['3']=c,['4']=d,['5']=e,['6']=f}
 UE={UGameplayStatics={GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=1}end}end}}
 local node={id='test.hub',kind='loop',starting_hub=true,participants={first={body='male'},second={body='female'}},navigation={}}
-local data={metadata={tags={},actions={}},nodes={[node.id]=node}}
+local data={metadata={tags={},actions={}},nodes={[node.id]=node},tasks=task_registry({})}
 local started,stopped,renewed,count,too_far,limit,API=nil,{},{},0,false,false,nil
 started={}
 package.loaded['SceneZOI.Traits']={capture=function(x)return {id=x.id,body=x.body}end}
@@ -131,7 +132,7 @@ r=request('stop_session',{session_id='background.1'},'other.addon');assert(not r
 r=request('stop_session',{session_id='background.1'});assert(r.ok and stopped[#stopped].token=='background.1')
 -- Autonomous plans use the same start path, and plan fields need the new operation.
 local goal={{participant_id='5',task_id='charge'}}
-data.tasks={definitions={charge={maximum=100}}};node.tasks={first={charge={rate=1}}}
+data.tasks=task_registry({charge={maximum=100}});node.tasks={first={charge={rate=1}}}
 r=request('start_at_hub',{initiator='5',participants={'5','6'},background=true,goals=goal});assert(not r.ok and r.code=='invalid_request'and Sessions.holder('5')==nil)
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'}});assert(not r.ok and r.code=='invalid_request','A plan needs goals or an end policy')
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='6',task_id='charge'}}});assert(not r.ok and r.code=='goal_unreachable','The data shows no scene can finish it')

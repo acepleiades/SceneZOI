@@ -1,6 +1,5 @@
 local Config = require("SceneZOI.Config")
 local Json = require("SceneZOI.Json")
-local Protocol = require("SceneZOI.Protocol")
 local release_version = require("SceneZOI.ReleaseVersion")
 local M = {}
 
@@ -358,18 +357,10 @@ local function flush(journal)
             end
             return
         end
-        local legacy = previous:match("^%x+$") and Protocol.decode(previous)
         local pending = journal.lines
         journal.lines, journal.size = {}, 0
-        if legacy then
-            for line in legacy:gmatch("[^\n]+") do
-                local record = query(Json.decode, line)
-                if type(record) == "table" then append(journal, M.format(record)) end
-            end
-        else
-            for line in previous:gmatch("[^\n]+") do
-                if not line:find('"', 1, true) and line:find("event=", 1, true) then append(journal, line) end
-            end
+        for line in previous:gmatch("[^\n]+") do
+            if not line:find('"', 1, true) and line:find("event=", 1, true) then append(journal, line) end
         end
         for _, line in ipairs(pending) do append(journal, line) end
         journal.loaded = true

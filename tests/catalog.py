@@ -57,6 +57,12 @@ class FrameworkCatalogTests(unittest.TestCase):
  def test_unknown_schema_field_rejected(self):
   self.pack['nodes'][0]['callback']='run'
   with self.assertRaises(ValueError):compile_packs([self.pack])
+ def test_retired_attachment_extensions_rejected_even_when_empty(self):
+  for value in ([], [{}], None):
+   with self.subTest(value=value):
+    self.pack['attachment_extensions']=value
+    with self.assertRaisesRegex(ValueError,'attachment_extensions.*coverage_attachment'):
+     compile_packs([self.pack],link=False)
  def test_native_stage_has_no_static_catalog(self):
   with tempfile.TemporaryDirectory()as directory:
    project=Path(directory);(project/'workspace').mkdir()

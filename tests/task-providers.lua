@@ -91,7 +91,7 @@ local function start(n,count,definitions)
  session=Session.new({node=n,participants=V.copy(people),participant_ids={'1'},token='provider-test'})
  session.preparing=false
  if count then session.plan=Plan.new(spec_for(count))end
- session.tasks=Tasks.new(definitions.variants,session.participants,definitions,n)
+ session.tasks=Tasks.new(definitions,session.participants,n)
  completed={}
 end
 local function visit(n)

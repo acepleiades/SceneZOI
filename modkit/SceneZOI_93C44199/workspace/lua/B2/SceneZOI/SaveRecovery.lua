@@ -22,6 +22,7 @@ function M.lease(data)
     local l=vector(data.location,{1,2,3});local r=vector(data.rotation,{1,2,3})
     local merge=data.body_merge
     if merge then assert(type(merge)=='table'and type(merge.base)=='boolean'and type(merge.final)=='boolean','Invalid recovery body layout')end
+    -- Backward compatibility with save journals that recorded a borrowed work uniform.
     local lent=data.lent_costume
     if lent~=nil then assert(type(lent)=='string'and #lent<=128 and lent:match('^[%w_%-]+$'),'Invalid recovery outfit')end
     local grabs, seen = {}, {}

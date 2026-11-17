@@ -1,11 +1,14 @@
 -- Autonomous plans: validation, feasibility, goals, caps, end policies, clocks and bounds.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local nodes={}
+local task_registry=dofile('tests/support/task-registry.lua')
+local registry=task_registry({charge={maximum=100}})
+local data={nodes=nodes,tasks=registry}
 package.loaded['SceneZOI.Settings']={task_multiplier=function()return 1 end}
-package.loaded['SceneZOI.Catalog']={get_snapshot=function()return {nodes=nodes}end}
+package.loaded['SceneZOI.Catalog']={get_snapshot=function()return data end}
 local J=require('SceneZOI.Json');local Tasks=require('SceneZOI.Tasks');local Plan=require('SceneZOI.Plan');local C=require('SceneZOI.Config')
 local function refused(args,expected)
- local ok,err=pcall(Plan.parse,args,{charge={maximum=100}},{'1','2'},{tags={},actions={}})
+ local ok,err=pcall(Plan.parse,args,registry.definitions,{'1','2'},{tags={},actions={}})
  assert(not ok and tostring(err):find(expected,1,true),'Expected '..expected..', got '..tostring(err))
 end
 local function node(id,tasks,edges,extra)
@@ -22,10 +25,9 @@ node('light',{lead=full(),partner=capped(10,50)},{'hub','both'})
 node('both',{lead=full(),partner=full()},{'hub'})
 node('still',{},{},{starting_hub=true})
 node('explicit',{lead=full(),partner=full()},{},{content_rating='EXPLICIT'})
-local defs={charge={maximum=100,initial=0,decay=0}}
 local people={{id='1',body='male'},{id='2',body='female'}}
 local function row(id)return {scene_id=id,bindings={lead='1',partner='2'}}end
-local function spec_of(args)return Plan.parse(args,defs,{'1','2'},{tags={},actions={}})end
+local function spec_of(args)return Plan.parse(args,registry.definitions,{'1','2'},{tags={},actions={}})end
 local goal_lead={participant_id='1',task_id='charge'}
 local goal_partner={participant_id='2',task_id='charge'}
 
@@ -47,7 +49,7 @@ assert(spec_of({end_policy={type='duration',seconds=5}}).end_policy.clock=='game
 assert(spec_of({goals={goal_lead}}).goals[1].completions==1,'One completion by default')
 
 -- Feasibility looks at the authored graph from the entry.
-local function picked(args,rows,restrictions)return Plan.pick_entry({nodes=nodes},spec_of(args),rows,people,restrictions or {})end
+local function picked(args,rows,restrictions)return Plan.pick_entry(data,spec_of(args),rows,people,restrictions or {})end
 assert(picked({goals={goal_lead}},{row('hub')}).scene_id=='hub','A hub that leads to a finishing scene is viable')
 local chosen=picked({goals={goal_lead,goal_partner}},{row('hub'),row('light'),row('both')})
 assert(chosen.scene_id=='both','The entry that finishes every goal wins over a capped one')
@@ -66,7 +68,9 @@ assert(picked({end_policy={type='duration',seconds=5}},{row('still')}).scene_id=
 local actions
 local function session(args,start)
  local participants={{id='1',role='lead',body='male'},{id='2',role='partner',body='female'}}
- local s={token='s.1',revision=1,node=nodes[start or 'hub'],participants=participants,tasks=Tasks.new(defs,participants),session_restrictions={},preparing=false}
+ local start_node=nodes[start or 'hub']
+ local s={token='s.1',revision=1,node=start_node,participants=participants,
+  tasks=Tasks.new(registry,participants,start_node),session_restrictions={},preparing=false}
  local spec=spec_of(args);spec.seed=7
  s.plan=Plan.new(spec)
  actions={navigations=0}
@@ -204,10 +208,10 @@ assert(s.tasks.participants['1'].charge.completions==1 and s.plan.state=='resolv
 -- Stages: the count is chosen once, from the requested range, and reported.
 local function plan_spec(args)local spec=spec_of(args);spec.seed=11;return spec end
 local spec=plan_spec({end_policy={type='addon'},stages={min=2,max=5}})
-Plan.pick_entry({nodes=nodes},spec,{row('still')},people,{})
+Plan.pick_entry(data,spec,{row('still')},people,{})
 assert(spec.stage_count>=2 and spec.stage_count<=5,'A count from the range')
 local chosen_count=spec.stage_count
-Plan.pick_entry({nodes=nodes},spec,{row('still')},people,{});assert(spec.stage_count==chosen_count,'Chosen once and kept')
+Plan.pick_entry(data,spec,{row('still')},people,{});assert(spec.stage_count==chosen_count,'Chosen once and kept')
 refused({end_policy={type='addon'},stages=0},'Invalid')
 refused({end_policy={type='addon'},stages={min=4,max=2}},'Invalid')
 local function staged(args,start,count)
@@ -269,7 +273,7 @@ step(s,300,1);assert(actions.stop=='required_stage_unavailable','An unreachable 
 -- Preferences rank what is eligible, by the fraction of the chosen count.
 local preference={{from=0,to=.4,match=suggestive},{from=.6,to=1,match=explicit}}
 local early=plan_spec({goals={goal_lead},stages=4,stage_preferences=preference});early.stage_count=4
-assert(Plan.pick_entry({nodes=nodes},early,{row('a'),row('b'),row('c')},people,{}).scene_id=='b','Early in the plan the early preference wins')
+assert(Plan.pick_entry(data,early,{row('a'),row('b'),row('c')},people,{}).scene_id=='b','Early in the plan the early preference wins')
 s=staged({goals={goal_lead,goal_partner},stages=4,stage_preferences=preference},'b',4);s.plan.stage=4
 assert(Plan.route(s,s.plan)=='to.c','Late in the plan the late preference wins')
 -- A stage change prefers a different loop, and keeps the current one when it is the only choice.
@@ -331,7 +335,7 @@ s.plan.dwell=dwell;step(s,1,.1);assert(s.node.id=='dead','Then it plays what was
 step(s,1,.1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
 -- Reachable only through a completion route: possible, not provable, and reported as such.
 node('door',{lead=capped(10,50),partner=capped(10,50)},{},{task_completion_routes={charge={lead='late'}}});node('late',{lead=full(),partner=full()},{})
-spec=plan_spec({goals={goal_lead}});assert(Plan.pick_entry({nodes=nodes},spec,{row('door')},people,{}).scene_id=='door'and spec.route_uncertain==true)
+spec=plan_spec({goals={goal_lead}});assert(Plan.pick_entry(data,spec,{row('door')},people,{}).scene_id=='door'and spec.route_uncertain==true)
 -- With neither goals nor a timer the plan cannot pass its first stage.
 refused({end_policy={type='addon'},stages=2,required_stages={{stage=2,match=suggestive}}},'required_stage_unavailable')
 -- Authored responses resolve before anything moves on.
