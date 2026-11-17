@@ -241,6 +241,12 @@ restores those flags during cleanup. Clothing rebuilds reapply the selected
 temporary mesh after the native body is ready. Exit restores the current native
 body, preserving a newer clothing rebuild rather than forcing an older snapshot.
 
+The game can install its final skin materials after a clothing rebuild has
+exposed the new mesh's sections. SceneZOI keeps these later native materials in
+the restoration snapshot and its engine-owned keeper, mapped by slot name.
+Returning to the native body must not restore an earlier factory material and
+prevent a retained attachment from matching the Zoi's skin.
+
 This distinction prevents a scene-only custom mesh from becoming a required
 body asset in the player's save. It does not repair a save where a different
 mod already selected a missing custom mesh as the persistent body.

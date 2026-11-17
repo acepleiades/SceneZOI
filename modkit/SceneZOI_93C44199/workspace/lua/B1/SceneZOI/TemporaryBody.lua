@@ -176,10 +176,30 @@ local function native_ready(actor, mesh, record)
     return true, expected_path
 end
 
+local function retain_finished_materials(record, mesh, asset)
+    local original = record.original
+    if not original or record.mesh ~= mesh or not record.owned[asset] or record.materials_applied ~= asset then return end
+    -- Native clothing rebuilds can expose their section layout before installing
+    -- the final skin MIDs. skin() first writes every borrowed native slot, so a
+    -- different MID arriving later on this same selected renderer is a newer
+    -- native appearance result, not the provider mesh's authored material.
+    for name, source in pairs(original.slots) do
+        local slot = mesh:GetMaterialIndex(name)
+        local material = slot >= 0 and mesh:GetMaterial(slot)
+        if material and material ~= source.material and material:IsA(UE.UMaterialInstanceDynamic:StaticClass()) then
+            -- Retain it in an engine owner before replacing the Lua snapshot;
+            -- userdata alone cannot keep a native generated material alive.
+            original.keeper:SetMaterial(source.index, material)
+            source.material = material
+        end
+    end
+end
+
 local function restore_one(record)
     if not record.original then release_keepers(record, false); return true end
     local mesh = record.participant.actor.Mesh
     local asset = mesh:GetSkeletalMeshAsset()
+    retain_finished_materials(record, mesh, asset)
     -- Clothing may already have rebuilt a new, valid native body. It takes
     -- precedence over the older snapshot, particularly after leaving a variant.
     if not record.owned[asset] and not record.restore_pending then
@@ -187,7 +207,7 @@ local function restore_one(record)
             mesh:SetPhysicsAsset(record.native_physics_override, false)
         end
         record.applied_physics = nil
-        record.applied, record.original = nil, nil
+        record.applied, record.original, record.materials_applied = nil, nil, nil
         release_keepers(record, false)
         return true
     end
@@ -195,7 +215,7 @@ local function restore_one(record)
     local original = assert(record.original.keeper:GetSkeletalMeshAsset(), "The retained native body is unavailable during restoration")
     mesh:SetSkeletalMeshAsset(original)
     skin(mesh, original, record.original, true)
-    record.restore_pending, record.applied, record.original, record.applied_physics = nil, nil, nil, nil
+    record.restore_pending, record.applied, record.original, record.applied_physics, record.materials_applied = nil, nil, nil, nil, nil
     release_keepers(record, false)
     return false
 end
@@ -209,6 +229,7 @@ local function reconcile(current, participant, allow_capture)
     local mesh = participant.actor.Mesh
     local actual = mesh and mesh:GetSkeletalMeshAsset()
     if not actual then record.wait = "native_mesh_unavailable"; return false end
+    retain_finished_materials(record, mesh, actual)
     if not definition then
         record.definition = nil
         local ready = restore_one(record)
@@ -255,8 +276,10 @@ local function reconcile(current, participant, allow_capture)
     -- Same skeleton and same component preserve the game's animation instance.
     -- Never set an animation class, switch mode, or construct a new instance.
     record.owned[chosen], record.applied = true, chosen
+    record.materials_applied = nil
     mesh:SetSkeletalMeshAsset(chosen)
     skin(mesh, chosen, record.original, false)
+    record.materials_applied = chosen
     record.applied_physics = record.original.physics
     assert(mesh:GetAnimInstance() == instance, "Body replacement changed the native animation instance")
     record.wait, record.changes = "settling", (record.changes or 0) + 1

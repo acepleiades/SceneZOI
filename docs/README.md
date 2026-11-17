@@ -31,6 +31,9 @@
 
 Follow [Add-on authoring](addon-authoring.md) to set up the [Lua SDK](../sdk/README.md) and start a scene. Use the [API reference](addons.md) for scene searches, autonomous plans and events, and [live controls](addon-controls.md) for changes during a session.
 
+For choosing bodies, attachments and concurrent NPC solo scenes, see the
+[gameplay integration questions](gameplay-appearance-questions.md).
+
 ## Work on SceneZOI
 
 - [Contributing](../CONTRIBUTING.md) explains how to report bugs and open a pull request.
