@@ -13,13 +13,14 @@ package.loaded['SceneZOI.Traits']={capture=function(actor)return {body=actor.bod
  matches=function(requirement,traits)return requirement.body==traits.body end}
 package.loaded['SceneZOI.BodyRegion']={covered=function()return false end,guard_clothing=function()return 0 end}
 package.loaded['SceneZOI.Attachment']={
- load=function(node)
+ load=function(node,duration)
   local mesh=node.attachment.mesh
   assert(mesh~=unavailable,'Missing selected mesh')
   loaded[#loaded+1]=mesh
-  return mesh,nil,nil
+  return mesh,nil,nil,duration
  end,
  prepare=function(context,actor)
+  assert(context.attachment_duration==3,'Attachment host lost the validated handoff duration')
   if not context.attachment then
    context.attachment={actor=actor,mesh=context.attachment_asset}
    created[#created+1]=context.attachment

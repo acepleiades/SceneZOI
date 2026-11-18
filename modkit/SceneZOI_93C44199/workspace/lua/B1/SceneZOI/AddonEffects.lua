@@ -30,8 +30,9 @@ function M.attach(s,key,args)
  local k=key..'|'..args.effect_id
  assert(not s.addon_attachments[k],'effect_already_exists')
  spec=V.copy(spec);spec.participant=p.role
- local ctx={node={attachment=spec},participants={p},defer_visibility=true}
- ctx.attachment_asset,ctx.body_profile,ctx.attachment_animation=Attachment.load(ctx.node,s.duration)
+ local ctx={node={attachment=spec},participants={p},defer_visibility=true,
+  scene_session=s,attachment_effect_id=args.effect_id}
+ ctx.attachment_asset,ctx.body_profile,ctx.attachment_animation,ctx.attachment_duration=Attachment.load(ctx.node,s.duration)
  s.addon_attachments[k]={key=key,effect_id=args.effect_id,participant=p,context=ctx,phase='pending',age=0,duration=s.duration}
  return {accepted=true,phase='pending',effect_id=args.effect_id}
 end

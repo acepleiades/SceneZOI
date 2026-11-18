@@ -14,7 +14,7 @@ local function renew_lease(lease, kind)
     lease.renewed_at = os.time()
     local timing = lease.lease_timing
     if not timing then
-        timing = {prepare_received = 0, heartbeat_received = 0, tick_count = 0,
+        timing = {prepare_received = 0, heartbeat_received = 0, commit_received = 0, tick_count = 0,
             total_tick_seconds = 0, since_renew_tick_seconds = 0, last_dt = 0, max_dt = 0, clock_rollbacks = 0}
         lease.lease_timing = timing
     end
@@ -51,12 +51,13 @@ local function reply_released(owner, token, stay_refused, cause, diagnostic)
     send_reply(owner:GetEntityId(), Protocol.pack(token, "released", "ok", stay_refused and 1 or 0, cause), diagnostic)
 end
 
-local function set_autonomy(owner, value, follow_parent)
+local function set_autonomy(owner, value, follow_parent, lease)
     local option = owner.AutonomyOption.AutonomyEnable
     option.Value, option.bFollowParent = value, follow_parent
     owner:RefreshAutonomyOptionCache()
     local component = owner:GetComponent(inzoi.EB2ComponentType.Autonomy)
     local enabled = owner:IsAutonomyEnable()
+    if lease then lease.autonomy_requested, lease.autonomy_notified = value, enabled end
     component:OnAutonomyOptionChanged(enabled)
     component:SendAutonomyEnablePacket(enabled, false)
 end
@@ -172,8 +173,10 @@ end
 local function report_prepare_wait(owner, lease, phase, queue_id, interaction)
     if lease.ready then return end
     local key = phase .. ":" .. (queue_id or "") .. ":" .. lease.revision
-    if lease.reported_wait == key then return end
+    local now = os.time()
+    if lease.reported_wait == key and now == lease.wait_reported_at then return end
     lease.reported_wait = key
+    lease.wait_reported_at = now
     -- Diagnostic reads and delivery must never affect readiness or cleanup.
     pcall(function()
         local function identifier(value)
@@ -194,12 +197,44 @@ local function report_prepare_wait(owner, lease, phase, queue_id, interaction)
             if found then interaction_id = bag end
         end
         local fields = {lease.token, "prepare_wait", phase, lease.revision,
-            identifier(queue_id), identifier(action), identifier(interaction_id)}
+            identifier(queue_id), identifier(action), identifier(interaction_id), "none", "none", "none"}
         if phase == "autonomy_enabled" then
             local option = owner.AutonomyOption.AutonomyEnable
             fields[8], fields[9], fields[10] = option.Value and "1" or "0", option.bFollowParent and "1" or "0",
                 lease.autonomy_disable_attempts or 0
         end
+        -- A repeated phase alone cannot tell whether native ticks stopped or
+        -- the effective autonomy query still disagrees. Sample receipt and tick
+        -- counters together; only bounded, primitive observations leave B2.
+        local timing = lease.lease_timing or {}
+        local sample = {control_at_prepare = lease.control, progress_source = lease.progress_source,
+            progress_attempts = lease.progress_attempts or 0, simulation_ticks = timing.tick_count or 0,
+            prepare_received = timing.prepare_received or 0, heartbeat_received = timing.heartbeat_received or 0,
+            commit_received = timing.commit_received or 0,
+            autonomy_requested = lease.autonomy_requested, autonomy_notified = lease.autonomy_notified}
+        if lease.last_tick_wall then sample.seconds_since_native_tick = math.max(0, now - lease.last_tick_wall) end
+        if lease.last_commit_wall then sample.seconds_since_commit = math.max(0, now - lease.last_commit_wall) end
+        local function observe(name, fn)
+            local ok, value = pcall(fn)
+            if ok and (type(value) == "boolean" or type(value) == "number" or
+                (type(value) == "string" and #value <= 96)) then sample[name] = value end
+        end
+        observe("autonomy_effective", function() return owner:IsAutonomyEnable() end)
+        local manager_ok, manager = pcall(function() return inzoi.getB2Manager("FB2AutonomyOptionManager") end)
+        if manager_ok and manager then
+            observe("autonomy_resolved", function() return manager:ResolveToggleOption(owner, inzoi.EB1AutonomyOptionType.AutonomyEnable) end)
+            observe("global_autonomy", function() return manager:GetGlobalOption().AutonomyEnable.Value end)
+            observe("follow_global", function() return manager:IsFollowGlobalAutonomyEnabled() end)
+            observe("active_mode", function() return manager.bActiveMode end)
+        end
+        observe("controlled_id", function()
+            local ok, _, data = inzoi.cli.execute("entity.get_possessed")
+            return ok and data and data:match('"entity_id"%s*:%s*"?(%d+)')
+        end)
+        observe("zoi_group", function() return Protocol.id(owner:GetZoiGroupId()) end)
+        observe("character_group_type", function() return tostring(owner:GetCharacterGroupType()) end)
+        observe("autonomy_state", function() return tostring(owner:GetComponent(inzoi.EB2ComponentType.Autonomy):GetAutonomyState()) end)
+        fields[11] = Protocol.encode(Json.encode(sample))
         inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Protocol.pack(table.unpack(fields)))
     end)
 end
@@ -345,9 +380,11 @@ local function suspend_grab_poses(owner, lease)
     end
 end
 
-local function advance_prepare(self, owner, first_commit, paused)
+local function advance_prepare(self, owner, first_commit, paused, source)
     local lease = self.lease
     if not lease or lease.releasing or not lease.committed then return end
+    lease.progress_attempts = (lease.progress_attempts or 0) + 1
+    lease.progress_source = source or "commit"
     -- On Back, the aggregate autonomy query can report enabled even when the
     -- individual option and inheritance are off. An anchored Zoi already has
     -- the task guard, so the aggregate query gates initial acquisition only.
@@ -355,7 +392,7 @@ local function advance_prepare(self, owner, first_commit, paused)
     local anchored = lease.tasks_settled and lease.location ~= nil
     if first_commit or option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then
         lease.autonomy_disable_attempts = (lease.autonomy_disable_attempts or 0) + 1
-        set_autonomy(owner, false, false)
+        set_autonomy(owner, false, false, lease)
     end
     local interaction = assert(owner:GetComponent(inzoi.EB2ComponentType.Interaction), "Missing interaction component")
     clear_task_queue(owner, interaction)
@@ -413,7 +450,7 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
             lease.overlay_scan, lease.overlay_seen, lease.overlay_poll_wait = nil, nil, nil
             assert(role == lease.role, "Session role cannot change")
             Binding.validate(node, role, lease.body)
-            advance_prepare(self, owner)
+            advance_prepare(self, owner, false, false, "prepare_revision")
         elseif revision == lease.revision then
             lease.keep_unmerged = requested_unmerged
             if not lease.committed then Save.offer(owner, lease)
@@ -421,10 +458,15 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
                 -- A same-node appearance refresh can introduce a body/region
                 -- after the first Ready. Recheck flags through the normal gate.
                 lease.ready = false
-                advance_prepare(self, owner)
+                advance_prepare(self, owner, false, false, "prepare_retry")
             elseif lease.ready then
                 reply(owner, token, "ready", lease.body .. ":" .. lease.control, lease.revision)
                 inzoi.message.send_to_client(owner:GetEntityId(), "SceneZOI.Reply", Wardrobe.inventory(owner, lease))
+            else
+                -- Host retries must also progress a committed participant whose
+                -- native entity ticks are delayed. Keep the same task/idle and
+                -- autonomy gates used by Commit; receipt alone is not Ready.
+                advance_prepare(self, owner, false, false, "prepare_retry")
             end
         end
         return
@@ -486,6 +528,9 @@ local function receive(self, owner, kind, content)
         local lease=self.lease
         if not lease or lease.token~=token or lease.releasing then return end
         local ok,err=pcall(function()
+            local timing = lease.lease_timing
+            if timing then timing.commit_received = (timing.commit_received or 0) + 1 end
+            lease.last_commit_wall = os.time()
             local first_commit = not lease.committed
             lease.committed = true
             advance_prepare(self,owner,first_commit)
@@ -574,6 +619,7 @@ local function update(self, owner, dt)
     if lease.releasing then release(self, owner, false, "lease_expired"); return end
     dt = math.max(tonumber(dt) or 0, 0)
     local timing = lease.lease_timing
+    lease.last_tick_wall = os.time()
     if timing then
         timing.tick_count = timing.tick_count + 1
         timing.total_tick_seconds = timing.total_tick_seconds + dt
@@ -599,7 +645,7 @@ local function update(self, owner, dt)
         release(self, owner, false, "lease_expired", lease_expiry_detail(lease, now))
         return
     end
-    advance_prepare(self, owner, false, dt == 0)
+    advance_prepare(self, owner, false, dt == 0, "tick")
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
     if lease.location then owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false) end
 end

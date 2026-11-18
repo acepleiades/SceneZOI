@@ -30,6 +30,17 @@ local function authored_rotations(session)
     return bones and next(bones) and bones or nil
 end
 
+local function load_animation(path, duration)
+    local animation = assert(UE.UObject.Load(path), "Scene attachment animation is unavailable")
+    assert(animation:IsA(UE.UAnimationAsset:StaticClass()), "Expected an attachment animation asset")
+    local length = animation:GetPlayLength()
+    assert(type(length) == "number" and length > 0 and length < math.huge,
+        "Attachment animation has an invalid duration")
+    assert(math.abs(length - duration) <= Config.max_duration_difference,
+        "Attachment and participant animation durations differ")
+    return animation
+end
+
 function M.load(node, duration)
     local spec = node.attachment
     if not spec then return nil, nil, nil end
@@ -37,12 +48,9 @@ function M.load(node, duration)
     assert(asset, "Scene attachment mesh is unavailable")
     local animation
     if spec.animation then
-        animation = UE.UObject.Load(spec.animation)
-        assert(animation, "Scene attachment animation is unavailable")
-        assert(math.abs(animation:GetPlayLength() - duration) <= Config.max_duration_difference,
-            "Attachment and participant animation durations differ")
+        animation = load_animation(spec.animation, duration)
     end
-    return asset, spec.body_profile and Body.load(spec.body_profile) or nil, animation
+    return asset, spec.body_profile and Body.load(spec.body_profile) or nil, animation, duration
 end
 
 local function clothes_removed(actor, context)
@@ -218,24 +226,70 @@ function M.guard(session)
 end
 
 -- Switch only the animation on the retained component; preserve bind offset, body patch and colors.
-function M.change_animation(session)
-    local attachment = assert(session.attachment, "Attachment component is missing")
+function M.change_animation(session, incoming)
+    local attachment = assert(incoming or session.attachment, "Attachment component is missing")
     if attachment.poseable then return end
-    local animation = session.attachment_animation
-    if attachment.animation == animation then return end
+    local cached = session.attachment_animation
+    if attachment.animation == cached then return end
     local component = attachment.component
-    component.VisibilityBasedAnimTickOption = 0
-    component.bEnableUpdateRateOptimizations = false
-    if animation then
-        component:PlayAnimation(animation, true)
-        component:SetPlayRate(0)
-        component:SetPosition(0, false)
-        assert(component:GetAnimInstance(), "Attachment animation instance was not initialized")
-    else
-        -- When using a regular skeletal component, clear the outgoing clip so
-        -- the single-node component can evaluate its reference pose.
-        component:SetAnimation(nil)
+    local animation, stage = cached, "resolve_animation"
+    local ok, err = pcall(function()
+        if cached then
+            local duration = session.attachment_duration or session.node.duration
+            assert(type(duration) == "number" and duration > 0, "Attachment animation duration is unavailable")
+            -- Lua userdata does not retain an Unreal asset through appearance
+            -- preparation. Resolve immediately before PlayAnimation owns it,
+            -- while the retained component still holds its outgoing clip.
+            animation = load_animation(assert(session.node.attachment.animation,
+                "Attachment animation path is unavailable"), duration)
+        end
+        stage = "configure_component"
+        component.VisibilityBasedAnimTickOption = 0
+        component.bEnableUpdateRateOptimizations = false
+        if animation then
+            stage = "play_animation"
+            component:PlayAnimation(animation, true)
+            stage = "position_animation"
+            component:SetPlayRate(0)
+            component:SetPosition(0, false)
+            assert(component:GetAnimInstance(), "Attachment animation instance was not initialized")
+        else
+            stage = "clear_animation"
+            -- When using a regular skeletal component, clear the outgoing clip so
+            -- the single-node component can evaluate its reference pose.
+            component:SetAnimation(nil)
+        end
+    end)
+    if not ok then
+        local host = session.scene_session
+        local scene_id = session.node.id or host and host.node.id
+        local revision = session.scene_revision or host and host.revision
+        local failure = tostring(revision) .. "|" .. tostring(scene_id) .. "|" .. stage
+        if session.attachment_animation_failure ~= failure then
+            session.attachment_animation_failure = failure
+            pcall(function()
+                local owner = session.coverage_owner
+                if not owner then
+                    for _, participant in ipairs(session.participants or {}) do
+                        if participant.role == session.node.attachment.participant then owner = participant; break end
+                    end
+                end
+                local function valid(object)
+                    local known, value = pcall(function() return UE.UKismetSystemLibrary.IsValid(object) end)
+                    if known and type(value) == "boolean" then return value end
+                end
+                Diagnostics.record("attachment_animation_failed", {scene_id=scene_id,
+                    session_id=host and host.token, effect_id=session.attachment_effect_id,
+                    attachment_id=session.node.attachment_id, participant_role=session.node.attachment.participant,
+                    participant_id=owner and owner.id, revision=revision,
+                    animation=session.node.attachment.animation, expected_duration=session.attachment_duration or session.node.duration,
+                    stage=stage, component_valid=valid(component), cached_animation_valid=valid(cached),
+                    detail=Diagnostics.detail(tostring(err))})
+            end)
+        end
+        error(err, 0)
     end
+    session.attachment_animation = animation
     attachment.animation, attachment.position, attachment.ready_frames = animation, 0, 0
 end
 
@@ -314,6 +368,9 @@ end
 -- outgoing pose throughout preparation; a new component warms up while hidden.
 function M.enter(session)
     if session.pending_attachment then
+        -- Verify and initialize the hidden incoming component before concealing
+        -- the outgoing pose. Failed resolution must leave that pose intact.
+        M.change_animation(session, session.pending_attachment)
         local previous = session.attachment
         previous.component:SetHiddenInGame(true, true)
         session.attachment, session.pending_attachment = session.pending_attachment, previous

@@ -501,6 +501,56 @@ local function ready_participant(token)
     return state, zoi
 end
 
+-- A committed idle participant must finish on host retries even when its native
+-- entity tick is delayed. A retry still cannot skip a running task's exit.
+local pending, pending_actor = {}, owner(2)
+M.on_begin(pending, pending_actor)
+start(pending, pending_actor, "prepare-without-native-tick")
+assert(pending.lease and not pending.lease.ready and pending.lease.idle_ticks == 1)
+M.on_lua_message(pending, pending_actor, "SceneZOI.Prepare",
+    P.pack("prepare-without-native-tick", "1", node.id, 1, "0", "lead", P.encode(Json.encode(node))))
+assert(pending.lease.ready and pending.lease.lease_timing.tick_count == 0,
+    "A valid Prepare retry must advance the existing two-idle-callback barrier")
+assert(pending.lease.lease_timing.commit_received == 1,
+    "A Prepare retry must not count as a received Commit")
+release(pending, pending_actor, "prepare-without-native-tick")
+
+pending, pending_actor = {}, owner(2)
+M.on_begin(pending, pending_actor)
+pending_actor.playing, pending_actor.queued = true, 2
+start(pending, pending_actor, "prepare-still-cancelling")
+for _ = 1, 3 do
+    real_seconds = real_seconds + 1
+    M.on_lua_message(pending, pending_actor, "SceneZOI.Prepare",
+        P.pack("prepare-still-cancelling", "1", node.id, 1, "0", "lead", P.encode(Json.encode(node))))
+end
+assert(not pending.lease.ready and pending_actor.cancels == 1 and pending_actor.queued == 0)
+local fresh_wait = waits[#waits]
+local sample = Json.decode(P.decode(assert(fresh_wait[11])))
+assert(fresh_wait[3] == "interaction_cancelling" and sample.simulation_ticks == 0 and sample.prepare_received == 4
+    and sample.progress_source == "prepare_retry" and sample.controlled_id == "1"
+    and sample.commit_received == 1 and sample.seconds_since_commit == 3,
+    "Fresh retry diagnostics must distinguish message receipt from a missing native tick")
+local commit_time = pending.lease.last_commit_wall
+real_seconds = real_seconds + 1
+M.on_lua_message(pending, pending_actor, "SceneZOI.Commit", P.pack("another.session"))
+assert(pending.lease.lease_timing.commit_received == 1 and pending.lease.last_commit_wall == commit_time,
+    "An unrelated Commit must not refresh receipt evidence")
+M.on_lua_message(pending, pending_actor, "SceneZOI.Commit", P.pack("prepare-still-cancelling"))
+sample = Json.decode(P.decode(assert(waits[#waits][11])))
+assert(not pending.lease.ready and pending_actor.cancels == 1
+    and sample.commit_received == 2 and sample.seconds_since_commit == 0 and sample.progress_source == "commit",
+    "A matching Commit retry refreshes its own evidence without skipping task cancellation")
+pending_actor.playing, pending_actor.cancel_delay = false, nil
+M.on_lua_message(pending, pending_actor, "SceneZOI.Prepare",
+    P.pack("prepare-still-cancelling", "1", node.id, 1, "0", "lead", P.encode(Json.encode(node))))
+assert(not pending.lease.ready, "The first newly idle retry is only one confirmation")
+M.on_lua_message(pending, pending_actor, "SceneZOI.Prepare",
+    P.pack("prepare-still-cancelling", "1", node.id, 1, "0", "lead", P.encode(Json.encode(node))))
+assert(pending.lease.ready)
+release(pending, pending_actor, "prepare-still-cancelling")
+print("Preparation retries progress delayed native callbacks without bypassing task cancellation, idle confirmation or ownership.")
+
 local function assert_release(state, zoi, token, cause, diagnostic)
     assert(not state.lease and zoi.collision and zoi:IsAutonomyEnable()
         and zoi.AutonomyOption.AutonomyEnable.bFollowParent, "Release must restore participant ownership")

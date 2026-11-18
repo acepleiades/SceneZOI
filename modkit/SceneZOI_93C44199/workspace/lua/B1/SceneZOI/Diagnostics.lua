@@ -128,6 +128,26 @@ function M.prepare_wait(current, participant, fields)
         if fields[9] == "1" or fields[9] == "0" then wait.autonomy_follows_parent = fields[9] == "1" end
         wait.autonomy_disable_attempts = tonumber(fields[10])
     end
+    if type(fields[11]) == "string" and #fields[11] <= 4096 then
+        local ok, sample = pcall(function() return Json.decode(require("SceneZOI.Protocol").decode(fields[11])) end)
+        if ok and type(sample) == "table" then
+            local observed = {}
+            for _, name in ipairs({"autonomy_requested", "autonomy_notified", "autonomy_effective", "autonomy_resolved",
+                "global_autonomy", "follow_global", "active_mode"}) do
+                if type(sample[name]) == "boolean" then observed[name] = sample[name] end
+            end
+            for _, name in ipairs({"progress_attempts", "simulation_ticks", "prepare_received", "heartbeat_received",
+                "commit_received", "seconds_since_native_tick", "seconds_since_commit"}) do
+                local value = sample[name]
+                if type(value) == "number" and value == value and value >= 0 and value <= 1000000000 then observed[name] = value end
+            end
+            for _, name in ipairs({"control_at_prepare", "controlled_id", "progress_source", "zoi_group",
+                "character_group_type", "autonomy_state"}) do
+                observed[name] = identifier(sample[name])
+            end
+            wait.simulation = observed
+        end
+    end
     participant.preparation_wait = {revision = current.revision, state = wait}
     if phase == "awaiting_commit" or phase == "confirming_idle" then return end
     local previous = participant.preparation_log
@@ -142,7 +162,12 @@ function M.wait_status(current, participant)
     if not current.save_ready then return {phase = "awaiting_save_ack"} end
     if current.furniture and not current.furniture_ready then return {phase = "awaiting_furniture"} end
     local latest = participant.preparation_wait
-    if latest and latest.revision == current.revision then return latest.state end
+    if latest and latest.revision == current.revision then
+        local state = {}
+        for key, value in pairs(latest.state) do state[key] = value end
+        state.seconds_since_report = math.max(0, math.floor((current.age - state.reported_at_seconds) * 1000) / 1000)
+        return state
+    end
     return {phase = "awaiting_simulation_status"}
 end
 

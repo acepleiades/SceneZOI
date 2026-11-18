@@ -196,6 +196,26 @@ diagnostics.prepare_wait(session, p, {session.token, "prepare_wait", "autonomy_e
     "none", "none", "none", "0", "0", "2"})
 local wait = diagnostics.wait_status(session, p)
 assert(wait.autonomy_option == false and wait.autonomy_follows_parent == false and wait.autonomy_disable_attempts == 2)
+local protocol = require("SceneZOI.Protocol")
+diagnostics.prepare_wait(session, p, {session.token, "prepare_wait", "autonomy_enabled", "2", "none", "none", "none", "0", "0", "3",
+    protocol.encode(Json.encode({autonomy_effective=true,autonomy_resolved=false,autonomy_notified=true,
+        control_at_prepare="controlled",controlled_id="1",progress_source="prepare_retry",simulation_ticks=1,
+        prepare_received=7,progress_attempts=8,commit_received=5,seconds_since_commit=1,
+        unsafe_extra="private information",heartbeat_received=-1}))})
+wait = diagnostics.wait_status(session,p)
+assert(wait.simulation.autonomy_effective and not wait.simulation.autonomy_resolved and wait.simulation.autonomy_notified)
+assert(wait.simulation.control_at_prepare=="controlled" and wait.simulation.prepare_received==7
+    and wait.simulation.commit_received==5 and wait.simulation.seconds_since_commit==1
+    and wait.simulation.heartbeat_received==nil and wait.simulation.unsafe_extra==nil)
+session.age = session.age + 3
+assert(diagnostics.wait_status(session,p).seconds_since_report == 3, "A stale wait must show its age at timeout")
+diagnostics.prepare_wait(session,p,{session.token,"prepare_wait","autonomy_enabled","2","none","none","none","0","0","4",
+    protocol.encode(Json.encode({commit_received="5",seconds_since_commit=-1}))})
+wait = diagnostics.wait_status(session,p)
+assert(wait.simulation.commit_received==nil and wait.simulation.seconds_since_commit==nil,
+    "Invalid optional Commit observations are omitted")
+diagnostics.prepare_wait(session,p,{session.token,"prepare_wait","autonomy_enabled","2","none","none","none","0","0","4","not_hex"})
+assert(diagnostics.wait_status(session,p).simulation==nil,"Malformed optional observations do not break preparation diagnostics")
 
 local occupied = false
 local actors = {["1"] = actor}

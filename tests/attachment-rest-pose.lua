@@ -72,7 +72,7 @@ end
 local function class(kind)
     return {StaticClass=function() return kind end}
 end
-UE = {USkeletalMeshComponent=class("skeletal"),UPoseableMeshComponent=class("poseable"),
+UE = {USkeletalMeshComponent=class("skeletal"),UPoseableMeshComponent=class("poseable"),UAnimationAsset=class("animation"),
     FTransform=transform, FQuat=quat, UKismetMathLibrary={ComposeTransforms=compose,
         InvertTransform=function(t) return transform(Math.inverse(t.Rotation), -t.Translation.Z) end}}
 local actor = {Mesh={GetBoneIndex=function() return 1 end},
@@ -82,10 +82,12 @@ function actor:AddComponentByClass(kind)
 end
 
 local Attachment = require("SceneZOI.Attachment")
-local clip = {}
+local clip = {GetPlayLength=function()return 3 end,IsA=function(_,kind)return kind=='animation'end}
 local spec = {mesh="/Test/Attachment.Attachment", socket="Anchor", reference_bone="Anchor", participant="lead"}
 local session = {node={id="test.animated", attachment=spec, attachment_id="test.rule.lead"},
-    attachment_asset={}, attachment_animation=clip, defer_visibility=true, scene_revision=1}
+    attachment_asset={}, attachment_animation=clip, attachment_duration=3, defer_visibility=true, scene_revision=1}
+UE.UObject={Load=function(path)assert(path=='/Test/Clip.Clip');return clip end}
+spec.animation='/Test/Clip.Clip'
 
 local function prepare()
     for _ = 1, 8 do
@@ -96,6 +98,7 @@ end
 local function move(id, animation, rotations)
     session.scene_revision=session.scene_revision+1
     session.node.id, session.attachment_animation = id, animation
+    spec.animation=animation and '/Test/Clip.Clip' or nil
     session.node.attachment_rest_rotations = rotations and {lead={["test.rule.lead"]=rotations}}
     prepare()
 end

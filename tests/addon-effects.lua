@@ -2,8 +2,8 @@ package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local Control=require('SceneZOI.AddonControl')
 local calls,failed={},{}
 package.loaded['SceneZOI.Attachment']={
- load=function(node)return node.attachment.mesh,nil,node.attachment.animation end,
- prepare=function(ctx,actor)ctx.attachment=ctx.attachment or {component={SetHiddenInGame=function()end}};calls[actor]=(calls[actor]or 0)+1;return true end,
+ load=function(node,duration)return node.attachment.mesh,nil,node.attachment.animation,duration end,
+ prepare=function(ctx,actor)assert(ctx.scene_session and ctx.attachment_duration==ctx.scene_session.duration and ctx.attachment_effect_id);ctx.attachment=ctx.attachment or {component={SetHiddenInGame=function()end}};calls[actor]=(calls[actor]or 0)+1;return true end,
  ready=function()return true end,enter=function()end,sample=function()end,
  restore=function(ctx)if failed[ctx.attachment_asset]then error('injected cleanup failure')end;ctx.attachment=nil end}
 local Effects=require('SceneZOI.AddonEffects')

@@ -36,8 +36,9 @@ end
 local attachment_engine = {
     id = "attachment",
     load = function(node, duration)
-        local mesh, patch, animation = Attachment.load(node, duration)
-        return {attachment_asset = mesh, patch_asset = patch, attachment_animation = animation}
+        local mesh, patch, animation, expected_duration = Attachment.load(node, duration)
+        return {attachment_asset = mesh, patch_asset = patch, attachment_animation = animation,
+            attachment_duration = expected_duration}
     end,
     prepare = function(context, session)
         local owner = assert(session.bindings[context.node.attachment.participant], "Attachment owner is unavailable")

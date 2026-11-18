@@ -1291,6 +1291,7 @@ local function advance(current, dt)
             stage = current.preparation_stage, participants = waiting, placement_pending = current.placement_pending ~= nil,
             furniture_id = current.furniture and current.furniture.id, furniture_ready = current.furniture_ready == true,
             save_ready = current.save_ready == true, journal_revision = current.journal_revision,
+            host_lease_diagnostic = lease_send_diagnostic(current),
             appearance = Appearance.status(current), temporary_bodies = TemporaryBody.status(current),
             clothing_coverage = ClothingCoverage.status(current), subsystems = ok and status or nil})
         M.diagnostic("Preparation failed: node=" .. current.node.id .. " stage=" .. code .. operation

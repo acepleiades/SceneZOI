@@ -2,8 +2,9 @@ local root=TEST_ROOT or "modkit/SceneZOI_93C44199/workspace/lua/"
 package.path=root.."B1/?.lua;"..package.path
 assert(loadfile("tests/support/profiles.lua"))()
 local asset, material1, material2 = {}, {}, {}
-local animation={GetPlayLength=function() return 2 end}
-local idle_animation={GetPlayLength=function() return 3 end}
+local animation_class = {}
+local animation={GetPlayLength=function() return 2 end,IsA=function(_,kind)return kind==animation_class end}
+local idle_animation={GetPlayLength=function() return 3 end,IsA=function(_,kind)return kind==animation_class end}
 local animation_available, animation_length = true, 2
 animation.GetPlayLength=function() return animation_length end
 local animation_starts, seeks = 0, 0
@@ -66,9 +67,11 @@ function actor:AddComponentByClass(_,manual,_,deferred)
 end
 UE={
     UObject={Load=function(path)
+        if path=="test_idle_animation"then return idle_animation end
         if path:find("inZOI_paired_motion_test_Anatomy",1,true) then return animation_available and animation or nil end
         return asset
     end},
+    UAnimationAsset={StaticClass=function()return animation_class end},
     USkeletalMeshComponent={StaticClass=function() return {} end},
     FTransform=function() return transform(0,0,0,0) end,
     UKismetMathLibrary={InvertTransform=function(t)
@@ -84,7 +87,7 @@ package.loaded["SceneZOI.BodyRegion"]={load=function() return {} end,prepare=fun
     covered=function() return current_covered end,after_outfit=function() return predicted_covered end,
     ready=function() return patch_ready end,restore=function() end,status=function() return "patch_mock" end}
 local anatomy=require("SceneZOI.Attachment")
-local node={attachment={mesh="test_mesh",animation="inZOI_paired_motion_test_Anatomy",
+local node={duration=2,attachment={mesh="test_mesh",animation="inZOI_paired_motion_test_Anatomy",
     participant="male",socket="pelvis",reference_bone="pelvis",body_profile="test.region",
     material_profile="test.colors"},outfits={male={remove_slots={"Top","InnerUnder"}}}}
 local loaded,patch,track=anatomy.load(node,2)
@@ -119,6 +122,7 @@ end
 local original_component=session.attachment.component
 local original_offset=component.relative
 session.attachment_animation=idle_animation
+node.attachment.animation="test_idle_animation";node.duration=3
 anatomy.change_animation(session)
 assert(created==1 and not destroyed and session.attachment.component==original_component)
 assert(component.relative==original_offset and component.animation==idle_animation)
@@ -160,7 +164,7 @@ print("Optional attachment tests passed: neutral node creates/loads no attachmen
 
 -- Framework warm-up must not expose an incoming attachment before both bodies.
 -- Retained animation stays at the outgoing pose until that same handoff.
-node.attachment.animation="inZOI_paired_motion_test_Anatomy"
+node.attachment.animation="inZOI_paired_motion_test_Anatomy";node.duration=2
 loaded,patch,track=anatomy.load(node,2)
 session={node=node,attachment_asset=loaded,attachment_animation=track,defer_visibility=true}
 hidden=true
@@ -173,6 +177,7 @@ assert(not hidden and component.animation==animation and component.position==0)
 anatomy.sample(session,1.8)
 local old_starts=animation_starts
 session.attachment_animation=idle_animation
+node.attachment.animation="test_idle_animation";node.duration=3
 assert(anatomy.ready(session) and component.animation==animation and component.position==1.8)
 assert(animation_starts==old_starts,"Target readiness restarted the retained outgoing attachment")
 anatomy.enter(session)
@@ -181,6 +186,7 @@ anatomy.restore(session)
 print("Attachment handoff passed: hidden first warm-up and retained outgoing pose until the coordinated body switch.")
 
 node.attachment.when_undressed=true
+node.attachment.animation="inZOI_paired_motion_test_Anatomy";node.duration=2
 session={node=node,attachment_asset=loaded,attachment_animation=track,defer_visibility=true}
 anatomy.prepare(session,actor);anatomy.ready(session);anatomy.ready(session);anatomy.ready(session);anatomy.enter(session)
 anatomy.sample(session,.75)

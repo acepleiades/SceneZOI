@@ -84,6 +84,14 @@ variants fall back to a valid body with a diagnostic.
 
 Retained attachments keep independent owner/component/material/body snapshots across navigation. Their tracks share the participant clock; unrelated non-covering edits can preserve visible playback through readiness. Covering or unknown edits retain hide-before-ready. Mesh rebuilds reassert required layout without recapturing originals. Parent native structs remain alive while borrowed fields are read. Missing readiness and partial cleanup must remain retryable.
 
+Incoming attachment clips are resolved again by asset path immediately before
+the component takes native ownership. A Lua reference alone cannot keep the
+preflight asset alive through an appearance rebuild. The new asset's type and
+duration are checked before changing the retained outgoing clip. A failed
+handoff records `attachment_animation_failed` in the existing scene history,
+including the attachment, participant, path and native operation, then follows
+ordinary cleanup rather than reporting a successful switch.
+
 Body variants change the existing B1 mesh component after native clothing has
 settled. They keep the same Skeleton asset and animation instance. Neither B1
 nor B2 receives a custom mesh in its saved body description. An invisible owned
