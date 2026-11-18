@@ -149,7 +149,7 @@ Busy entry is a native toast and rejection, including stale launcher/native/runt
 
 SceneVisuals owns temporary hidden flags only on the fixed scene roster's selected-marker components. Outside-roster markers remain under ordinary game control. It does not deactivate native effects, replace assets or change global cheats/settings. New/replaced objects are covered; initial flags are preserved. Exit/error/mod unload restore independently, with failed cleanup retried while idle and positive invalidity retiring released objects. Optional presentation errors cannot abort gameplay/participant cleanup. Another owner changing a value after our final write wins over snapshot restoration. Retain `tests/scene-visuals.lua`; native rendered acceptance is separate.
 
-Speech bubbles and thought icons are withheld at their source. The B2 `Scripts.B2Script_SpeechBubble` chunk drops `AddSpeechBubble` and `AddInnerThoughtIcon` for a Zoi held by a participant lease and passes every other call to the game unchanged. A Zoi joining a scene also loses its script thought icon and its last speech bubble. A failed lookup passes the bubble through. Icons the game sends without a script command (interaction, talk, social reaction and gathering categories) are not covered. The chunk is a single native override, so another mod defining the same chunk conflicts with it. Retain `tests/speech-bubbles.lua`.
+Speech bubbles and thought icons remain under the game's control, including for scene participants. The current Lua exports do not provide per-Zoi visibility control for every native bubble category. SceneZOI leaves their creation, visibility and lifetime to the game.
 
 ## Actor registration
 

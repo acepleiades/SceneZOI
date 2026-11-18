@@ -7,7 +7,6 @@ local SceneData = require("SceneZOI.SceneData")
 local Binding = require("SceneZOI.Binding")
 local Save=require("SceneZOI.SaveGuard")
 local Recovery=require("SceneZOI.SaveRecovery")
-local Members=require("SceneZOI.SceneMembers")
 local M = {}
 
 local function renew_lease(lease, kind)
@@ -146,7 +145,6 @@ local function release(self, owner, silent, cause, diagnostic)
     end)
     if #errors == 0 then
         self.lease = nil
-        Members.remove(owner:GetEntityId())
         if lease.recovery_request then
             self.recovery_done=self.recovery_done or {};self.recovery_done[lease.recovery_request]=true
             Save.reply(owner,lease.recovery_request,'recovered')
@@ -513,7 +511,6 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
         entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll),
     }
     renew_lease(self.lease, "prepare_received")
-    Members.add(owner:GetEntityId())
     Outfit.recover(owner,node.cleanup_layers)
     self.lease.grab_snapshot = capture_grab_poses(owner)
     -- Capture only. The UI must cache this save record before any native mutation.

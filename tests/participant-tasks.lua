@@ -10,8 +10,17 @@ package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
 local replies,owners,waits,overlay_requests={},{},{},{}
 local global_autonomy = true
+local native_bubble_calls = 0
 local clear_failure,cancel_failure=false,false
 inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},EB1ActionType={PlayLoopAnim=20},
+ -- Native thought/speech presentation stays under the game's control through
+ -- preparation, playback, failed starts and restoration.
+ FB2Script_SpeechBubble=setmetatable({},{__index=function(_,name)
+  return function()
+   native_bubble_calls=native_bubble_calls+1
+   error('Participant lifecycle called a native bubble function: '..name)
+  end
+ end}),
  EB1AutonomyOptionType={AutonomyEnable=1},
  getB2Manager=function(name)
   assert(name=='FB2AutonomyOptionManager')
@@ -860,4 +869,5 @@ assert(dressed_state.lease.save_snapshot==entry_journal and entry_journal.wardro
 release(dressed_state,dressed_actor,'settled-entry')
 assert(outfit_appearance.setting.Body.bUseMeshMerge and outfit_appearance.setting.FinalBody.bUseMeshMerge)
 print('Settled entry wardrobe passed: original save barrier, delayed task/layout resolution, current pieces, capture before authored removal, exact re-equip and no navigation refresh.')
+assert(native_bubble_calls==0, 'Participant leases must not add, remove or suppress native bubbles')
 os.time=original_time

@@ -43,6 +43,10 @@ Synchronize source and generated declarations to the registered working project,
 preserving unrelated work. Prepare Lua and verify its bytes against
 `workspace/lua/`. Validate the full Lua workspace and both UI apps in ModKit.
 
+Remove deleted scripts from both the native `workspace/lua/` and prepared `lua/`
+trees during synchronization. A native chunk can load by filename even without
+a manifest entry, so copying new files over an old tree is insufficient.
+
 For MCP-assisted development, the ModKit exposes `modkit_validate_lua_script` and
 `modkit_validate_uimod`. Keep diagnostics with the change and fix validation errors
 before packaging. Source checks, native diagnostics and in-game visual/audible

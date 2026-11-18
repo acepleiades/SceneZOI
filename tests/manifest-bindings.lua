@@ -11,9 +11,15 @@ for env,key in pairs(expected) do
     assert(#bindings==1 and bindings[1].type=='Component' and bindings[1].key==key)
     assert(bindings[1].script=='Components.SceneZOICharacter')
 end
-assert(manifest.chunkScripts.B2[1]=='Systems.B2ZoiGroupManager')
-assert(manifest.chunkScripts.B2[2]=='Components.B2SlotComponent')
-assert(manifest.chunkScripts.B2[3]=='Scripts.B2Script_SpeechBubble')
+local native_chunks={'Systems.B2ZoiGroupManager','Components.B2SlotComponent'}
+assert(#manifest.chunkScripts.B2==#native_chunks, 'Unexpected native class override')
+for index,name in ipairs(native_chunks)do assert(manifest.chunkScripts.B2[index]==name)end
+-- Native chunks can also be discovered by path; removing a manifest entry
+-- alone must not leave the deleted bubble override available to the loader.
+for _,name in ipairs({'B2/Scripts/B2Script_SpeechBubble.lua','B2/SceneZOI/SceneMembers.lua'})do
+    local removed=io.open(base..name,'rb')
+    if removed then removed:close();error('Removed bubble suppression source is still present: '..name)end
+end
 
 local id={Value=12}
 local actor={}
