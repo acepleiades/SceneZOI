@@ -51,12 +51,20 @@ local function reply_released(owner, token, stay_refused, cause, diagnostic)
     send_reply(owner:GetEntityId(), Protocol.pack(token, "released", "ok", stay_refused and 1 or 0, cause), diagnostic)
 end
 
+local function resolved_autonomy(owner)
+    return inzoi.getB2Manager("FB2AutonomyOptionManager"):ResolveToggleOption(
+        owner, inzoi.EB1AutonomyOptionType.AutonomyEnable)
+end
+
 local function set_autonomy(owner, value, follow_parent, lease)
     local option = owner.AutonomyOption.AutonomyEnable
     option.Value, option.bFollowParent = value, follow_parent
     owner:RefreshAutonomyOptionCache()
     local component = owner:GetComponent(inzoi.EB2ComponentType.Autonomy)
-    local enabled = owner:IsAutonomyEnable()
+    -- Notify the resolved option, not the aggregate activity/eligibility query.
+    -- It can remain true while the policy is disabled; feeding it back would
+    -- notify the component to enable autonomy again.
+    local enabled = resolved_autonomy(owner)
     if lease then lease.autonomy_requested, lease.autonomy_notified = value, enabled end
     component:OnAutonomyOptionChanged(enabled)
     component:SendAutonomyEnablePacket(enabled, false)
@@ -385,12 +393,12 @@ local function advance_prepare(self, owner, first_commit, paused, source)
     if not lease or lease.releasing or not lease.committed then return end
     lease.progress_attempts = (lease.progress_attempts or 0) + 1
     lease.progress_source = source or "commit"
-    -- On Back, the aggregate autonomy query can report enabled even when the
-    -- individual option and inheritance are off. An anchored Zoi already has
-    -- the task guard, so the aggregate query gates initial acquisition only.
+    -- IsAutonomyEnable reports activity eligibility, not the resolved policy.
+    -- An idle NPC can return true even after the native autonomy setter disables
+    -- it. Confirm local suppression and its resolved policy on every entry;
+    -- the separate queue, two-idle-observation and overlay barriers still apply.
     local option = owner.AutonomyOption.AutonomyEnable
-    local anchored = lease.tasks_settled and lease.location ~= nil
-    if first_commit or option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then
+    if first_commit or option.Value or option.bFollowParent or resolved_autonomy(owner) then
         lease.autonomy_disable_attempts = (lease.autonomy_disable_attempts or 0) + 1
         set_autonomy(owner, false, false, lease)
     end
@@ -402,7 +410,7 @@ local function advance_prepare(self, owner, first_commit, paused, source)
         return
     end
     if not tasks_idle(owner, lease, interaction, queue_id) or lease.ready then return end
-    if option.Value or option.bFollowParent or (not anchored and owner:IsAutonomyEnable()) then
+    if option.Value or option.bFollowParent or resolved_autonomy(owner) then
         report_prepare_wait(owner, lease, "autonomy_enabled")
         return
     end
@@ -423,6 +431,13 @@ local function advance_prepare(self, owner, first_commit, paused, source)
     -- The requested layout is inert until the host cached our save snapshot.
     -- Initial acquisition and later revisions use the same committed path.
     if lease.keep_unmerged then Outfit.keep_unmerged(owner, lease) end
+    if not lease.wardrobe then
+        -- Task cleanup and the first layout refresh can resolve a different
+        -- outfit. Freeze those settled pieces before the scene removes any;
+        -- capturing in Prepare can retain an old outfit and omit current items.
+        Outfit.apply(owner, lease, {})
+        Wardrobe.capture(owner, lease)
+    end
     local directive = lease.node.outfits and lease.node.outfits[lease.role]
     Outfit.apply(owner, lease, directive and directive.remove_slots or {})
     lease.ready = true
@@ -501,7 +516,6 @@ local function prepare(self, owner, token, initiator, node_id, revision, unmerge
     Members.add(owner:GetEntityId())
     Outfit.recover(owner,node.cleanup_layers)
     self.lease.grab_snapshot = capture_grab_poses(owner)
-    Wardrobe.capture(owner, self.lease)
     -- Capture only. The UI must cache this save record before any native mutation.
     Save.offer(owner,self.lease)
     report_prepare_wait(owner, self.lease, "awaiting_commit")

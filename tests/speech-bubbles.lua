@@ -51,6 +51,13 @@ package.loaded['SceneZOI.SceneData']={simulation=function(node)return node end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
 inzoi.EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4}
 inzoi.EB1GenderType={Male=1,Female=2}
+inzoi.EB1AutonomyOptionType={AutonomyEnable=1}
+inzoi.getB2Manager=function(name)
+ assert(name=='FB2AutonomyOptionManager')
+ return {ResolveToggleOption=function(_,actor,kind)
+  assert(kind==1);return actor:GetAutonomyOption().AutonomyEnable.Value
+ end}
+end
 inzoi.cli={execute=function()return true,'',''end}
 inzoi.message={send_to_client=function()end}
 local moved=false

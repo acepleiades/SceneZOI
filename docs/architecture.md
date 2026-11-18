@@ -19,6 +19,12 @@ Links below point to the Lua or UI source in the ModKit overlay.
 | Clothing covers an unmerged body | [ClothingCoverage](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/ClothingCoverage.lua) applies the resolved native body-region mask before optional attachment masks. |
 | A scene ends | Runtime coordinates cleanup. Each owner releases its resources, and the save journal keeps any restoration still outstanding. |
 
+The clothing menu captures the settled entry outfit after native tasks finish
+and any initial body-layout refresh, before the scene removes clothing. That
+snapshot stays fixed across navigation, so re-equipping an item restores the
+piece worn at entry. The separate recovery journal is captured before gameplay
+changes and remains unchanged by this later wardrobe capture.
+
 ## Three boundaries that matter
 
 - **B1 and B2.** B1 runs client-side playback, UI coordination and the API host.

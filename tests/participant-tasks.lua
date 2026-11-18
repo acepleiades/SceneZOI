@@ -9,8 +9,20 @@ package.loaded['SceneZOI.Wardrobe']={capture=function()end,inventory=function()r
 package.loaded['SceneZOI.SceneData']={simulation=function(n)return n end}
 UE={FVector=function(x,y,z)return {X=x,Y=y,Z=z}end,FRotator=function(p,y,r)return {Pitch=p,Yaw=y,Roll=r}end}
 local replies,owners,waits,overlay_requests={},{},{},{}
+local global_autonomy = true
 local clear_failure,cancel_failure=false,false
 inzoi={EB2ComponentType={Appearance=1,Autonomy=2,Interaction=3,Posture=4},EB1HandType={LeftHand=0,RightHand=1},EB1GenderType={Female=1,Male=2},EB1ActionType={PlayLoopAnim=20},
+ EB1AutonomyOptionType={AutonomyEnable=1},
+ getB2Manager=function(name)
+  assert(name=='FB2AutonomyOptionManager')
+  return {ResolveToggleOption=function(_,actor,kind)
+   assert(kind==1)
+   if actor.force_resolved~=nil then return actor.force_resolved end
+   local option=actor.AutonomyOption.AutonomyEnable
+   if option.bFollowParent then return global_autonomy end
+   return option.Value
+  end}
+ end,
  FB1EntityId=function()return {}end,
  cli={execute=function(c)
   local o=owners[c:match('entity_id=(%d+)')]
@@ -73,7 +85,13 @@ local function owner(id)
         if id~="None" then self.restored_grabs[#self.restored_grabs+1]=hand end
     end,
   }end
-  return {OnAutonomyOptionChanged=function()end,SendAutonomyEnablePacket=function()end}
+  return {OnAutonomyOptionChanged=function(_,enabled)
+    self.autonomy_notified=enabled
+   end,
+   SendAutonomyEnablePacket=function(_,enabled,play_sound)
+    assert(enabled==self.autonomy_notified and play_sound==false)
+    self.autonomy_packet=enabled
+   end}
  end
  function o:GetAutonomyOption()return self.AutonomyOption end
  function o:GetLocation()return UE.FVector(0,0,0)end
@@ -82,7 +100,12 @@ local function owner(id)
  function o:SetCollisionEnabled(v)self.collision=v;self.collision_writes=(self.collision_writes or 0)+1 end
  function o:SetLocationAndRotationOnlySimul()self.position_writes=(self.position_writes or 0)+1 end
  function o:IsPlayingInteraction()return self.playing end
- function o:IsAutonomyEnable()return self.force_autonomy or self.AutonomyOption.AutonomyEnable.Value end
+ function o:IsAutonomyEnable()
+  -- The native activity eligibility query is independent of the policy toggle.
+  -- Notifying a policy change must not magically alter eligibility in this mock.
+  if self.activity_eligible~=nil then return self.activity_eligible end
+  return self.AutonomyOption.AutonomyEnable.Value
+ end
  function o:RefreshAutonomyOptionCache()self.autonomy_refreshes=(self.autonomy_refreshes or 0)+1 end
  owners[tostring(id)]=o;return o
 end
@@ -106,6 +129,81 @@ local function release(s,o,token)
  M.on_lua_message(s,o,'SceneZOI.Release',P.pack(token))
  assert(not s.lease and o.collision and o.AutonomyOption.AutonomyEnable.Value and o.AutonomyOption.AutonomyEnable.bFollowParent)
 end
+
+-- An initially acquired idle NPC remains activity-eligible even when its actual
+-- autonomy policy is off. Require the normal two idle observations, not false
+-- eligibility, and never feed that true eligibility back into notifications.
+local eligible, eligible_actor = {}, owner(7)
+eligible_actor.activity_eligible = true
+M.on_begin(eligible, eligible_actor)
+start(eligible, eligible_actor, 'initial-policy-off-eligible')
+assert(not eligible.lease.ready and eligible.lease.idle_ticks==1,
+    'A disabled policy must not skip the initial stable-idle observation barrier')
+assert(eligible_actor.autonomy_notified==false and eligible_actor.autonomy_packet==false
+    and eligible.lease.autonomy_requested==false and eligible.lease.autonomy_notified==false,
+    'Notify the false policy while the independent native eligibility query stays true')
+tick(eligible, eligible_actor)
+assert(eligible.lease.ready and eligible_actor:IsAutonomyEnable()
+    and eligible.lease.idle_ticks==2 and eligible.lease.autonomy_disable_attempts==1,
+    'Initial acquisition can finish with true eligibility and a confirmed disabled policy, without repeated suppression')
+release(eligible, eligible_actor, 'initial-policy-off-eligible')
+assert(eligible_actor.autonomy_notified and eligible_actor.autonomy_packet and eligible_actor:IsAutonomyEnable(),
+    'An inherited enabled policy must resume after release')
+
+-- Restoring the local value is insufficient when it inherits a disabled parent.
+global_autonomy = false
+local inherited, inherited_actor = {}, owner(8)
+inherited_actor.activity_eligible = true
+M.on_begin(inherited, inherited_actor)
+start(inherited, inherited_actor, 'inherited-autonomy-off')
+tick(inherited, inherited_actor)
+assert(inherited.lease.ready)
+release(inherited, inherited_actor, 'inherited-autonomy-off')
+assert(inherited_actor.AutonomyOption.AutonomyEnable.Value==true
+    and inherited_actor.AutonomyOption.AutonomyEnable.bFollowParent==true
+    and inherited_actor.autonomy_notified==false and inherited_actor:IsAutonomyEnable(),
+    'Release must restore inheritance and notify its resolved false parent policy')
+global_autonomy = true
+
+local independent, independent_actor = {}, owner(9)
+independent_actor.AutonomyOption.AutonomyEnable.Value = false
+independent_actor.AutonomyOption.AutonomyEnable.bFollowParent = false
+M.on_begin(independent, independent_actor)
+start(independent, independent_actor, 'individual-autonomy-off')
+tick(independent, independent_actor)
+assert(independent.lease.ready)
+M.on_lua_message(independent, independent_actor, 'SceneZOI.Release', P.pack('individual-autonomy-off'))
+assert(not independent.lease and not independent_actor.AutonomyOption.AutonomyEnable.Value
+    and not independent_actor.AutonomyOption.AutonomyEnable.bFollowParent
+    and independent_actor.autonomy_notified==false and not independent_actor:IsAutonomyEnable(),
+    'An independently disabled original policy must remain disabled after Exit')
+
+local unresolved, unresolved_actor = {}, owner(10)
+unresolved_actor.activity_eligible, unresolved_actor.force_resolved = true, true
+M.on_begin(unresolved, unresolved_actor)
+start(unresolved, unresolved_actor, 'initial-policy-still-on')
+tick(unresolved, unresolved_actor)
+assert(not unresolved.lease.ready and unresolved.lease.idle_ticks>=2
+    and not unresolved_actor.AutonomyOption.AutonomyEnable.Value
+    and not unresolved_actor.AutonomyOption.AutonomyEnable.bFollowParent
+    and waits[#waits][3]=='autonomy_enabled',
+    'Idle tasks and false local fields cannot bypass an enabled resolved policy')
+release(unresolved, unresolved_actor, 'initial-policy-still-on')
+unresolved_actor.force_resolved = nil
+
+local busy, busy_actor = {}, owner(11)
+busy_actor.activity_eligible, busy_actor.playing, busy_actor.queued = true, true, 2
+M.on_begin(busy, busy_actor)
+start(busy, busy_actor, 'initial-eligible-busy')
+assert(not busy.lease.ready and busy_actor.queued==0 and busy_actor.cancels==1)
+tick(busy, busy_actor)
+assert(not busy.lease.ready and busy_actor.playing, 'Policy confirmation cannot bypass asynchronous task cancellation')
+tick(busy, busy_actor)
+assert(not busy.lease.ready and not busy_actor.playing and busy.lease.idle_ticks==1)
+tick(busy, busy_actor)
+assert(busy.lease.ready and busy_actor:IsAutonomyEnable() and busy.lease.idle_ticks==2,
+    'An eligible NPC needs two idle observations after its current task finishes')
+release(busy, busy_actor, 'initial-eligible-busy')
 local function overlay_request(token,details)
  local request=assert(overlay_requests[#overlay_requests])
  assert(request[1]==token and request[2]=='overlay_cut' and tonumber(request[4]) and tonumber(request[5]))
@@ -447,15 +545,15 @@ release(changing, actor, token)
 token = "back-native-override"
 start(changing, actor, token)
 tick(changing, actor)
-actor.force_autonomy = true
+actor.force_resolved = true
 prepare_node(token, 2)
-assert(not changing.lease.ready and actor:IsAutonomyEnable(),
-    "Do not acknowledge readiness if the native effective value remains enabled")
+assert(not changing.lease.ready,
+    "Do not acknowledge readiness if the resolved policy remains enabled")
 local autonomy_wait = waits[#waits]
 assert(autonomy_wait[3] == "autonomy_enabled" and autonomy_wait[8] == "0"
     and autonomy_wait[9] == "0" and autonomy_wait[10] == "2",
     "Make the remaining native override visible in preparation diagnostics")
-actor.force_autonomy = false
+actor.force_resolved = nil
 enable_autonomy()
 M.on_lua_message(changing, actor, "SceneZOI.Commit", P.pack(token))
 assert(changing.lease.ready and not actor:IsAutonomyEnable(),
@@ -469,7 +567,7 @@ start(changing, actor, token)
 tick(changing, actor)
 assert(changing.lease.ready)
 M.on_lua_message(changing, actor, "SceneZOI.Anchor", P.pack(token, 1, 2, 3, 0, 0, 0))
-actor.force_autonomy = true
+actor.activity_eligible = true
 local refreshes_before_back = actor.autonomy_refreshes
 prepare_node(token, 2)
 assert(changing.lease.ready and changing.lease.revision == 2 and actor:IsAutonomyEnable(),
@@ -489,7 +587,7 @@ tick(changing, actor)
 tick(changing, actor)
 assert(changing.lease.ready and not actor.playing)
 release(changing, actor, token)
-actor.force_autonomy = false
+actor.activity_eligible = nil
 print("Scene transitions preserve participant suppression, wait for tasks, and restore original settings on Exit.")
 
 local function ready_participant(token)
@@ -672,4 +770,94 @@ local stale = P.unpack(replies[2])
 assert(not state.lease and stale[1] == tag and stale[2] == "released" and stale[3] == "ok"
     and stale[4] == "0" and stale[5] == "retired_prepare", replies[2])
 print("Participant release diagnostics distinguish lifecycle and exception causes, preserve the cause through restoration retries, and identify retired Prepare packets.")
+
+-- A live clothing report captured pants/socks before preparation, then resolved
+-- a skirt/stockings after task cleanup/layout refresh. Inventory and re-equip
+-- must describe that settled entry outfit, before authored undressing starts.
+local Containers=assert(loadfile('tests/support/containers.lua'))()
+inzoi.FB1StyleSetting=Containers.style
+inzoi.FB1GarmentDescription=function()return {}end
+inzoi.FB1AccessoryDescription=function()return {}end
+inzoi.FB1PrintedAccessoryDescription=function()return {PrintedAccessoryData=Containers.map()}end
+local wardrobe_stub=package.loaded['SceneZOI.Wardrobe']
+local real_wardrobe=assert(loadfile('modkit/SceneZOI_93C44199/workspace/lua/B2/SceneZOI/Wardrobe.lua'))()
+for key,value in pairs(real_wardrobe)do wardrobe_stub[key]=value end
+stub_outfit.apply,stub_outfit.restore,stub_outfit.keep_unmerged=real_outfit.apply,real_outfit.restore,real_outfit.keep_unmerged
+local dressed_actor=owner(91)
+local inherited_component=dressed_actor.GetComponent
+function dressed_actor:GetFirstName()return 'Test'end
+function dressed_actor:GetLastName()return 'Outfit'end
+local stale_style=Containers.style()
+stale_style.Outfit.Garments:Add('Bottom',{GarmentType='Bottom',GarmentId='old_pants'})
+stale_style.Outfit.Garments:Add('Socks',{GarmentType='Socks',GarmentId='old_socks'})
+local settled_style=Containers.style()
+settled_style.Outfit.Garments:Add('Bottom',{GarmentType='Bottom',GarmentId='entry_skirt',VectorParameters={Tint='blue'}})
+settled_style.Outfit.Garments:Add('Stockings',{GarmentType='Stockings',GarmentId='entry_stockings'})
+local dressed_state={}
+local outfit_appearance={setting={Gender=1,Body={bUseMeshMerge=true},FinalBody={bUseMeshMerge=true},
+    FinalStyle=stale_style,Outfit={ActiveStyleList={}}},refreshes=0,active='None'}
+function outfit_appearance:GetAppearanceSetting()return self.setting end
+function outfit_appearance:SetAppearanceSetting(value)self.setting=value end
+function outfit_appearance:GetActiveCostumeIdByReason()return self.active end
+function outfit_appearance:EmplaceActiveOutfit(style)
+    self.layer,self.active=style,'SceneZOI_Demo_Outfit';self.setting.Outfit.ActiveStyleList={style}
+end
+function outfit_appearance:RemoveCostumeByCostumeId()
+    self.layer,self.active=nil,'None';self.setting.Outfit.ActiveStyleList={}
+end
+function outfit_appearance:RefreshAppearance()
+    self.refreshes=self.refreshes+1
+    assert(dressed_state.lease.committed and dressed_state.lease.save_snapshot,
+        'Never resolve or mutate clothing before the original recovery journal is committed')
+    if self.refreshes==1 then
+        assert(not dressed_state.lease.wardrobe and not self.layer,
+            'Resolve the entry layout before freezing pieces or applying authored removal')
+    end
+    local next_style=Containers.style()
+    for slot,description in pairs(settled_style.Outfit.Garments:ToTable())do next_style.Outfit.Garments:Add(slot,description)end
+    if self.layer then
+        for slot,description in pairs(self.layer.Outfit.Garments:ToTable())do next_style.Outfit.Garments:Add(slot,description)end
+    end
+    self.setting.FinalStyle=next_style
+end
+function dressed_actor:GetComponent(kind)
+    if kind==inzoi.EB2ComponentType.Appearance then return outfit_appearance end
+    return inherited_component(self,kind)
+end
+dressed_actor.playing=true
+M.on_begin(dressed_state,dressed_actor)
+local dressed_node={id='test.settled_entry',participants={lead={body='female'}},
+    outfits={lead={remove_slots={'Bottom','Stockings'}}}}
+M.on_lua_message(dressed_state,dressed_actor,'SceneZOI.Prepare',P.pack('settled-entry','91',dressed_node.id,1,'1','lead',P.encode(Json.encode(dressed_node))))
+local entry_journal=dressed_state.lease.save_snapshot
+assert(not dressed_state.lease.wardrobe and outfit_appearance.refreshes==0 and entry_journal.body_merge.base and entry_journal.body_merge.final,
+    'Prepare captures only recovery state, not a wardrobe which native work can still change')
+M.on_lua_message(dressed_state,dressed_actor,'SceneZOI.Commit',P.pack('settled-entry'))
+assert(not dressed_state.lease.wardrobe,'Do not freeze task-time clothes while cancellation is still pending')
+for _=1,12 do if dressed_state.lease.ready then break end tick(dressed_state,dressed_actor)end
+assert(dressed_state.lease.ready,'The dressed participant did not finish preparation')
+local captured_wardrobe=dressed_state.lease.wardrobe
+local pieces={};for _,item in ipairs(captured_wardrobe.items)do pieces[item.key]=item end
+assert(pieces.Bottom.asset=='entry_skirt' and pieces.Stockings.asset=='entry_stockings' and not pieces.Socks,
+    'Inventory must contain the actual settled skirt/stockings rather than earlier pants/socks')
+assert(captured_wardrobe.snapshot.Outfit.Garments:Find('Bottom').VectorParameters.Tint=='blue')
+assert(outfit_appearance.setting.FinalStyle.Outfit.Garments:Find('Bottom').GarmentId=='None'
+    and outfit_appearance.setting.FinalStyle.Outfit.Garments:Find('Stockings').GarmentId=='None',
+    'Capture the entry pieces before the initial scene directive removes them')
+M.on_lua_message(dressed_state,dressed_actor,'SceneZOI.Outfit',P.pack('settled-entry',1,pieces.Bottom.id,'1',1,'1'))
+assert(outfit_appearance.setting.FinalStyle.Outfit.Garments:Find('Bottom').GarmentId=='entry_skirt',
+    'Manual re-equip must restore the entry skirt, not the stale pants')
+M.on_lua_message(dressed_state,dressed_actor,'SceneZOI.Outfit',P.pack('settled-entry',2,pieces.Stockings.id,'1',1,'1'))
+assert(outfit_appearance.setting.FinalStyle.Outfit.Garments:Find('Stockings').GarmentId=='entry_stockings')
+local refreshes=outfit_appearance.refreshes
+local next_node={id='test.next_entry',participants={lead={body='female'}}}
+M.on_lua_message(dressed_state,dressed_actor,'SceneZOI.Prepare',P.pack('settled-entry','91',next_node.id,2,'1','lead',P.encode(Json.encode(next_node))))
+assert(dressed_state.lease.ready and dressed_state.lease.wardrobe==captured_wardrobe and outfit_appearance.refreshes==refreshes,
+    'Navigation must neither recapture an edited wardrobe nor add an unchanged appearance refresh')
+assert(dressed_state.lease.save_snapshot==entry_journal and entry_journal.wardrobe==nil
+    and entry_journal.body_merge.base and entry_journal.body_merge.final,
+    'Settled wardrobe capture must not replace or expand the original recovery journal')
+release(dressed_state,dressed_actor,'settled-entry')
+assert(outfit_appearance.setting.Body.bUseMeshMerge and outfit_appearance.setting.FinalBody.bUseMeshMerge)
+print('Settled entry wardrobe passed: original save barrier, delayed task/layout resolution, current pieces, capture before authored removal, exact re-equip and no navigation refresh.')
 os.time=original_time

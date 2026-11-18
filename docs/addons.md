@@ -68,7 +68,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 
 | Operation | Arguments / result |
 | --- | --- |
-| `get_version` | Returns API version, runtime build, host instance, features, maximum session count and `maximum_npc_sessions`. |
+| `get_version` | Returns API version, runtime build, host instance, features, the single focused-session limit (`maximum_sessions: 1`) and the NPC-only session limit (`maximum_npc_sessions`). |
 | `get_definitions` | Returns registered tags/actions, aliases, role descriptions, task definitions and the rating enum. |
 | `get_scene` | `scene_id`; returns library metadata, role requirements, furniture and authored navigation. |
 | `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`; returns all matches and count. |

@@ -195,6 +195,9 @@ Listing variants returns compatibility metadata, not a guarantee that every
 listed choice fits a particular Zoi. A declaration-only scene preview has no
 actual participant age or life stage. SceneZOI resolves the choices again from
 captured native traits before playback, then checks the actual assets.
+`get_appearance.resolved` identifies the chosen declaration; a later native
+compatibility check can keep the original body and log a warning in
+`scenezoi_runtime`, so that ID alone does not prove the mesh was applied.
 The API does not save these choices as a permanent character customization.
 If your gameplay mod keeps an individual preference, store its stable variant
 ID in your own data and supply it on later starts after checking availability.

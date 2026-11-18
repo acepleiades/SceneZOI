@@ -539,7 +539,13 @@ local function start_playback(current)
     end
     current.age = 0
     current.clock:reset_node()
-    if not current.started then current.started = true; notify(current, "session_started") end
+    if not current.started then
+        current.started = true
+        notify(current, "session_started")
+        for _, participant in ipairs(current.participants) do
+            Diagnostics.record("wardrobe_ready", require("SceneZOI.WardrobeDiagnostics").sample(current, participant, "entry"))
+        end
+    end
     Control.enter(current)
     notify(current, "node_entered")
     publish_node(current)
@@ -940,6 +946,8 @@ local function finish_outfit(current)
     Playback.refresh_subsystem_tracks(current)
     current.acknowledged_outfit=current.outfit_change.client_counter or current.acknowledged_outfit
     current.outfit_code="ok"
+    Diagnostics.record("wardrobe_ready", require("SceneZOI.WardrobeDiagnostics").sample(
+        current, current.outfit_change.participant, "change"))
     current.outfit_change, current.preparing, current.age = nil, false, 0
     -- The same node resumes at its held time; no new node, anchor or snapshot.
     for _, participant in ipairs(current.participants) do participant.between_nodes = false end
