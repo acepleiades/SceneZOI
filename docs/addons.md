@@ -146,8 +146,8 @@ in one session leaves other sessions running.
 
 Pass `background: true` to `start_scene`, `start_random_scene` or `start_at_hub` to
 allow an eligible loaded Zoi, including an NPC, to initiate the session. The panel
-appears when the player controls a participant. Background starts accept two
-optional objects.
+appears when the player controls a participant. Placement and lifetime are
+[optional background settings](#background-placement-and-lifetime).
 
 ### Start concurrent solo scenes
 
@@ -156,10 +156,17 @@ disjoint session runs, pass `background: true` on an ordinary start. Autonomous
 starts already use the background path. This does not change foreground starts:
 without the flag, an ordinary start still requires the controlled initiator.
 
+First [wire the SDK](addon-authoring.md#wire-the-sdk), request `get_version`,
+and check that the successful reply contains `result.features.background_sessions == 1`.
+The examples below reuse that client to start a female NPC and a male NPC.
+Replace the IDs with compatible loaded Zois; replace the bundled idles with your
+installed solo scenes when ready.
+
 The SDK's `owner` argument is the loaded Zoi carrying the API message. It is
 separate from `arguments.initiator`, which identifies the Zoi starting the scene.
-The message carrier need not join the roster. For example, an add-on can send
-both requests through one loaded owner:
+The message carrier need not join the roster. Do not add the controlled Zoi to
+every roster just because it sends the requests. Both starts can use the same
+SDK client and loaded owner:
 
 ```lua
 client:request(owner, "solo.female", "start_scene", {
@@ -170,17 +177,21 @@ client:request(owner, "solo.female", "start_scene", {
 })
 client:request(owner, "solo.male", "start_scene", {
     scene_id = "scenezoi.solo_idle_male",
-    initiator = "20522", participants = {"20522"},
-    bindings = {male = "20522"}, background = true,
+    initiator = "20524", participants = {"20524"},
+    bindings = {male = "20524"}, background = true,
     lifetime = {deadline_seconds = 120},
 })
 ```
 
-Replace the example Zoi IDs with eligible loaded characters. The two rosters
-are disjoint, so both starts can proceed. A participant already reserved by a
-session still returns `participant_busy`; reserved furniture still returns
-`furniture_unavailable`. Wait for each `session_started` before treating it as
-playing. The panel follows whichever participant the player controls.
+The rosters are disjoint, so both starts can proceed. Each request has its own
+ID: correlate its `session_started` or `session_start_failed` event with that ID,
+and keep a separate `session_id` for each scene. `accepted: true` only confirms
+that a start was queued. Ending one session does not end the other.
+
+A participant already reserved by a session still returns `participant_busy`;
+reserved furniture still returns `furniture_unavailable`. The panel follows
+whichever participant the player controls. An NPC-only scene can play without
+showing a panel.
 
 ### Background placement and lifetime
 
@@ -189,10 +200,11 @@ playing. The panel follows whichever participant the player controls.
 | `placement` | `max_start_distance_m` (0-100, default 15) from each participant to the anchor, checked before the roster is held and again before playback. `exit`: `restore` (default) or `stay`, which applies only to ordinary Exit on floor the game reports as walkable. |
 | `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Explicit values range from 1 to 7,200 seconds. Without a lifetime or plan, NPC-only scenes use the player's **Default NPC Scene Length** (5 to 120 in-game minutes, default 15). Other background starts default to 600 seconds. A timed plan defaults to the greater of 600 seconds and `duration × 1.5 + 60`, capped at 7,200 seconds. The deadline and the 7,200-second ceiling count time spent without a panel, including game pauses. A lease runs even with the panel visible. A lapsed lease ends with `owner_expired`. A deadline or ceiling ends with `lifetime_expired`. |
 
-Scenes containing only NPCs are capped at `maximum_npc_sessions` from `get_version`
-(15). A household scene does not count against the cap, and a player's own start is
-never refused because of NPC scenes. The cap is known once the roster has been
-checked, so it reports `session_limit` through `session_start_failed`.
+Sessions without a household participant count against `maximum_npc_sessions`
+from `get_version` (currently 15). A household scene does not count against that
+cap, even when its participant is not controlled. The cap is known once the
+roster has been checked, so it reports `session_limit` through
+`session_start_failed`.
 
 A standing scene that would stand within 2 metres of another moves to the nearest
 walkable floor, up to 6 metres away. If there is none, a background start ends with
@@ -483,6 +495,30 @@ through cleanup and any later recovery. The `record_index` orders records from
 the same run across files. API entries include selected fields and samples of
 large result lists. The files can contain participant, furniture, and scene
 IDs. Arbitrary add-on context and raw rejected payloads are omitted.
+
+### Check a failed or incomplete request
+
+Check both the API reply and the later outcome. A queued start can fail during
+preparation; recover its status with `get_request_status` using the original
+request ID. After playback, inspect `get_session_result` or `session_ended`
+before applying rewards or other gameplay consequences. Ending and successful
+cleanup do not establish that the intended activity occurred.
+[Outcome fields](addon-controls.md#observation-and-outcomes)
+
+| Reply or symptom | What to check |
+| --- | --- |
+| `initiator_not_controlled` | Use the controlled initiator for a foreground start, or `background: true` for an eligible NPC. |
+| `participant_busy` | A requested Zoi is already reserved by another pending or active session. Use a disjoint roster or wait for cleanup. |
+| `furniture_unavailable` | The object may be occupied, unavailable or reserved. Discover supported furniture again; a previous search was not a reservation. |
+| `no_matching_scenes` | Check installed content, role/body requirements, required assets, furniture and search/session restrictions. |
+| `scene_restricted`, or a menu has no activity choices | Inspect the session's restrictions and `get_navigation`, rather than unrestricted `get_scene` edges. The initial hub may be allowed while its activity destinations are excluded. |
+| `session_not_owned` | Use the creating add-on and client for owner-only controls. Observing a session or controlling one of its Zois does not transfer ownership. |
+| `session_not_ready` | Wait for preparation or the current clothing/appearance change to finish before sending another change. |
+| A selection call succeeds but the default mesh appears | Read the appearance result, readiness and runtime warnings. An optional variant may have fallen back; a resolved declaration alone does not prove the rendered mesh changed. See [appearance variants](appearance-variants.md). |
+
+Keep the original request ID for an identical retry and use a new ID for a new
+operation. For a player report, preserve the whole diagnostics folder so the
+request, preparation, applied changes and cleanup can be followed together.
 
 ## Compatibility and examples
 

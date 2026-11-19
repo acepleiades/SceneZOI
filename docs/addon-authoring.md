@@ -106,6 +106,11 @@ Then call `find_scenes` with the intended participant IDs. Start a returned
 match and wait for `session_started` before treating it as playing.
 [Request fields](addons.md#operations) · [Events](addons.md#events-and-ownership)
 
+Once a basic start works, you can [choose each Zoi's body and skeletal
+attachments](appearance-variants.md#choose-appearance-through-the-api), or
+[start solo scenes for NPCs](addons.md#start-concurrent-solo-scenes) without
+including the controlled Zoi. These use the same SDK client and request flow.
+
 ## Three integration patterns
 
 **Affectionate starter.** Find with `allowed_content_ratings: ["GENERAL"]`,

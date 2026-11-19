@@ -18,7 +18,7 @@
 | Voice and sound in a scene | [Voice instructions](voices.md#scene-instructions) · [Sound effects](sfx.md) |
 | A progress meter, an effect at completion or a transition | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
 | Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
-| A temporary body or a choice of anatomy and other skeletal attachments | [Appearance variants](appearance-variants.md) |
+| Alternative bodies, male genitals, tongues or other skeletal attachments | [Declare variants and set scene defaults](appearance-variants.md) |
 
 ## Make a voice or expression set
 
@@ -31,8 +31,8 @@
 
 Follow [Add-on authoring](addon-authoring.md) to set up the [Lua SDK](../sdk/README.md) and start a scene. Use the [API reference](addons.md) for scene searches, autonomous plans and events, and [live controls](addon-controls.md) for changes during a session.
 
-For choosing bodies, attachments and concurrent NPC solo scenes, see the
-[gameplay integration questions](gameplay-appearance-questions.md).
+- [Choose each Zoi's body and attachments](appearance-variants.md#choose-appearance-through-the-api). Pass individual choices through the API, keep compatible fallbacks and restore the native body on Exit.
+- [Start concurrent NPC solo scenes](addons.md#start-concurrent-solo-scenes). Use a separate roster and session for each scene; the controlled Zoi does not have to take part.
 
 ## Work on SceneZOI
 

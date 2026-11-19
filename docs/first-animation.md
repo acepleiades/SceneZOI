@@ -83,22 +83,106 @@ debug-picker entry. [Participant setup](group-support.md) · [Scene entry and hu
 
 ## 4. Export each participant
 
+### Export the Zoi bodies
+
 - **Blender.** Select a character's original Zoi armature, press **F3**, and
   choose **Export inZOI Motion Animation (150 Bones)**. Repeat for each role.
-- **Maya.** Open **SceneZOI → inZOI Export**, choose **Zoi — 150 body bones**,
-  select the character's skeleton, confirm the start and end frames, and click
-  **Export animation FBX…**. Repeat for each role.
+- **Maya.** In the **SceneZOI** shelf tab, click **inZOI Export** and choose
+  **Zoi — 150 body bones**. Select the character's skeleton, confirm the start
+  and end frames, and click **Export animation FBX…**. Repeat for each role.
 
 Use the current exporter for the 150-bone body profile. It captures the evaluated
 motion and corrective joints. Corrective motion comes from the rig or the source
 clip, and the exported FBX preserves that motion.
 
-Keep one FBX per role and export every track with the same frame range and FPS.
-Use clear filenames such as `wave_greeter.fbx` and `wave_partner.fbx`. Export any
-animated attachments separately with the same timing. In ModKit, import the
-body FBXs with **Import Only Animations** and select **SK_Base**. Attachments
-use their own compatible skeleton. Preview the imported clips and confirm
-their play lengths agree before authoring the scene duration.
+### Export male genitals and other skeletal attachments
+
+For an adult content pack, **male genitals are a separate skeletal mesh with
+their own animation track** in the supplied HZoi rigs. Exporting the male Zoi's
+body does not export the male genitals, even when you animated both together
+in the same editor scene. SceneZOI itself is all-ages; content packs can supply
+adult meshes and animations.
+
+For example, a scene with a male Zoi, a female Zoi and animated male genitals
+needs three animation FBXs:
+
+| FBX example | What to export |
+| --- | --- |
+| `my_scene_male.fbx` | The male Zoi's body skeleton, using the 150-bone body exporter. |
+| `my_scene_female.fbx` | The female Zoi's body skeleton, using the 150-bone body exporter. |
+| `my_scene_male_genitals.fbx` | The separate male genitals skeleton, using the attachment exporter. |
+
+The male genitals track belongs to an attachment on the male role. It is not
+another participant. Export another attachment track for each additional
+animated skeletal mesh, such as a tongue.
+
+**Maya: export the male genitals.**
+
+1. In Display Layers, show **Male_Anatomy_Skeleton** in the supplied paired rig.
+   Select any original bone of that skeleton, rather than a control object or
+   a bone of the male Zoi's body.
+2. Click **inZOI Export** in the **SceneZOI** shelf tab. Choose **Other skeletal
+   mesh — anatomy, tongue, props…**, then click **Choose skeleton from selected bone**.
+3. Check the displayed skeleton, use the same **Start / End** frames as the body
+   exports, and click **Export animation FBX…**. The exporter selects the whole
+   attachment skeleton, including its required root, rather than only the bone
+   you clicked. The supplied rig's saved attachment setup is applied automatically;
+   you do not need to reset your pose before exporting.
+
+**Blender: export the male genitals.**
+
+1. Install and enable **`inzoi_anatomy_export.py`** as well as the body exporter.
+   It is supplied with the [male genitals authoring kit](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack).
+2. Select the original male genitals armature, named **root** in the supplied
+   rig. Do not select the mesh, the ARP controls, or the Zoi's body armature.
+3. Press **F3**, choose **Export HZoi Male Anatomy Animation**, and export with
+   the same frame range and scene FPS as the body tracks.
+
+For the supplied male genitals, these exporters keep the attachment's root and
+`pelvis` at their reference transforms while preserving the local deformation.
+SceneZOI attaches the mesh to the Zoi's moving pelvis in game. Including that
+same movement again in the attachment clip would move it twice. Keep the full
+attachment hierarchy; do not delete its root or `pelvis` to try to fix alignment.
+
+**Tongues and other meshes follow the same separate-track workflow**, using
+their own skeletons. In Maya, use **Other skeletal mesh — anatomy, tongue,
+props…** and select a bone of that mesh's skeleton. A custom attachment that
+follows a Zoi needs its neutral attachment setup recorded when its rig is built;
+without that setup, the exporter preserves its authored root movement. In
+Blender, use an exporter appropriate to that mesh: `inzoi_anatomy_export.py`
+checks the HZoi male genitals hierarchy and does not export arbitrary skeletons.
+
+### Import the tracks and connect them to the scene
+
+Export every body and attachment track with the **same frame range and FPS**.
+In ModKit, use **Import Only Animations** and choose the skeleton that belongs
+to the mesh being animated:
+
+- Zoi body clips: **SK_Base**.
+- HZoi male genitals clips: **HZoi_MaleAnatomy_Skeleton**, supplied with the
+  male genitals authoring kit. Import or migrate the mesh and skeleton into
+  your ModKit project before importing its animation clips.
+- Tongues and other attachments: that mesh's own compatible skeleton.
+
+Installing HZoi in the game does not install its editable ModKit assets. Use
+the authoring kit when you need its mesh and skeleton in your own project.
+
+Keep import translation and rotation offsets at zero, scale at 1, and skeleton
+reference-pose updates off. Preview each imported clip on its intended mesh and
+confirm their play lengths agree before authoring the scene duration.
+
+In the scene JSON, `tracks` maps each role to its **body** clip. Supply the male
+genitals or tongue clip through the attachment's `animation` field, or through
+a coverage attachment profile's `node_animations` map. Give the agent the attachment's
+mesh, skeleton, owning role and exported clip so it can configure the binding.
+[Male genitals setup and import walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md)
+· [Animated tongue example](facial-poses.md#select-the-pose-and-attach-an-animated-mesh)
+· [Attachment and coverage profiles](package-split.md#presentation-and-compatibility-profiles)
+
+If you are porting an animation and have no separate male genitals or tongue
+track, you can still attach the mesh and use its rest pose or fixed bone angles
+for that scene. Use a separate animation clip when it needs movement of its own.
+[Port an animation without a separate attachment track](authoring.md#port-an-animation-without-a-separate-attachment-track)
 
 ## 5. Describe the scene for the agent
 
@@ -113,6 +197,7 @@ Scene name, pack namespace and intended in-game entry
 Standing or furniture type, alignment and anchor role
 Loop or one-shot transition, FPS, export range and imported duration
 Each role's appearance body, age requirements and FBX filename
+Each skeletal attachment, its owning role, mesh, skeleton and separate FBX, if animated
 Opening pose, main beats and final pose
 Who does what to whom, who drives the movement, and whether it is mutual
 Scene-wide mood and each role's posture, orientation and contact points
