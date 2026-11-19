@@ -36,6 +36,8 @@ A set requires `body`, `archetype`, `context` and 1–512 unique SoundWave paths
 Use your pack prefix for independent archetypes and sets. To reuse a context
 or archetype another pack provides, see
 [shared declarations and conflicting IDs](authoring.md#shared-declarations-and-conflicting-ids).
+For help coordinating shared voice definitions, ask in the
+[OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
 
 ## Complete content-pack example
 

@@ -99,7 +99,9 @@ an ID, coordinate the definition and keep pack-specific effects on the scenes
 that need them. The resolved definition governs the current scene.
 
 See [shared declarations and conflicting IDs](authoring.md#shared-declarations-and-conflicting-ids)
-for how to coordinate a shared task with another pack author.
+for how to coordinate a shared task with another pack author. You can discuss
+shared tasks and ask other developers for help in the
+[OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
 
 ## Per-scene progression
 

@@ -6,6 +6,9 @@
 2. Make a branch for your change. Use the [source map](docs/architecture.md) to find the relevant code and tests. The default checks work with the framework checkout alone.
 3. Open a pull request against `main`. Explain the problem, what changes for players or authors, and how you checked it. Link an issue if one exists.
 
+For authoring help or to discuss a proposed integration with other developers,
+join the [OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
+
 ## Where to edit
 
 | Change | Source |

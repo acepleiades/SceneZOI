@@ -11,6 +11,9 @@ It can help set up the rigs, inspect odd playback, import FBXs, write scene JSON
 and package the mod. You decide how the animation should look and verify the
 result in-game.
 
+For feedback on your animation or help with rigging, export and packaging, ask
+in the [OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
+
 ## 1. Install the tools and open a rig
 
 Choose one animation editor. Both have ready-made inZOI rigs and exporters.
@@ -116,6 +119,12 @@ The male genitals track belongs to an attachment on the male role. It is not
 another participant. Export another attachment track for each additional
 animated skeletal mesh, such as a tongue.
 
+The [male genitals authoring kit](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack)
+provides the editable skeletal mesh used by HZoi and by both the Maya and Blender
+animation rigs. Use it to include that mesh in your own content pack without
+requiring players to install HZoi. The kit works with animations authored in
+either editor; its download is hosted on the Blender rigs post.
+
 **Maya: export the male genitals.**
 
 1. In Display Layers, show **Male_Anatomy_Skeleton** in the supplied paired rig.
@@ -132,7 +141,7 @@ animated skeletal mesh, such as a tongue.
 **Blender: export the male genitals.**
 
 1. Install and enable **`inzoi_anatomy_export.py`** as well as the body exporter.
-   It is supplied with the [male genitals authoring kit](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack).
+   This Blender add-on is included in the shared authoring kit linked above.
 2. Select the original male genitals armature, named **root** in the supplied
    rig. Do not select the mesh, the ARP controls, or the Zoi's body armature.
 3. Press **F3**, choose **Export HZoi Male Anatomy Animation**, and export with

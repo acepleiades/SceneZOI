@@ -2,6 +2,8 @@
 
 SceneZOI is a free, open-source animation framework for **inZOI**. It keeps Zois in sync during a scene, including on supported furniture. You can switch scenes, change playback speed, and pause. Animation packs add scenes and gameplay mods decide when to start them.
 
+**[Join the OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU)** for player help, content creation and collaboration with other mod authors. The community covers SceneZOI, HZoi and inZOI modding, as well as OStim Standalone and related Skyrim mods.
+
 ## Support the developers
 
 **[acenetizen](https://github.com/acepleiades)** maintains SceneZOI and makes HZoi.

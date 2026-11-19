@@ -85,6 +85,9 @@ changes with the other authors, especially changes to a task's progression or
 completion event. Give your own variant a new pack-prefixed ID when it needs
 different behavior.
 
+For help finding collaborators or working out a shared definition, ask in the
+[OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
+
 ## Scenes and participants
 
 A scene declares `id`, `label`, `kind`, `duration`, `fps`, named `participants`,
@@ -352,7 +355,7 @@ player build for audible testing. [HZoi downloads](https://www.patreon.com/skyri
 | Voice sets | Set `voices[role].context` to a context HZoi supplies, such as `kiss`. SceneZOI looks up the context in the Zoi's selected compatible voice set. See [voice instructions](voices.md#scene-instructions). |
 | Sound effects | Set the emitter's `sound_set` to an HZoi ID such as `hzoi.kiss`, then configure the emitter for your scene. See [scene sounds](sfx.md#data) and the [HZoi sound sets](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json). |
 | Expression sets | Set `expressions[role].context` to a context such as `Kiss`. HZoi's sets reference native inZOI facial animations. SceneZOI uses the Zoi's selected compatible set. For a standalone pack, define your own sets that reference native clips in place. See [expression authoring](expressions.md#responsibilities-and-data). |
-| Male anatomy mesh | Reference `/HZoi_660649D8/Attachments/HZoi_MaleAnatomy.HZoi_MaleAnatomy`. HZoi's coverage profile can already supply the mesh to compatible roles. Its attachment tracks are mapped by scene ID. For synchronized movement in a new scene, author a compatible attachment track and configure its binding. See [coverage profiles](package-split.md#presentation-and-compatibility-profiles). |
+| Male genitals mesh | Reference `/HZoi_660649D8/Attachments/HZoi_MaleAnatomy.HZoi_MaleAnatomy`. HZoi's coverage profile can already supply the mesh to compatible roles. Its attachment tracks are mapped by scene ID. For synchronized movement in a new scene, author a compatible attachment track and configure its binding. See [coverage profiles](package-split.md#presentation-and-compatibility-profiles). To include the same mesh in your own pack without requiring HZoi, use the [authoring kit](#use-the-hzoi-anatomy-mesh-in-your-own-pack). |
 
 **Audio rights.** HZoi's voice recordings and sound effects are proprietary.
 Referencing them through the dependency leaves the audio in HZoi. To ship
@@ -369,12 +372,17 @@ replacement for the same region. [Standalone anatomy walkthrough](https://github
 
 ## Use the HZoi anatomy mesh in your own pack
 
-Get the optional adult [male anatomy authoring kit](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014)
-from the Blender rigs post. The kit is available free of charge. The source
-mesh is credited to Ryan Reos’s *The Vagrant* and is subject to its own license.
-Move the kit's editable assets into your own registered
-ModKit project, export your own synchronized tracks and adapt the kit's
-scene-local attachment example. The mesh and clips ship under your own mod's
-asset paths. Players need SceneZOI and your pack. Follow the
+Download the free [male genitals authoring kit](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014)
+to include the same skeletal mesh used by HZoi in your own content pack. It is
+also the mesh used in both the Maya and Blender animation rigs. The editable
+ModKit assets work with animations exported from either editor. The download
+is hosted on the Blender rigs post because that post was published first.
+
+Move the kit's editable assets into your own registered ModKit project, export
+your own synchronized tracks and adapt the kit's scene-local attachment example.
+The mesh and clips ship under your own mod's asset paths. Players need SceneZOI
+and your pack; HZoi is required only if you separately reference its resources.
+The source mesh is credited to Ryan Reos’s *The Vagrant* and is subject to its
+own license. Follow the
 [independent pack walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md)
 for setup, coverage profiles and testing with HZoi disabled.

@@ -1,5 +1,8 @@
 # SceneZOI documentation
 
+For questions, authoring help and collaboration, join the
+[OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
+
 ## Play
 
 [Download and install](../README.md#player-downloads) · [Start a scene or report a problem](playing.md) · [Scene Settings](settings.md)

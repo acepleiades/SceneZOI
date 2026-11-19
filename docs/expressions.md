@@ -57,6 +57,8 @@ Optional `aliases` list old IDs for preference migration. HZoi declares aliases 
 Give independent expression sets separate pack-prefixed IDs. If you want to
 contribute to another pack's set, agree on the shared ID and settings with
 its author. See [shared declarations and conflicting IDs](authoring.md#shared-declarations-and-conflicting-ids).
+For help coordinating a contribution, ask in the
+[OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
 
 ### Discovery and authoring workflow
 
