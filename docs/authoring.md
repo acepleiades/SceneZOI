@@ -337,6 +337,17 @@ remain suitable for all-ages content.
 
 ## Reuse HZoi resources through a dependency
 
+HZoi's inventoried original animation motion has a separate restricted license
+for SceneZOI and genuine GPL-compliant SceneZOI forks. A compatible JSON reader
+alone does not qualify another framework to use those animations. Gameplay
+integrations may request SceneZOI playback, and content packs may reference
+the separately installed official HZoi assets. Do not repackage its covered
+animation files without separate permission.
+
+Existing GPL motion grants, third-party assets and the reference rest-pose
+placeholders are separate. [HZoi animation permissions](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/animation-rights.md)
+· [Scoped license and inventory](https://github.com/acepleiades/HZoi-Reference/blob/main/ANIMATION-RIGHTS.json)
+
 If your pack supplies animations and needs voices, sound effects, facial
 expressions or a compatible attachment mesh, it can reference resources from
 the installed HZoi player pack. In your native ModKit project's
