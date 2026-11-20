@@ -29,18 +29,21 @@ profile data. Profiles are extensible compatibility data, not an author whitelis
 
 ## Example from a bed animation pack
 
-HZoi adds a [single-bed branch](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/05_single_bed_idle.json)
-and a [queen-bed branch](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/05_queen_bed_idle.json)
-through its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json). The idle nodes reuse the
-framework’s body tracks. The [queen-bed activity](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/08_queen_bed_female_mounted_sex_kissing.json)
+HZoi adds a [single-bed branch](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/05_single_bed_idle.json)
+and a [queen-bed branch](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/05_queen_bed_idle.json)
+through its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi.json). The idle nodes reuse the
+framework’s body tracks. The [queen-bed activity](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/08_queen_bed_female_mounted_sex_kissing.json)
 uses its own tracks and keeps the hub's `bed.queen` kind, 0 cm authored plane,
 and role bindings. This lets players navigate without moving to a different
 bed. A corresponding single-bed node can reuse those animation tracks where
 they fit.
 
-The [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/region_attachment.json)
+The [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json)
 maps node IDs to the matching attachment animation, including both framework
-bed hubs. See [the authoring walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/authoring-walkthrough.md#match-the-furniture-and-the-roster).
+bed hubs. See [the authoring walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/authoring-walkthrough.md#match-the-furniture-and-the-roster).
+The linked JSON describes production HZoi's configuration. The reference clips
+are rest-pose placeholders; test movement and furniture contact with your own
+compatible clips or the installed player pack.
 
 ## Placement and reservation
 

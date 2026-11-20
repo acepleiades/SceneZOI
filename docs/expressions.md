@@ -90,10 +90,10 @@ contexts they already ask for. Players choose a set for each Zoi in
 [Personality Management](playing.md#voice-and-expression-choices). The choice
 follows that Zoi across scenes and save files with the same native entity ID.
 
-Use the schema example above to author your own set, referencing facial clips available to your project. The framework has no built-in families or family IDs. The [public declaration workflow](package-split.md) and [facial-pose examples](facial-poses.md) demonstrate the authoring boundary. The public [Pleasure face definition](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/expressions/pleasure_face.json) now provides the corresponding
+Use the schema example above to author your own set, referencing facial clips available to your project. The framework has no built-in families or family IDs. The [public declaration workflow](package-split.md) and [facial-pose examples](facial-poses.md) demonstrate the authoring boundary. The public [Pleasure face definition](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/expressions/pleasure_face.json) now provides the corresponding
 HZoi-Reference example: `default`, body compatibility, weighted Idle/Pleasure
 clips and a Kiss option with an explicit `sample`. Its
-[scene instruction](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L76) selects the context and adds the
+[scene instruction](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json) selects the context and adds the
 independent `scenezoi.open_o` pose. The reference is optional; its stock facial
 clip paths still depend on actual game assets. See [worked examples](content-examples.md).
 

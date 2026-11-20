@@ -4,14 +4,17 @@ Scene schema 3 supports generic scene-local visual completion responses. Content
 
 ## Complete content-pack example
 
-HZoi-Reference's [movement timing and response block](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/02_standing_hand_job.json)
+HZoi-Reference's [movement timing and response block](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json)
 uses one cycle per second and peak phase 0.5. The male role requests shared
 slowdown plus its own shake; the female role requests only its own shake. Its
-[task rates](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/02_standing_hand_job.json) cap female progress at 50%, so that authored
+[task rates](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json) cap female progress at 50%, so that authored
 response does not imply she completes from zero in this node. Compare
-[the rear scene](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/04_standing_rear.json), where both roles can reach 100%.
-These adult-content examples are inert data; the
-[worked guide](content-examples.md) explains their scope and independent ownership.
+[the rear scene](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/04_standing_rear.json), where both roles can reach 100%.
+These adult-content examples are inert data. The reference clips are rest-pose
+placeholders, so the blocks demonstrate response settings rather than HZoi's
+authored motion. Use your own compatible clips or the installed player pack for
+a motion test. The [worked guide](content-examples.md) explains the reference's
+scope and independent ownership.
 
 ## Response priority
 

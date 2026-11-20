@@ -75,8 +75,8 @@ shoulder. The neutral framework pack's gaze data contains no adult asset referen
 
 ## Complete source examples
 
-The public [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L53) authors mutual head-eye targets.
-The [rear scene](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/04_standing_rear.json#L73) instead targets another role's body pelvis
+The public [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json) authors mutual head-eye targets.
+The [rear scene](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/04_standing_rear.json) instead targets another role's body pelvis
 and the observer's own `upperarm_l`. Compare these blocks with their declared
 `participants`; the target role is explicit, not inferred from array order.
 These HZoi-Reference files contain adult scene descriptions; see

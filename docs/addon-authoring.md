@@ -184,11 +184,13 @@ This query omits participants, so it searches library metadata rather than
 proving roster compatibility. Add `participants` and explicit `bindings` where
 needed, then preflight a start. Use the same criteria in `session_restrictions`
 to constrain later playback; `search` alone only selects the initial scene.
-The [idle](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L95) explicitly has two directed hugs. Its activity
+The [idle](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json) explicitly has two directed hugs. Its activity
 neighbors derive EXPLICIT and are excluded by GENERAL restrictions even when
 they also contain hugs. HZoi's idle is not itself a `starting_hub`; the pack
 extends the framework's starting hub. HZoi-Reference supplies content data,
 not an executable API-client example, and cloning it does not install it.
+Its clips are rest-pose placeholders; these queries inspect scene metadata,
+not the motion visible in those placeholders.
 
 ## Common pitfalls observed in validation
 

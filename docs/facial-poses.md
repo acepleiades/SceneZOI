@@ -86,12 +86,12 @@ as for other attachments. Framework resources contain no tongue/adult geometry.
 
 ## Existing scene example
 
-HZoi-Reference's [expression instruction](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json#L76) selects
+HZoi-Reference's [expression instruction](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json) selects
 `Pleasure` for both roles and `scenezoi.open_o` only for the female role. The
 named pose is the public [framework definition](../packs/scenezoi/facial_poses/open_o.json),
 not an embedded content-pack controller. This demonstrates context plus pose;
 HZoi does not supply a tongue mesh or a head-attachment scene. Its
-[body coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/profiles/region_attachment.json) illustrates a different binding path.
+[body coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json) illustrates a different binding path.
 See the [worked guide](content-examples.md) for the reference's scope and rights.
 
 ## Independent add-ons

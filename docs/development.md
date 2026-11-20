@@ -21,7 +21,7 @@ pose, a shared scene task, and one localization dictionary. The framework invent
 framework-only; `--content-root` is an optional test hook for a compatible author
 checkout that is already available. HZoi's private checkout is not required.
 The public [HZoi-Reference guide](content-examples.md) explains its separate
-silent-audio authoring example and [its checks](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/reference-assets.md#run-the-reference-checks).
+rest-pose animation placeholders, silent audio and [its checks](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/reference-assets.md#run-the-reference-checks).
 External packs can use `--packs` and `--project`, with their own `--inventory`
 and `--plugin` arguments for filtering.
 

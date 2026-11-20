@@ -12,12 +12,12 @@ Completion is still committed by the real task engine on a positive loop-playing
 ## Complete content-pack example
 
 SceneZOI’s shared [Excitement definition](../packs/scenezoi/tasks/excitement.json)
-sets the maximum and decay. [Standing Handjob](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/02_standing_hand_job.json)
-defines per-role progression and caps. [Standing Rear](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/04_standing_rear.json)
+sets the maximum and decay. [Standing Handjob](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json)
+defines per-role progression and caps. [Standing Rear](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/04_standing_rear.json)
 adds a scene-local one-shot, a reaction from the selected voice set, a timed
 slowdown, and independent leg shakes. Another pack can reuse the task and
 choose its own completion presentation.
-[Why these effects are separate](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/authoring-walkthrough.md#give-task-completion-a-visible-or-audible-result)
+[Why these effects are separate](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/authoring-walkthrough.md#give-task-completion-a-visible-or-audible-result)
 
 ## Register a definition
 

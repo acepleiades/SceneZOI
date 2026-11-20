@@ -258,7 +258,7 @@ tracks play together, and Exit restores gameplay. Test with SceneZOI and your
 pack enabled, plus any dependencies you actually declared. Have the agent report
 which checks it ran. Review contact, clipping and the loop seam in-game yourself.
 
-For a fuller scene, give the agent the [HZoi authoring walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/docs/authoring-walkthrough.md).
+For a fuller scene, give the agent the [HZoi authoring walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/authoring-walkthrough.md).
 Ask it to show where your pack uses voice contexts, contact sounds, and any
 task completion responses you requested. Test a Zoi's voice choice and
 volume separately from the effects slider, then watch the task finish.
@@ -309,10 +309,10 @@ scene is omitted from the catalog, including API discovery and starts. Incoming
 navigation, task routes and transitions that depend on the scene are also
 removed. The catalog check is opt-in.
 
-For a working example, compare the [queen-bed hub](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/05_queen_bed_idle.json)
-with its [optional AAL scene](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/09_queen_bed_aal_frontal.json).
+For a working example, compare the [queen-bed hub](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/05_queen_bed_idle.json)
+with its [optional AAL scene](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/09_queen_bed_aal_frontal.json).
 The optional scene sets `hide_if_tracks_missing` alongside its external role
-tracks. Its [coverage attachment profile](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/region_attachment.json)
+tracks. Its [coverage attachment profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json)
 points to the matching attachment clip. The hub offers the optional entry
 when the referenced tracks load.
 
@@ -329,8 +329,9 @@ search results.
 
 The [worked HZoi-Reference examples](content-examples.md) connect real manifests,
 scene files, profiles, expression/voice libraries, tasks and translations. The
-reference contains adult animation assets and silent replacements for proprietary
-audio; it is for study and has no repository-wide license. Each subsystem guide
+reference preserves adult scene definitions, rest-pose animation placeholders
+and silent replacements for proprietary audio. It does not include HZoi's authored
+motion; it is for study and has no repository-wide license. Each subsystem guide
 also links directly to relevant source sections. The neutral examples above
 remain suitable for all-ages content.
 
@@ -353,7 +354,7 @@ player build for audible testing. [HZoi downloads](https://www.patreon.com/skyri
 | Resource | How to reference it |
 | --- | --- |
 | Voice sets | Set `voices[role].context` to a context HZoi supplies, such as `kiss`. SceneZOI looks up the context in the Zoi's selected compatible voice set. See [voice instructions](voices.md#scene-instructions). |
-| Sound effects | Set the emitter's `sound_set` to an HZoi ID such as `hzoi.kiss`, then configure the emitter for your scene. See [scene sounds](sfx.md#data) and the [HZoi sound sets](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json). |
+| Sound effects | Set the emitter's `sound_set` to an HZoi ID such as `hzoi.kiss`, then configure the emitter for your scene. See [scene sounds](sfx.md#data) and the [HZoi sound sets](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi.json). |
 | Expression sets | Set `expressions[role].context` to a context such as `Kiss`. HZoi's sets reference native inZOI facial animations. SceneZOI uses the Zoi's selected compatible set. For a standalone pack, define your own sets that reference native clips in place. See [expression authoring](expressions.md#responsibilities-and-data). |
 | Male genitals mesh | Reference `/HZoi_660649D8/Attachments/HZoi_MaleAnatomy.HZoi_MaleAnatomy`. HZoi's coverage profile can already supply the mesh to compatible roles. Its attachment tracks are mapped by scene ID. For synchronized movement in a new scene, author a compatible attachment track and configure its binding. See [coverage profiles](package-split.md#presentation-and-compatibility-profiles). To include the same mesh in your own pack without requiring HZoi, use the [authoring kit](#use-the-hzoi-anatomy-mesh-in-your-own-pack). |
 

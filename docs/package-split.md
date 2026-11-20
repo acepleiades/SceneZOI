@@ -13,10 +13,11 @@ the native declaration workflow. Expression, voice, SFX and task guides provide
 schemas and examples for contributions using your own assets.
 
 The optional [HZoi-Reference](https://github.com/acepleiades/HZoi-Reference) publishes a reference-only adult-content
-example with proprietary audio replaced by silence. Start with the
-[worked examples](content-examples.md). Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json)
+example with rest-pose animation placeholders and proprietary audio replaced
+by silence. HZoi's authored motion is not included. Start with the
+[worked examples](content-examples.md). Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi.json)
 shows scene collection, shared sound sets, expression files and typed `data_files`;
-its [native patch](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/modkit/HZoi_660649D8/Content/JsonPatch/Text_UI_patch.json)
+its [native patch](https://github.com/acepleiades/HZoi-Reference/blob/main/modkit/HZoi_660649D8/Content/JsonPatch/Text_UI_patch.json)
 shows the generated envelopes. This source copy is separate from the private
 production pack used in historical audible/visual validation. Neither is required
 to build SceneZOI. Consult the reference's rights notices before reuse.
@@ -178,8 +179,8 @@ For an independently packaged copy of this attachment, see
 [the authoring workflow](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack).
 Use your own object paths and keep SceneZOI as the only mod dependency.
 
-HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/region_attachment.json) points to its
-[body profile](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/profiles/skin_hair.json). Follow those
+HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json) points to its
+[body profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/skin_hair.json). Follow those
 IDs alongside `node_animations` to see how a content pack activates and animates
 an attachment at its own scenes and framework hubs. Section 17 and material
 slots describe those assets, not universal framework defaults. See the

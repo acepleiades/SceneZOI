@@ -6,9 +6,9 @@ Each node declares participants and one body track per role. Connected destinati
 
 ## Example role declarations
 
-HZoi-Reference's [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L30) declares two named
+HZoi-Reference's [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json) declares two named
 roles, appearance-body/life-stage requirements, an explicit anchor and one body
-track per role. Its [navigation](https://github.com/acepleiades/HZoi-Reference/blob/45472868392ec78f2a182f88463e1128a3c11042/packs/hzoi/scenes/01_standing_idle.json#L11) leads to scenes with
+track per role. Its [navigation](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json) leads to scenes with
 the same role IDs. This is a two-person example, not evidence of authored group
 choreography. See [worked examples](content-examples.md) for its adult-content
 scope; use the neutral framework scenes for an all-ages starting point.

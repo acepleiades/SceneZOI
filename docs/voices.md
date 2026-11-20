@@ -41,12 +41,12 @@ For help coordinating shared voice definitions, ask in the
 
 ## Complete content-pack example
 
-HZoi-Reference connects an [archetype](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/voices/archetype_mature.json),
-[context](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/voices/context_fellatio.json) and [voice set](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/voices/set_megu_hiiragi_mature_fellatio.json) through matching IDs.
-The [scene voice instruction](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json) selects the context;
-[completion bindings](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json) independently name
+HZoi-Reference connects an [archetype](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/voices/archetype_mature.json),
+[context](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/voices/context_fellatio.json) and [voice set](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/voices/set_megu_hiiragi_mature_fellatio.json) through matching IDs.
+The [scene voice instruction](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json) selects the context;
+[completion bindings](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/03_male_standing_female_kneeling_fellatio.json) independently name
 the completing role and speaker, then resolve a named `responses` group from
-the speaker's chosen set. Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/8a3bb72393e4adcc6aef3271c187c31f79f6dd62/packs/hzoi.json) registers
+the speaker's chosen set. Its [manifest](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi.json) registers
 all three declaration kinds. All reference WAVs are silent because the original
 recordings are proprietary, so these files demonstrate structure and timing,
 not audible quality or balance. See [the worked trace](content-examples.md#connect-progress-to-independent-responses).
