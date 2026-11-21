@@ -24,8 +24,9 @@ builds. Active sessions capture the selected profile. See the public
 
 The bundled bed profiles cover declared standard-single, standard-double,
 alternate-double, single-futon and double-futon objects/variants. An English catalog
-description or object tag does not establish support. Unknown models need tested
-profile data. Profiles are extensible compatibility data, not an author whitelist.
+description does not establish bed support. Unknown bed models need tested
+profile data. Sofas use the automatic detection described below; their model IDs
+do not need to appear in SceneZOI's bundled profiles.
 
 ## Example from a bed animation pack
 
@@ -67,6 +68,44 @@ release remains outstanding. The save journal records the exact object/owner for
 recovery. See [lifecycle contracts](tier1-contracts.md).
 
 ## Sofa authoring and placement
+
+### Automatic sofa detection
+
+SceneZOI identifies sofas through the native `Object_Sofa` tag or the Object
+row's `Sofa` category. Translated names, Blueprint names and mesh filenames do
+not determine eligibility. A mod-added sofa using that native classification
+and ordinary sofa sitting slots can work without a SceneZOI compatibility patch.
+
+The runtime reads the object's actual slot transforms and activity tags. Normal
+adult `Sit` slots identify physical seats. Alternate sitting postures at the same
+seat are grouped as aliases, including pass-out markers slightly farther forward.
+Prop slots, child-only slots and standing activities do not add seats. Only
+adjacent seats facing the same way on one straight support plane form a pair.
+The runtime does not join seats diagonally across an L-shaped corner or skip
+the middle seat of a three-seater.
+
+The optional measured profiles bundled with SceneZOI remain placement corrections
+for the models they describe. They are not an allowlist. Other sofas receive a
+profile derived from their native slots, with stable per-object seat/pair IDs.
+The same discovery supports the debug picker and furniture API. Discovery runs
+in small batches; clicking an object inspects that object immediately. Native
+availability still needs its ordinary B2 status reply before entry is offered.
+
+Automatic placement follows the game's ordinary sofa Sit convention: the sitting
+surface is 44 cm above the slot's ground plane, and the contact point is 53 cm
+behind its approach marker. This measures neither the rendered cushion nor
+arbitrary custom sitting animations. A sofa with different cushion geometry or
+a different native sitting convention can supply a measured `furniture_profile`
+for placement. No furniture profile can make an unsuitable pair fit the animation.
+
+Unusable or ambiguous sofa layouts are excluded safely. Missing parents, nested
+slot/socket layouts, unmatched sitting aliases and missing adjacent seats are
+reported in `scenezoi_runtime/scene_history.cfg` as furniture discovery warnings.
+The simulation rechecks the object's sofa classification and slot geometry before
+reservation and on lease heartbeats. A rebuilt layout stops the session and
+releases only its captured restrictions; unrelated occupants remain untouched.
+
+### Starting and reserving a pair
 
 A manual sofa start shows a short notification if the selected seats are
 unavailable or no starting scene supports the selected Zois. Any entry cleanup
@@ -131,7 +170,8 @@ whole sofa to work around an incomplete mapping. Measure the cushion contact
 positions separately: a native Sit slot can be an approach target in front of
 the cushion rather than the place where the Zoi actually sits.
 
-Sofa profiles add `sitting_spots` and `seat_pairs` to the profile fields above:
+An optional measured sofa profile adds `sitting_spots` and `seat_pairs` to the
+profile fields above:
 
 ```json
 {
@@ -153,7 +193,7 @@ midpoint supplies the animation root; its shared yaw supplies the facing.
 Give each straight section its own `run`. Validation rejects different runs
 or facings, duplicate slot mappings and pairs that skip an intermediate seat.
 It cannot prove that invented slot names or a claimed straight run match the
-game model. Inspect and test every supported Object row.
+game model. Inspect and test each Object row receiving a measured correction.
 The optional pair `label` uses the existing localization lookup. Use labels
 such as `Left seats` and `Right seats` only when they describe the tested
 layout. Otherwise the picker uses localized numbered seat-pair labels.

@@ -110,10 +110,37 @@ local function vacancy(states)
  end
  return true
 end
+local function validate_native_layout(o,profile)
+ local native_id=profile.id:match('^scenezoi%.sofa%.native%.(%d+)$')
+ if native_id then
+  assert(native_id==id(o:GetEntityId())and profile.kind=='sofa.pair','Automatic sofa identity changed')
+  local row=o:GetObjectTableRow()
+  assert(o:HasObjectTag('Object_Sofa')or(row and(tostring(row.FilterCategory)=='Sofa'or tostring(row.ObjectCategory)=='Sofa')),'Object is no longer a sofa')
+  local s=assert(slot(o),'Sofa has no native slots')
+  local inverse=UE.UKismetMathLibrary.InvertTransform(o:GetWorldTransform())
+  local rotation=o:GetRotation();local object_yaw=rotation.Yaw
+  for _,spot in ipairs(profile.sitting_spots)do
+   local r=math.rad(spot.yaw_degrees)
+   local x=spot.offset_cm.x-53*math.sin(r);local y=spot.offset_cm.y+53*math.cos(r)
+   for _,alias in ipairs(spot.slots)do
+    local param=inzoi.FB2TargetSlotParam();param.ComponentName=alias.component_name;param.SlotName=alias.slot_name
+    local state=assert(s:GetSlotStateInfoBySlotParam(inzoi.EB1SlotType.Interaction,param),'Automatic sofa slot disappeared')
+    local found,world=s:GetSlotLocationBySlotStateInfo(state,UE.FVector(0,0,0))
+    local turned,facing=s:GetSlotRotationBySlotStateInfo(state,UE.FRotator(0,0,0))
+    assert(found and world and turned and facing,'Automatic sofa slot geometry is unavailable')
+    local p=UE.UKismetMathLibrary.TransformLocation(inverse,world);local dx,dy=p.X-x,p.Y-y
+    assert(math.abs(dx*math.cos(r)+dy*math.sin(r))<.6 and math.abs(-dx*math.sin(r)+dy*math.cos(r))<=15.1 and
+     math.abs(p.Z-spot.offset_cm.z)<.6 and math.abs((facing.Yaw-object_yaw-spot.yaw_degrees+180)%360-180)<.02,'Automatic sofa layout changed')
+   end
+  end
+ end
+end
 local function profile_for(o,encoded)
  local profile=require('SceneZOI.FurnitureData').profile(Json.decode(P.decode(encoded)))
  local matched=false;for _,name in ipairs(profile.objects)do if name==tostring(o.ObjectTableId)then matched=true end end
- assert(matched,'Furniture profile does not match native object');return profile
+ assert(matched,'Furniture profile does not match native object')
+ validate_native_layout(o,profile)
+ return profile
 end
 ---@param zoi_actor FB2Character
 local function can_clear_person(zoi_actor)
@@ -310,6 +337,9 @@ end
 local function held_pair_error(l)
  local o=object(l.bed);if not o then return 'furniture_unloaded'end
  local s=slot(o);if not s then return 'native_slots_missing'end
+ -- A mod can rebuild its slots without moving the furniture actor. Keep the
+ -- captured automatic layout valid as well as checking ordinary occupancy.
+ if l.profile and not pcall(validate_native_layout,o,l.profile)then return 'native_sofa_layout_changed'end
  local wanted,states={},{}
  for _,row in ipairs(l.target_slots)do wanted[key(row.component_name,row.slot_name)]=row end
  for _,state in ipairs(s.SlotStateInfos)do

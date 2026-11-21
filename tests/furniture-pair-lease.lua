@@ -321,3 +321,32 @@ person.getup_pending=false;person.getup_sample.state='finished'
 posture:SetPostureState({PostureId='Stand',PostureTargetEntityId={Value=0}})
 M.tick();assert(not M.find('50','abort_getup','1')and #free()==3)
 characters[1]=nil
+
+-- Automatic profiles use actual object semantics and geometry on B2 too.
+local sofa_tag,geometry_delta=true,0
+function o:GetEntityId()return {Value=50}end
+function o:HasObjectTag(tag)return sofa_tag and tag=='Object_Sofa'end
+function o:GetObjectTableRow()return {FilterCategory=sofa_tag and'Sofa'or'Chair'}end
+function o:GetWorldTransform()return {}end
+function o:GetRotation()return {Yaw=0}end
+function s:GetSlotStateInfoBySlotParam(_,param)
+ for _,state in ipairs(states)do if state.ComponentName==param.ComponentName and state.SlotName==param.SlotName then return state end end
+end
+function s:GetSlotLocationBySlotStateInfo(state)
+ local index=state.ComponentName=='Seat1Alias'and 1 or tonumber(state.ComponentName:match('^Seat(%d+)$'))
+ return true,{X=index*80+geometry_delta,Y=53,Z=0}
+end
+function s:GetSlotRotationBySlotStateInfo()return true,{Yaw=0}end
+UE={FVector=function()return {}end,FRotator=function()return {}end,
+ UKismetMathLibrary={InvertTransform=function(t)return t end,TransformLocation=function(_,point)return point end}}
+profile.id='scenezoi.sofa.native.50';encoded=P.encode(J.encode(profile))
+assert(#free()==3,'A new sofa model with verified geometry is eligible')
+local before_claims=calls
+sofa_tag=false;assert(not pcall(send,'false_sofa','acquire','left')and calls==before_claims,'Reject a non-sofa before claiming slots');sofa_tag=true
+geometry_delta=2;assert(not pcall(send,'changed_geometry','acquire','left')and calls==before_claims,'Reject stale geometry before claiming slots');geometry_delta=0
+assert(send('native_sofa','acquire','left')[3]=='held')
+geometry_delta=2
+local response=send('native_sofa','heartbeat','left')
+geometry_delta=0
+assert(response[3]=='missing'and response[4]=='native_sofa_layout_changed'and #free()==3,'Changed geometry releases only captured restrictions')
+print('Automatic sofa native proof passed: semantic classification, exact object identity, current slot geometry and changed-layout heartbeat cleanup.')

@@ -10,7 +10,9 @@ end
 function M.profile(id)
  local actor=M.actor(id);if not actor then return end
  local p=(require('SceneZOI.Catalog').get_snapshot().furniture or {}).objects
- return p and p[tostring(actor.ObjectDataTableId)],actor
+ local declared=p and p[tostring(actor.ObjectDataTableId)]
+ -- Authored profiles are optional measured corrections, not an admission list.
+ return declared or require('SceneZOI.NativeSofas').profile(id,actor),actor
 end
 -- Search uses recent B2 status as a hint. Only acquire reserves the object.
 function M.available(id,pair_id,allowed_ids)
@@ -67,18 +69,26 @@ function M.reply(actor,content)
  require('SceneZOI.Runtime').furniture_reply(actor,f)
 end
 function M.tick(dt,actor)
+ local native_sofas=require('SceneZOI.NativeSofas')
+ if actor then native_sofas.tick()end
  M.elapsed=M.elapsed+dt;if M.elapsed<.5 or not actor then return end;M.elapsed=0
  local profiles=require('SceneZOI.Catalog').get_snapshot().furniture
  if not profiles then return end
  local manager=inzoi.UB1System.Get().ManagerMap:Find(inzoi.EB1ManagerType.Entity)
  if not manager then return end
+ local alive={};local discover=native_sofas.scan_due();local candidates={}
  for key,obj in pairs(manager.GameObjectMap:ToTable())do
-  if profiles.objects[tostring(obj.ObjectDataTableId)]then
-   local profile=profiles.objects[tostring(obj.ObjectDataTableId)]
+  local id=tostring(key.Value);alive[id]=true
+  local declared=profiles.objects[tostring(obj.ObjectDataTableId)]
+  local profile=declared or native_sofas.peek(id,obj)
+  if discover and not declared then candidates[#candidates+1]={id=id,actor=obj}end
+  if profile then
    require('SceneZOI.SimulationRoute').send(actor,'SceneZOI.Furniture',P.pack('status',tostring(key.Value),'status',
     profile.kind=='sofa.pair'and P.encode(require('SceneZOI.Json').encode(profile))or 'none'))
   end
  end
+ if discover then native_sofas.begin_scan(candidates)end
+ native_sofas.prune(alive)
 end
 function M.prepare(id,node,pair_id)
  local profile,actor=M.profile(id)
@@ -126,10 +136,11 @@ function M.find(args,actors,data)
  local manager=inzoi.UB1System.Get().ManagerMap:Find(inzoi.EB1ManagerType.Entity)
  local rows=require('SceneZOI.Json').array({})
  for key,obj in pairs(manager and manager.GameObjectMap:ToTable()or {})do
-  local id=tostring(key.Value);local profile=(data.furniture or {}).objects and data.furniture.objects[tostring(obj.ObjectDataTableId)]
-  if profile and(not node or require('SceneZOI.FurnitureData').compatible(node,profile))then
-   local point=obj:K2_GetActorLocation();local distance=math.sqrt((point.X-origin.X)^2+(point.Y-origin.Y)^2+(point.Z-origin.Z)^2)/100
-   if distance<=radius then
+  local id=tostring(key.Value)
+  local point=obj:K2_GetActorLocation();local distance=math.sqrt((point.X-origin.X)^2+(point.Y-origin.Y)^2+(point.Z-origin.Z)^2)/100
+  if distance<=radius then
+   local profile=M.profile(id)
+   if profile and(not node or require('SceneZOI.FurnitureData').compatible(node,profile))then
     local status=M.status[id];local fresh=status and os.time()-status.time<=3
     local candidates=profile.seat_pairs or {false}
     for _,pair in ipairs(candidates)do
