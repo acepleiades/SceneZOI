@@ -10,10 +10,6 @@ SceneZOI is a free, open-source animation framework for **inZOI**. It keeps Zois
 
 [![Support acenetizen on Patreon](assets/presentation/Patreon-PNG-Picture.png)](https://www.patreon.com/skyrimaceanimations)
 
-**[SephirothValentine](https://github.com/SephirothValentine)** contributed concurrent scene support and makes VelvetZOI.
-
-[![Support SephirothValentine on Patreon](assets/presentation/Patreon-PNG-Picture.png)](https://www.patreon.com/cw/VelvetZOI)
-
 ## Player downloads
 
 **[Download SceneZOI](https://acepleiades.github.io/SceneZOI/)** · [Older releases](https://github.com/acepleiades/SceneZOI/releases) · [Report a problem](https://github.com/acepleiades/SceneZOI/issues/new/choose)
