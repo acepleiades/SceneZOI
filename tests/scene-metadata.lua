@@ -76,3 +76,40 @@ assert(not Search.matches(scoped,Search.criteria(registry,{participant_tags={sec
 assert(not registry.tags.fellatio and not registry.tags.spanking and not registry.tags.gesture)
 assert(registry.actions.fellatio and registry.actions.spanking and registry.actions.holding_penis_at_base)
 print('Metadata scope passed: shared vocabulary, independent scene/role filters and directed positioning support action.')
+
+-- Shared pose/contact vocabulary resolves and searches with the framework alone.
+local shared={
+ 'lower_legs_crossed',
+ 'hands_behind_head',
+ 'torso_supported_by_hands',
+ 'torso_supported_by_elbows',
+ 'looking_at_partner_pelvis',
+ 'looking_at_partner_head',
+ 'missionary',
+ 'sitting_close_to_partner',
+ 'on_partner_right',
+ 'on_partner_left',
+ 'arm_over_partner_shoulder',
+ 'right_hand_on_partner_penis',
+ 'on_floor',
+ 'hand_on_partner_lower_body',
+ 'hand_on_partner_thigh',
+ 'hand_over_partner_hand',
+ 'bouncing',
+}
+assert(#source.by_kind.tag_dictionary==1 and source.by_kind.tag_dictionary[1].owner=='scenezoi')
+for index,id in ipairs(shared)do
+ assert(registry.tags[id] and Meta.resolve_name(registry,'tags',id)==id,'Missing framework-owned tag '..id)
+ local described=Meta.resolve_scene(registry,{id='shared.'..index,kind='loop',navigation={},
+  participants={first={},second={}},tags={id},participant_tags={first={id}},actions={}})
+ local matches=Search.find({nodes={[described.id]=described}},Search.criteria(registry,{
+  required_tags={id},participant_tags={first={required_tags={id}}}}))
+ assert(#matches==1 and matches[1].scene_id==described.id,'Shared tag searches require no content pack')
+ assert(not Search.matches(described,Search.criteria(registry,{participant_tags={second={required_tags={id}}}})),
+  'Shared vocabulary must retain participant scoping')
+end
+for id in pairs(registry.tag_names)do assert(not id:match('^hzoi%.'),'Pack prefixes are not shared tag aliases')end
+for _,old in ipairs({'arm_over_partner_right_shoulder','hand_on_partner_left_thigh','hzoi.missionary'})do
+ assert(not pcall(Search.criteria,registry,{required_tags={old}}),'Replaced names are not compatibility aliases')
+end
+print('Shared pose metadata passed: all 17 tags resolve/search with core alone; generalized contact and retired names checked.')

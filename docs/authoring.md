@@ -243,6 +243,11 @@ Give the agent this repository and the following inputs.
   contexts or silence, and any sound effects and their timing. Use the
   [scene brief](first-animation.md#5-describe-the-scene-for-the-agent).
 
+New tags belong in SceneZOI's
+[shared tag dictionary](../packs/scenezoi/metadata/tags.json). Ask the agent to
+reuse existing tags or prepare a framework addition with tests; do not create
+a separate tag dictionary in your content pack. [Tag authoring](scene-metadata.md)
+
 For a first standing pair, point the agent to the
 [neutral standing scene](../packs/scenezoi/scenes/standing_idle.json) and the
 [hub extension example](package-split.md#roles-entry-and-extensions).

@@ -24,6 +24,10 @@
       "description": "An arm reaches around the primary action partner at hip level."
     },
     {
+      "id": "arm_over_partner_shoulder",
+      "description": "An arm rests over the partner's shoulder."
+    },
+    {
       "id": "at_surface_edge",
       "aliases": [],
       "description": "Participant is positioned at the edge of a supporting surface."
@@ -47,6 +51,10 @@
       "id": "between_partner_legs",
       "aliases": [],
       "description": "Positioned between the primary action partner's legs."
+    },
+    {
+      "id": "bouncing",
+      "description": "Actively raising and lowering the body in a repeated motion."
     },
     {
       "id": "carried_by_partner",
@@ -151,6 +159,22 @@
       "description": "A hand rests on the primary action partner's chest; does not imply gripping or groping."
     },
     {
+      "id": "hand_on_partner_lower_body",
+      "description": "A hand rests on or holds the partner's lower body."
+    },
+    {
+      "id": "hand_on_partner_thigh",
+      "description": "A hand rests on or holds the partner's thigh."
+    },
+    {
+      "id": "hand_over_partner_hand",
+      "description": "A hand rests over the partner's hand."
+    },
+    {
+      "id": "hands_behind_head",
+      "description": "Both hands are positioned behind the participant’s head."
+    },
+    {
       "id": "head_on_partner_shoulder",
       "aliases": [],
       "description": "Head rests on the primary action partner's shoulder."
@@ -243,9 +267,21 @@
       "description": "Gaze is directed at the participant's own hand."
     },
     {
+      "id": "looking_at_partner_head",
+      "description": "Gaze is directed toward the partner’s head."
+    },
+    {
+      "id": "looking_at_partner_pelvis",
+      "description": "Gaze is directed toward the partner’s pelvis."
+    },
+    {
       "id": "looking_up",
       "aliases": [],
       "description": "Gaze is directed upward."
+    },
+    {
+      "id": "lower_legs_crossed",
+      "description": "Lower legs cross above the supporting surface."
     },
     {
       "id": "lying",
@@ -280,11 +316,27 @@
       "description": "Lying on one side."
     },
     {
+      "id": "missionary",
+      "description": "Face-to-face position with one participant lying on their back and the other above and between their legs."
+    },
+    {
       "id": "on_bottom",
       "aliases": [
         "bottom_position"
       ],
       "description": "Lower participant position relative to a partner; not a dominance role."
+    },
+    {
+      "id": "on_floor",
+      "description": "Supported by the floor rather than the furniture surface."
+    },
+    {
+      "id": "on_partner_left",
+      "description": "Positioned on the partner's left side, relative to the partner's body."
+    },
+    {
+      "id": "on_partner_right",
+      "description": "Positioned on the partner's right side, relative to the partner's body."
     },
     {
       "id": "on_top",
@@ -327,6 +379,10 @@
       "description": "Presentation conveys pleasure or satisfaction, as described by the animation author."
     },
     {
+      "id": "right_hand_on_partner_penis",
+      "description": "The right hand contacts the partner's penis."
+    },
+    {
       "id": "romantic",
       "aliases": [
         "romance"
@@ -340,6 +396,10 @@
         "seated"
       ],
       "description": "Seated posture."
+    },
+    {
+      "id": "sitting_close_to_partner",
+      "description": "Seated close beside the partner."
     },
     {
       "id": "squatting",
@@ -385,6 +445,14 @@
         "leaning_forward"
       ],
       "description": "Torso leans forward from its upright posture."
+    },
+    {
+      "id": "torso_supported_by_elbows",
+      "description": "Elbows brace the upper body against the supporting surface."
+    },
+    {
+      "id": "torso_supported_by_hands",
+      "description": "Hands brace the upper body against the supporting surface."
     },
     {
       "id": "torso_supported_by_surface",

@@ -9,34 +9,46 @@ task, sound, expression or outfit instructions.
 
 ## Registered dictionaries
 
-SceneZOI supplies `packs/scenezoi/metadata/tags.json` and `actions.json`. They are
-native `tag_dictionary` and `action_dictionary` declarations contributed through
-the same enabled-package Text_UI/Text transport as other content. Third-party
-packages can register their own schema-1 dictionaries in the pack manifest.
-Paths in `data_files` are relative to that manifest and stay within its directory.
+SceneZOI owns the shared tag vocabulary in
+[`packs/scenezoi/metadata/tags.json`](../packs/scenezoi/metadata/tags.json).
+**Add new tags to that file in SceneZOI and submit a pull request.** Content packs
+reference those IDs; they should not ship their own tag dictionaries or redeclare
+shared definitions. Use plain IDs such as `on_floor`, `looking_at_partner_head`
+and `missionary`, without a content-pack prefix.
+
+Use `arm_over_partner_shoulder` and `hand_on_partner_thigh` for those contacts.
+They do not fix a left or right side. `on_partner_left` and `on_partner_right`
+still distinguish relative placement when the animation needs it.
+
+For a vocabulary addition, append a record to the existing `tags` array:
+
+```json
+{
+  "id": "comforting",
+  "aliases": ["consoling"],
+  "description": "Comforting interaction."
+}
+```
+
+Check existing IDs and aliases first. Give each addition a clear meaning that
+other packs can use, and update the metadata/search checks. Registering a tag
+does not apply it to a scene: authors still put it in `tags` or `participant_tags`.
+Identical definitions can deduplicate, but different definitions for the same ID
+are a conflict. Keeping additions in SceneZOI avoids separate packs defining
+the same fact differently. See [contributing](../CONTRIBUTING.md).
+
+The dictionaries use native `tag_dictionary` and `action_dictionary`
+declarations through Text_UI/Text. The loader still accepts external dictionary
+declarations; the authoring rule for new tags is to add them to SceneZOI.
+Action dictionaries can be registered in a pack manifest:
 
 ```json
 "data_files": [
-  {"kind": "tag_dictionary", "file": "author/metadata/tags.json"},
   {"kind": "action_dictionary", "file": "author/metadata/actions.json"}
 ]
 ```
 
-For a pack with ID `author`, the tag dictionary could look like this:
-
-```json
-{
-  "schema_version": 1,
-  "id": "author.tags",
-  "tags": [
-    {
-      "id": "author.comforting",
-      "aliases": ["author.consoling"],
-      "description": "Comforting interaction."
-    }
-  ]
-}
-```
+Paths in `data_files` are relative to the manifest and stay within its directory.
 
 An action dictionary uses an `actions` array. Each action requires `id`,
 `description` and `content_rating`. Both dictionary types accept optional
@@ -73,8 +85,9 @@ At runtime, SceneZOI merges dictionaries from enabled packs. Scenes that
 reference a custom term need its provider enabled. The catalog builder
 validates terms against the core dictionaries and the dictionaries supplied
 to that build. A native `dependencies` entry alone does not import another
-pack's dictionary into a standalone build. For a standalone build, use core
-terms or register your own namespaced terms in your manifest.
+pack's dictionary into a standalone build. For tags in a standalone
+build, use the shared core vocabulary. Add missing tags to SceneZOI before
+using them in your pack.
 
 SceneZOI curates 85 actions using anatomical canonical names, full-word aliases
 and the author's reviewed content ratings. Tail-specific vocabulary is excluded.
@@ -189,22 +202,25 @@ Core tags favor observable posture, orientation, relative placement and contact.
 A reader or AI speech add-on should be able to combine those facts with directed
 actions without knowing an English sexual-position nickname. Named-position
 labels vary across communities and are not a universal description of movement.
-The core tag dictionary therefore omits `anvil`, `bodyguard`, `butterfly`,
-`cowgirl`, `reverse_cowgirl`, `doggy_style`, `mating_press`, `missionary` and
-`spooning`, including their position-name aliases. No core query silently expands
-those old names into a guessed combination.
+The bare IDs `anvil`, `bodyguard`, `butterfly`, `cowgirl`, `reverse_cowgirl`,
+`doggy_style`, `mating_press` and `spooning` are not registered,
+including their position-name aliases. No core query silently expands those
+names into a guessed combination.
 
-This is the framework maintainer's vocabulary preference, not a ban on other
-authors' terminology. Enabled mods can contribute their own namespaced tags and
-aliases through `tag_dictionary` declarations. A speech add-on may define
-`voice_author.reverse_cowgirl`, or derive a localized label from core facts.
-Conflicting definitions and unnamespaced custom vocabulary still fail the common
-validation rules. Content authors explicitly apply any custom tag; registering a
-definition does not automatically classify scenes.
+The shared `missionary` tag describes a face-to-face position with one
+participant on their back and the other above and between their legs. It does
+not expand into inferred role tags, actions or gameplay behavior. Describe the
+participants' individual posture and contact as well, and let directed actions
+determine the content rating.
+
+New tag definitions belong in SceneZOI's shared dictionary. A speech add-on can
+derive its own localized position labels from these facts without defining
+another tag vocabulary. Propose missing shared concepts through a pull request.
+Do not infer a named position from unrelated tags or apply it automatically.
 
 The vocabulary review used 290 OARE and 272 OA3PP scene files as input. Their pack
 IDs and legacy concatenated spellings are not universal core vocabulary. The
-current dictionary contains 63 tags. Romantic, platonic, affectionate and cuddling
+current dictionary contains 80 tags. Romantic, platonic, affectionate and cuddling
 remain separate concepts with no implied hierarchy.
 
 ### Author role-specific facts

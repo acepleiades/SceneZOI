@@ -1,5 +1,10 @@
 # Working on SceneZOI
 
+New scene/participant tag definitions belong in SceneZOI's
+`packs/scenezoi/metadata/tags.json`, with plain shared IDs. Update that
+dictionary and its metadata/search tests instead of adding a content-pack
+tag dictionary or pack-prefixed tag IDs.
+
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Use the [source map](docs/architecture.md)
 to find the code and tests for your change. Read the relevant contract before
 changing a public API, schema or runtime lifecycle rule. For a bug, start with

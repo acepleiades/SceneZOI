@@ -3,6 +3,25 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 from scene_metadata import builtin_documents,dictionaries,validate_scene
 from build_catalog import build
+SHARED_POSE_TAG_IDS={
+ 'lower_legs_crossed',
+ 'hands_behind_head',
+ 'torso_supported_by_hands',
+ 'torso_supported_by_elbows',
+ 'looking_at_partner_pelvis',
+ 'looking_at_partner_head',
+ 'missionary',
+ 'sitting_close_to_partner',
+ 'on_partner_right',
+ 'on_partner_left',
+ 'arm_over_partner_shoulder',
+ 'right_hand_on_partner_penis',
+ 'on_floor',
+ 'hand_on_partner_lower_body',
+ 'hand_on_partner_thigh',
+ 'hand_over_partner_hand',
+ 'bouncing',
+}
 class MetadataTests(unittest.TestCase):
  def setUp(self):self.registry=dictionaries(builtin_documents());self.scene={'participants':{'a':{},'b':{}},'tags':['doting'],'actions':[{'type':'embrace','actor':'a','target':'b'}]}
  def test_alias_and_one_sided_hug(self):
@@ -37,11 +56,36 @@ class MetadataTests(unittest.TestCase):
   self.assertEqual(self.registry['action_names']['finish_on_face'],'ejaculation_on_face')
   for key in ['analfingering','analsex','hj','smothering','specate','sex']:
    self.assertNotIn(key,self.registry['action_names'])
+ def test_shared_pose_tags_are_framework_vocabulary(self):
+  self.assertTrue(all(owner=='scenezoi'for owner,_,_,_ in builtin_documents()))
+  self.assertEqual(len(self.registry['tags']),80)
+  self.assertTrue(SHARED_POSE_TAG_IDS<=set(self.registry['tags']))
+  self.assertTrue(all('.' not in key for key in self.registry['tags']))
+  for key in SHARED_POSE_TAG_IDS:
+   self.assertEqual(self.registry['tag_names'][key],key)
+  scene=copy.deepcopy(self.scene)
+  scene['tags']=['sitting_close_to_partner']
+  scene['participant_tags']={
+   'a':['sitting','arm_over_partner_shoulder','looking_at_partner_head'],
+   'b':['sitting','on_partner_right','hand_over_partner_hand'],
+  }
+  resolved=validate_scene(scene,self.registry)
+  self.assertEqual(resolved['tags'],scene['tags'])
+  self.assertIn('arm_over_partner_shoulder',resolved['participant_tags']['a'])
+  self.assertNotIn('arm_over_partner_shoulder',resolved['participant_tags']['b'])
+  self.assertNotIn('arm_over_partner_shoulder',resolved['tags'])
+  self.assertEqual(resolved['content_rating'],'GENERAL')
+ def test_replaced_tag_spellings_are_not_aliases(self):
+  self.assertFalse(any(key.startswith('hzoi.') for key in self.registry['tag_names']))
+  for old in ['arm_over_partner_right_shoulder','hand_on_partner_left_thigh','hzoi.missionary']:
+   self.assertNotIn(old,self.registry['tag_names'])
+   scene=copy.deepcopy(self.scene);scene['tags']=[old]
+   with self.assertRaises(ValueError):validate_scene(scene,self.registry)
  def test_authored_aliases_require_underscores(self):
   for alias in ['Mixed_Case','two words','two-words']:
    docs=copy.deepcopy(builtin_documents());docs[0][3]['tags'][0]['aliases'].append(alias)
    with self.assertRaises(ValueError):dictionaries(docs)
- def test_custom_named_positions_remain_allowed(self):
+ def test_existing_external_dictionary_transport_remains_supported(self):
   doc={'schema_version':1,'id':'speech.tags','tags':[{'id':'speech.reverse_cowgirl','aliases':['speech.reverse_riding'],'description':'Custom speech classification.'}]}
   r=dictionaries(builtin_documents()+[('speech','tag_dictionary','example',doc)])
   self.assertEqual(r['tag_names']['speech.reverse_riding'],'speech.reverse_cowgirl')

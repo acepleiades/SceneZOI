@@ -21,6 +21,14 @@ join the [OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU
 
 ModKit generates the installed `lua/` directory from `workspace/lua/`. Make source edits in the workspace. Check [pack ownership](docs/package-split.md) before adding new assets or declarations. SceneZOI is an all-ages framework. Gameplay rules and pack assets belong in their respective projects.
 
+## Add a tag
+
+Add new scene and participant tags to SceneZOI's
+[`packs/scenezoi/metadata/tags.json`](packs/scenezoi/metadata/tags.json), update
+the metadata/search tests, and submit a pull request. Use plain shared IDs and
+check existing IDs and aliases first. Content packs use that vocabulary instead
+of adding their own tag dictionaries. [Tag authoring](docs/scene-metadata.md)
+
 ## Test your change
 
 - For a bug fix, reproduce the failure and keep a regression where the suite can catch it. For a native change, also test the affected behavior in game, including Exit if you touch scene lifecycle.

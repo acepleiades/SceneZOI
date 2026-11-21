@@ -135,26 +135,26 @@ hold/mute. Persist gameplay consequences once using your own save data.
 
 After checking the autonomous feature flags, reuse the client and callbacks from
 [Wire the SDK](#wire-the-sdk). This example assumes your enabled pack defines the
-`training.focus` task and connects eligible loops tagged `training.practice`
-and `training.finish`. Use `get_definitions` to check the installed task and tags.
+`training.focus` task and connects eligible loops tagged `squatting`
+and `standing`, using SceneZOI's shared vocabulary. Use `get_definitions` to check the installed task and tags.
 The participant IDs must refer to loaded Zois whose roles can play those loops.
 
 ```lua
 client:request(owner, "training.start.1", "start_autonomous_scene", {
   initiator = "20522",
   participants = {"20522", "20526"},
-  search = {required_tags = {"training.practice"}},
+  search = {required_tags = {"squatting"}},
   restrictions = {allowed_content_ratings = {"GENERAL"}},
   goals = {{participant_id = "20522", task_id = "training.focus", completions = 2}},
   stages = 2,
-  required_stages = {{stage = 1, match = {required_tags = {"training.practice"}}}},
-  stage_preferences = {{from = 1, match = {required_tags = {"training.finish"}}}},
+  required_stages = {{stage = 1, match = {required_tags = {"squatting"}}}},
+  stage_preferences = {{from = 1, match = {required_tags = {"standing"}}}},
   end_policy = {type = "goals"}
 })
 ```
 
-The initiator must complete the task twice, and a practice loop must play in
-stage one. The final-stage preference ranks eligible finish loops. Author a
+The initiator must complete the task twice, and a squatting loop must play in
+stage one. The final-stage preference ranks eligible standing loops. Author a
 reachable loop with a positive rate and a cap that allows the task to complete
 for the initiator's role. The partner remains in the roster and has no goal.
 
