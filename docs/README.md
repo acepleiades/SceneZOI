@@ -9,7 +9,7 @@ For questions, authoring help and collaboration, join the
 
 ## Make an animation pack
 
-1. [Make your first animation](first-animation.md). Open the Maya or Blender rig, animate a short loop and export it.
+1. [Make your first animation](first-animation.md). Open the Maya or Blender rig, animate the scene you want to make and export it.
 2. [Write and package your first scene](authoring.md). Import the tracks, connect the scene to a hub or the picker, and test it in game.
 3. [Read a complete scene](content-examples.md). Start with a neutral example from SceneZOI or study HZoi Reference's adult scene definitions, rest-pose animation placeholders and silent audio.
 

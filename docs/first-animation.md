@@ -1,9 +1,17 @@
 # Make your first SceneZOI animation
 
-Start with a short standing loop. A Zoi shifts their weight, waves, and returns
-to the opening pose. For a paired version, add a second Zoi who reacts. A small
-scene lets you test the whole workflow before you spend time polishing a longer
-animation.
+SceneZOI is an agnostic, data-driven animation framework. However, it is the
+case that sexual, suggestive and affectionate looping scenes (and transitions
+connecting them) are likely to be the main use for SceneZOI animation packs,
+because the game's own animation systems do not provide an adequate experience
+for that. You can start with the scene you want to make.
+
+The supplied Maya and Blender rigs and exporters have been tested to translate
+their exports accurately in game, so don't be afraid of using them to already
+try to make the scene you envision.
+A separate practice animation is optional. If you prefer to learn the workflow
+with a short standing loop before starting a more involved scene, that is fine
+too. Either way, check your finished scene in game before publishing it.
 
 I recommend working with an AI agent, especially for your first pack. Give it
 this guide, the SceneZOI repository, and access to a working copy of your project.
@@ -45,14 +53,14 @@ rig, with attention to timing, weight and contact.
 
 ## 2. Set up your cast
 
-Give each character a role name such as `greeter`, `partner` or `observer`.
+Give each character a role name such as `initiator`, `partner` or `observer`.
 Specify the appearance body for each role separately. A role name identifies
 who does what and which FBX belongs to that character.
 
 For two male bodies, two female bodies, or a scene with three or more characters,
 ask the agent to assemble the cast in a copy of the rig scene. For example:
 
-> Set up three characters in this rig file. Use male bodies for `greeter` and
+> Set up three characters in this rig file. Use male bodies for `initiator` and
 > `partner` and a female body for `observer`. Give each character its own
 > controls, skeleton and unique namespace or names. Preserve the inZOI skeleton
 > hierarchy, proportions and scale, and keep all three in the same scene
@@ -76,7 +84,9 @@ debug-picker entry. [Participant setup](group-support.md) · [Scene entry and hu
 2. For a loop, match the final pose to the opening pose and scrub across the
    seam. For a paired or group scene, check contacts from multiple angles and
    scrub between key poses to catch hand drift, foot sliding and clipping.
-   For furniture, check the pose against the intended furniture reference.
+   For sexual animations, check penetration and hand placement throughout the
+   cycle, including the deepest and shallowest positions. For furniture, check
+   the pose against the intended furniture reference.
    [Furniture authoring](furniture.md)
 3. Preview the whole scene and save a short playblast or screen recording. If
    something looks wrong, give the agent the file, affected role, exact frame
@@ -199,6 +209,12 @@ Give the agent your FBXs, a preview, the intended role bindings, and a descripti
 of what actually happens. The agent can draft the JSON from your description.
 Review its tags and directed actions before building. [Metadata and ratings](scene-metadata.md) · [Worked examples](content-examples.md)
 
+Describe sexual actions directly: who penetrates whom, who gives or receives
+oral sex, and whether the movement is mutual. Describe affectionate contact
+just as clearly. Accurate actions let SceneZOI classify the scene and let
+gameplay mods find the interaction they need; an `intimate` mood tag alone
+does not describe what happens.
+
 Copy and fill in this brief:
 
 ```text
@@ -214,15 +230,29 @@ Where each role should look and any head or eye movement already keyed
 Facial expression context for each role and any fixed facial pose
 Voice context for each speaker, or silence
 Sound effects, their source and when they should play, or none
+Scene tasks for each role, progression and effects at completion, if any
 Any props, outfit changes, required libraries and navigation destinations
 ```
 
-Name the gaze target concretely, such as the partner's face or the greeter's
+Name the gaze target concretely, such as the partner's face or the initiator's
 own raised hand. Describe a two-way action in both directions so the agent
 can record each one. Mention if the clip already animates head movement so you
 can review how the gaze settings interact with it. If you need presentation
 assets, the authoring guide explains how to use an installed HZoi dependency.
 [Gaze](gaze.md) · [Expressions](expressions.md) · [Voices](voices.md) · [Sound effects](sfx.md) · [HZoi resources](authoring.md#reuse-hzoi-resources-through-a-dependency)
+
+For a sexual scene, you can use SceneZOI's shared **Excitement** task. Specify
+which roles gain progress, when they can complete it, and the sounds, voices
+and movement effects you want at completion. HZoi Reference provides complete
+scene examples. [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md)
+
+A non-sexual example is vampire feeding, inspired by *Vampire: The Masquerade
+— Bloodlines*. The vampire could fill a **Feeding** task while the target fills
+a **Blood Depletion** task. A gameplay mod could let the player stop before the
+target is drained, or kill the target when Blood Depletion completes. SceneZOI
+provides synchronized animation, task progress and completion events; the
+gameplay mod implements feeding rules and consequences.
+[Add-on authoring](addon-authoring.md) · [Task events](addons.md#events-and-ownership)
 
 ## 6. Package and test in-game
 
