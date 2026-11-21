@@ -22,19 +22,24 @@ fields. For authoring help and collaboration, join the
 
 ## Plan the encounter
 
-Decide what happens before, during and after the scene. For a sexual encounter:
+Decide what happens before, during and after the scene. In the case of a sexual
+encounter:
 
-1. **Before:** select eligible adult Zois, apply your relationship and consent
-   rules, and let them accept or refuse. If they should walk to a bed or speak
-   first, finish those game interactions before requesting scene playback.
+1. **Before:** your gameplay add-on determines the eligibility of the Zois for
+   the scene. If they should walk to a bed or speak first, your add-on's scripts
+   should finish those game interactions before requesting scene playback.
 2. **During:** choose the activities your mod allows, track progress, and decide
    whether an interruption should end the encounter.
-3. **After:** check what actually played and why it ended before applying
-   relationship changes, payment, pregnancy chances or cooldowns.
+3. **After:** check what actually played and why it ended before applying things
+   such as relationship changes, payment, pregnancy chances or cooldowns.
 
-SceneZOI checks whether the cast, animation tracks and furniture are compatible.
-Your mod decides whether the encounter should happen. A successful start is not
-evidence of consent, and an ended scene is not evidence that a goal was reached.
+SceneZOI checks whether the characters, animation tracks and furniture are
+compatible. For example, your add-on may request a scene with a large number of
+participants. If no installed scene fits that group, the API returns
+`no_matching_scenes`. Your add-on should use that reply to tell the player that
+no suitable scene was found. SceneZOI's manual picker already displays its own
+notification for this case. See the [no-match handling example](#handle-a-start-with-no-matching-scene)
+for a toast and recovery flow.
 
 ## Create and package a native project
 
@@ -159,6 +164,80 @@ SceneZOI also checks whether those Zois can fill the scene's roles. A search
 does not reserve them or the furniture. Use `validate_start` to check your
 chosen start arguments, then handle any failure from the actual start too.
 [Search and restrictions](addons.md#search-and-session-restrictions)
+
+## Handle a start with no matching scene
+
+Suppose the player requests a sexual encounter for three Zois, but the installed
+packs have no scene matching that group and activity. The start reply returns
+`ok = false` and `code = "no_matching_scenes"`.
+
+Your add-on can show a message, clear its pending encounter, and let the player
+choose another activity or group. Release any reservations your mod made for
+that attempt. Completion rewards belong to a scene that actually played; this
+attempt never started.
+
+For a player-requested encounter, the following B2 helper sends a notification
+to your own B1 script. Define it before creating your SDK client and call it
+from the `response` callback. Pass the current message carrier from
+`on_lua_message` as `owner` and the request ID you kept when calling `request`
+as `start_request_id`. Store the carrier in a local variable before forwarding
+the message to `client:on_message`, so the response callback can use it:
+
+```lua
+-- B2: handle the reply for this particular start attempt.
+local function handle_start_reply(owner, reply, start_request_id)
+    if reply.request_id == start_request_id
+        and not reply.ok and reply.code == "no_matching_scenes" then
+        -- Clear this attempt from your mod's pending encounters here.
+        inzoi.message.send_to_client(
+            owner:GetEntityId(), "author.encounters.notice", "no_matching_scenes"
+        )
+        return true
+    end
+    return false
+end
+```
+
+Bind a B1 script to the same Zoi carrying those messages. This receiver displays
+the toast. Use your mod's namespace for the message type and its translated
+player text:
+
+```lua
+-- B1: a separate script on the message carrier.
+local M = {}
+
+function M.on_lua_message(self, owner, kind, content)
+    if kind ~= "author.encounters.notice" or content ~= "no_matching_scenes" then
+        return
+    end
+    local message = "No compatible animation was found for this group and activity. "
+        .. "Try another activity or check your animation packs."
+    local ok, error_message = inzoi.cli.execute(
+        "toast.show message=" .. string.format("%q", message)
+        .. " lifetime=5 immediate=true"
+    )
+    if not ok then
+        print("Encounter notification failed:", error_message)
+    end
+end
+
+return M
+```
+
+`toast.show` is a client presentation command, so this example forwards the
+message from B2 to B1 instead of calling it in the API response callback itself.
+The SDK and SceneZOI do not display this toast for the add-on. Log the failed
+request ID and your requested activity as well, so a player report can be matched
+to `api_trace.cfg`.
+
+For an automatic NPC attempt, you may prefer to log the no-match result quietly
+and try again when the group, activity or available content changes. A repeated
+background check does not need a player notification every time.
+
+For `find_scenes`, zero matches is a successful search: check
+`reply.result.count == 0`, rather than expecting this error code.
+`validate_start` reports a failed check through `reply.result.valid == false`
+and `reply.result.code`. Neither operation starts a scene.
 
 ## Start a goal-driven scene through the SDK
 
@@ -325,12 +404,10 @@ end
 -- local delivered = notify_confirmed_affair(witness_zoi, cheater_zoi)
 ```
 
-This is a native game call, separate from `client:request`. It delivers a
-notification to the witness you selected. Your mod must first establish that
-C saw A having sex with B and that this violates their relationship rules.
-Do not use it on every nearby Zoi or treat this direct delivery as a visibility
-test. The normal broadcast's range and line-of-sight selection are not performed
-by the example.
+This is a native game call, separate from `client:request`. Your mod selects C
+using its own relationship and witness checks, then delivers the notification
+to C. Direct delivery skips the normal broadcast's range and line-of-sight
+selection; those checks belong in your witness detection.
 
 The ModKit data checked for this guide connects the notification to:
 
@@ -339,16 +416,16 @@ The ModKit data checked for this guide connects the notification to:
 | `HowlingEffect/Effect_Affair_Confirmed` | Runs `Howling_Affair_Confirmed_React` with Self = witness and Target = cheater, and attempts a trait-appropriate native interaction. |
 | `Script_Howling/Howling_Affair_Confirmed_React` | Records cheating milestones and relationship history, adds `Watch_Cheat` from witness to cheater and `Witnessing_Cheating` in the reverse direction, and applies the native trait-specific reactions and buffs. |
 
-Use these effects deliberately. In the current data, the non-gloating branch
-sets Romance and Family relationship values to **−100**. This is the game's
+In the current data, the non-gloating branch sets Romance and Family
+relationship values to **−100**. This is the game's
 confirmed-affair consequence, not merely an angry animation. The script also
 has its own eligibility conditions, including `IsLovable`.
 
 The handler returns a boolean. A `true` result means it processed a native
 effect, not that every scripted branch ran or a confrontation finished.
 Cooldowns, current activity and missing native data can prevent delivery.
-Log the result, and inspect relationship flags and records when testing. Do
-not clear the game's cooldown maps or repeat the call each frame to force it.
+Log the result and inspect relationship flags and records when testing. Native
+cooldowns remain in effect, so log a refusal rather than retrying every frame.
 
 **A three-Zoi confrontation needs the third Zoi identified too.** The current
 native confrontation recruits the cheater through `Affair_Caught_Cheater` and
