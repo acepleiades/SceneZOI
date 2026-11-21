@@ -1,11 +1,52 @@
-# Tags, actions and calculated content ratings
+# Describe what happens in a scene
 
-Optional bounded, namespaced scene/role/action/dictionary `addon_data` is described
-in [the add-on controls reference](addon-controls.md#inert-metadata-and-sdk-helpers).
+<a id="tags-actions-and-calculated-content-ratings"></a>
 
-Scene metadata is inert JSON. It describes animations for discovery and session
-restrictions; it does not execute gameplay effects or replace existing playback,
-task, sound, expression or outfit instructions.
+Tags and actions let gameplay mods find scenes that fit an encounter. For
+example, an add-on can look for fellatio instead of treating every sexual scene
+as interchangeable, or identify who is doing what when a romantic partner
+witnesses sex. A vampire mod can search for feeding instead.
+
+Describe the animation that actually plays. Use scene `tags` for facts applying
+to the whole scene, `participant_tags` for one Zoi's posture or contact, and
+`actions` for who acts on whom. These describe the animation; task progress,
+orgasm effects and gameplay consequences have their own systems.
+
+Start by reading the metadata on a similar [complete HZoi scene](content-examples.md#distinguish-scene-facts-from-role-facts).
+Use the shared vocabulary below, then add the fields from
+[Scene fields](#scene-fields) to your JSON. Gameplay-specific extra information
+can go in namespaced `addon_data`; see [the controls reference](addon-controls.md#inert-metadata-and-sdk-helpers).
+
+## Scene fields
+
+This fragment describes standing/kneeling fellatio. The scene's `participants`
+must declare the `male` and `female` roles, with compatible body tracks:
+
+```json
+"tags": ["eye_contact"],
+"participant_tags": {
+  "male": ["standing"],
+  "female": ["kneeling"]
+},
+"actions": [
+  {"type": "fellatio", "actor": "female", "target": "male", "performer": "female"}
+]
+```
+
+`tags` describes the scene broadly. `participant_tags` maps existing named roles
+to registered tags and supports different postures in one scene. Both fields use
+the same tag dictionary. They remain separate scopes: a scene tag is not copied
+onto its participants, and a role tag is not automatically promoted to the whole
+scene. Search uses `required_tags` for the scene and `participant_tags[role]` for
+the specific actor. `actions` records directed activities. All role references must exist. Omitted target and performer
+default to actor. These names never imply gender, appearance body or player/NPC
+ownership.
+
+Each action records one direction: in the example the female role performs
+fellatio on the male role. A mutual action, such as hugging each other, needs
+two records with reversed actor/target roles. No reverse action is inferred. Performer may equal actor or target; for example an action's
+anatomical actor/target assignment can remain fixed while the target performs its
+active movement. Duplicate identical canonical action records are rejected.
 
 ## Registered dictionaries
 
@@ -121,33 +162,6 @@ dictionary. A valid core tag entry is:
 ```json
 {"id":"all_fours","aliases":["on_all_fours","hands_and_knees"],"description":"Posture supported on hands and knees."}
 ```
-
-## Scene fields
-
-```json
-"tags": ["affectionate", "eye_contact"],
-"participant_tags": {
-  "lead": ["standing"],
-  "partner": ["standing"]
-},
-"actions": [
-  {"type": "hug", "actor": "lead", "target": "partner", "performer": "lead"}
-]
-```
-
-`tags` describes the scene broadly. `participant_tags` maps existing named roles
-to registered tags and supports different postures in one scene. Both fields use
-the same tag dictionary. They remain separate scopes: a scene tag is not copied
-onto its participants, and a role tag is not automatically promoted to the whole
-scene. Search uses `required_tags` for the scene and `participant_tags[role]` for
-the specific actor. `actions` records directed activities. All role references must exist. Omitted target and performer
-default to actor. These names never imply gender, appearance body or player/NPC
-ownership.
-
-A hug is one-sided. Mutual hugging is two records, one per direction. No reverse
-action is inferred. Performer may equal actor or target; for example an action's
-anatomical actor/target assignment can remain fixed while the target performs its
-active movement. Duplicate identical canonical action records are rejected.
 
 ## Content rating
 

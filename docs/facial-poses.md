@@ -1,23 +1,37 @@
 # Facial poses and head attachments
 
-Runtime `20261104-facial-1` generalizes the accepted fixed O controller. Existing
-expression contexts still select looping or sampled facial animation assets.
-A named `facial_pose` fixes an arbitrary subset of facial joints on top of that
-animation. This is a fixed bone pose, not a new animated-region compositor or a
-face-customization/morph editor. Only explicitly listed bones are affected.
+Use a facial pose when the action needs a specific mouth shape, such as an open
+mouth for fellatio, while the Zoi keeps their chosen expression. A scene can
+also attach a separate skeletal tongue and play its own animation track.
+
+For the existing open-mouth pose, add this fragment to a scene with a `female`
+role. `Pleasure` must exist in the Zoi's selected expression set; the pose can
+also be used on its own by omitting `context`.
+
+```json
+"expressions": {
+  "female": {"context": "Pleasure", "facial_pose": "scenezoi.open_o"}
+}
+```
+
+The bundled pose fixes only its listed joints. It does not replace the whole
+expression or edit the Zoi's saved face. Check the result on the head shapes
+you intend to support. For a new expression personality, use
+[expression sets](expressions.md); continue below to author a custom fixed pose.
 
 ## Define a pose
 
 Add an entry to your pack manifest's `data_files`:
 
 ```json
-{"kind": "facial_pose", "file": "my_pack/facial_poses/tongue_open.json"}
+{"kind": "facial_pose", "file": "my_pack/facial_poses/brow_pose.json"}
 ```
 
 Each file contains schema version 1, a namespaced `id`, optional `label`, and a
 `poses` object with `female`, `male`, or both. Each body array contains 1–256
 unique facial-bone rows. For example, this structural illustration holds a brow;
-use measured coordinates appropriate to the actual rig for your own definition:
+the zero coordinates below show the format, not a usable brow pose.
+Replace them with transforms measured on the actual rig before using it:
 
 ```json
 {
@@ -55,7 +69,7 @@ pose or switching to one with different bones releases the previous owned entrie
 
 ```json
 "expressions": {
-  "performer": {"context": "Tongue Out", "facial_pose": "my_pack.tongue_open"}
+  "performer": {"context": "Pleasure", "facial_pose": "scenezoi.open_o"}
 },
 "attachments": {
   "tongue": {
@@ -69,7 +83,9 @@ pose or switching to one with different bones releases the previous owned entrie
 }
 ```
 
-The references above are illustrative assets, not shipped content. Omit `context`
+The tongue mesh and animation paths are illustrative; supply your own imported
+assets. `scenezoi.open_o` is provided by SceneZOI. To use the custom brow example
+instead, name `my_pack.brow_pose` after registering it. Omit `context`
 to use only the fixed pose. Choose an actual exported parent bone and a reference
 bone in your mesh's independent skeleton. The reference bind transform is inverted
 before attachment, preventing a double root offset. `component` is `body` by
@@ -82,7 +98,9 @@ does not inherit the Zoi skeleton or synthesize tongue motion. Correct mesh rig,
 skin weights, attachment alignment and authored animation are the pack author's
 responsibility. New components warm up hidden; participants and attachments reveal
 at the existing playback barrier. Ownership, retention and retryable cleanup work
-as for other attachments. Framework resources contain no tongue/adult geometry.
+as for other attachments. Export a tongue track just as you would a separate male-genitals track.
+If you have no attachment clip, use its rest pose or
+[per-scene bone rotations](authoring.md#port-an-animation-without-a-separate-attachment-track).
 
 ## Existing scene example
 

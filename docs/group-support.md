@@ -1,68 +1,123 @@
-# Fixed-membership scenes and manual entry
+# Participants, group scenes and starting a session
 
-Scene schema 3 uses explicit stable roles. Session membership and assignments remain fixed until Exit. Roles are neither body types nor controlled/NPC indices; repeated bodies and independently owned attachments are supported. Runtime systems support solo and multi-Zoi rosters. A disappearing participant ends the session through normal cleanup.
+<a id="fixed-membership-scenes-and-manual-entry"></a>
 
-Each node declares participants and one body track per role. Connected destinations preserve role IDs and requirements. Integrations supply distinct Zoi IDs for every role; the framework checks actual appearance compatibility and loaded participants. Navigation retains original outfits, leases, anchor/furniture context, speed and session-owned resources. Both looping and [transition](transitions.md) nodes are supported.
+Use one named role for every Zoi in the animation. A solo masturbation scene
+needs one role, a couple scene needs two, and a three-person scene needs three.
+Same-body pairs and larger groups use the same system; the available clips and
+scene declarations determine which groups can play.
+
+The roster stays fixed until Exit. Every connected scene keeps the same roles,
+even if a different Zoi takes the lead. To add or remove a participant, end that
+session and start one with the new roster.
 
 ## Example role declarations
 
-HZoi-Reference's [standing idle](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json) declares two named
-roles, appearance-body/life-stage requirements, an explicit anchor and one body
-track per role. Its [navigation](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json) leads to scenes with
-the same role IDs. This is a two-person example, not evidence of authored group
-choreography. See [worked examples](content-examples.md) for its adult-content
-scope; use the neutral framework scenes for an all-ages starting point.
+This fragment describes a three-person scene. Put it in a scene file alongside
+its ID, duration, frame rate and navigation, and replace the illustrative paths:
+
+```json
+"participants": {
+  "male": {"body": "male"},
+  "female": {"body": "female"},
+  "second_female": {"body": "female"}
+},
+"anchor_participant": "male",
+"tracks": {
+  "male": "/MyPack/Animations/ThreePerson_M.ThreePerson_M",
+  "female": "/MyPack/Animations/ThreePerson_F1.ThreePerson_F1",
+  "second_female": "/MyPack/Animations/ThreePerson_F2.ThreePerson_F2"
+}
+```
+
+Roles are stable names, not body types or player/NPC indices. `female` and
+`second_female` each require a different Zoi with a compatible appearance body.
+Other role names work equally well. Import one body track per role and keep
+their timing and common origin aligned. [Exporting participants](first-animation.md#4-export-each-participant)
+
+For a complete two-person example, compare HZoi's
+[standing idle](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/01_standing_idle.json)
+with its activity nodes. They preserve role IDs and requirements through
+navigation. The reference does not contain authored three-person choreography.
 
 ## Solo launcher and debug picker
 
-By default, **Solo SceneZOI session** appears below **AI Emote** on the controlled
-Zoi. It starts a compatible GENERAL-rated solo scene directly, with the ordinary
-panel and Scene Settings. Enable **SceneZOI manual start** under **Debug** in
-[Scene Settings](settings.md#debug-manual-start) to replace the solo entry with
-the native picker and show the debug entry on supported available furniture.
+Use the manual picker to test your pack without writing a gameplay integration:
 
-The debug picker includes the controlled Zoi and permits up to two partners, one to three total. With nobody else picked its button reads **Start Solo** and is enabled only when a one-role `starting_hub` scene matches the Zoi and the clicked furniture; otherwise it stays disabled, as it did before. The full roster is matched to eligible starting_hub declarations; roles are bound explicitly and an eligible start is selected uniformly. Current neutral standing/single/queen hubs declare adult MF roles, and two solo standing hubs (`scenezoi.solo_idle_female`, `scenezoi.solo_idle_male`) play the game's own idle clip for that body. Same-body or three-person rosters currently find no eligible hub unless compatible content contributes one; this is data, not an engine pair/body restriction.
+1. Click the controlled Zoi and choose **Solo SceneZOI session**, below **AI Emote**.
+2. In **Scene Settings → Debug**, enable **SceneZOI manual start**. This replaces
+   the solo launcher with the picker and enables entries on supported furniture.
+3. Select the intended participants. The picker permits one to three total.
+   A one-person selection shows **Start Solo** when a compatible start exists.
+4. Give your entry loop `starting_hub: true`, or connect it to a compatible
+   existing hub. The selected roster must fit every role of an eligible start.
 
-There are no relationship, willingness, progression, random acceptance or reward checks in this manual starter. Technical body/life-stage, identity, loaded-participant, ownership and furniture availability checks remain. No eligible scene produces a native toast and restores focus without creating a session. Unselecting the controlled Zoi in the picker starts a scene where the first picked Zoi stands, between the selected Zois, on the background path, with no panel, for the NPC scene length in Scene Settings. Add-ons remain the other NPC-only entry, though generic runtime ownership does not intrinsically require the initiator to be controlled.
+The bundled paired hubs require male/female appearance roles; they do not
+provide entry for every possible roster. A same-body pair or three-person
+selection needs a pack supplying a matching starting scene. A disabled button
+or no-match toast can therefore mean the declarations do not cover that group.
+See [entry and extensions](package-split.md#roles-entry-and-extensions).
 
-The solo and debug character entries are shown only on the controlled Zoi. The manifest's native character target is filtered by the stable injected widget ID and actual current controller target; ordinary interactions/other mods remain intact. Furniture entry is separately filtered by profile, eligible hub and recent availability. The launcher rechecks identity/context before opening the picker.
-
-The transparent scenezoi-starter launcher is separate from persistent scenezoi controls. Cold entry requires readiness from the current Lua host and a matched launcher and controls instance. After a Lua-only restart, the same controls instance acknowledges the new host while the launcher stays hidden. The launcher waits before dispatch and hides after handoff without suspending controls. Clicked furniture IDs survive confirmation and Start, and availability is rechecked before reservation/preparation.
-
-The selection bridge uses the native B2ZoiGroupManager Create hook, not a non-ticking lifecycle binding. Confirmation is captured before gameplay group creation. Default-group picker capacity is borrowed only during initialization and restored immediately. Native group-options controls are hidden only for this picker. Cancellation, real-time expiry and ordinary group creation remain separate.
+The picker checks compatibility, loaded Zois, ownership and furniture
+availability. Your gameplay mod decides proposal and relationship rules.
+Unselecting the controlled Zoi permits an NPC-only session, using **Default NPC
+Scene Length**. Larger rosters and other NPC starts use the [public API](addons.md).
+The API returns failures for the caller to handle; the manual picker displays
+its own notifications. [No-match handling](addon-authoring.md#handle-a-start-with-no-matching-scene)
 
 ## Gameplay-group departure
 
-The debug picker makes the controlled requester leave their existing gameplay group before it opens. After confirmed selection and loaded-roster validation, selected NPCs leave theirs. Unselected members are not explicitly removed.
+The debug picker makes its controlled requester leave their gameplay group
+before opening. After selection it also makes selected NPCs leave theirs.
+These are real game-group departures: native rules may dissolve a group or
+stop its activity. Cancelling the picker or exiting a scene does not rebuild
+the group or resume its old tasks. The direct solo launcher does not perform
+this picker departure.
 
-GroupDeparture calls RemoveZoiGroupMember with UserSelf and checks actual membership. Only if the participant remains in the same unchanged original group does it call BreakZoiGroup and verify again. Concurrent movement to a different group causes failure rather than disbanding the new group. Opening waits two simulation callbacks for the requester's native update. No private group-state edits, identity spoofing or shadow groups remain.
-
-These are real departures. Native minimum-membership rules may dissolve a group, and activities may stop or continue with remaining members. Cancelling, failed entry and Exit do not rebuild groups or resume interrupted activities. No SceneZOI gameplay group is created. The debug picker uses this departure policy. The direct solo launcher starts without a picker or a gameplay-group departure.
-
-Keep tests for group leaders and members, a failed leave, a cancelled picker
-and group membership that changes during selection. The ordinary native
-selection checks still apply to each chosen Zoi.
+For a gameplay integration, finish conversations, walking and other setup
+before requesting playback. Do not rely on the debug picker to choreograph an
+encounter. [Plan an encounter](addon-authoring.md#plan-the-encounter)
 
 ## Attachments and cleanup
 
-Named attachments explicitly select participant roles. Separate same-asset instances on different Zois retain independent components, animation, materials, body state and retryable cleanup. Retained owner/mesh/profile identity cannot change across nodes. Ordinary attachments support multiple owners/resources; the current region-replacement adapter permits one body-region owner per participant. Content defines compatibility and geometry through [native profile declarations](package-split.md).
+Attachments name their participant role. Two Zois can use independent instances
+of the same mesh, with their own animation and materials. Ordinary attachments
+can use multiple resources; the current region-replacement adapter allows one
+body-region owner per participant. [Appearance choices](appearance-variants.md)
 
-## Testing changes to entry
-
-After changing a native binding or chunk hook, reload both Lua environments in
-an idle game and try the actual picker. Use the
-[hot-update checks](development.md#hot-update-readiness) to verify that the
-launcher and controls acknowledge the current Lua host. For a release, test a
-fresh game process.
+Navigation retains the roster, original outfits, anchor/furniture context and
+selected speed. Exit releases the session's attachments and other owned state.
+Connected scenes must keep retained attachment owner, mesh and profile identity
+compatible. [Compatibility profiles](package-split.md#presentation-and-compatibility-profiles)
 
 ## Active-session safeguards
 
-Sessions can run side by side, each with its own roster. Starting a scene for a Zoi that is already in one, while that scene is preparing, playing or cleaning up, displays a native toast and leaves the active session and participant ownership untouched. The launcher handles ordinary clicks; native entry/runtime guards cover stale-state races without overwriting the current session's status.
+Separate rosters can run concurrent sessions. A Zoi cannot join another while
+their existing session is preparing, playing or cleaning up. Check the API's
+failure reply; the manual starter gives a toast and leaves the existing session
+alone.
 
-Switching control is allowed at any time. The panel follows the controlled Zoi: a participant of another session shows that session, and a Zoi outside every session hides the panel while the other sessions keep playing. A picker-started NPC-only session uses the **Default NPC Scene Length** setting. An unknown or transient control lookup is not treated as a switch.
-
-The last_exit diagnostic stores client, sequence, final result and initiating exit reason. Restoration failures retain their own error result. Input restoration uses a currently registered world-context actor rather than an unloaded participant retained from session entry.
+Switching the controlled Zoi changes which session the panel shows. Controlling
+a Zoi outside every session hides it while the others keep playing. Each
+session keeps its own roster and ownership. Furniture also needs enough free
+seats for concurrent scenes. [Sofa reservations](furniture.md#sofa-authoring-and-placement)
 
 ## Participant task ownership
 
-Acquiring a participant disables autonomy, clears their native waiting interaction queue and cancels the current interaction through its normal cancellation path. Readiness waits for two idle callbacks. The lease continues clearing new queued work and interrupts independently identified current tasks during playback. Cleanup restores the original autonomy value/inheritance, collision and position independently. Interrupted activities and cancelled queues are not resumed or reconstructed. See the [participant task regressions](../tests/participant-tasks.lua).
+SceneZOI temporarily disables participant autonomy, clears queued interactions
+and cancels current work through the game's cancellation path. It waits for
+preparation before starting the animation and keeps unrelated tasks from taking
+over during playback. Exit restores the original autonomy, collision and position.
+Cancelled interactions are not reconstructed or resumed.
+
+## Testing changes to entry
+
+Test the intended roster through the picker, navigate between its scenes, and
+Exit. Check normal movement and clothing restoration afterward. Try a roster
+with no matching scene and a participant already in another session; both
+should fail without disturbing the active scene. For furniture, also try an
+occupied object.
+
+After changing packs, restart the game to load their declarations. Contributors
+changing native entry bindings should also follow the
+[hot-update checks](development.md#hot-update-readiness) and test a fresh launch.

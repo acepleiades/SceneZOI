@@ -1,32 +1,33 @@
-# Task completion responses
+# Make task completion visible
 
-Scene schema 3 supports generic scene-local visual completion responses. Content packs supply identifiers, timing and bone names as inert JSON; SceneZOI owns execution and cleanup. Task completion still resets progress, emits its normal event and executes definition-level completion sounds. These responses add no gameplay consequences or meaning to a task identifier.
+<a id="task-completion-responses"></a>
 
-## Complete content-pack example
+A sexual scene can respond to orgasm by slowing the thrust or stroke rhythm
+and adding leg shaking. Use `completion_responses` to apply these effects to
+the existing loop, without exporting a separate orgasm clip. Other tasks can
+use the same effects where they fit the action.
 
-HZoi-Reference's [movement timing and response block](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json)
-uses one cycle per second and peak phase 0.5. The male role requests shared
-slowdown plus its own shake; the female role requests only its own shake. Its
-[task rates](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json) cap female progress at 50%, so that authored
-response does not imply she completes from zero in this node. Compare
-[the rear scene](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/04_standing_rear.json), where both roles can reach 100%.
-These adult-content examples are inert data. The reference clips are rest-pose
-placeholders, so the blocks demonstrate response settings rather than HZoi's
-authored motion. Use your own compatible clips or the installed player pack for
-a motion test. The [worked guide](content-examples.md) explains the reference's
-scope and independent ownership.
+The response uses the animation's **1× baseline**, regardless of the scene
+playback selector. Choosing 0.5× before completion does not double its duration.
+The game's pause and fast-forward controls still affect it. Voices and contact
+sounds are configured separately, so use the
+[voice engine](voices.md#task-triggered-one-shot-voice-responses) for vocal reactions.
 
-## Response priority
+## Add a response to your scene
 
-For each completion update, commit every participant's completion first. If any valid scene-local `task_completion_routes` entry matches, select the existing deterministic authored route and bypass procedural responses for that update. The destination may be a loop or a transition. If a selected route fails to load, report its failure; do not silently substitute a procedural response.
+The JSON below is a fragment for a loop with a `male` role using `excitement`.
+It slows two movement cycles and twists the listed leg bones for three seconds.
+Keep the role and bone names consistent with your actual scene and skeleton.
 
-Otherwise, match `completion_responses[participant_role][exact_task_id]` to the actual completing participant. `enabled: true` explicitly opts into the supplied effects. With movement timing, a configured slowdown synchronizes to it; without timing it uses its general fallback. An omitted/disabled response causes no visual change. A shake-only response does not slow playback. Multiple tasks and any supported fixed roster, including repeated body types, use the same rules. Unknown task IDs are diagnosed and isolated at discovery. Strict source/runtime validation rejects malformed fields, unsafe values and response declarations on transition nodes.
+`movement_timing` must describe your clip at 1×. For a repeating one-second
+thrust or stroke cycle at 60 fps, the deepest point at frame 30 is phase 0.5.
+Do not copy that timing into a clip with a different rhythm.
 
 ```json
 "movement_timing": {"cycles_per_second": 1, "peak_phase": 0.5},
 "completion_responses": {
-  "caster": {
-    "spell_charge": {
+  "male": {
+    "excitement": {
       "enabled": true,
       "slowdown": {
         "repeats": 2,
@@ -43,8 +44,8 @@ Otherwise, match `completion_responses[participant_role][exact_task_id]` to the 
         "frequency_hz": 18,
         "amplitude_degrees": 1.25,
         "bones": [
-          {"bone":"upperarm_l", "child":"lowerarm_l", "weight":1},
-          {"bone":"lowerarm_l", "child":"hand_l", "weight":0.4}
+          {"bone":"thigh_l", "child":"calf_l", "weight":1},
+          {"bone":"calf_l", "child":"foot_l", "weight":0.4}
         ]
       }
     }
@@ -52,7 +53,42 @@ Otherwise, match `completion_responses[participant_role][exact_task_id]` to the 
 }
 ```
 
-Bone names in this example are rig-specific. The role and task must be declared normally. These optional fields extend existing schema-3 scene JSON, not the task definition or simulation-side outfit snapshot. Existing scenes need no changes.
+Put these fields in the scene JSON, alongside its `tasks`, rather than in
+the shared task definition. The task must actually complete in that scene.
+For example, a 50% cap prevents completion from zero even if a response is
+declared. A shake-only response can omit `slowdown`.
+
+## Check the result in game
+
+Reach completion at different scene playback presets and compare the response
+duration. With the game at Normal, it should stay the same; pausing or
+fast-forwarding the game should pause or accelerate it. Check the deepest pose
+lines up with the slow hold and that attachment tracks stay synchronized.
+
+Watch the feet and furniture contacts from several angles. Reduce amplitude
+or change the bone weights if the shake breaks the pose. Navigate or Exit
+during the effect and confirm it leaves no continuing shake. If nothing starts,
+check the task cap, exact role/task IDs, bone names and diagnostic warnings.
+
+## Complete content-pack example
+
+HZoi-Reference's [movement timing and response block](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json)
+uses one cycle per second and peak phase 0.5. The male role requests shared
+slowdown plus its own shake; the female role requests only its own shake. Its
+[task rates](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/02_standing_hand_job.json) cap female progress at 50%, so that authored
+response does not imply she completes from zero in this node. Compare
+[Standing Rear Sex](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/scenes/04_standing_rear.json), where both roles can reach 100%.
+The reference clips are rest-pose
+placeholders, so the blocks demonstrate response settings rather than HZoi's
+authored motion. Use your own compatible clips or the installed player pack for
+a motion test. The [worked guide](content-examples.md) explains the reference's
+scope and independent ownership.
+
+## Response priority
+
+For each completion update, commit every participant's completion first. If any valid scene-local `task_completion_routes` entry matches, select the existing deterministic authored route and bypass procedural responses for that update. The destination may be a loop or a transition. If a selected route fails to load, report its failure; do not silently substitute a procedural response.
+
+Otherwise, match `completion_responses[participant_role][exact_task_id]` to the actual completing participant. `enabled: true` explicitly opts into the supplied effects. With movement timing, a configured slowdown synchronizes to it; without timing it uses its general fallback. An omitted/disabled response causes no visual change. A shake-only response does not slow playback. Multiple tasks and any supported fixed roster, including repeated body types, use the same rules. Unknown task IDs are diagnosed and isolated at discovery. Strict source/runtime validation rejects malformed fields, unsafe values and response declarations on transition nodes.
 
 ## Regular movement timing
 
@@ -105,7 +141,11 @@ The shake starts after its own game-time delay, independently of synchronization
 
 Each bone entry requires `bone` and its direct `child`. Their local longitudinal axis defines the twist. Weight controls signed intensity, allowing a counter-moving opposite side. Reference-like leg profiles use upper/lower/foot weights 1, 0.4 and 0.05, with opposite-side weights multiplied by -0.8. Twisting minimizes positional disturbance; this is not a foot-locking IK solver and cannot guarantee planted contacts for every rig/pose.
 
-The B1 adapter appends owned `FB1AdditiveBoneData` rows to the existing body's post-process `AdditiveBones`, using additive zero scale/translation and local quaternion corrections. It does not replace the main animation instance, clear native body fitting or modify the facial array. Copied corrections on appearance rebuilds are adopted; only recorded entries are updated/removed. Transient missing post-process instances wait for a later sample; unsupported/missing bones warn and retire that optional shake with cleanup retries. Completion, sound and scene playback continue independently.
+Shaking adds temporary local rotations to the existing body animation and
+removes them afterward. Missing or unsupported bones warn and disable the
+affected optional shake; task completion, sounds and body playback continue.
+Clothing changes preserve ownership and reapply the effect to the current body.
+See [runtime contracts](tier1-contracts.md) for cleanup implementation details.
 
 ## Concurrency, lifetime and diagnostics
 
@@ -115,4 +155,6 @@ Outfit preparation freezes effect clocks and preserves ownership through body ch
 
 `Runtime.snapshot().completion_effects` exposes plain diagnostic state: `stage`, `source` (last participant/task key), `starts`, `shaking_participants`, and optional last `error`. It contains no mutable native objects. Independent add-ons use [version-1 session/task events and get_session](addons.md); visual responses do not redispatch completion. Logs include slowdown start/finish and heartbeat status with the current integrated speed factor and shake-owner count. This is scene-local presentation; gameplay mods should subscribe to the normal task-completion API for consequences.
 
-Isolated checks cover exact reference timing/phase, uneven markers and seam wrapping, fallback, frame-size invariance, pause/native/user speed changes, repeated/simultaneous/group completions, body/attachment synchronization, route priority, local bone axes, copied/rebuilt arrays, partial mutations and independent retryable cleanup. Native API metadata and ModKit validation establish the exposed surface; first in-game visual acceptance of body shaking remains separate and must be recorded in validation reports.
+Source checks verify timing and cleanup rules, but cannot judge whether a
+shake fits your animation. Use your own clips or the player pack for that
+visual check; HZoi Reference contains rest-pose replacements.

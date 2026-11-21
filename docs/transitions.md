@@ -1,60 +1,106 @@
-# Transition scenes
+# Connect animations with a one-shot transition
 
-Scene schema 3 accepts `kind: "loop"` or `kind: "transition"`. Animation assets themselves need no special transition flag: the scene node determines playback behavior.
+<a id="transition-scenes"></a>
+
+A transition plays once and goes straight into the next scene. For example,
+connect a standing idle to a clip where one partner kneels, then enter a looping
+fellatio scene. The player does not have to return through a hub between them:
+
+`standing idle → kneel transition → fellatio loop`
+
+Each is a separate scene JSON file. The animation asset needs no special
+transition flag; `kind: "transition"` in its scene data controls this behavior.
 
 ## Authoring
 
-A transition uses the same participant, track, outfit, attachment, expression, gaze, voice and SFX fields as a loop. Add a destination and leave navigation empty:
+1. Export the one-shot clips for every participant, and any animated attachments,
+   with the same timing. Match the opening pose to the source and the final pose
+   to the destination so the cuts make sense.
+2. Create the transition node below. Replace its sample paths and destination
+   with your actual assets and loop ID.
+3. Add a navigation button in the source loop pointing to
+   `example.kneel_for_fellatio`. The transition's `destination` points to the
+   fellatio loop; that loop can provide its usual navigation.
+
+This is a complete scene-node example, to put in your pack's `scene_directory`:
 
 ```json
 {
-  "id": "example.stand_to_bow",
-  "label": "Stand to Bow",
+  "id": "example.kneel_for_fellatio",
+  "label": "Kneel",
   "kind": "transition",
-  "destination": "example.bow",
-  "duration": 10,
+  "destination": "example.fellatio",
+  "duration": 3,
   "fps": 60,
   "participants": {
-    "lead": {"body":"male"},
-    "partner": {"body":"female"}
+    "male": {"body": "male"},
+    "female": {"body": "female"}
   },
-  "anchor_participant": "lead",
+  "anchor_participant": "male",
   "tracks": {
-    "lead":"/ExamplePack/Animations/StandToBow_M.StandToBow_M",
-    "partner":"/ExamplePack/Animations/StandToBow_F.StandToBow_F"
+    "male": "/ExamplePack/Animations/Kneel_M.Kneel_M",
+    "female": "/ExamplePack/Animations/Kneel_F.Kneel_F"
   },
   "navigation": []
 }
 ```
 
-An ordinary incoming navigation edge can target this ID. A transition cannot declare manual outgoing navigation, a hub identity, or `starting_hub: true`. A loop cannot declare `destination`. The destination must preserve the entire fixed roster and named-role requirements, just like manual navigation. Finite transition chains are supported; self-targets and automatic cycles are rejected. Source-only builds can defer references to independent packs; runtime resolves the combined enabled catalog.
+All connected nodes keep the same role IDs and requirements. If they use
+furniture, keep the appropriate furniture declaration and authored plane too.
+A transition accepts the usual outfits, attachments, gaze, expressions, voices
+and sounds. Its manual `navigation` stays empty; it cannot be a hub or a
+`starting_hub`. A loop cannot declare `destination`.
 
-Malformed shape data is rejected by the source/runtime validators. Missing, incompatible or cyclic automatic destinations are isolated before incoming links are exposed. If an otherwise valid destination's assets become unavailable at completion, the session exits with `transition_destination_error` and normal cleanup rather than hanging on a finished clip.
+Finite chains of transitions work. Automatic cycles and self-targets are
+rejected. The pack build checks known destinations; runtime resolves references
+to separately installed packs. An unavailable or incompatible destination can
+remove the incoming link, so check the warnings if the button is absent.
 
 ## Timing and handoff
 
-The runtime samples all body and attachment tracks from the existing shared clock. It accumulates animation seconds as:
+Transition time follows both the scene playback selector and the game's pause
+and fast-forward controls. A three-second clip takes six seconds at scene 0.5×,
+three at 1×, and 1.5 at 2× with the game at Normal speed, plus preparation.
+Changing speed affects the remaining playback without restarting the clip.
 
-`elapsed += real_delta_seconds * native_game_scale * scene_speed`
+Body and attachment tracks share the same sample time. The final pose is held
+while the destination prepares, then that scene starts at zero. Preparation
+does not advance the transition. The handoff retains the selected speed, fixed
+roster, anchor, original outfits and task progress.
 
-Completion compares accumulated time with the imported clip duration; it does not use a fixed real-time timer or a montage-end callback. At native game scale 1, a ten-second transition takes 20 real seconds at scene speed 0.5, ten at 1, and five at 2. At native scale 3 and scene speed 2 it takes approximately 1.67 real seconds, plus any preparation time. Changing either rate mid-transition affects the remaining playback without resetting elapsed time. Game pause freezes the transition.
-
-Unlike loops, transition sample time is clamped near the final pose and never uses modulo wrap. A small duration-relative tolerance avoids seeking a paused native montage exactly to a boundary that could retire it. After the full duration has elapsed, the final outgoing pose is held while the destination loads/prepares through the existing handoff lifecycle. The destination starts at zero once ready. Extra time from the crossing frame is not carried into the destination, so arrival never skips its opening frames.
-
-Scene speed, participant identities, the session anchor, original outfits/restoration state, task progress and independently retained resources survive the handoff. No game animation instance is replaced, and only owned playback is stopped at Exit. The completed transition cannot restart because of a frame update or duplicate navigation packet.
-
-Manual navigation is blocked in both the controls UI and runtime for the entire transition. Stale/forged navigation is acknowledged as `navigation_locked` without changing the node. Speed controls and Exit remain available. Existing outfit preparation can hold the transition at its current sample and resume without a clock reset. Preparation time does not advance animation time.
+Manual navigation is locked during the transition. Speed controls and Exit
+remain available. If a destination's assets fail at completion, the session
+ends with `transition_destination_error` and restores normally rather than
+remaining stuck on the last frame.
 
 ## Task and audio behavior
 
-Every task value and completion counter freezes during a transition, regardless of whether its data declares positive, negative or zero rates, or omits the task. Automatic decay is also paused. This is an engine rule for the scene kind, rather than a per-task author workaround. Values resume their destination behavior only after that node is ready.
-
-This does not pause the native game clock or all sound. Existing scene-directed voices/SFX follow their normal node lifetime, and retained task-completion one-shots follow their existing game-time/pause rules. No new task completion is generated while progress is frozen.
-
-## Events and public state
-
-The existing lifecycle events cover arrival/preparation/departure. A transition additionally queues `transition_completed` once when its playback duration is reached, before preparing its destination. The B1 event snapshot includes `node_kind` and `destination` as well as existing session/node identity, revision and participants. The event means the clip finished; destination asset failure can still cause a later session exit. Existing native event packet fields remain compatible, and clients can obtain kind/destination from the public catalog.
+Task progression, decay and completion counts freeze throughout a transition.
+They resume under the destination's rules when it is ready. This prevents an
+orgasm or another task completion from firing halfway through a short pose
+change. Scene voices and sound effects still use their normal playback rules;
+freezing tasks does not pause all audio or the native game clock.
 
 ## Task-triggered entry
 
-A loop can use scene-local `task_completion_routes` to enter a transition after a named role completes a registered task. The full roster uses the destination; completion reset/events/actions occur before the handoff, and task state then freezes for the transition. See [the mapping, arbitration and failure rules](scene-tasks.md#scene-local-task-completion-routes).
+A loop can also enter a transition when a task completes. For example, send
+the completing partner into an authored orgasm sequence, then return to an
+idle. Set the source loop's `task_completion_routes` to the transition ID.
+The task resets and emits its completion event before the transition starts.
+[Task routes and failure handling](scene-tasks.md#scene-local-task-completion-routes)
+
+## Events and public state
+
+Gameplay add-ons receive `transition_completed` when the one-shot reaches its
+duration, before its destination prepares. It means the clip finished, rather
+than confirming the next scene started. Use the normal lifecycle events to
+confirm arrival or detect failure. Snapshots include `node_kind` and `destination`.
+[API events](addons.md)
+
+## Check the result in game
+
+Enter through the actual source button and watch the transition at 0.5×, 1× and
+2×. Pause and resume, then try Exit partway through. Check the opening/final
+poses, attachment synchronization and furniture contact. Confirm the destination
+begins automatically and task progress stays unchanged during the one-shot.
+If preparation is slow, the last pose should hold without looping or jumping.

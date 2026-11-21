@@ -1,12 +1,21 @@
-# Player-facing localization
+# Translate your pack's names and messages
 
-SceneZOI selects the game's display language on runtime/save-load initialization,
-on every session start and before opening its native participant picker. An idle
-two-second check also updates entry text after an Options language change. The UI
-reads the current game setting when its view loads and before each new session.
-Changing language does not change IDs, compatibility, task progress, preferences
-or session ownership. Immediate translation of an already-running scene is not a
-contract; a new session refreshes its presentation.
+<a id="player-facing-localization"></a>
+
+Add translations so players can read scene titles, navigation buttons, voice
+choices and expression labels in their game's language. Keep the same internal
+IDs: translating a label should not break navigation or saved choices.
+
+1. Add a [localization file](#add-translations-to-a-content-pack) to your manifest.
+2. Supply English fallback strings, then translations for the same keys. Scene
+   and navigation keys use the IDs described below.
+3. Build and install the pack, restart inZOI, choose a translated game language
+   and start a new scene. Check the title, buttons and personality menus.
+
+SceneZOI refreshes language on initialization, save load, session start and
+before the participant picker. An idle check updates entry text after an Options
+language change. Start a new session to check translated scene presentation;
+an already-open scene does not promise an immediate language refresh.
 
 ## Included languages
 
@@ -96,10 +105,11 @@ voice and task labels through the same declaration contract. For example,
 `navigation.hzoi.standing_idle.neutral` names its explicit Return edge. Follow
 the [manifest registration](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi.json) and
 [English/Japanese excerpt](content-examples.md#find-other-examples)
-to see the complete relationship. This optional adult-content reference still
-ships no executable content-pack code.
+to see the complete relationship. The reference shows how IDs connect declarations to player-facing text.
 
-## Framework messages and safety
+<a id="framework-messages-and-safety"></a>
+
+## Framework messages and placeholders
 
 Framework `translations.<culture>.messages` maps an English source message to
 its translation, like a gettext message ID. This covers controls, panels, hints,
@@ -134,10 +144,20 @@ that a control's chosen font can draw it.
 
 ## Verification
 
-Source checks cover complete built-in culture/message sets, UTF-8, placeholder
-parity, safe escaping, conflicts, independent English fallback, saved-language
-refresh, custom names and navigation caption behavior. Existing playback,
-settings, ownership and cleanup regressions remain. ModKit validation, package
-hashes and actual in-game presentation are recorded separately in
-[release validation](validation/README.md). Automated completeness does not
-establish native-speaker review or visual fit in every language.
+The source checks catch malformed declarations, missing framework translations,
+changed placeholders and fallback/conflict errors. They cannot tell whether a
+translation reads naturally or fits the actual control. Have a speaker of the
+language review the wording, then check it in game.
+
+## Check a translation
+
+Try English and a translated language, including a key you intentionally leave
+untranslated. The missing translation should use the fallback. Check long
+navigation labels and voice/expression choices in the actual panels. Keep any
+format placeholders intact so names and values still appear.
+
+If another pack defines the same language and key, conflict handling keeps a
+winner for that key while accepting unrelated strings. Check the localization
+warnings in `scenezoi_runtime/mod_inventory.cfg` for owners and the winner;
+changing file load order is not a reliable fix. Coordinate shared strings with
+the other author through the [community Discord](https://discord.gg/RECvhVaRcU).

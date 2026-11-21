@@ -1,13 +1,51 @@
-# Scene tasks
+# Add progress and completion to a scene
 
-A scene task gives each participant a progress meter. The pack defines how fast
-it rises, where it caps and what happens when it fills. SceneZOI keeps the value
-and completion count for the session. Gameplay mods can read both through the
-[add-on API](addons.md). Task definitions use schema version 1.
+<a id="scene-tasks"></a>
 
-Independent add-ons can inspect normalized state, set/modify progress and apply
-caller-scoped rate multipliers/completion holds through [live controls](addon-controls.md#live-controls).
-Completion is still committed by the real task engine on a positive loop-playing tick.
+A task gives a Zoi a meter that can fill, decay and complete. Use the shared
+**Excitement** task for sexual scenes, with rates and effects chosen for each
+activity. Other encounters can define their own tasks: a vampire feeding scene
+could track Feeding on the vampire and Blood Depletion on the target.
+
+SceneZOI handles progress and completion events. Your scene chooses the rates,
+caps, sounds and visual responses; a gameplay mod decides consequences such as
+payment or what happens to a drained target.
+
+## Use the shared Excitement task
+
+Add this fragment to a scene with `male` and `female` roles:
+
+```json
+"tasks": {
+  "male": {"excitement": {"rate": 1, "cap_percent": 100}},
+  "female": {"excitement": {"rate": 0.5, "cap_percent": 50}}
+}
+```
+
+You do not need to redeclare `excitement`. SceneZOI supplies its maximum of 90,
+initial value of zero, decay of 1 and `orgasm` completion-event label. At default
+task-rate settings and Normal game speed, the male role gains one point per
+second and can complete. The female gains half a point and stops gaining at
+50%; she cannot complete from zero in this scene. For mutual completion, allow
+both roles to reach 100%.
+
+Completion resets the meter and emits `task_completed`. It does not create
+orgasm animation, voices or gameplay outcomes by itself. Add the appropriate
+[scene effects](completion-effects.md), [completion sounds](#play-a-completion-sound-in-one-scene)
+or [voice responses](voices.md#task-triggered-one-shot-voice-responses).
+Gameplay add-ons can [read and control task progress](addon-controls.md#live-controls).
+
+## Check progress in game
+
+Start the scene and watch each meter. Try another activity with different rates,
+then an idle where the task is omitted: progress should decay there. A rate of
+zero holds it instead. Navigate without exiting and confirm progress carries
+over. Try game pause and fast-forward; those controls affect progression, while
+the scene animation-speed selector does not.
+
+If a meter is absent, check the role and exact task ID, whether its value is
+zero and decaying, and any declaration warnings in `scenezoi_runtime`. To debug
+effects, reach an actual completion; the displayed percentage resets afterward.
 
 ## Complete content-pack example
 
@@ -24,20 +62,23 @@ choose its own completion presentation.
 Add an entry to a pack manifest's `data_files`:
 
 ```json
-{"kind":"scene_task","file":"example/tasks/spell_charge.json"}
+{"kind":"scene_task","file":"example/tasks/feeding.json"}
 ```
 
-The referenced file contains one definition:
+Only define a new task when its meaning differs from an existing one. This
+complete definition describes the vampire's Feeding meter. A separate Blood
+Depletion meter needs its own definition, for example `vampires.blood_depletion`.
+Completing either task does not automatically kill or change a Zoi.
 
 ```json
 {
   "schema_version": 1,
-  "id": "spell_charge",
-  "label": "Spell charging",
+  "id": "vampires.feeding",
+  "label": "Feeding",
   "maximum": 90,
   "initial": 0,
   "decay": 1,
-  "completion_event": "spell_ready",
+  "completion_event": "vampires.fed",
   "display": {
     "visible": true,
     "color": "#3185c3",
@@ -45,7 +86,7 @@ The referenced file contains one definition:
     "text_color": "#222222",
     "body_colors": {"female":"#df85ac", "male":"#3185c3"}
   },
-  "metadata": {"category":"magic"}
+  "metadata": {"category":"vampire_feeding"}
 }
 ```
 
@@ -53,7 +94,11 @@ Identifiers are exact, case-sensitive identifiers: lowercase ASCII letters, digi
 
 All display settings are optional. `visible: false` suppresses indicators without disabling progression/events. Colors accept `#RRGGBB` only. `body_colors` optionally overrides the fallback ring color for the framework's existing appearance-body traits; those colors have no gameplay meaning. Without presentation data, the framework uses its neutral palette.
 
-Definitions use the existing independent native declaration discovery: envelope kind `scene_task`, owner from the contributing pack, transport `Text_UI` / retail `Text`. They are not loose files read by the game. Build/package/install content edits normally. Discovery runs at client Lua startup. Every session captures its definitions and progress. Restart the game after changing installed packs.
+The builder turns these source files into your pack's native declarations.
+Build, package and install the pack, then restart inZOI; editing a loose JSON
+file beside an installed mod does not update the loaded definitions. Active
+sessions keep the library they captured at entry.
+[Declaration packaging](package-split.md#native-declarations-and-author-builds)
 
 ### Choose which definition a scene uses
 
@@ -105,22 +150,20 @@ shared tasks and ask other developers for help in the
 
 ## Per-scene progression
 
-Nodes optionally declare a role-to-task map:
+The shared Excitement example above uses the same format as a custom task.
+For a feeding scene with `vampire` and `target` roles, this fragment progresses
+the registered Feeding task and holds the target's progress on that same task:
 
 ```json
 "tasks": {
-  "caster": {
-    "spell_charge": {"rate":1, "cap_percent":100},
-    "training": {"rate":0.5, "cap_percent":50}
-  },
-  "assistant": {
-    "spell_charge": {"rate":0, "cap_percent":100}
-  },
-  "observer": {
-    "spell_charge": {"rate":-0.25}
-  }
+  "vampire": {"vampires.feeding": {"rate": 1, "cap_percent": 100}},
+  "target": {"vampires.feeding": {"rate": 0}}
 }
 ```
+
+If the target should accumulate Blood Depletion, register that separate task
+and reference it on `target` instead. The rates are points per game second,
+not percentages per second.
 
 The role names must be declared by that node. Each task reference must use its registered ID; an unavailable task is skipped with a diagnostic rather than ending the scene. Multiple tasks and repeated body types are supported without assuming a controlled participant or a two-person roster. No task block is required for existing scenes.
 
@@ -144,7 +187,7 @@ future accumulation without changing current values or direct API progress edits
 
 Rates use native game time, independent of SceneZOI's animation-speed selector. Game pause pauses progression and decay; game time controls scale them. Preparation, navigation handoff, outfit preparation and stopping do not accrue task time. All task progression and decay also pause throughout a `transition` node; see [transition scenes](transitions.md). No catch-up occurs for those held intervals.
 
-Participant IDs own progress and completion counts for the session. Navigation keeps that state. Exit discards it, and a new session initializes from the definition. This tier does not write progress into game saves or persistent personality settings.
+Participant IDs own progress and completion counts for the session. Navigation keeps that state. Exit discards it, and a new session initializes from the definition. Task progress belongs to the current session; it is not saved as a Zoi personality choice.
 
 ## Completion and subscriptions
 
@@ -152,68 +195,104 @@ Reaching maximum records a completion, resets value to zero, and queues `task_co
 
 Core state is committed before observers run. Each observer gets an independent plain snapshot; observer exceptions are isolated. Excess notifications beyond the per-flush delivery budget remain queued for the next flush instead of being dropped. `completion_index` increases independently for each participant/task; combine it with session ID, participant ID and task ID for an idempotent external consequence key.
 
+Independent gameplay add-ons use the public SDK. In the client created by
+[Wire the SDK](addon-authoring.md#wire-the-sdk), inspect task completions in
+its `event` callback, and subscribe once the connection is ready:
+
 ```lua
-local Events = require("SceneZOI.Events")
-
--- All task completions:
-local handle = Events.subscribe("task_completed", function(event)
-    print(event.participant_id, event.task.id, event.task.completion_index)
-end)
-
--- Only a content-defined completion event:
-local ready = Events.subscribe_task("spell_ready", function(event)
-    -- Apply a separate integration's gameplay outcome here.
-end)
-
-Events.unsubscribe(handle)
-Events.unsubscribe(ready)
+-- Reuses client, request and owner from the add-on guide's SDK setup.
+request(owner, "subscribe", {
+    scope = "all",
+    events = {"task_completed"},
+})
 ```
 
-The snippet above is an **internal B1 observer**, not code to require from a
-separate mod. Independent add-ons use the copied B2 SDK and request `subscribe`
-with `events: ["task_completed", "task_route_selected", "task_route_failed"]`.
-The version-1 JSON events contain the task/participant details below; use
-`get_session` for copied `task_progress`. See [transport and events](addons.md).
-
+`scope = "all"` observes scenes started by other mods and the manual picker too.
+Filter by the sessions your gameplay concerns. The callback receives copied
+participant and task details, rather than native actors or mutable task state.
+Use session ID, participant ID, task ID and completion index together to avoid
+applying a consequence twice. Use `get_session` for current `task_progress`.
+See [the API reference](addons.md) for event envelopes and subscriptions.
 
 The B1 completion payload includes existing session ID (`id`), node ID, revision, phase, participant roster, speed state and event index, plus:
 
 ```json
 {
   "participant_id":"12345",
-  "participant_role":"caster",
+  "participant_role":"male",
   "task": {
-    "id":"spell_charge",
-    "label":"Spell charging",
+    "id":"excitement",
+    "label":"Excitement",
     "value":90,
     "maximum":90,
     "percent":100,
     "completed":true,
     "completion_index":1,
-    "completion_event":"spell_ready",
-    "metadata":{"category":"magic"}
+    "completion_event":"orgasm"
   }
 }
 ```
 
-`Runtime.snapshot().task_progress[participant_id][task_id]` exposes copied current `value` and `completions` state. Completion payload value is the attained maximum, while that snapshot's current progress has already reset to zero. No native actors or mutable task state are exposed. A definition without `completion_event` still dispatches the generic completion event. Without an explicitly configured completion action, SceneZOI does not play completion media, change navigation or apply a gameplay consequence.
+Use `get_session` to read copied current `task_progress`. The completion event
+reports the attained maximum, while current progress has already reset to zero.
+A task without a `completion_event` label still emits `task_completed`. Without
+configured responses or routes, completing it does not play media, navigate or
+apply gameplay consequences.
 
 ## Tray and layout
 
-The fixed-width 132-pixel Scene Tasks tray sits 10 pixels to the right of the main panel and matches its height. Each row shows participant name, task label, SVG ring and percentage. Its content scrolls independently, preserving scroll position during updates. At zero, an omitted or decreasing task disappears; an explicitly increasing or held task remains visible. Once no visible rows remain, the tray is removed and configuration panels return to their previous arrangement.
-
-With a tray present, outfit/personality/settings panels shift right by 142 pixels. Without it, their existing viewport-placement fallback remains in effect. The tray retains the requested immediate-right priority even near the viewport edge; the user can move/resize the main window to provide room. The combined native hit rectangle includes the tray and configuration panel. Existing drag, resize, input focus and Exit behavior are retained.
+The Scene Tasks tray appears beside the main panel. Each row shows the Zoi,
+task label, progress ring and whole percentage rounded down. Rows scroll if
+needed. A zero-valued omitted or decreasing task disappears; a task explicitly
+increasing or held stays visible. `display.visible: false` hides a task's meter
+without disabling its progression or events.
 
 ## Data-defined completion sounds
 
-A schema-1 task definition can declare `on_completion` actions. The generic completion event is still emitted and progress reset independently of action success. A definition without actions retains its previous behavior.
+Keep a pack-specific completion sound on the scenes that should play it. Put
+vocal reactions in [voice responses](voices.md#task-triggered-one-shot-voice-responses)
+so they use the Zoi's chosen voice and volume control.
+
+### Play a completion sound in one scene
+
+Add a rule under `task_completion_sounds` for the role and task that trigger
+the sound. You can supply a `clip` path or a `sound_set` ID with default clips
+from a [sound set](sfx.md#data). The source follows the completing Zoi.
+
+```json
+"task_completion_sounds": {
+  "male": {
+    "excitement": [{
+      "type": "play_sound",
+      "sound_set": "designer.ejaculation",
+      "source": {"component": "body", "bones": ["pelvis"]}
+    }]
+  }
+}
+```
+
+Declare `designer.ejaculation` in your manifest's `sound_sets` with its actual
+clip paths, or use `clip` to reference a SoundWave directly. HZoi uses this
+scene-local approach so its ejaculation sound does not appear in another pack's
+scenes simply because they share Excitement.
+
+A scene rule takes precedence over the task-wide `on_completion` list
+for that role and task. An empty list silences the task-wide action in that
+scene. When a role has no scene-level rule, the definition’s completion sound applies.
+
+### Define a sound for every use of a task
+
+A task definition can declare `on_completion` actions when every use of
+that definition should get the cue. This example is a field
+inside a task definition; replace the clip path with your own SoundWave.
+Completion and progress reset still occur if the optional sound fails.
 
 ```json
 "on_completion": [
   {
     "type": "play_sound",
     "when": {"body": "male"},
-    "clip": "/ExamplePack/Audio/ChargeReady.ChargeReady",
+    "clip": "/ExamplePack/Audio/Completion.Completion",
     "source": {"component": "body", "bones": ["pelvis"]},
     "volume": 1,
     "max_voices": 4,
@@ -236,60 +315,56 @@ One-shots do not loop or restart on frame updates. They use the existing native 
 
 This task-wide facility plays completion audio on any matching scene using the definition. Persistent gameplay outcomes and other definition-level action types remain separate. Scene-level voice bindings, routing and procedural effects are implemented independently below. Content still ships no executable code. Native JSON declaration changes require normal package activation; replacing a JSON patch on disk does not prove the loaded native table changed.
 
-### Play a completion sound in one scene
-
-Add a rule under `task_completion_sounds` for the role and task that trigger
-the sound. You can supply a `clip` path or a `sound_set` ID with default clips
-from a [sound set](sfx.md#data). The source follows the completing Zoi.
-
-```json
-"task_completion_sounds": {
-  "trainer": {
-    "training.focus": [{
-      "type": "play_sound",
-      "sound_set": "training.focus_ready",
-      "source": {"component": "body", "bones": ["pelvis"]}
-    }]
-  }
-}
-```
-
-A scene rule takes precedence over the older task-wide `on_completion` list
-for that role and task. An empty list silences the task-wide action in that
-scene. When a role has no scene-level rule, the definition’s completion sound applies.
-
 ## Scene-local task completion routes
 
-Runtime `20261103-task-routes-1` adds the optional schema-3 node field `task_completion_routes`. It maps a **named participant role**, then an **exact registered task ID**, to a destination scene ID:
+Use `task_completion_routes` when completion should enter another animation.
+For example, move a sexual scene into an authored orgasm transition, or make
+a vampire release the bite after feeding. Add this field to the source scene;
+its destination scenes must exist in the installed pack:
 
 ```json
 "task_completion_routes": {
-  "feeder": {
-    "vampire_feeding": "vampires.release_bite"
-  },
-  "assistant": {
-    "spell_charge": "magic.charged_pose"
+  "vampire": {
+    "vampires.feeding": "vampires.release_bite"
   }
 }
 ```
 
-These roles must exist in the originating node. The map keys are task identifiers, not their optional completion-event labels. Definitions, identifiers, roles and destinations belong entirely to content. No particular task name, body type, actor index or controlled/NPC status has built-in routing behavior. Different scenes may map the same role/task to different destinations.
+Use the exact role and task IDs from the source scene. For example, the
+route above listens for `vampires.feeding`, not its `vampires.fed` event label.
+Another scene can route completion of the same task to a different destination.
 
-A participant's actual completion selects the entry for that participant's bound role. Another participant with the same body cannot use it. The resulting destination changes the entire fixed scene roster. Destinations can be regular loops or one-shot transitions; a transition then follows its existing `destination` and shared-clock timing rules.
+Completion uses the completing Zoi's role. Both regular loops and one-shot
+transitions can be destinations; a transition then follows its own `destination`.
 
-All task completions in the update are committed first: counters reset, generic `task_completed` events queue, and definition-level completion actions run as before. Then the engine selects at most one matching route and enters the existing prepared-node handoff. Task state, completion counts, selected playback speed, fixed membership, original outfits and independently retained resources survive. This adds routing after completion; it does not defer the task reset/event/sound to an animation marker.
+All completions in an update reset progress and emit their events first.
+Then SceneZOI selects at most one route and prepares its destination, retaining
+task state, completion counts, speed and original restoration state. This route
+starts after completion, rather than waiting for a particular animation frame.
 
-When several routes qualify in one update, the first by lexicographic role ID, task ID and participant ID wins, independent of participant iteration order. Every completion still occurs; other route requests are not queued for playback later in an unrelated scene. This is a deterministic shared-scene arbitration rule, not a priority based on body type. A self-route to a loop can explicitly restart that loop through the same handoff. Task-route cycles require new completions, unlike invalid automatic `transition.destination` cycles.
+If several routes qualify together, the first by sorted role ID, then task ID,
+then participant ID wins. Every completion still occurs; other routes are not
+queued for later. A route can restart its own loop. Returning through task
+routes requires new completions, unlike an invalid automatic transition cycle.
 
-Candidate routes capture session ID, originating node/revision, participant ID/role, task ID and completion index. Stale candidates and requests during preparation, stopping, ended sessions or transition nodes cannot navigate. Transitions already freeze all task progression and decay, so there are no new task completions there.
+A route changes the scene for the whole roster. Keep every role and its
+requirements compatible with the destination. Missing tasks or incompatible
+destinations disable the affected route with a warning; the current scene can
+still play. If destination assets fail to load, the task stays completed/reset
+and the source loop continues. A later completion can try the route again;
+the failed one is not retried every frame.
 
-The destination must preserve all named roles and their requirements. Missing/incompatible runtime destinations disable only the affected route and warn; an unavailable task registration also disables only its route. The current scene remains usable. Strict source validation rejects malformed role/task/target maps and incompatible known destinations before generated output changes; independent-pack references can be deferred to runtime discovery.
+Gameplay add-ons can observe `task_route_selected` and `task_route_failed`.
+Their copied `task_route` details identify the session, source node/revision,
+participant/role, task, completion index and target. Selection confirms that
+resources loaded and the handoff was chosen, rather than guaranteeing the
+destination finished preparing. Use normal lifecycle events for that result.
+[API events](addons.md)
 
-If destination resource loading fails for a valid route, the completed task remains completed/reset and the source loop continues. The route is not retried every frame; a later genuine completion may try again. The UI reports the automatic scene load failure, and native diagnostics identify role, task, source and target. All resources are loaded before the held outgoing pose/lifecycle is changed.
-
-`SceneZOI.Events` exposes `task_route_selected` and `task_route_failed` snapshots. Their `task_route` property contains `session_id`, `source_node_id`, `source_revision`, `participant_id`, `participant_role`, `task_id`, `completion_index` and `target`. A selected event means resources loaded and handoff was selected; normal preparation/lifecycle failure can still occur afterward. Independent add-ons receive these copied details through `SceneZOI.API.Event`; the retired packed client bridge is removed.
-
-Diagnostics now identify node/revision at playback entry and print selected/failed task routes, supporting read-only verification of automatic navigation. This tier does not implement an animation-marker system or pending climax state. Authors can supply completion animations as ordinary data-defined transition nodes without executable content-pack code.
+For an authored orgasm animation, use a [transition](transitions.md) as the
+destination. For slowdown and shaking over the current loop, use
+[procedural responses](completion-effects.md) instead. A qualifying authored
+route takes priority over those procedural effects.
 
 ## Procedural completion responses
 

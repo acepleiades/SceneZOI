@@ -1,8 +1,16 @@
-# Framework and content package ownership
+# Put your content in its own package
 
-SceneZOI provides the reusable runtime and UI. Content packs provide assets and
-inert declarations; gameplay integrations use the separate native-message API.
-SceneZOI must build and run independently of any private content repository.
+<a id="framework-and-content-package-ownership"></a>
+
+An animation, voice or expression pack installs alongside SceneZOI. It owns its
+assets and JSON declarations; SceneZOI discovers them and provides playback and
+UI. You do not need to edit the framework or write a registration script.
+
+Start with [content authoring](authoring.md) for the file-to-game workflow.
+This reference explains where declarations belong, how a pack adds buttons to
+an existing hub, and how profiles connect bodies, materials and attachments.
+A mod that starts encounters or applies consequences uses the separate
+[gameplay SDK](addon-authoring.md).
 
 ## Available authoring references
 
@@ -26,7 +34,8 @@ to build SceneZOI. Consult the reference's rights notices before reuse.
 
 | Project | Owns |
 | --- | --- |
-| SceneZOI | Runtime, UI, manual starter, five neutral hubs, five furniture profiles, metadata dictionaries, a fixed facial pose and four body animation packages. |
+| SceneZOI | Runtime, UI, manual starter, neutral hubs and their body tracks, furniture support, shared metadata and
+the bundled fixed facial pose. |
 | Content pack | Its animations, meshes, audio, expression/voice sets, compatibility profiles, scene JSON and navigation extensions. No executable content-pack registration. |
 | Gameplay add-on | Its own Lua, gameplay decisions, persistence and consequences, using the public API/SDK. |
 
@@ -65,7 +74,8 @@ Every owner needs its own native project. The generic writer preserves unrelated
 patch entries and records owned declarations in `workspace/data_files.json` for
 packaging; runtime does not read that inventory. Native packaging carries the
 patch as `non_ufs/JsonPatch/Text_UI_patch.json` with manifest membership/checksums.
-The framework default stages five neutral scene nodes and the shared excitement task alongside its other declarations.
+The framework build stages its neutral hubs and shared Excitement task
+alongside its other declarations.
 
 B1 reads the native table at startup. The picker and the API use the cached
 catalog. Restart inZOI after changing installed packs so the game mounts the
@@ -188,7 +198,7 @@ slots describe those assets, not universal framework defaults. See the
 
 ## Packaging and verification
 
-Use the framework's [asset inventory](../asset-inventory.json) for its four packages,
+Use the framework's [asset inventory](../asset-inventory.json) for its assets,
 and a separate inventory for your pack. The generic filter accepts `--plugin` and
 `--inventory`, excludes referenced Game/Engine payloads, verifies declaration
 sidecars and retains only the package's registry in its companion pak.

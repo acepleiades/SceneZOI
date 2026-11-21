@@ -29,6 +29,31 @@ the metadata/search tests, and submit a pull request. Use plain shared IDs and
 check existing IDs and aliases first. Content packs use that vocabulary instead
 of adding their own tag dictionaries. [Tag authoring](docs/scene-metadata.md)
 
+## Write documentation for authors
+
+Start with what the author wants to make and what they should see in game.
+Explain the terms as they become useful, then show the files, registration,
+packaging and checks needed to finish the work. Keep field tables and engine
+details after the practical steps, or link to the relevant reference.
+
+Use examples that reflect how people use SceneZOI. Sexual, suggestive and
+affectionate scenes are likely to be the main use for animation packs. Vampire
+feeding is another useful example when explaining tasks and gameplay outcomes.
+Authors can start with the scene they intend to make; a throwaway practice
+animation is a suggestion, not a requirement.
+
+Explain **why** a feature matters. For example, voice sets preserve a Zoi's
+voice choice and use the voice volume controls; playing vocal clips as sound
+effects loses those benefits. Show expected results and useful next steps when
+something fails. Clearly label fragments, example asset paths and anything that
+still needs testing in game. Use the public SDK for add-on examples.
+
+Keep each page focused on its reader's task. Old build markers, one-off test
+reports and internal transport details belong in developer references when they
+are still useful. Link to shared explanations instead of repeating them in every
+guide. Technical compatibility requirements and asset licenses still apply;
+unrelated policy reminders do not help explain the workflow.
+
 ## Test your change
 
 - For a bug fix, reproduce the failure and keep a regression where the suite can catch it. For a native change, also test the affected behavior in game, including Exit if you touch scene lifecycle.

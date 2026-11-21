@@ -1,7 +1,7 @@
 # Choose a body and skeletal attachments
 
-Use appearance variants when a gameplay mod needs to choose a body or attachment
-for an individual Zoi. A pack can offer female bodies with and without a vulva,
+Use appearance variants to offer bodies and skeletal attachments that scenes
+or gameplay mods can select for an individual Zoi. A pack can offer female bodies with and without a vulva,
 several penis sizes, or other skeletal attachments. Explicit selections follow
 each Zoi through scene changes, while compatible automatic attachments such as
 HZoi's remain available as a fallback.
@@ -12,6 +12,15 @@ Both choices follow the assets' native body type, age and life-stage requirement
 An attachment can fit a male body, a female body or both. Selecting it keeps the
 scene's role and body-animation requirements in effect. The role can have any
 name; it does not have to be called `male` to use male genitals.
+
+Choose the part that matches what you are making:
+
+| I want to… | Start here |
+| --- | --- |
+| Supply a body or several sizes of male genitals | [Register the assets](#register-the-assets). |
+| Prefer a particular variant in my animation's scene data | [Set scene defaults](#set-defaults-for-a-scene). |
+| Let my gameplay mod choose for each Zoi | [Choose appearance through the API](#choose-appearance-through-the-api). |
+| Port a clip without a male-genitals or tongue animation | [Use attachment rest poses](authoring.md#port-an-animation-without-a-separate-attachment-track). |
 
 Requires SceneZOI **1.5.0 or newer**. Request `get_version` and check
 `features.appearance_variants == 1` before using these calls. The `designer` IDs,

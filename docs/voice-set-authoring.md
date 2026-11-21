@@ -2,15 +2,18 @@
 
 A voice pack can add a new voice for existing scenes. It can also introduce a
 context for scenes you author. Start with a few clips for one Zoi body type and
-one context, then test the set in game.
+one context, then test the set in game. For sexual scenes, vocal clips include
+moans, breaths and orgasm reactions; these belong in the voice system so the
+player's chosen voice and male/female voice volume controls apply. The choice
+persists for that Zoi across scenes and save files.
 
 ## Voices and sound effects
 
 | What the player hears | Use | Scene Settings volume |
 | --- | --- | --- |
-| A Zoi speaking, breathing, or making another vocal sound during a scene | A voice set and the role's `voices` context | **Female Voice Sets** or **Male Voice Sets**, according to the set's `body` |
+| A Zoi moaning, breathing, speaking or making another vocal sound during a scene | A voice set and the role's `voices` context | **Female Voice Sets** or **Male Voice Sets**, according to the set's `body` |
 | A Zoi saying a line when a scene task completes | A named voice response and `task_completion_voices` | The speaking Zoi's voice channel |
-| Footsteps, a prop sound, room ambience or an impact | [Scene SFX](sfx.md) or a [task-completion sound](scene-tasks.md#data-defined-completion-sounds) | **Sound Effects** |
+| Skin contact, thrust/stroke effects, prop sounds or room ambience | [Scene SFX](sfx.md) or a [task-completion sound](scene-tasks.md#data-defined-completion-sounds) | **Sound Effects** |
 
 Put a Zoi's vocal clips in voice sets. A voice clip played through an SFX emitter
 is controlled by **Sound Effects**. The Zoi's voice selection and voice volume
@@ -37,7 +40,16 @@ An **archetype** is the voice personality the player picks. A **context** is
 what the scene asks for. A **set** supplies the clips for one
 archetype and context on a compatible body.
 
-Create these files next to your pack manifest.
+For your own scenes, the files below declare a new `example_voices.pleasure`
+context. Existing scenes will not request that new ID automatically.
+
+**Adding voices to HZoi or another existing pack?** Check its scene's context
+first. For HZoi's sex scenes, use `sex` in the set instead of
+`example_voices.pleasure`, omit the context declaration and its manifest entry,
+and make the context-providing pack a dependency. Fellatio and kissing can use
+different contexts; supply a set for each one you want to cover.
+
+Create the following files relative to your pack manifest.
 
 **`voices/soft.json`**
 
@@ -50,26 +62,26 @@ Create these files next to your pack manifest.
 }
 ```
 
-**`voices/reassurance.json`**
+**`voices/pleasure.json`**
 
 ```json
 {
   "schema_version": 1,
-  "id": "example_voices.reassurance",
-  "label": "Reassurance"
+  "id": "example_voices.pleasure",
+  "label": "Pleasure"
 }
 ```
 
-**`voices/soft_reassurance.json`**
+**`voices/soft_pleasure.json`**
 
 ```json
 {
   "schema_version": 1,
-  "id": "example_voices.soft.reassurance",
-  "label": "Soft Reassurance",
+  "id": "example_voices.soft.pleasure",
+  "label": "Soft Pleasure",
   "body": "female",
   "archetype": "example_voices.soft",
-  "context": "example_voices.reassurance",
+  "context": "example_voices.pleasure",
   "clips": [
     "/ExampleVoices/Audio/SW_Soft_01.SW_Soft_01",
     "/ExampleVoices/Audio/SW_Soft_02.SW_Soft_02"
@@ -84,11 +96,6 @@ seconds after one clip finishes before another can play. To add more contexts
 to Soft, make a set for each one and reuse the archetype ID. For a male set,
 create a male archetype and set `body` to `male` in both declarations.
 
-**Adding voices to an existing animation pack?** Use the exact context ID that
-its scene requests. If that pack already declares the context, reuse it in your
-set and omit the new context file and its manifest entry. Keep your own set
-and archetype IDs. Your set has to match the Zoi's appearance body.
-
 ## 3. Register the voice pack and use it in a scene
 
 For a voice-only pack, save this as `packs/example_voices.json`. For an existing
@@ -102,8 +109,8 @@ content pack, append the entries to its `data_files` list and keep its scenes.
   "extensions": [],
   "data_files": [
     {"kind": "voice_archetype", "file": "voices/soft.json"},
-    {"kind": "voice_context", "file": "voices/reassurance.json"},
-    {"kind": "voice_set", "file": "voices/soft_reassurance.json"}
+    {"kind": "voice_context", "file": "voices/pleasure.json"},
+    {"kind": "voice_set", "file": "voices/soft_pleasure.json"}
   ]
 }
 ```
@@ -114,7 +121,7 @@ clips from that Zoi's selected set for the requested context.
 
 ```json
 "voices": {
-  "speaker": {"context": "example_voices.reassurance"}
+  "speaker": {"context": "example_voices.pleasure"}
 }
 ```
 
@@ -138,7 +145,7 @@ package and start inZOI with it enabled.
 
 1. Start a scene that requests the voice context. Open **Personality Management**
    from the person icon. Select the speaking Zoi, the **Soft** archetype, and
-   **Soft Reassurance** for the context. For a first test, select it explicitly.
+   **Soft Pleasure** for the context. For a first test, select it explicitly.
    See [voice defaults](voices.md#independent-declarations) if you want a default.
 2. Start with all three audio sliders at 100%. Lower **Female Voice Sets** to
    0% to mute this example, then restore it and lower **Sound Effects** to 0%.

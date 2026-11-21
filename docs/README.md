@@ -19,14 +19,15 @@ For questions, authoring help and collaboration, join the
 | Tags, actions or translated names | [Metadata and ratings](scene-metadata.md) · [Localization](localization.md) |
 | Where Zois look and how they react | [Gaze](gaze.md) · [Expression contexts](expressions.md#responsibilities-and-data) · [Facial poses](facial-poses.md) |
 | Voice and sound in a scene | [Voice instructions](voices.md#scene-instructions) · [Sound effects](sfx.md) |
-| A progress meter, an effect at completion or a transition | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
+| Excitement, orgasm effects or a one-shot between poses | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
 | Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
 | Alternative bodies, male genitals, tongues or other skeletal attachments | [Declare variants and set scene defaults](appearance-variants.md) |
 
 ## Make a voice or expression set
 
 - [Make a voice set](voice-set-authoring.md). Import vocal clips, give them a context, and check the in-game voice volume controls. The [voice reference](voices.md) covers the full schema and one-shot responses.
-- [Make an expression set](expressions.md#authoring-your-own-sets). Group facial clips by context so Zois in the same scene can react differently.
+- [Make an expression set](expressions.md#authoring-your-own-sets). Give Zois their own facial personality using stock or custom clips, then
+  keep their choices across scenes and saves.
 
 [Voice and expression choices](playing.md#voice-and-expression-choices) shows how players assign sets to individual Zois.
 

@@ -1,17 +1,22 @@
 # Authoring content for SceneZOI
 
-Start with one loop. Give each Zoi a role, import one matching track per role,
-and make a scene that the picker or an existing hub can open.
+Turn an animation into a scene players can enter, navigate and hear. A pack can
+contain your own sexual, suggestive or affectionate animations, ports from
+another source, or other interactions such as vampire feeding. It can also add
+voices or expressions to scenes that already exist.
 
 1. [Create a ModKit project and pack manifest](#files-and-native-project).
 2. [Declare the scene, roles and entry](#scenes-and-participants).
-3. [Import and check the tracks](#animation-and-attachment-requirements).
-4. [Package and test](#verify-your-pack). Add optional sound and presentation once the loop works.
+3. [Import the body and attachment tracks](#animation-and-attachment-requirements).
+4. Choose the [voices, expressions, sounds and task behavior](#optional-scene-data)
+   that suit the scene, then [package and test it](#verify-your-pack).
 
-Use the [framework manifest](../packs/scenezoi.json) and [neutral scenes](../packs/scenezoi/scenes/) as working examples.
-
-New to character animation? Start with [Make your first SceneZOI animation](first-animation.md)
-for the Maya and Blender rigs, exporters and a first in-game test.
+You can work on the scene you intend to publish from the start. Follow
+[Make your first SceneZOI animation](first-animation.md) for the Maya and Blender
+rigs and exporters. For complete scene data and the reasons behind its choices,
+read the [HZoi examples](content-examples.md). The
+[framework scenes](../packs/scenezoi/scenes/) show how the neutral hubs connect
+animation packs.
 
 ## Port existing animations
 

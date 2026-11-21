@@ -1,8 +1,10 @@
 # Voices
 
 Choose a voice context for each speaking role. For example, a scene can ask
-for a breath or conversation context, and the Zoi's selected set supplies the
-clips. A pack can also add a one-shot reaction to a task completion.
+for moans during sex, breaths between activities or a reaction to a partner's
+orgasm. The Zoi's selected set supplies the clips, keeping their voice consistent
+across scenes and saves. A scene's voices use the separate male/female voice
+volume controls; [contact sounds](sfx.md) use Sound Effects.
 
 For a first pack, follow [Make a voice set](voice-set-authoring.md). It covers
 import, setup and how to check that vocal clips use the correct volume slider.
@@ -18,15 +20,15 @@ Use the existing native declaration transport and pack `data_files` entries with
 An archetype requires `id`, `label` and appearance `body` (`female` or `male`). Optional `default: true` opts that body into initial voice assignment. No compatible declared default means silence, even if other voice sets exist. Multiple defaults warn and resolve deterministically by sorted ID. A character's explicit saved silence always wins.
 
 ```json
-{"schema_version":1,"id":"conversation","label":"Conversation"}
+{"schema_version":1,"id":"designer.pleasure","label":"Pleasure"}
 ```
 
 A context requires `id` and `label`. Contexts are data, not runtime enums. The personality panel creates controls from the current discovered contexts. Declarations load at client Lua startup. An active session keeps its library until Exit.
 
 ```json
 {
-  "schema_version":1,"id":"designer.calm.conversation","label":"Example voice",
-  "body":"female","archetype":"designer.calm","context":"conversation",
+  "schema_version":1,"id":"designer.calm.pleasure","label":"Example voice",
+  "body":"female","archetype":"designer.calm","context":"designer.pleasure",
   "clips":["/Designer/Audio/SW_Example.SW_Example"],"volume":0.8,"gap":0.25
 }
 ```
@@ -102,24 +104,30 @@ Scene speed never retimes a voice clip. Native game time controls rate and pause
 
 ## Task-triggered one-shot voice responses
 
-Runtime `20261103-voice-responses-1` adds optional named `responses` to schema-1 voice sets. These are variants of the participant's already selected set, not new personality contexts or separate archetype choices:
+Put orgasm reactions and other event-triggered vocal clips in named `responses`
+inside the voice set. For example, the female Zoi can react to her partner's
+Excitement completing, using her own chosen voice. Keep these clips out of the
+continuous pool so they play when the event calls for them.
 
 ```json
 "responses": {
-  "praise": {"clips":["/Example/Audio/Praise.Praise"], "volume":0.8},
-  "surprise": {"clips":["/Example/Audio/Surprise.Surprise"]}
+  "orgasm": {"clips":["/Example/Audio/Orgasm.Orgasm"], "volume":0.8},
+  "partner_orgasm": {"clips":["/Example/Audio/PartnerOrgasm.PartnerOrgasm"]}
 }
 ```
 
 Up to 64 response groups are allowed, each with 1–512 unique SoundWave paths. Response names use the same case-insensitive normalized identifiers as voice contexts. `volume` is optional, within 0–1, and inherits the voice set's volume. Empty/malformed/conflicting groups are rejected; imported assets remain owned by the supplying pack. Existing normal `clips`, delays, context choices and persistent preferences are unchanged.
 
-Scene schema 3 adds an optional role/task-to-rules map:
+Add this fragment to a scene with `male` and `female` roles. It uses the
+`designer.pleasure` context defined above. To support HZoi's sex scenes instead,
+use their existing `sex` context in the set and scene; the selected set for that
+context must contain the requested response group.
 
 ```json
 "task_completion_voices": {
-  "caster": {
-    "spell_charge": [
-      {"participant":"listener", "context":"conversation", "response":"praise", "fade_out":0.25, "priority":20}
+  "male": {
+    "excitement": [
+      {"participant":"female", "context":"designer.pleasure", "response":"partner_orgasm", "fade_out":0.25, "priority":20}
     ]
   }
 }

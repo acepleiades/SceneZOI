@@ -1,11 +1,21 @@
-# Furniture support
+# Make scenes for beds and sofas
 
-Furniture is an optional, generic session context. The framework provides neutral
-single-bed and queen-bed hubs using a four-second paired animation. Their source
-navigation is empty and enabled packs may contribute compatible content.
-The **(Debug) SceneZOI manual start** entry appears when the debug setting is
-on and the object has an available profile with a compatible starting scene.
-The same checks apply to furniture profiles added later. [Scene Settings](settings.md#debug-manual-start)
+<a id="furniture-support"></a>
+
+Declare furniture when an animation needs a bed or sofa underneath the Zois.
+SceneZOI places the scene on the chosen object and reserves the space it uses.
+Your clips still determine the pose and contact: the framework does not reshape
+an animation to fit every cushion or mattress.
+
+For a bed scene, connect to the matching single- or queen-bed hub. For a sofa
+scene, use `sofa.pair` and author around the midpoint between two neighboring
+seats. Other seats remain usable, and a suitable four-seat sofa can host two
+separate scenes. Read the [HZoi examples](content-examples.md#add-a-furniture-branch-and-optional-tracks)
+alongside the placement rules below.
+
+The debug start entry appears when [manual start is enabled](settings.md#debug-manual-start)
+and the selected furniture has an available, compatible starting scene. A
+gameplay mod should finish walking and setup before asking for playback.
 
 ## Scene and profile data
 
@@ -242,3 +252,20 @@ Test the actual object in game. Check that the picker offers it when free,
 rejects it when occupied, aligns the scene, and lets the next Zoi use it after
 Exit. See the [placement](../tests/furniture-placement.lua) and
 [lease](../tests/furniture-lease.lua) tests for the underlying rules.
+
+## Check your furniture scene
+
+Test the actual entry button and every connected activity, not just the idle.
+Inspect hip height, cushion contact, feet and kneeling partners from several
+angles. Try another model of the same furniture kind: matching kind does not
+guarantee identical proportions.
+
+For sofas, try free and occupied seat pairs, a third Zoi sitting on a spare seat,
+and two separate sessions on a suitable four-seater. A pair cannot skip the
+middle seat or cross an L-shaped corner. An unavailable pair should reject
+entry without leaving participants owned or a Dismiss panel from a new session.
+For an API start, handle the returned failure in your add-on.
+
+After Exit, confirm seats are usable again and participants can move. If entry
+is absent, check `starting_hub`, the roster, furniture kind, native sofa
+classification or bed profile, and current occupancy before changing clip offsets.

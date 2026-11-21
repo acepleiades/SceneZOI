@@ -1,14 +1,19 @@
-# Scene sounds
+# Add sound effects to a scene
 
-SceneZOI plays declarative clip lists in either `continuous` or `bone_distance`
-mode. A node's `sfx` object contains any number of named, independently owned
-emitters. There is no sound-type enum, pair-size restriction, content callback,
-or separate SFX extension mechanism. Sound assets and scene choices belong to
-the content pack; playback and cleanup belong to SceneZOI.
+<a id="scene-sounds"></a>
 
-Use this engine for things like footsteps, props and room ambience. For a Zoi's
-vocal clips, [make a voice set](voice-set-authoring.md#voices-and-sound-effects)
-so the clips follow that Zoi's voice choice and the matching voice volume slider.
+Use sound effects for skin contact, thrusts, strokes, props and ambience. A
+handjob scene can play a contact sound when the hand reverses near the pelvis;
+another scene might play fabric movement or a repeating background sound.
+
+Put moans, breaths and spoken orgasm reactions in
+[voice sets](voice-set-authoring.md#voices-and-sound-effects). Those follow the
+Zoi's chosen voice and voice volume. Effects use the **Sound Effects** slider.
+
+Define a reusable list of clips in your pack's `sound_sets`, then add an `sfx`
+entry to each scene that should play it. Use `continuous` for chained clips or
+`bone_distance` for contact timed from two moving points. Each emitter owns its
+own playback and is cleaned up when its scene ends.
 
 ## Data
 
@@ -16,7 +21,19 @@ A pack declares reusable `sound_sets`. Each set has a `default` clip group and/o
 `variants` selected by the scene speed (0.5, 1.0, 1.5, 2.0). A clip group contains
 `clips`, a nonempty list of SoundWave object paths. Paths are validated as data, not executed.
 
-A node references those lists through named `sfx` entries:
+For example, add this field to the pack manifest, using your own imported
+SoundWave paths:
+
+```json
+"sound_sets": {
+  "example.ambience": {"default": {"clips": ["/ExamplePack/Audio/Room.Room"]}},
+  "example.contact": {"default": {"clips": ["/ExamplePack/Audio/Contact.Contact"]}}
+}
+```
+
+A node references those lists through named `sfx` entries. The next block is
+the **contents of `sfx`**, so place it under `"sfx": { ... }` in your scene.
+Its `performer` and `helper` roles must exist in `participants`:
 
 ```json
 {
@@ -121,3 +138,17 @@ input ownership or original outfit snapshot is modified by this engine.
 The [HZoi hand scene](content-examples.md#find-other-examples) shows an emitter
 that selects clips from a named sound set when two bones approach and separate.
 Test the distance threshold and cooldown in game with each speed you support.
+
+## Check the sound in game
+
+Watch and listen through several cycles at different scene playback speeds.
+For contact sounds, the detector uses bone distance and direction reversal,
+not an animation frame marker or the visible skin surface. Choose points that
+approach and separate with the contact you want, then tune distance and cooldown
+if sounds are missing or repeated. The source controls where you hear the sound;
+it can differ from the detector points.
+
+Mute Sound Effects and confirm these clips stop while the Zoi's voice remains.
+Navigate and Exit to check emitters stop. For silence, verify the sound-set ID,
+SoundWave paths, declared roles and bone names, then read the SFX warnings in
+`scenezoi_runtime`. The HZoi Reference audio files are deliberately silent.
