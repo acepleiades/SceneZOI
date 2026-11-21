@@ -6,7 +6,7 @@ local M={};Lease.hooks=true
 ---@param only boolean
 ---@return boolean
 function M.Override_CanOccupySlot(owner,kind,param,only)
- if Lease.blocked(owner)then return false end
+ if Lease.blocked(owner,kind,param)then return false end
  return owner:CanOccupySlot(kind,param,only)
 end
 ---@param owner FB2SlotComponent

@@ -53,7 +53,7 @@ cfg.selection_launcher_ready=P.pack("launcher.2.1","ready","ui.two")
 E.tick(.2,{["1"]=actor},false);assert(E.is_ready())
 print("Entry readiness passed: host generation, receiver/launcher acknowledgements and stale boot rejection.")
 
-package.loaded['SceneZOI.Furniture']={available=function()return nil end}
+package.loaded['SceneZOI.Furniture']={pickable=function()return nil end}
 cfg.selection_request=P.pack('unavailable_bed','open','1','50');E.tick(.2,{['1']=actor},false)
 assert(authorized=='unavailable_bed'and not visible,'Rejected furniture entry must restore authorized input before the picker exists')
 print('Unavailable furniture entry restores input without opening a picker or acquiring participants.')

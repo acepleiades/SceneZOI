@@ -15,9 +15,10 @@ python tools/build_catalog.py
 python tools/test.py --modkit-root $modkitRoot
 ```
 
-The default build stages the framework declarations: one scene pack with five
-neutral nodes, five furniture profiles, two metadata dictionaries, one facial
-pose, a shared scene task, and one localization dictionary. The framework inventory owns four animation packages. Default checks are
+The default build stages 16 framework declarations: one scene pack with six
+neutral nodes, ten furniture profiles, two metadata dictionaries, one facial
+pose, a shared scene task, and one localization dictionary. The framework
+inventory owns six animation packages. Default checks are
 framework-only; `--content-root` is an optional test hook for a compatible author
 checkout that is already available. HZoi's private checkout is not required.
 The public [HZoi-Reference guide](content-examples.md) explains its separate
@@ -85,7 +86,7 @@ Use a new build directory for each attempt. Check the actual AutomationTool exit
 code and `BUILD SUCCESSFUL`; `packaging_started` or a ZIP's existence is only an
 acknowledgement or intermediate artifact.
 
-The exact owned-payload filter checks the four inventoried framework packages,
+The exact owned-payload filter checks the six inventoried framework packages,
 excludes referenced Game/Engine assets, preserves declared dependencies and
 verifies a registry-only companion pak. Use its filtered output for local testing
 and distribution. Each independent content pack supplies its own inventory and

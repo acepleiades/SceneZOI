@@ -7,6 +7,7 @@ local SceneData = require("SceneZOI.SceneData")
 local Binding = require("SceneZOI.Binding")
 local Save=require("SceneZOI.SaveGuard")
 local Recovery=require("SceneZOI.SaveRecovery")
+local GetUp=require("SceneZOI.NativeGetUp")
 local M = {}
 
 local function renew_lease(lease, kind)
@@ -108,6 +109,21 @@ local function release(self, owner, silent, cause, diagnostic)
         lease.release_cause, lease.release_diagnostic = cause, diagnostic
     end
     lease.releasing = true
+    if GetUp.pending(owner) then
+        -- A native exit owns its end animation and spatial restoration. Even
+        -- abort/save cleanup must not move or reconfigure the actor mid-exit.
+        -- Restore policy immediately so saving never stores our disabled flag.
+        if (lease.committed or lease.recovering) and not lease.restored.autonomy then
+            local ok = pcall(set_autonomy, owner, lease.local_value, lease.follow_parent)
+            if ok then lease.restored.autonomy = true end
+        end
+        GetUp.detach(owner, lease.token)
+        if lease.last_error ~= "native_getup_finishing" then
+            lease.last_error = "native_getup_finishing"
+            if not silent then reply(owner, lease.token, "release_pending", "native_getup_finishing") end
+        end
+        return
+    end
     local errors = {}
     -- Retain the original snapshot until every step succeeds; retries skip completed steps.
     local function restore(key, fn)
@@ -218,6 +234,20 @@ local function report_prepare_wait(owner, lease, phase, queue_id, interaction)
             prepare_received = timing.prepare_received or 0, heartbeat_received = timing.heartbeat_received or 0,
             commit_received = timing.commit_received or 0,
             autonomy_requested = lease.autonomy_requested, autonomy_notified = lease.autonomy_notified}
+        sample.entry_checkpoint, sample.entry_checkpoint_acked = lease.entry_checkpoint, lease.entry_checkpoint_acked
+        local source_posture = lease.source_posture
+        if source_posture then
+            sample.source_furniture_id, sample.source_component, sample.source_slot =
+                source_posture.id, source_posture.component, source_posture.slot
+            sample.source_posture_id, sample.source_current_posture, sample.source_current_target =
+                source_posture.posture_id, source_posture.current_posture, source_posture.current_target
+            sample.source_claim_pending, sample.source_posture_standing = source_posture.claim_pending, source_posture.standing
+            sample.getup_queue_id, sample.getup_state, sample.getup_failure = source_posture.queue_id, source_posture.state, source_posture.failure
+            sample.getup_queue_present, sample.getup_motion_pending, sample.getup_position_settled =
+                source_posture.queue_present, source_posture.motion_pending, source_posture.position_settled
+            sample.getup_anim_id, sample.getup_montage_id, sample.getup_queue_result =
+                source_posture.anim_id, source_posture.montage_id, source_posture.queue_result
+        end
         if lease.last_tick_wall then sample.seconds_since_native_tick = math.max(0, now - lease.last_tick_wall) end
         if lease.last_commit_wall then sample.seconds_since_commit = math.max(0, now - lease.last_commit_wall) end
         local function observe(name, fn)
@@ -264,6 +294,14 @@ local function tasks_idle(owner, lease, interaction, queue_id)
         return false
     end
     return true
+end
+
+local function settle_source_posture(owner, lease)
+    local ready, sample = GetUp.ensure(owner, lease.token)
+    lease.source_posture = sample
+    if ready then return true end
+    report_prepare_wait(owner, lease, "source_posture_releasing")
+    return false
 end
 
 local function native_id(value)
@@ -391,6 +429,14 @@ local function advance_prepare(self, owner, first_commit, paused, source)
     if not lease or lease.releasing or not lease.committed then return end
     lease.progress_attempts = (lease.progress_attempts or 0) + 1
     lease.progress_source = source or "commit"
+    -- The exit may already be queued by furniture acquisition. Protect it
+    -- before clearing waiting work, requesting overlay cuts or cancelling tasks.
+    local getting_up, sample = GetUp.pending(owner)
+    if getting_up or (sample and sample.state == "failed" and sample.token == lease.token) then
+        lease.source_posture = sample
+        report_prepare_wait(owner, lease, "source_posture_releasing")
+        return
+    end
     -- IsAutonomyEnable reports activity eligibility, not the resolved policy.
     -- An idle NPC can return true even after the native autonomy setter disables
     -- it. Confirm local suppression and its resolved policy on every entry;
@@ -413,6 +459,7 @@ local function advance_prepare(self, owner, first_commit, paused, source)
         return
     end
     if not lease.tasks_settled then
+        if not settle_source_posture(owner, lease) then return end
         -- Gameplay can keep upper-body and grab loops alive after the task is idle.
         if not lease.grab_suspended then
             suspend_grab_poses(owner, lease)
@@ -424,8 +471,14 @@ local function advance_prepare(self, owner, first_commit, paused, source)
         lease.entry_location = UE.FVector(location.X, location.Y, location.Z)
         lease.entry_rotation = UE.FRotator(rotation.Pitch, rotation.Yaw, rotation.Roll)
         lease.tasks_settled = true
-        owner:SetCollisionEnabled(false)
     end
+    -- Commit acknowledges the original snapshot, not this later native GetUp
+    -- transform. Require its explicit private checkpoint ACK before takeover.
+    if not Save.settled(owner, lease) then
+        report_prepare_wait(owner, lease, "entry_save_pending")
+        return
+    end
+    if not lease.scene_collision_set then owner:SetCollisionEnabled(false); lease.scene_collision_set = true end
     -- The requested layout is inert until the host cached our save snapshot.
     -- Initial acquisition and later revisions use the same committed path.
     if lease.keep_unmerged then Outfit.keep_unmerged(owner, lease) end
@@ -550,9 +603,16 @@ local function receive(self, owner, kind, content)
             release(self,owner,true,"prepare_error",err)
             reply(owner,token,'rejected','prepare_error',0,err)
         end
+    elseif kind == "SceneZOI.EntrySaved" then
+        local lease, checkpoint = self.lease, tonumber(fields[2])
+        if lease and lease.token == token and not lease.releasing and #fields == 2 and checkpoint
+            and checkpoint == lease.entry_checkpoint and lease.entry_checkpoint_acked ~= checkpoint then
+            lease.entry_checkpoint_acked = checkpoint
+            advance_prepare(self, owner, false, false, "entry_saved")
+        end
     elseif kind == "SceneZOI.OverlayCut" then
         local lease = self.lease
-        if lease and lease.token == token and not lease.releasing then
+        if lease and lease.token == token and not lease.releasing and not GetUp.pending(owner) then
             stop_approved_overlays(owner, lease, fields)
         end
     elseif kind == 'SceneZOI.Recover' then
@@ -600,6 +660,8 @@ local function receive(self, owner, kind, content)
     elseif self.lease and self.lease.token == token and not self.lease.releasing then
         if kind == "SceneZOI.Heartbeat" then renew_lease(self.lease, "heartbeat_received")
         elseif kind == "SceneZOI.Anchor" and #fields == 7 then
+            if not self.lease.ready or GetUp.pending(owner) or (self.lease.entry_checkpoint
+                and self.lease.entry_checkpoint_acked ~= self.lease.entry_checkpoint) then return end
             local values = {}
             for index = 2, 7 do
                 values[index] = tonumber(fields[index])
@@ -657,8 +719,11 @@ local function update(self, owner, dt)
         return
     end
     advance_prepare(self, owner, false, dt == 0, "tick")
+    if GetUp.pending(owner) then return end
     -- B2 owns simulation placement; B1 separately pins the rendered actor and animation time.
-    if lease.location then owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false) end
+    if lease.location and (not lease.entry_checkpoint or lease.entry_checkpoint_acked == lease.entry_checkpoint) then
+        owner:SetLocationAndRotationOnlySimul(lease.location, lease.rotation, false)
+    end
 end
 
 ---@param self table

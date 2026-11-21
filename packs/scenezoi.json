@@ -25,6 +25,26 @@
       "file": "scenezoi/furniture/bed.queen.futon.json"
     },
     {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/sofa.pair.curtain.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/sofa.pair.corner_four.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/sofa.pair.corner_three.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/sofa.pair.three.json"
+    },
+    {
+      "kind": "furniture_profile",
+      "file": "scenezoi/furniture/sofa.pair.two.json"
+    },
+    {
       "kind": "tag_dictionary",
       "file": "scenezoi/metadata/tags.json"
     },

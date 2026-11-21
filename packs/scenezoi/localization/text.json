@@ -129,7 +129,15 @@
         "NPC Scenes": "NPC Scenes",
         "Default NPC Scene Length": "Default NPC scene duration",
         "in-game min": "in-game min",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Default duration for new scenes involving only Zois outside your household. Choose 5 to 120 in-game minutes. Add-ons can set their own duration."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Default duration for new scenes involving only Zois outside your household. Choose 5 to 120 in-game minutes. Add-ons can set their own duration.",
+        "Choose seats": "Choose seats",
+        "Choose two adjacent seats for this scene.": "Choose two adjacent seats for this scene.",
+        "Seat pair {number}": "Seat pair {number}",
+        "Left seats": "Left seats",
+        "Right seats": "Right seats",
+        "Cancel": "Cancel",
+        "The selected Zois do not match any starting scene on this sofa.": "The selected Zois do not match any starting scene on this sofa.",
+        "The requested seats on this sofa are unavailable for this scene.": "The requested seats on this sofa are unavailable for this scene."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Standing Idle Hub",
@@ -137,7 +145,8 @@
         "scene.scenezoi.bed_single_idle": "Single Bed Idle Hub",
         "scene.scenezoi.solo_idle_female": "Solo Idle",
         "scene.scenezoi.solo_idle_male": "Solo Idle",
-        "scene_task.excitement": "Excitement"
+        "scene_task.excitement": "Excitement",
+        "scene.scenezoi.sofa_idle": "Sofa Idle Hub"
       }
     },
     "de-DE": {
@@ -267,7 +276,15 @@
         "NPC Scenes": "NPC-Szenen",
         "Default NPC Scene Length": "Standarddauer für NPC-Szenen",
         "in-game min": "Min. im Spiel",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Standarddauer für neue Szenen, an denen nur Zois außerhalb deines Haushalts teilnehmen. Wähle 5 bis 120 Minuten im Spiel. Add-ons können die Dauer selbst festlegen."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Standarddauer für neue Szenen, an denen nur Zois außerhalb deines Haushalts teilnehmen. Wähle 5 bis 120 Minuten im Spiel. Add-ons können die Dauer selbst festlegen.",
+        "Choose seats": "Sitzplätze auswählen",
+        "Choose two adjacent seats for this scene.": "Wähle zwei benachbarte Sitzplätze für diese Szene.",
+        "Seat pair {number}": "Sitzplatzpaar {number}",
+        "Left seats": "Linke Sitzplätze",
+        "Right seats": "Rechte Sitzplätze",
+        "Cancel": "Abbrechen",
+        "The selected Zois do not match any starting scene on this sofa.": "Für die ausgewählten Zois gibt es auf diesem Sofa keine passende Startszene.",
+        "The requested seats on this sofa are unavailable for this scene.": "Die angeforderten Sitzplätze auf diesem Sofa sind für diese Szene nicht verfügbar."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Stehender Ruhepunkt",
@@ -275,7 +292,8 @@
         "scene.scenezoi.bed_single_idle": "Ruhepunkt im Einzelbett",
         "scene.scenezoi.solo_idle_female": "Solo-Leerlauf",
         "scene.scenezoi.solo_idle_male": "Solo-Leerlauf",
-        "scene_task.excitement": "Erregung"
+        "scene_task.excitement": "Erregung",
+        "scene.scenezoi.sofa_idle": "Ruhe-Hub auf dem Sofa"
       }
     },
     "fr-FR": {
@@ -405,7 +423,15 @@
         "NPC Scenes": "Scènes de PNJ",
         "Default NPC Scene Length": "Durée par défaut des scènes de PNJ",
         "in-game min": "min en jeu",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Durée par défaut des nouvelles scènes qui concernent uniquement des Zois extérieurs à votre foyer. Choisissez de 5 à 120 minutes en jeu. Les extensions peuvent définir leur propre durée."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Durée par défaut des nouvelles scènes qui concernent uniquement des Zois extérieurs à votre foyer. Choisissez de 5 à 120 minutes en jeu. Les extensions peuvent définir leur propre durée.",
+        "Choose seats": "Choisir les places",
+        "Choose two adjacent seats for this scene.": "Choisissez deux places côte à côte pour cette scène.",
+        "Seat pair {number}": "Paire de places {number}",
+        "Left seats": "Places de gauche",
+        "Right seats": "Places de droite",
+        "Cancel": "Annuler",
+        "The selected Zois do not match any starting scene on this sofa.": "Aucune scène de départ sur ce canapé ne convient aux Zois sélectionnés.",
+        "The requested seats on this sofa are unavailable for this scene.": "Les places demandées sur ce canapé ne sont pas disponibles pour cette scène."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Point de repos debout",
@@ -413,7 +439,8 @@
         "scene.scenezoi.bed_single_idle": "Point de repos sur lit simple",
         "scene.scenezoi.solo_idle_female": "Attente en solo",
         "scene.scenezoi.solo_idle_male": "Attente en solo",
-        "scene_task.excitement": "Excitation"
+        "scene_task.excitement": "Excitation",
+        "scene.scenezoi.sofa_idle": "Hub de repos sur le canapé"
       }
     },
     "es-ES": {
@@ -543,7 +570,15 @@
         "NPC Scenes": "Escenas de PNJ",
         "Default NPC Scene Length": "Duración predeterminada de las escenas de PNJ",
         "in-game min": "min del juego",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Duración predeterminada de las nuevas escenas en las que solo participan Zois ajenos a tu hogar. Elige de 5 a 120 minutos del juego. Los complementos pueden fijar su propia duración."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Duración predeterminada de las nuevas escenas en las que solo participan Zois ajenos a tu hogar. Elige de 5 a 120 minutos del juego. Los complementos pueden fijar su propia duración.",
+        "Choose seats": "Elegir asientos",
+        "Choose two adjacent seats for this scene.": "Elige dos asientos contiguos para esta escena.",
+        "Seat pair {number}": "Par de asientos {number}",
+        "Left seats": "Asientos de la izquierda",
+        "Right seats": "Asientos de la derecha",
+        "Cancel": "Cancelar",
+        "The selected Zois do not match any starting scene on this sofa.": "Ninguna escena inicial de este sofá es compatible con los Zois seleccionados.",
+        "The requested seats on this sofa are unavailable for this scene.": "Los asientos solicitados en este sofá no están disponibles para esta escena."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punto de reposo de pie",
@@ -551,7 +586,8 @@
         "scene.scenezoi.bed_single_idle": "Punto de reposo en cama individual",
         "scene.scenezoi.solo_idle_female": "Reposo en solitario",
         "scene.scenezoi.solo_idle_male": "Reposo en solitario",
-        "scene_task.excitement": "Excitación"
+        "scene_task.excitement": "Excitación",
+        "scene.scenezoi.sofa_idle": "Centro de reposo en el sofá"
       }
     },
     "it-IT": {
@@ -681,7 +717,15 @@
         "NPC Scenes": "Scene dei PNG",
         "Default NPC Scene Length": "Durata predefinita delle scene dei PNG",
         "in-game min": "min di gioco",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Durata predefinita delle nuove scene che coinvolgono solo Zoi esterni alla tua famiglia. Scegli da 5 a 120 minuti di gioco. Le estensioni possono impostare una durata diversa."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Durata predefinita delle nuove scene che coinvolgono solo Zoi esterni alla tua famiglia. Scegli da 5 a 120 minuti di gioco. Le estensioni possono impostare una durata diversa.",
+        "Choose seats": "Scegli i posti",
+        "Choose two adjacent seats for this scene.": "Scegli due posti vicini per questa scena.",
+        "Seat pair {number}": "Coppia di posti {number}",
+        "Left seats": "Posti a sinistra",
+        "Right seats": "Posti a destra",
+        "Cancel": "Annulla",
+        "The selected Zois do not match any starting scene on this sofa.": "Nessuna scena iniziale su questo divano è compatibile con gli Zoi selezionati.",
+        "The requested seats on this sofa are unavailable for this scene.": "I posti richiesti su questo divano non sono disponibili per questa scena."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punto di riposo in piedi",
@@ -689,7 +733,8 @@
         "scene.scenezoi.bed_single_idle": "Punto di riposo su letto singolo",
         "scene.scenezoi.solo_idle_female": "Attesa da solo",
         "scene.scenezoi.solo_idle_male": "Attesa da solo",
-        "scene_task.excitement": "Eccitazione"
+        "scene_task.excitement": "Eccitazione",
+        "scene.scenezoi.sofa_idle": "Hub di riposo sul divano"
       }
     },
     "pt-BR": {
@@ -819,7 +864,15 @@
         "NPC Scenes": "Cenas de NPC",
         "Default NPC Scene Length": "Duração padrão das cenas de NPC",
         "in-game min": "min no jogo",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Duração padrão das novas cenas que envolvem apenas Zois de fora da sua família. Escolha de 5 a 120 minutos no jogo. Complementos podem definir outra duração."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Duração padrão das novas cenas que envolvem apenas Zois de fora da sua família. Escolha de 5 a 120 minutos no jogo. Complementos podem definir outra duração.",
+        "Choose seats": "Escolher assentos",
+        "Choose two adjacent seats for this scene.": "Escolha dois assentos lado a lado para esta cena.",
+        "Seat pair {number}": "Par de assentos {number}",
+        "Left seats": "Assentos à esquerda",
+        "Right seats": "Assentos à direita",
+        "Cancel": "Cancelar",
+        "The selected Zois do not match any starting scene on this sofa.": "Nenhuma cena inicial neste sofá é compatível com os Zois selecionados.",
+        "The requested seats on this sofa are unavailable for this scene.": "Os assentos escolhidos neste sofá não estão disponíveis para esta cena."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ponto de repouso em pé",
@@ -827,7 +880,8 @@
         "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama de solteiro",
         "scene.scenezoi.solo_idle_female": "Espera a sós",
         "scene.scenezoi.solo_idle_male": "Espera a sós",
-        "scene_task.excitement": "Excitação"
+        "scene_task.excitement": "Excitação",
+        "scene.scenezoi.sofa_idle": "Hub de repouso no sofá"
       }
     },
     "pt-PT": {
@@ -957,7 +1011,15 @@
         "NPC Scenes": "Cenas de NPC",
         "Default NPC Scene Length": "Duração predefinida das cenas de NPC",
         "in-game min": "min no jogo",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Duração predefinida das novas cenas que envolvem apenas Zois de fora do teu agregado familiar. Escolhe entre 5 e 120 minutos no jogo. Os suplementos podem definir outra duração."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Duração predefinida das novas cenas que envolvem apenas Zois de fora do teu agregado familiar. Escolhe entre 5 e 120 minutos no jogo. Os suplementos podem definir outra duração.",
+        "Choose seats": "Escolher lugares",
+        "Choose two adjacent seats for this scene.": "Escolhe dois lugares lado a lado para esta cena.",
+        "Seat pair {number}": "Par de lugares {number}",
+        "Left seats": "Lugares à esquerda",
+        "Right seats": "Lugares à direita",
+        "Cancel": "Cancelar",
+        "The selected Zois do not match any starting scene on this sofa.": "Nenhuma cena inicial neste sofá é compatível com os Zois selecionados.",
+        "The requested seats on this sofa are unavailable for this scene.": "Os lugares escolhidos neste sofá não estão disponíveis para esta cena."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ponto de repouso de pé",
@@ -965,7 +1027,8 @@
         "scene.scenezoi.bed_single_idle": "Ponto de repouso na cama individual",
         "scene.scenezoi.solo_idle_female": "Espera a sós",
         "scene.scenezoi.solo_idle_male": "Espera a sós",
-        "scene_task.excitement": "Excitação"
+        "scene_task.excitement": "Excitação",
+        "scene.scenezoi.sofa_idle": "Centro de repouso no sofá"
       }
     },
     "nl-NL": {
@@ -1095,7 +1158,15 @@
         "NPC Scenes": "NPC-scènes",
         "Default NPC Scene Length": "Standaardduur van NPC-scènes",
         "in-game min": "min. in het spel",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Standaardduur van nieuwe scènes met alleen Zois buiten je huishouden. Kies 5 tot 120 minuten in het spel. Add-ons kunnen zelf een duur instellen."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Standaardduur van nieuwe scènes met alleen Zois buiten je huishouden. Kies 5 tot 120 minuten in het spel. Add-ons kunnen zelf een duur instellen.",
+        "Choose seats": "Zitplaatsen kiezen",
+        "Choose two adjacent seats for this scene.": "Kies voor deze scène twee zitplaatsen naast elkaar.",
+        "Seat pair {number}": "Paar zitplaatsen {number}",
+        "Left seats": "Linkerzitplaatsen",
+        "Right seats": "Rechterzitplaatsen",
+        "Cancel": "Annuleren",
+        "The selected Zois do not match any starting scene on this sofa.": "Er is geen geschikte beginscène op deze bank voor de geselecteerde Zois.",
+        "The requested seats on this sofa are unavailable for this scene.": "De gevraagde zitplaatsen op deze bank zijn niet beschikbaar voor deze scène."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Staand rustpunt",
@@ -1103,7 +1174,8 @@
         "scene.scenezoi.bed_single_idle": "Rustpunt in eenpersoonsbed",
         "scene.scenezoi.solo_idle_female": "Solo wachten",
         "scene.scenezoi.solo_idle_male": "Solo wachten",
-        "scene_task.excitement": "Opwinding"
+        "scene_task.excitement": "Opwinding",
+        "scene.scenezoi.sofa_idle": "Rusthub op de bank"
       }
     },
     "tr-TR": {
@@ -1233,7 +1305,15 @@
         "NPC Scenes": "NPC Sahneleri",
         "Default NPC Scene Length": "Varsayılan NPC sahne süresi",
         "in-game min": "dk. (oyun içi)",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Yalnızca haneniz dışındaki Zoilerin katıldığı yeni sahnelerin varsayılan süresi. Oyun içi süreyi 5 ile 120 dakika arasında seçin. Eklentiler farklı bir süre belirleyebilir."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Yalnızca haneniz dışındaki Zoilerin katıldığı yeni sahnelerin varsayılan süresi. Oyun içi süreyi 5 ile 120 dakika arasında seçin. Eklentiler farklı bir süre belirleyebilir.",
+        "Choose seats": "Koltuk seç",
+        "Choose two adjacent seats for this scene.": "Bu sahne için yan yana iki oturma yeri seç.",
+        "Seat pair {number}": "Koltuk çifti {number}",
+        "Left seats": "Sol koltuklar",
+        "Right seats": "Sağ koltuklar",
+        "Cancel": "İptal",
+        "The selected Zois do not match any starting scene on this sofa.": "Bu kanepede seçilen Zoilere uygun bir başlangıç sahnesi yok.",
+        "The requested seats on this sofa are unavailable for this scene.": "Bu kanepede istenen oturma yerleri bu sahne için kullanılamıyor."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Ayakta dinlenme noktası",
@@ -1241,7 +1321,8 @@
         "scene.scenezoi.bed_single_idle": "Tek kişilik yatakta dinlenme noktası",
         "scene.scenezoi.solo_idle_female": "Tek Başına Bekleme",
         "scene.scenezoi.solo_idle_male": "Tek Başına Bekleme",
-        "scene_task.excitement": "Uyarılma"
+        "scene_task.excitement": "Uyarılma",
+        "scene.scenezoi.sofa_idle": "Kanepe dinlenme merkezi"
       }
     },
     "pl-PL": {
@@ -1371,7 +1452,15 @@
         "NPC Scenes": "Sceny NPC",
         "Default NPC Scene Length": "Domyślny czas trwania scen NPC",
         "in-game min": "min w grze",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Domyślny czas nowych scen, w których biorą udział tylko Zoi spoza twojego gospodarstwa domowego. Wybierz od 5 do 120 minut w grze. Dodatki mogą ustawić inny czas trwania."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Domyślny czas nowych scen, w których biorą udział tylko Zoi spoza twojego gospodarstwa domowego. Wybierz od 5 do 120 minut w grze. Dodatki mogą ustawić inny czas trwania.",
+        "Choose seats": "Wybierz miejsca",
+        "Choose two adjacent seats for this scene.": "Wybierz dwa sąsiadujące miejsca dla tej sceny.",
+        "Seat pair {number}": "Para miejsc {number}",
+        "Left seats": "Miejsca po lewej",
+        "Right seats": "Miejsca po prawej",
+        "Cancel": "Anuluj",
+        "The selected Zois do not match any starting scene on this sofa.": "Żadna scena początkowa na tej sofie nie pasuje do wybranych Zoiów.",
+        "The requested seats on this sofa are unavailable for this scene.": "Wybrane miejsca na tej sofie są niedostępne dla tej sceny."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Punkt spoczynku na stojąco",
@@ -1379,7 +1468,8 @@
         "scene.scenezoi.bed_single_idle": "Punkt spoczynku na pojedynczym łóżku",
         "scene.scenezoi.solo_idle_female": "Bezczynność solo",
         "scene.scenezoi.solo_idle_male": "Bezczynność solo",
-        "scene_task.excitement": "Podniecenie"
+        "scene_task.excitement": "Podniecenie",
+        "scene.scenezoi.sofa_idle": "Centrum odpoczynku na kanapie"
       }
     },
     "ru-RU": {
@@ -1509,7 +1599,15 @@
         "NPC Scenes": "Сцены NPC",
         "Default NPC Scene Length": "Стандартная длительность сцен NPC",
         "in-game min": "игр. мин",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Стандартная длительность новых сцен, в которых участвуют только Zoi не из вашей семьи. Выберите от 5 до 120 игровых минут. Дополнения могут задать другую длительность."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "Стандартная длительность новых сцен, в которых участвуют только Zoi не из вашей семьи. Выберите от 5 до 120 игровых минут. Дополнения могут задать другую длительность.",
+        "Choose seats": "Выбор мест",
+        "Choose two adjacent seats for this scene.": "Выберите два соседних места для этой сцены.",
+        "Seat pair {number}": "Пара мест {number}",
+        "Left seats": "Места слева",
+        "Right seats": "Места справа",
+        "Cancel": "Отмена",
+        "The selected Zois do not match any starting scene on this sofa.": "На этом диване нет начальной сцены, подходящей выбранным Зоям.",
+        "The requested seats on this sofa are unavailable for this scene.": "Выбранные места на этом диване недоступны для этой сцены."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "Исходная сцена стоя",
@@ -1517,7 +1615,8 @@
         "scene.scenezoi.bed_single_idle": "Исходная сцена на односпальной кровати",
         "scene.scenezoi.solo_idle_female": "Ожидание соло",
         "scene.scenezoi.solo_idle_male": "Ожидание соло",
-        "scene_task.excitement": "Возбуждение"
+        "scene_task.excitement": "Возбуждение",
+        "scene.scenezoi.sofa_idle": "Центр отдыха на диване"
       }
     },
     "ja-JP": {
@@ -1647,7 +1746,15 @@
         "NPC Scenes": "NPCシーン",
         "Default NPC Scene Length": "NPCシーンの標準時間",
         "in-game min": "分（ゲーム内）",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "世帯外のZoiだけが参加する新しいシーンの標準時間です。ゲーム内時間で5～120分の範囲で設定できます。アドオンは別の時間を指定できます。"
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "世帯外のZoiだけが参加する新しいシーンの標準時間です。ゲーム内時間で5～120分の範囲で設定できます。アドオンは別の時間を指定できます。",
+        "Choose seats": "座席を選択",
+        "Choose two adjacent seats for this scene.": "このシーンで使う隣り合う2席を選んでください。",
+        "Seat pair {number}": "座席ペア {number}",
+        "Left seats": "左側の座席",
+        "Right seats": "右側の座席",
+        "Cancel": "キャンセル",
+        "The selected Zois do not match any starting scene on this sofa.": "選択したZoiに対応する開始シーンが、このソファにはありません。",
+        "The requested seats on this sofa are unavailable for this scene.": "このソファで選択した座席は、このシーンでは使用できません。"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "立位の待機ハブ",
@@ -1655,7 +1762,8 @@
         "scene.scenezoi.bed_single_idle": "シングルベッドの待機ハブ",
         "scene.scenezoi.solo_idle_female": "ソロ待機",
         "scene.scenezoi.solo_idle_male": "ソロ待機",
-        "scene_task.excitement": "興奮"
+        "scene_task.excitement": "興奮",
+        "scene.scenezoi.sofa_idle": "ソファの待機ハブ"
       }
     },
     "ko-KR": {
@@ -1785,7 +1893,15 @@
         "NPC Scenes": "NPC 장면",
         "Default NPC Scene Length": "NPC 장면 기본 길이",
         "in-game min": "분(게임 시간)",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "플레이 중인 가구에 속하지 않은 조이만 참여하는 새 장면의 기본 길이입니다. 게임 시간으로 5~120분 중에서 선택할 수 있으며, 애드온은 다른 길이를 지정할 수 있습니다."
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "플레이 중인 가구에 속하지 않은 조이만 참여하는 새 장면의 기본 길이입니다. 게임 시간으로 5~120분 중에서 선택할 수 있으며, 애드온은 다른 길이를 지정할 수 있습니다.",
+        "Choose seats": "좌석 선택",
+        "Choose two adjacent seats for this scene.": "이 장면에서 사용할 나란한 두 좌석을 선택하세요.",
+        "Seat pair {number}": "좌석 쌍 {number}",
+        "Left seats": "왼쪽 좌석",
+        "Right seats": "오른쪽 좌석",
+        "Cancel": "취소",
+        "The selected Zois do not match any starting scene on this sofa.": "이 소파에는 선택한 조이들에게 맞는 시작 장면이 없습니다.",
+        "The requested seats on this sofa are unavailable for this scene.": "이 소파에서 선택한 좌석은 이 장면에 사용할 수 없습니다."
       },
       "labels": {
         "scene.scenezoi.standing_idle": "서 있는 대기 허브",
@@ -1793,7 +1909,8 @@
         "scene.scenezoi.bed_single_idle": "싱글 침대 대기 허브",
         "scene.scenezoi.solo_idle_female": "혼자 대기",
         "scene.scenezoi.solo_idle_male": "혼자 대기",
-        "scene_task.excitement": "흥분"
+        "scene_task.excitement": "흥분",
+        "scene.scenezoi.sofa_idle": "소파 휴식 허브"
       }
     },
     "zh-CN": {
@@ -1923,7 +2040,15 @@
         "NPC Scenes": "NPC 场景",
         "Default NPC Scene Length": "NPC 场景默认时长",
         "in-game min": "分钟（游戏内）",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "仅有家庭外的 Zoi 参与时，新场景会使用此默认时长。可在 5 至 120 分钟的游戏内时间范围内设置。附加模组可单独指定时长。"
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "仅有家庭外的 Zoi 参与时，新场景会使用此默认时长。可在 5 至 120 分钟的游戏内时间范围内设置。附加模组可单独指定时长。",
+        "Choose seats": "选择座位",
+        "Choose two adjacent seats for this scene.": "为此场景选择两个相邻座位。",
+        "Seat pair {number}": "第 {number} 组座位",
+        "Left seats": "左侧座位",
+        "Right seats": "右侧座位",
+        "Cancel": "取消",
+        "The selected Zois do not match any starting scene on this sofa.": "这张沙发上没有适合所选Zoi的起始场景。",
+        "The requested seats on this sofa are unavailable for this scene.": "这张沙发上所选的座位无法用于此场景。"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "站立待机枢纽",
@@ -1931,7 +2056,8 @@
         "scene.scenezoi.bed_single_idle": "单人床待机枢纽",
         "scene.scenezoi.solo_idle_female": "单人待机",
         "scene.scenezoi.solo_idle_male": "单人待机",
-        "scene_task.excitement": "兴奋"
+        "scene_task.excitement": "兴奋",
+        "scene.scenezoi.sofa_idle": "沙发待机中心"
       }
     },
     "zh-TW": {
@@ -2061,7 +2187,15 @@
         "NPC Scenes": "NPC 場景",
         "Default NPC Scene Length": "NPC 場景預設長度",
         "in-game min": "分鐘（遊戲內）",
-        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "只有家庭外的 Zoi 參與時，新場景會使用這個預設長度。可設定為遊戲內時間 5 到 120 分鐘。附加模組可以另行指定長度。"
+        "How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.": "只有家庭外的 Zoi 參與時，新場景會使用這個預設長度。可設定為遊戲內時間 5 到 120 分鐘。附加模組可以另行指定長度。",
+        "Choose seats": "選擇座位",
+        "Choose two adjacent seats for this scene.": "為此場景選擇兩個相鄰的座位。",
+        "Seat pair {number}": "第 {number} 組座位",
+        "Left seats": "左側座位",
+        "Right seats": "右側座位",
+        "Cancel": "取消",
+        "The selected Zois do not match any starting scene on this sofa.": "這張沙發上沒有適合所選Zoi的起始場景。",
+        "The requested seats on this sofa are unavailable for this scene.": "這張沙發上所選的座位無法用於此場景。"
       },
       "labels": {
         "scene.scenezoi.standing_idle": "站立待機樞紐",
@@ -2069,7 +2203,8 @@
         "scene.scenezoi.bed_single_idle": "單人床待機樞紐",
         "scene.scenezoi.solo_idle_female": "單人待機",
         "scene.scenezoi.solo_idle_male": "單人待機",
-        "scene_task.excitement": "興奮"
+        "scene_task.excitement": "興奮",
+        "scene.scenezoi.sofa_idle": "沙發待機中心"
       }
     }
   }

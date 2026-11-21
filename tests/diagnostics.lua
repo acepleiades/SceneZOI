@@ -216,6 +216,25 @@ assert(wait.simulation.commit_received==nil and wait.simulation.seconds_since_co
     "Invalid optional Commit observations are omitted")
 diagnostics.prepare_wait(session,p,{session.token,"prepare_wait","autonomy_enabled","2","none","none","none","0","0","4","not_hex"})
 assert(diagnostics.wait_status(session,p).simulation==nil,"Malformed optional observations do not break preparation diagnostics")
+diagnostics.prepare_wait(session,p,{session.token,"prepare_wait","source_posture_releasing","2","none","none","none","none","none","none",
+    protocol.encode(Json.encode({source_furniture_id="50",source_component="InteractionSlot_L",source_slot="InteractionSlot_L",
+        source_posture_id="Sit",source_current_posture="Stand",source_current_target="-1",
+        source_claim_pending=true,source_posture_standing=true,getup_queue_id="77",getup_state="finishing",
+        getup_failure="native_getup_motion_unsettled",getup_queue_present=false,getup_motion_pending=true,
+        getup_position_settled=false,getup_anim_id="NativeFurniturePose",getup_montage_id="NativeFurniturePoseMontage",
+        getup_queue_result=37,unsafe_extra="ignored"}))})
+wait=diagnostics.wait_status(session,p)
+assert(wait.phase=="source_posture_releasing"and wait.simulation.source_furniture_id=="50"
+    and wait.simulation.source_component=="InteractionSlot_L"and wait.simulation.source_slot=="InteractionSlot_L"
+    and wait.simulation.source_claim_pending and wait.simulation.source_posture_standing
+    and wait.simulation.source_current_target=="-1"and wait.simulation.unsafe_extra==nil,
+    "Source furniture/posture waits retain only the bounded native observations")
+assert(wait.simulation.getup_queue_id=="77"and wait.simulation.getup_state=="finishing"
+    and not wait.simulation.getup_queue_present and wait.simulation.getup_motion_pending
+    and not wait.simulation.getup_position_settled and wait.simulation.getup_queue_result==37
+    and wait.simulation.getup_failure=="native_getup_motion_unsettled"
+    and wait.simulation.getup_montage_id=="NativeFurniturePoseMontage",
+    "Native GetUp diagnostics distinguish queue, montage and spatial completion")
 
 local occupied = false
 local actors = {["1"] = actor}

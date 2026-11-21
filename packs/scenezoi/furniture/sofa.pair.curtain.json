@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.sofa.pair.curtain",
+  "kind": "sofa.pair",
+  "objects": [
+    "E01_Sofa05"
+  ],
+  "surface_height_cm": 44,
+  "sitting_spots": [
+    {
+      "id": "left",
+      "run": "front",
+      "offset_cm": {
+        "x": 45,
+        "y": 31,
+        "z": 0
+      },
+      "yaw_degrees": 0,
+      "slots": [
+        {
+          "component_name": "InteractionSlot_L",
+          "slot_name": "InteractionSlot_L"
+        },
+        {
+          "component_name": "InteractionSlot_L1",
+          "slot_name": "InteractionSlot_L1"
+        }
+      ]
+    },
+    {
+      "id": "right",
+      "run": "front",
+      "offset_cm": {
+        "x": -45,
+        "y": 31,
+        "z": 0
+      },
+      "yaw_degrees": 0,
+      "slots": [
+        {
+          "component_name": "InteractionSlot_R",
+          "slot_name": "InteractionSlot_R"
+        },
+        {
+          "component_name": "InteractionSlot_R1",
+          "slot_name": "InteractionSlot_R1"
+        }
+      ]
+    }
+  ],
+  "seat_pairs": [
+    {
+      "id": "left_right",
+      "spots": [
+        "left",
+        "right"
+      ]
+    }
+  ]
+}

@@ -35,13 +35,13 @@ npc.Data.InteractionBagId=marker;npc.Data.TargetEntityId.Value=1
 M.tick({a={}},true);npc.Data.InteractionBagId='Other_Talk';npc.visibility=2
 M.tick({a={}},true);assert(npc.visibility==2,'Do not overwrite a new native visibility value')
 local furniture=entry('_UIMod_SceneZOI_93C44199/scenezoi-starter~scenezoi_furniture',30)
-package.loaded['SceneZOI.Furniture']={available=function()return nil end}
+package.loaded['SceneZOI.Furniture']={pickable=function()return nil end}
 package.loaded['SceneZOI.Catalog']={get_snapshot=function()return {nodes={}}end}
 object_rows={furniture,native};M.tick({a={}},true);assert(furniture.visibility==1)
 object_rows={native};M.tick({a={}},true);assert(furniture.visibility==0,'Detached pooled entries must be released before reuse')
 object_rows={furniture,native};M.tick({a={}},true);assert(furniture.visibility==1)
 local future=entry('_UIMod_SceneZOI_93C44199/scenezoi-starter~scenezoi_furniture',31)
-package.loaded['SceneZOI.Furniture']={available=function(id)return id=='31'and 'future_profile' or nil end}
+package.loaded['SceneZOI.Furniture']={pickable=function(id)return id=='31'and 'future_profile' or nil end}
 package.loaded['SceneZOI.Catalog']={get_snapshot=function()return {nodes={future={starting_hub=true,furniture='future_profile'}}}end}
 package.loaded['SceneZOI.FurnitureData']={compatible=function(node,profile)return node.furniture==profile end}
 object_rows={furniture,future,native};M.tick({a={}},true);assert(furniture.visibility==1 and future.visibility==1)

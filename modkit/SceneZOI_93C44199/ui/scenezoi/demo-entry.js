@@ -4,8 +4,12 @@
     var pending=null;
     function decode(r){if(r && r.success===false)throw new Error(r.message);var d=r && r.data!==undefined?r.data:r;return typeof d==='string'?JSON.parse(d):d;}
     function cfg(cmd,key,value){var args={mod_id:wf.MOD_ID,section:'scenezoi_runtime',key:key};if(value!==undefined)args.value=value;return inzoi.cli.execute(cmd,args).then(decode);}
-    function stop(p){if(pending!==p)return;pending=null;window.SceneZOIControls.decline(p.initiator,p.token);}
-    function selected(p,ids,node,roster,furniture){
+    function stop(p){if(pending!==p)return;pending=null;if(p.pairRequest)cfg('uimod.cfg_save','selection_pair',['SZ2',p.token,'cancel'].join('|')).catch(function(){});window.SceneZOIControls.decline(p.initiator,p.token);}
+    function writePairReply(p){
+        var packet=p.pairReply;if(!packet || pending!==p)return Promise.resolve();
+        return cfg('uimod.cfg_save','selection_pair',packet).then(function(){if(p.pairReply===packet)p.pairReply=null;});
+    }
+    function selected(p,ids,node,roster,furniture,pairId){
         if(ids.length<1 || new Set(ids).size!==ids.length || ids[0]!==p.initiator){stop(p);return Promise.resolve();}
         var bindings={},seen=new Set();
         if(typeof node!=='string'||typeof roster!=='string'){stop(p);return Promise.resolve();}
@@ -18,16 +22,27 @@
         var ready=window.SceneZOIControls.refreshCatalog?window.SceneZOIControls.refreshCatalog():Promise.resolve();
         return ready.then(function(){
             if(pending!==p)return false;
-            pending=null;return window.SceneZOIControls.start({initiator:p.initiator,node:node,bindings:bindings,furniture:furniture==='none'?null:furniture});
+            pending=null;return window.SceneZOIControls.start({initiator:p.initiator,node:node,bindings:bindings,furniture:furniture==='none'?null:furniture,furniture_pair_id:pairId==='none'?null:pairId});
         }).catch(function(){if(pending===p)stop(p);else window.SceneZOIControls.decline(p.initiator,p.token);});
     }
     function poll(){
         var p=pending;if(!p || p.reading)return Promise.resolve();p.reading=true;
-        return cfg('uimod.cfg_load','selection_state').then(function(data){
+        return (p.pairReply?writePairReply(p):Promise.resolve()).then(function(){return cfg('uimod.cfg_load','selection_state');}).then(function(data){
             var raw=data && data.value!==undefined?data.value:data;
             var f=String(raw || '').split('|');
             if(pending!==p || f[0]!=='SZ2' || f[1]!==p.token)return;
-            if(f[2]==='selected')return selected(p,f[3].split('+'),f[4],f[5],f[6]);
+            if(f[2]==='choosing_pair'){
+                if(p.pairRequest===raw)return;p.pairRequest=raw;
+                var choices=JSON.parse(decodeURIComponent(String(f[8]||'').replace(/../g,function(byte){return '%'+byte;})));
+                return window.SceneZOIControls.chooseFurniturePair(choices,p.initiator,p.token).then(function(id){
+                    if(pending!==p)return;
+                    // Keep a failed reply for the next poll. Repeating this exact
+                    // token/choice is safe, and does not ask the player to click again.
+                    p.pairReply=['SZ2',p.token,id?'choose':'cancel'].concat(id?[id]:[]).join('|');
+                    return writePairReply(p);
+                });
+            }
+            if(f[2]==='selected')return selected(p,f[3].split('+'),f[4],f[5],f[6],f[7]);
             if(f[2]==='cancelled' || f[2]==='error' || f[2]==='unavailable')stop(p);
         }).catch(function(){}).then(function(){p.reading=false;});
     }

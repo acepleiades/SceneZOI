@@ -94,6 +94,8 @@ function M.snapshot(current)
         participant_tags=require('SceneZOI.DataValidation').copy(current.node.participant_tags or {}),
         actions=require('SceneZOI.DataValidation').copy(current.node.actions or {}),
         furniture_id=current.furniture and current.furniture.id,
+        furniture_pair_id=current.furniture and current.furniture.selected_pair_id,
+        furniture_spots=current.furniture and require('SceneZOI.DataValidation').copy(current.furniture.spot_ids),
         id = current.token, node_id = current.node.id, revision = current.revision,
         node_kind = current.node.kind, destination = current.node.destination,
         phase = current.ended and "ended" or current.stopping and "exiting" or current.preparing and "preparing" or "playing",

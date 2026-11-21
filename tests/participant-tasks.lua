@@ -86,6 +86,9 @@ local function owner(id)
     GetCurrentInteractionBagId=function()return 'HasBook_Book_Read'end,
     GetCurrentInteractionId=function()return 'NativeCurrentInteraction'end}end
   if t==4 then return {
+    GetCurrentPostureState=function()return {PostureId='Stand',PostureTargetEntityId={Value=-1},BaseComponentName='None',OccupyingSlot='None'}end,
+    IsStanding=function()return true end,
+    IsRiddingVehicle=function()return false end,
     GetCurrentGrabObject=function(_,hand)return self.grabs[hand]end,
     GetGrabState=function(_,hand)return {EntityId={Value=self.grabs[hand]},GrabId=self.grab_ids[hand] or "Hold"}end,
     StopGrabLoopAnimation=function(_,hand)self.stopped_grabs[#self.stopped_grabs+1]=hand end,
@@ -125,6 +128,8 @@ local function start(s,o,token)
  M.on_lua_message(s,o,'SceneZOI.Commit',P.pack(token))
 end
 local function tick(s,o,dt)
+ if o.native_tick then o:native_tick(dt or .1)end
+ require('SceneZOI.NativeGetUp').tick(dt or .1)
  if o.cancel_delay then
   o.cancel_delay=o.cancel_delay-1
   if o.cancel_delay==0 then
@@ -871,3 +876,318 @@ assert(outfit_appearance.setting.Body.bUseMeshMerge and outfit_appearance.settin
 print('Settled entry wardrobe passed: original save barrier, delayed task/layout resolution, current pieces, capture before authored removal, exact re-equip and no navigation refresh.')
 assert(native_bubble_calls==0, 'Participant leases must not add, remove or suppress native bubbles')
 os.time=original_time
+
+-- Persistent source-sofa posture: live cross-sofa reproduction.
+
+-- Source fields/methods are from shipped FB1PostureState,
+-- FB2PostureComponent and FB2SlotStateInfo metadata.
+os.time=function()return math.floor(real_seconds)end
+stub_outfit.apply,stub_outfit.restore,stub_outfit.keep_unmerged=old_apply,old_restore,function()end
+wardrobe_stub.capture=function()end;wardrobe_stub.inventory=function()return 'inventory'end
+inzoi.EB2ComponentType.Slot=5
+inzoi.EB1SlotType={Interaction=1}
+inzoi.EB1InteractionPlayReason={User=3}
+inzoi.EB1AddInteractionQueueResult={Success=37}
+inzoi.EB1SlotOccupyingReason={None=0,Interaction=1,Posture=2,Restricted=8}
+inzoi.FB1PostureState=function()return {PostureId='Stand',PostureTargetEntityId={Value=-1},
+ BaseComponentName='None',OccupyingSlot='None',LinkedComponentName='None',Direction=0}end
+local original_manager=inzoi.getB2Manager
+local native_objects={}
+inzoi.getB2Manager=function(name)
+ if name=='FB2EntityManager'then return {
+  FindGameObject=function(_,entity)return native_objects[entity.Value]end,
+  FindCharacter=function(_,entity)return owners[tostring(entity.Value)]end,
+ }end
+ return original_manager(name)
+end
+local function has_reason(row,value)
+ for _,reason in ipairs(row.SlotOccupyingReasons)do if reason==value then return true end end
+ return false
+end
+local function native_sitter(id,target,component)
+ local actor=owner(id)
+ local inherited=actor.GetComponent
+ local native_interaction=inherited(actor,inzoi.EB2ComponentType.Interaction)
+ local posture=inherited(actor,inzoi.EB2ComponentType.Posture)
+ posture.current={PostureId='Sit',PostureTargetEntityId={Value=target or -1},
+  BaseComponentName=component or 'None',OccupyingSlot=component or 'None',LinkedComponentName='None',Direction=0}
+ posture.stand_calls=0
+ function posture:GetCurrentPostureState()return self.current end
+ function posture:IsStanding()return self.current.PostureId=='Stand'end
+ function posture:SetPostureState(next_state)
+  assert(actor.native_getup_finishing,'Only the complete native action may apply Stand')
+  assert(not actor.playing,'End the selected interaction before changing its posture')
+  assert(next_state.PostureId=='Stand','Use the shipped native Stand state')
+  self.stand_calls=self.stand_calls+1
+  local source=native_objects[self.current.PostureTargetEntityId.Value]
+  if source and not self.defer_source_release then
+   for _,row in ipairs(source.slots.SlotStateInfos)do
+    if row.OccupyingEntityId.Value==id then
+     for index=#row.SlotOccupyingReasons,1,-1 do
+      if row.SlotOccupyingReasons[index]==2 then table.remove(row.SlotOccupyingReasons,index)end
+     end
+     if #row.SlotOccupyingReasons==0 then row.OccupyingEntityId.Value=-1 end
+    end
+   end
+  end
+  if not self.defer_stand then self.current=next_state end
+ end
+ native_interaction.InteractionQueue={}
+ local prior_bag=native_interaction.GetCurrentInteractionBagId
+ function native_interaction:GetCurrentInteractionBagId()
+  if actor.getup_ticks then return 'Stand'end
+  return prior_bag(self)
+ end
+ function native_interaction:GetCurrentInteractionTargetEntityId()
+  return {Value=actor.getup_target or -1}
+ end
+ function native_interaction:AddInteractionQueueByParam(target,impact,bag,reason,front,multi,description,packet,next_queue)
+  assert(not actor.playing and bag=='Stand'and reason==3 and front and not multi and packet and not next_queue)
+  assert(target.Value==posture.current.PostureTargetEntityId.Value,'Use the source, not the destination furniture')
+  actor.current=1000+id;actor.getup_ticks=3;actor.getup_target=target.Value;actor.playing=true
+  actor.motions={{anim_id='NativeFurniturePose',montage_id='NativeFurniturePoseMontage',group='PostureGroup',non_interruptible=false}}
+  self.InteractionQueue={{InteractionQueueId=actor.current,InteractionBagId=bag,PickedEntityId=target}}
+  return 37
+ end
+ function actor:native_tick(dt)
+  if not self.getup_ticks or dt<=0 then return end
+  self.getup_ticks=self.getup_ticks-1
+  if self.getup_ticks==0 then
+   self.playing=false;self.motions={};native_interaction.InteractionQueue={}
+   self.native_getup_finishing=true;posture:SetPostureState(inzoi.FB1PostureState());self.native_getup_finishing=nil
+   self.getup_ticks=nil
+  end
+ end
+ function actor:GetComponent(kind)
+  if kind==inzoi.EB2ComponentType.Posture then return posture end
+  if kind==inzoi.EB2ComponentType.Interaction then return native_interaction end
+  return inherited(self,kind)
+ end
+ return actor,posture
+end
+local selected,source_posture=native_sitter(201,50,'InteractionSlot_C')
+local bystander,bystander_posture=native_sitter(999,50,'InteractionSlot_R')
+local source_slot={ComponentName='InteractionSlot_C',SlotName='InteractionSlot_C',Blocked=false,
+ OccupyingEntityId={Value=201},SlotOccupyingReasons={2}}
+local bystander_slot={ComponentName='InteractionSlot_R',SlotName='InteractionSlot_R',Blocked=false,
+ OccupyingEntityId={Value=999},SlotOccupyingReasons={2}}
+local source_slots={SlotStateInfos={source_slot,bystander_slot}}
+function source_slots:GetSlotStateInfoByComponentName(kind,component)
+ assert(kind==inzoi.EB1SlotType.Interaction)
+ for _,row in ipairs(self.SlotStateInfos)do if row.ComponentName==component then return row end end
+end
+native_objects[50]={ObjectTableId='Sofa02_v06',slots=source_slots,GetComponent=function(_,kind)
+ assert(kind==inzoi.EB2ComponentType.Slot);return source_slots
+end}
+selected.grabs[1],selected.grab_ids[1]=22,'Hold'
+selected.playing,selected.queued=true,2
+local selected_state={};M.on_begin(selected_state,selected)
+node={id='test.destination_sofa_b',participants={lead={body='female'}},
+ furniture={kind='sofa.pair',surface_height_cm=44}}
+start(selected_state,selected,'source-sofa-a-to-b')
+for _=1,16 do
+ if selected_state.lease and selected_state.lease.ready then break end
+ tick(selected_state,selected)
+end
+assert(selected_state.lease and selected_state.lease.ready,'The base fixture must reach ready before checking the source claim')
+assert(not selected.playing and selected.queued==0,'The selected native task must already be idle')
+-- The host's anchor is elsewhere (sofa B); Prepare contains authored furniture
+-- metadata, not a fabricated destination instance field.
+M.on_lua_message(selected_state,selected,'SceneZOI.Anchor',P.pack('source-sofa-a-to-b',1000,0,0,0,0,0))
+assert(selected_state.lease.location.X==1000 and selected.position_writes==1,
+ 'The host anchor for the destination must actually be applied in this fixture')
+local source_freed=source_slot.OccupyingEntityId.Value~=201 and not has_reason(source_slot,2)
+local source_ended=source_posture:IsStanding()and source_posture.current.PostureTargetEntityId.Value~=50
+assert(bystander_slot.OccupyingEntityId.Value==999 and has_reason(bystander_slot,2)
+ and bystander_posture.stand_calls==0 and bystander_posture.current.PostureTargetEntityId.Value==50,
+ 'Preparing the selected sitter must not stand an uninvolved source-sofa occupant')
+assert(selected.grabs[1]==22,'Ending a furniture posture must not replace or discard the held prop')
+-- Simulate a later ordinary sitter owning the vacated slot. Exit has no right
+-- to reinstate the selected Zoi's old posture or ownership there.
+source_slot.OccupyingEntityId.Value=777;source_slot.SlotOccupyingReasons={2}
+release(selected_state,selected,'source-sofa-a-to-b')
+assert(source_slot.OccupyingEntityId.Value==777 and has_reason(source_slot,2),
+ 'Exit must not reclaim source sofa A from a later ordinary occupant')
+assert(selected.grabs[1]==22 and selected.grab_ids[1]=='Hold','Existing same-object grip restoration must remain intact')
+
+local ordinary,ordinary_posture=native_sitter(202,nil,nil)
+local ordinary_state={};M.on_begin(ordinary_state,ordinary)
+start(ordinary_state,ordinary,'non-slot-posture-control')
+for _=1,12 do if ordinary_state.lease and ordinary_state.lease.ready then break end tick(ordinary_state,ordinary)end
+assert(ordinary_state.lease and ordinary_state.lease.ready,'A non-slot posture must not stall ordinary preparation')
+assert(ordinary_posture.stand_calls==0 and ordinary_posture.current.PostureId=='Sit',
+ 'A non-slot native posture is outside the furniture source-claim cleanup')
+release(ordinary_state,ordinary,'non-slot-posture-control')
+print('Source-posture controls passed: uninvolved sitter, non-slot posture, later occupant and held-prop restoration are unchanged.')
+print('Cross-sofa mock observation: '..Json.encode({ready=true,task_idle=true,source_native_claim_freed=source_freed,
+ source_posture_ended=source_ended,stand_calls=source_posture.stand_calls}))
+os.time=original_time
+assert(source_freed and source_ended,
+ 'Preparation must release the selected native source Sit/slot claim before anchoring elsewhere')
+
+local function begin_source_case(actor,token)
+ local state={};M.on_begin(state,actor);start(state,actor,token)
+ return state
+end
+local function finish_source_case(state,actor)
+ for _=1,12 do if state.lease and state.lease.ready then break end tick(state,actor)end
+ assert(state.lease and state.lease.ready,'The source-posture case must finish preparation')
+end
+os.time=function()return math.floor(real_seconds)end
+local delayed,delayed_posture=native_sitter(203,50,'InteractionSlot_C')
+source_slot.OccupyingEntityId.Value=203;source_slot.SlotOccupyingReasons={2}
+delayed_posture.defer_source_release=true
+local delayed_state=begin_source_case(delayed,'source-claim-delayed')
+for _=1,6 do if delayed_posture.stand_calls>0 then break end tick(delayed_state,delayed)end
+real_seconds=real_seconds+1 -- Preparation status is deliberately limited to one sample per second.
+for _=1,3 do tick(delayed_state,delayed)end
+assert(delayed_posture.stand_calls==1 and not delayed_state.lease.ready and delayed_posture:IsStanding(),
+ 'Stand alone cannot acknowledge Ready while the source native claim remains; never repeat the setter')
+local source_wait=waits[#waits]
+local source_sample=Json.decode(P.decode(source_wait[11]))
+assert(source_wait[3]=='source_posture_releasing'and source_sample.source_furniture_id=='50'
+ and source_sample.source_component=='InteractionSlot_C'and source_sample.source_slot=='InteractionSlot_C'
+ and source_sample.source_claim_pending and source_sample.source_posture_standing,
+ 'Existing preparation diagnostics identify the source alias and the remaining native ownership barrier')
+source_slot.OccupyingEntityId.Value=-1;source_slot.SlotOccupyingReasons={}
+finish_source_case(delayed_state,delayed);release(delayed_state,delayed,'source-claim-delayed')
+
+local delayed_pose,late_posture=native_sitter(204,50,'InteractionSlot_C')
+source_slot.OccupyingEntityId.Value=204;source_slot.SlotOccupyingReasons={2};late_posture.defer_stand=true
+local late_state=begin_source_case(delayed_pose,'source-posture-delayed')
+for _=1,6 do if late_posture.stand_calls>0 then break end tick(late_state,delayed_pose)end
+for _=1,3 do tick(late_state,delayed_pose)end
+assert(late_posture.stand_calls==1 and not late_state.lease.ready and source_slot.OccupyingEntityId.Value==-1,
+ 'Vacancy alone cannot acknowledge Ready while the selected native posture remains seated')
+late_posture.current=inzoi.FB1PostureState()
+finish_source_case(late_state,delayed_pose);release(late_state,delayed_pose,'source-posture-delayed')
+
+-- Even matching object/slot-looking fields are not permission to reset a
+-- vehicle or water movement state. These native systems retain ownership.
+for index,posture_id in ipairs({'Vehicle','Swim','Dive','Surf'})do
+ local id=210+index
+ local excluded,excluded_posture=native_sitter(id,50,'InteractionSlot_C')
+ excluded_posture.current.PostureId=posture_id
+ excluded_posture.IsRiddingVehicle=function()return posture_id=='Vehicle'end
+ source_slot.OccupyingEntityId.Value=id;source_slot.SlotOccupyingReasons={2}
+ local token='excluded-source-'..posture_id
+ local state=begin_source_case(excluded,token);finish_source_case(state,excluded)
+ assert(excluded_posture.stand_calls==0 and source_slot.OccupyingEntityId.Value==id and has_reason(source_slot,2),
+  'Do not reset '..posture_id..' through furniture preparation')
+ release(state,excluded,token)
+end
+source_slot.OccupyingEntityId.Value=777;source_slot.SlotOccupyingReasons={2}
+local no_owner,no_owner_posture=native_sitter(220,50,'InteractionSlot_C')
+local no_owner_state=begin_source_case(no_owner,'foreign-source-posture')
+for _=1,4 do tick(no_owner_state,no_owner)end
+assert(not no_owner_state.lease.ready,'An unproven furniture source must not silently become Ready')
+assert(no_owner_posture.stand_calls==0 and source_slot.OccupyingEntityId.Value==777,
+ 'An old posture pointing at another Zoi native slot is not permission to clear it')
+release(no_owner_state,no_owner,'foreign-source-posture')
+local carried,carried_posture=native_sitter(221,999,'None');carried_posture.current.PostureId='Carried'
+local carried_state=begin_source_case(carried,'character-source-posture');finish_source_case(carried_state,carried)
+assert(carried_posture.stand_calls==0,'A character-target posture must remain outside source furniture cleanup')
+release(carried_state,carried,'character-source-posture')
+os.time=original_time
+print('Source furniture posture passed: task idle first, exact selected slot ownership, native Stand plus vacancy barriers, exclusions and source diagnostics.')
+
+os.time=function()return math.floor(real_seconds)end
+local moved,moved_posture=native_sitter(240,50,'InteractionSlot_C')
+source_slot.OccupyingEntityId.Value=240;source_slot.SlotOccupyingReasons={2}
+moved.world_position=UE.FVector(0,0,0)
+function moved:GetLocation()return self.world_position end
+local native_step=moved.native_tick
+function moved:native_tick(dt)
+ local before=self.getup_ticks;native_step(self,dt)
+ if before and not self.getup_ticks then self.world_position=UE.FVector(45,0,0)end
+end
+function moved:SetLocationAndRotationOnlySimul(location)
+ self.position_writes=(self.position_writes or 0)+1;self.last_position=location.X
+end
+local moved_state=begin_source_case(moved,'getup-checkpoint')
+for _=1,16 do if moved_state.lease.entry_checkpoint then break end tick(moved_state,moved)end
+assert(moved_state.lease.entry_checkpoint==1 and moved_state.lease.entry_location.X==45
+ and moved_state.lease.save_snapshot.location[1]==45 and not moved_state.lease.ready and moved.collision,
+ 'Post-GetUp transform needs its own persisted checkpoint before collision/layout/Ready')
+M.on_lua_message(moved_state,moved,'SceneZOI.Commit',P.pack('getup-checkpoint'))
+M.on_lua_message(moved_state,moved,'SceneZOI.Anchor',P.pack('getup-checkpoint',1000,0,0,0,0,0))
+assert(not moved_state.lease.ready and not moved_state.lease.location and not moved.position_writes,
+ 'An old Commit or premature Anchor cannot bypass the later settled-entry acknowledgment')
+M.on_lua_message(moved_state,moved,'SceneZOI.EntrySaved',P.pack('wrong-session',1))
+M.on_lua_message(moved_state,moved,'SceneZOI.EntrySaved',P.pack('getup-checkpoint',2))
+assert(not moved_state.lease.ready and not moved_state.lease.entry_checkpoint_acked)
+M.on_lua_message(moved_state,moved,'SceneZOI.EntrySaved',P.pack('getup-checkpoint',1))
+assert(moved_state.lease.ready and moved_state.lease.entry_checkpoint_acked==1 and not moved.collision)
+M.on_lua_message(moved_state,moved,'SceneZOI.Anchor',P.pack('getup-checkpoint',1000,0,0,0,0,0))
+assert(moved.position_writes==1 and moved.last_position==1000)
+release(moved_state,moved,'getup-checkpoint')
+assert(moved.last_position==45 and source_slot.OccupyingEntityId.Value==-1,
+ 'Exit returns to the settled native GetUp location and does not reclaim the old seat')
+os.time=original_time
+print('Settled entry checkpoint passed: full native GetUp, transform-only journal, explicit matching ACK and anchor/Exit safety.')
+
+os.time=function()return math.floor(real_seconds)end
+local abort_actor,abort_posture=native_sitter(250,50,'InteractionSlot_C')
+source_slot.OccupyingEntityId.Value=250;source_slot.SlotOccupyingReasons={2}
+local abort_state=begin_source_case(abort_actor,'abort-native-exit')
+for _=1,8 do if abort_actor.getup_ticks then break end tick(abort_state,abort_actor)end
+assert(abort_actor.getup_ticks and not abort_actor.AutonomyOption.AutonomyEnable.Value)
+M.on_lua_message(abort_state,abort_actor,'SceneZOI.Release',P.pack('abort-native-exit'))
+assert(abort_state.lease and abort_state.lease.releasing and abort_actor.getup_ticks and abort_actor.cancels==0
+ and abort_actor.AutonomyOption.AutonomyEnable.Value and abort_actor.AutonomyOption.AutonomyEnable.bFollowParent
+ and not abort_actor.position_writes,
+ 'Abort restores policy for save safety while deferring spatial/appearance cleanup until native exit finishes')
+M.on_lua_message(abort_state,abort_actor,'SceneZOI.Anchor',P.pack('abort-native-exit',1000,0,0,0,0,0))
+assert(not abort_actor.position_writes,'A releasing native exit must never be pinned back into a scene')
+for _=1,12 do if not abort_state.lease then break end tick(abort_state,abort_actor)end
+assert(not abort_state.lease and not abort_actor.getup_ticks and abort_posture.stand_calls==1
+ and abort_actor.cancels==0 and #abort_actor.stopped==0 and source_slot.OccupyingEntityId.Value==-1,
+ 'The owned native GetUp finishes naturally without task cancellation, montage cuts or restored old seat claims')
+os.time=original_time
+print('Native GetUp abort passed: deferred spatial cleanup, original policy, native completion and no task/montage interruption.')
+
+
+-- Furniture acquisition can begin a native exit before the participant's
+-- original snapshot has been committed. A denied startup must retire only its
+-- captured lease while letting that native action finish without takeover.
+os.time=function()return math.floor(real_seconds)end
+local captured_actor,captured_posture=native_sitter(251,50,'InteractionSlot_C')
+source_slot.OccupyingEntityId.Value=251;source_slot.SlotOccupyingReasons={2}
+local captured_state={};M.on_begin(captured_state,captured_actor)
+local captured_token='abort-before-participant-commit'
+local captured_packet=P.pack(captured_token,'1',node.id,1,'0','lead',P.encode(Json.encode(node)))
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.Prepare',captured_packet)
+assert(captured_state.lease and not captured_state.lease.committed and not captured_state.lease.ready
+ and captured_actor.collision and not captured_actor.autonomy_refreshes)
+local getup_ready=require('SceneZOI.NativeGetUp').ensure(captured_actor,captured_token)
+assert(not getup_ready and captured_actor.getup_ticks,'Furniture starts the shared native exit before participant Commit')
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.Release',P.pack(captured_token))
+assert(captured_state.lease and captured_state.lease.releasing and captured_actor.getup_ticks
+ and not captured_state.lease.entry_checkpoint and not captured_actor.autonomy_refreshes
+ and captured_actor.AutonomyOption.AutonomyEnable.Value and captured_actor.AutonomyOption.AutonomyEnable.bFollowParent
+ and captured_actor.collision and not captured_actor.collision_writes and not captured_actor.position_writes,
+ 'Capture-only cancellation must not toggle original policy/collision or invent a journal checkpoint')
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.Commit',P.pack(captured_token))
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.EntrySaved',P.pack(captured_token,1))
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.Anchor',P.pack(captured_token,1000,0,0,0,0,0))
+assert(not captured_state.lease.committed and not captured_state.lease.ready and not captured_actor.position_writes,
+ 'Delayed startup messages cannot reactivate a releasing capture-only participant')
+for _=1,12 do if not captured_state.lease then break end tick(captured_state,captured_actor)end
+assert(not captured_state.lease and captured_state.retired[captured_token]and not captured_actor.getup_ticks
+ and captured_posture.stand_calls==1 and captured_actor.cancels==0 and #captured_actor.stopped==0
+ and not captured_actor.autonomy_refreshes and not captured_actor.collision_writes and not captured_actor.position_writes
+ and source_slot.OccupyingEntityId.Value==-1,
+ 'Denied startup leaves native GetUp complete, original policy intact and no scene-owned spatial writes')
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.Prepare',captured_packet)
+assert(not captured_state.lease,'A delayed Prepare for the retired denied startup must not reacquire the actor')
+start(captured_state,captured_actor,'next-start-after-denial')
+for _=1,12 do if captured_state.lease and captured_state.lease.ready then break end tick(captured_state,captured_actor)end
+assert(captured_state.lease and captured_state.lease.ready and captured_posture.stand_calls==1,
+ 'An aborted pre-Commit native exit must not poison the next valid scene start')
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.EntrySaved',P.pack(captured_token,1))
+M.on_lua_message(captured_state,captured_actor,'SceneZOI.Anchor',P.pack(captured_token,1000,0,0,0,0,0))
+assert(not captured_state.lease.entry_checkpoint_acked and not captured_actor.position_writes,
+ 'The failed startup checkpoint/token cannot authorize a later session')
+release(captured_state,captured_actor,'next-start-after-denial')
+os.time=original_time
+print('Pre-Commit native GetUp denial passed: capture-only policy/collision preserved, natural native exit, retired stale messages and immediate valid retry.')

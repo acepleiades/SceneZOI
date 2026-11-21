@@ -212,7 +212,8 @@ local function finish_stop(old, code)
     Control.ended(old,Session.snapshot(old))
     local controlled = Session.controlled(old)
     local normal = {ok = true, saving = true, character_editor = true, addon_requested = true, lifetime_expired = true, owner_expired = true,
-        goal_unreachable = true, required_stage_unavailable = true, no_progress = true, playback_budget_exceeded = true}
+        goal_unreachable = true, required_stage_unavailable = true, no_progress = true, playback_budget_exceeded = true,
+        sofa_unavailable = true}
     -- A scene with no panel still retires its request ID, silently.
     remember(old.client, old.sequence, normal[code] and "idle" or "error", code, controlled and controlled.actor, not had_panel)
     if had_panel then
@@ -232,7 +233,9 @@ end
 
 local function request_release(old)
     if old.furniture and not old.furniture_released then
-        local ok,err=pcall(tell,old.furniture_owner,'SceneZOI.Furniture',Protocol.pack(old.token,old.furniture.id,'release',old.furniture_ready and 'held' or 'unconfirmed'))
+        local ok,err=pcall(tell,old.furniture_owner,'SceneZOI.Furniture',Protocol.pack(old.token,old.furniture.id,'release',old.furniture_ready and 'held' or 'unconfirmed',
+            old.furniture.selected_pair_id or 'none',old.furniture.slots and Protocol.encode(Json.encode(old.furniture.slots))or 'none',
+            old.furniture.spot_ids and Protocol.encode(Json.encode(old.furniture.spot_ids))or 'none'))
         if not ok then M.diagnostic('Furniture release delivery will retry: '..tostring(err))end
     end
     if not old.addon_effects_restored then
@@ -350,11 +353,11 @@ local function prepare_packet(current, participant)
         Protocol.encode(Json.encode(Catalog.simulation(current.node,participant))))
 end
 
-local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
+local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon, furniture_pair_id)
     local node = Catalog.get(node_id)
     if addon then assert(Search.allowed(Catalog.get_snapshot().nodes,node,addon.restrictions),'Scene is restricted for this session')end
     assert((node.furniture~=nil)==(furniture_id~=nil),'Scene requires the matching furniture context')
-    local furniture=furniture_id and Furniture.prepare(furniture_id,node)or nil
+    local furniture=furniture_id and Furniture.prepare(furniture_id,node,furniture_pair_id)or nil
     local participants, participant_ids, seen, roles = {}, {}, {}, {}
     for assignment in roster:gmatch("[^+]+") do
         local role, id = assignment:match("^([%w_.-]+):(%d+)$")
@@ -395,8 +398,8 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         current.addon_context=require('SceneZOI.DataValidation').copy(addon.context)
         current.session_restrictions=require('SceneZOI.DataValidation').copy(addon.restrictions)
     end
-    assert(not Save.overlaps(participant_ids, furniture_id), "restore_pending")
-    if not addon then assert(Sessions.reserve(current.token, participant_ids, furniture_id)) end
+    assert(not Save.overlaps(participant_ids, furniture_id,furniture and furniture.spot_ids), "restore_pending")
+    if not addon then assert(Sessions.reserve(current.token, participant_ids, furniture_id,furniture and furniture.spot_ids)) end
     return current
 end
 
@@ -428,10 +431,11 @@ end
 local function begin(fields)
     local client, sequence, _, initiator, node_id, roster = table.unpack(fields)
     assert(initiator and roster, "Scene entry needs an initiator and explicit role assignments")
-    local addon=Addons.context(fields[8],fields)
+    local addon=Addons.context(fields[8]~='none'and fields[8]or nil,fields)
     assert(addon or not Addons.has_pending(),'Another scene start is pending')
     local furniture_id=fields[7]~='none'and fields[7]or nil
-    local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon)
+    local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon,fields[9]~='none'and fields[9]or nil)
+    current.manual_sofa_start = not addon and current.furniture and current.furniture.profile.kind=='sofa.pair' or false
     Sessions.add(current)
     Sessions.focus(current)
     Addons.created(addon,current)
@@ -493,7 +497,7 @@ function M.start_background(row)
     table.sort(assignments)
     direct_serial = direct_serial + 1
     local current = create_session(background_client, tostring(direct_serial), entry.initiator, entry.node,
-        table.concat(assignments, "+"), entry.furniture, row)
+        table.concat(assignments, "+"), entry.furniture, row,entry.furniture_pair_id)
     -- NPCs nobody asked a length for run for the player's default, counted on the game's calendar.
     local lifetime = npc_only and row.default_length and {game_minutes = Settings.npc_scene_minutes()} or row.lifetime
     current.npc_only, current.lifetime, current.exit_policy = npc_only, lifetime, row.placement.exit
@@ -517,14 +521,42 @@ end
 function M.furniture_reply(actor,fields)
     local c=Sessions.get(fields[1])
     if not c or not c.furniture or fields[2]~=c.furniture.id or actor~=c.furniture_owner.actor then return end
+    if c.furniture.selected_pair_id and fields[7]~=c.furniture.selected_pair_id then return end
+    if c.furniture.selected_pair_id and fields[3]=='held'then
+        local ok,slots=pcall(Json.decode,Protocol.decode(fields[8])or '')
+        if not ok or not require('SceneZOI.FurniturePairs').same_slots(slots,c.furniture.slots)then
+            Diagnostics.record('furniture_reply', {session_id=c.token, furniture_id=fields[2], owner_id=c.furniture_owner.id,
+                furniture_pair_id=c.furniture.selected_pair_id, code='invalid_reservation', reason='native_slots_mismatch', stopping=c.stopping==true})
+            stop_session(c,'furniture_unavailable');return
+        end
+        c.furniture.slots=slots
+    end
     if (not c.furniture_ready or fields[3]~='held') and not (c.stopping and c.furniture_released) then
         Diagnostics.record('furniture_reply', {session_id=c.token, furniture_id=fields[2], owner_id=c.furniture_owner.id,
+            furniture_pair_id=fields[7]~='none'and fields[7]or nil,
             code=fields[3], reason=fields[4], component=fields[5], slot=fields[6], stopping=c.stopping==true})
     end
     if c.stopping then if fields[3]=='released'then c.furniture_released=true end;return end
-    if fields[3]~='held'then stop_session(c,'furniture_unavailable');return end
+    if fields[3]=='preparing'then
+        c.furniture_wait=fields[4]or 'native_preparation'
+        return
+    end
+    if fields[3]~='held'then
+        -- A manual start can lose its selected seats after the picker closes.
+        -- Only ordinary availability denials before playback are quiet; native
+        -- teardown/mapping failures and interruptions of a playing scene keep
+        -- their error panel and diagnostic details.
+        local unavailable={native_occupied=true,held_by_other_scene=true,native_entity_ineligible=true,
+            furniture_unloaded=true,no_slot_available=true}
+        if c.manual_sofa_start and not c.started and fields[3]=='busy'and unavailable[fields[4]]then
+            pcall(Localization.toast,'The requested seats on this sofa are unavailable for this scene.')
+            stop_session(c,'sofa_unavailable')
+        else stop_session(c,'furniture_unavailable')end
+        return
+    end
     if not c.furniture_ready then
         c.furniture_ready=true
+        c.furniture_wait=nil
         for _,p in ipairs(c.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(c.token))end
     end
 end
@@ -1085,7 +1117,18 @@ local function poll()
             request.code = tostring(err):find("already in a scene", 1, true) and "busy" or "entry_error"
             request.detail = Diagnostics.detail(err)
             Diagnostics.record("start_rejected", request)
-            if Sessions.focused() then M.stop("entry_error")
+            local manual = fields[8]==nil or fields[8]=='none'
+            local profile = manual and fields[7]and fields[7]~='none'and Furniture.profile and Furniture.profile(fields[7])
+            local pair_id = fields[9]~='none'and fields[9]or nil
+            local valid_pair = pair_id==nil or pcall(require('SceneZOI.DataValidation').id,pair_id)
+            local unavailable = tostring(err):match('furniture_unavailable$')or tostring(err):match('Furniture sitting pair is unavailable$')
+            if not Sessions.focused()and profile and profile.kind=='sofa.pair'and valid_pair and unavailable then
+                -- The local reservation may change between selection and Start.
+                -- Add-ons retain their structured failure; only a manual picker
+                -- request receives this expected unavailable-sofa toast.
+                pcall(Localization.toast,'The requested seats on this sofa are unavailable for this scene.')
+                remember(client, sequence, 'idle', 'sofa_unavailable', M.actors[fields[4]])
+            elseif Sessions.focused() then M.stop("entry_error")
             else
                 remember(client, sequence, "error", request.code)
             end
@@ -1248,13 +1291,26 @@ local function advance(current, dt)
         end
         return
     end
-    if not current.save_committed and Save.ready(current)then
+    -- A completed native get-up can revise the original entry transform after
+    -- initial commit. Persist that standing position before any scene anchor.
+    local journal_ready = Save.ready(current)
+    if not current.save_committed and journal_ready then
         current.save_committed=true
         if current.furniture and current.save_ready then
             Diagnostics.record("furniture_acquire_requested", {session_id = current.token, furniture_id = current.furniture.id,
+                furniture_pair_id = current.furniture.selected_pair_id, furniture_spots = current.furniture.spot_ids,
                 owner_id = current.furniture_owner.id})
-            tell(current.furniture_owner,'SceneZOI.Furniture',Protocol.pack(current.token,current.furniture.id,'acquire',Protocol.encode(Json.encode(current.furniture.profile))))
+            tell(current.furniture_owner,'SceneZOI.Furniture',Protocol.pack(current.token,current.furniture.id,'acquire',Protocol.encode(Json.encode(current.furniture.profile)),current.furniture.selected_pair_id or 'none',Protocol.encode(Json.encode(Json.array(current.participant_ids)))))
         else for _,p in ipairs(current.participants)do tell(p,'SceneZOI.Commit',Protocol.pack(current.token))end end
+    end
+    if journal_ready then
+        for _, participant in ipairs(current.participants) do
+            local checkpoint = current.entry_checkpoints and current.entry_checkpoints[participant.id]
+            if checkpoint and participant.entry_checkpoint_sent ~= checkpoint and Save.ready(current) then
+                tell(participant, 'SceneZOI.EntrySaved', Protocol.pack(current.token, checkpoint))
+                participant.entry_checkpoint_sent = checkpoint
+            end
+        end
     end
     if not Sessions.has(current) or current.stopping then return end
     if owner_lease_lapsed(current, dt) then stop_session(current, "owner_expired"); return end
@@ -1298,6 +1354,7 @@ local function advance(current, dt)
             revision = current.revision, code = code, elapsed = current.age, participants_ready = current.participants_ready == true,
             stage = current.preparation_stage, participants = waiting, placement_pending = current.placement_pending ~= nil,
             furniture_id = current.furniture and current.furniture.id, furniture_ready = current.furniture_ready == true,
+            furniture_pair_id = current.furniture and current.furniture.selected_pair_id, furniture_wait = current.furniture_wait,
             save_ready = current.save_ready == true, journal_revision = current.journal_revision,
             host_lease_diagnostic = lease_send_diagnostic(current),
             appearance = Appearance.status(current), temporary_bodies = TemporaryBody.status(current),
@@ -1309,15 +1366,19 @@ local function advance(current, dt)
     end
     if current.heartbeat >= Config.heartbeat_interval then
         current.heartbeat = 0
-        if current.furniture and current.save_ready then
+        if current.furniture and current.save_committed then
             tell(current.furniture_owner,'SceneZOI.Furniture',Protocol.pack(current.token,current.furniture.id,
-                current.furniture_ready and 'heartbeat'or'acquire',Protocol.encode(Json.encode(current.furniture.profile))))
+                current.furniture_ready and 'heartbeat'or'acquire',Protocol.encode(Json.encode(current.furniture.profile)),current.furniture.selected_pair_id or 'none',Protocol.encode(Json.encode(Json.array(current.participant_ids)))))
         end
         for _, participant in ipairs(current.participants) do
             local kind = current.preparing and not current.outfit_change and "SceneZOI.Prepare" or "SceneZOI.Heartbeat"
             tell(participant,kind,prepare_packet(current,participant))
             if current.save_ready and (not current.furniture or current.furniture_ready)and not participant.node_ready then
                 tell(participant,'SceneZOI.Commit',Protocol.pack(current.token))
+            end
+            local checkpoint = current.entry_checkpoints and current.entry_checkpoints[participant.id]
+            if current.save_ready and checkpoint and not participant.node_ready then
+                tell(participant, 'SceneZOI.EntrySaved', Protocol.pack(current.token, checkpoint))
             end
             if current.outfit_change and current.outfit_change.participant == participant then
                 tell(participant, "SceneZOI.Outfit", outfit_packet(current))
@@ -1330,7 +1391,7 @@ local function advance(current, dt)
     if previous_scale ~= game_scale then notify(current, "game_clock_changed") end
     local pose_ready = true
     if current.preparing and current.started then pose_ready = Playback.hold(current) end
-    if current.preparing and current.participants_ready and (not current.outfit_change or current.outfit_change.acknowledged) then
+    if current.preparing and current.participants_ready and Save.ready(current) and (not current.outfit_change or current.outfit_change.acknowledged) then
         local bodies_ready = pose_ready and TemporaryBody.prepare(current)
         -- A body swap installs native section visibility before its attachment
         -- can hide the new mesh. Capture and reassert owned masks this same tick.

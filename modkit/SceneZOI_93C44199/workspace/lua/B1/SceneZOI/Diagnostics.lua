@@ -13,7 +13,7 @@ local inventory_pending, release_version_pending
 local api_addons = {}
 local exit_watches = {}
 local prepare_phases = {awaiting_commit = true, overlay_cut = true, interaction_cancelling = true,
-    confirming_idle = true, autonomy_enabled = true}
+    confirming_idle = true, autonomy_enabled = true, source_posture_releasing = true, entry_save_pending = true}
 local scene_events = {
     session_preparing = true, session_started = true, node_preparing = true, node_entered = true,
     plan_auto_mode_changed = true, plan_stage_changed = true, playback_speed_changed = true,
@@ -133,16 +133,20 @@ function M.prepare_wait(current, participant, fields)
         if ok and type(sample) == "table" then
             local observed = {}
             for _, name in ipairs({"autonomy_requested", "autonomy_notified", "autonomy_effective", "autonomy_resolved",
-                "global_autonomy", "follow_global", "active_mode"}) do
+                "global_autonomy", "follow_global", "active_mode", "source_claim_pending", "source_posture_standing",
+                "getup_queue_present", "getup_motion_pending", "getup_position_settled"}) do
                 if type(sample[name]) == "boolean" then observed[name] = sample[name] end
             end
             for _, name in ipairs({"progress_attempts", "simulation_ticks", "prepare_received", "heartbeat_received",
-                "commit_received", "seconds_since_native_tick", "seconds_since_commit"}) do
+                "commit_received", "seconds_since_native_tick", "seconds_since_commit", "getup_queue_result",
+                "entry_checkpoint", "entry_checkpoint_acked"}) do
                 local value = sample[name]
                 if type(value) == "number" and value == value and value >= 0 and value <= 1000000000 then observed[name] = value end
             end
             for _, name in ipairs({"control_at_prepare", "controlled_id", "progress_source", "zoi_group",
-                "character_group_type", "autonomy_state"}) do
+                "character_group_type", "autonomy_state", "source_furniture_id", "source_component", "source_slot",
+                "source_posture_id", "source_current_posture", "source_current_target", "getup_queue_id", "getup_state",
+                "getup_failure", "getup_anim_id", "getup_montage_id"}) do
                 observed[name] = identifier(sample[name])
             end
             wait.simulation = observed
@@ -160,7 +164,10 @@ end
 function M.wait_status(current, participant)
     if not current.save_records or not current.save_records[participant.id] then return {phase = "awaiting_snapshot"} end
     if not current.save_ready then return {phase = "awaiting_save_ack"} end
-    if current.furniture and not current.furniture_ready then return {phase = "awaiting_furniture"} end
+    if current.furniture and not current.furniture_ready then
+        return {phase = "awaiting_furniture", reason = current.furniture_wait,
+            furniture_id = current.furniture.id, furniture_pair_id = current.furniture.selected_pair_id}
+    end
     local latest = participant.preparation_wait
     if latest and latest.revision == current.revision then
         local state = {}
@@ -267,6 +274,7 @@ function M.session(snapshot, name, code, context)
         client = context.client, sequence = context.sequence, source = context.source,
         scene_id = snapshot.node_id, revision = snapshot.revision, event_index = snapshot.event_index,
         phase = snapshot.phase, code = code or "ok", furniture_id = snapshot.furniture_id,
+        furniture_pair_id = snapshot.furniture_pair_id, furniture_spots = snapshot.furniture_spots,
         participants = participants, speed_index = snapshot.speed_index, effective_speed = snapshot.effective_speed, game_scale = snapshot.game_scale,
         plan = snapshot.plan and {auto_mode = plan.auto_mode, state = plan.state, stage = plan.stage,
             stage_count = plan.stage_count, outcome = plan.outcome, end_policy = plan.end_policy,

@@ -9,8 +9,8 @@ The same checks apply to furniture profiles added later. [Scene Settings](settin
 
 ## Scene and profile data
 
-A scene declares `furniture: {"kind":"bed.single", "surface_height_cm":0}` or
-`bed.queen`. Height describes the support plane in the authored animation, not
+A scene declares `furniture: {"kind":"bed.single", "surface_height_cm":0}`,
+`bed.queen`, or `sofa.pair`. Height describes the support plane in the authored animation, not
 the destination's global height. Entry matches furniture kind, available state
 and the complete participant roster. Current bundled hubs use adult-compatible
 male/female appearance roles; the runtime keeps generic named-role support.
@@ -22,7 +22,7 @@ Malformed/conflicting declarations are isolated at runtime and rejected by sourc
 builds. Active sessions capture the selected profile. See the public
 [profile definitions](../packs/scenezoi/furniture/).
 
-The five bundled profiles cover declared standard-single, standard-double,
+The bundled bed profiles cover declared standard-single, standard-double,
 alternate-double, single-futon and double-futon objects/variants. An English catalog
 description or object tag does not establish support. Unknown models need tested
 profile data. Profiles are extensible compatibility data, not an author whitelist.
@@ -53,7 +53,8 @@ offsets, not surface-conforming placement. Uneven bedding may have local gaps or
 clipping. Only upright, unit-scale furniture is supported; wider beds do not scale Zois.
 
 The selected object ID survives the picker handshake. Entry rechecks current
-availability, then obtains a native B2 reservation before participant mutation.
+availability and caches the participants' originals in the save journal before
+native preparation. Playback waits for a confirmed native B2 reservation.
 Unknown/stale status is not available, and a successful preflight is not a
 reservation. A changed, removed, moved or newly occupied object can still reject
 entry or request ordinary cleanup. Native occupancy refresh uses a bounded cache.
@@ -65,7 +66,14 @@ for retry; participant acknowledgements alone cannot finish Exit while furniture
 release remains outstanding. The save journal records the exact object/owner for
 recovery. See [lifecycle contracts](tier1-contracts.md).
 
-## Planned sofa authoring and placement
+## Sofa authoring and placement
+
+A manual sofa start shows a short notification if the selected seats are
+unavailable or no starting scene supports the selected Zois. Any entry cleanup
+finishes before the panel closes. The diagnostic history keeps the furniture
+and reason, including the selected pair when known. Add-on requests keep their
+normal API error response; native failures and interruptions after playback
+still use the error panel.
 
 Use one paired Maya reference rig and reuse the same animation on any validated
 pair of adjacent sitting spots on the same straight run of a sofa. This covers
@@ -84,15 +92,109 @@ armrests, the Modern Chesterfield has a low back, and the Quilted Pattern
 Ottoman includes a seat without back or arm support. Check the Curtain Sofa
 separately in-game. The paired Maya sofa reference uses a box 170 cm wide,
 55 cm deep and 44 cm high, with the seat surface at Y = 44 cm in Maya.
-Use it for authoring. Sofa placement and reservations still need runtime support.
+Use it for authoring and declare `"furniture":{"kind":"sofa.pair","surface_height_cm":44}`
+on scenes authored against that box. Placement subtracts this authored height
+once when matching the pair to the destination's measured sitting surface.
 
-For future playback, clear the two selected sitting spots through the native
-interaction and posture paths, wait for confirmed vacancy and hold both spots
-for the session. Keep other seats available. Release only the occupancy reasons
-owned by the scene, including on failed starts and cleanup. Retail inspection
-found that a single Zoi can hold two sofa interaction slots at once and that
-some two-seat sofas expose more than two raw slot records. Map real sitting
-spots and their associated slots before choosing or reserving a pair.
+The 44 cm authoring box does not mean every sofa has the same cushion height.
+A profile moves the whole animation; SceneZOI does not fit the hips and feet
+independently or change the knee bends to match a shorter seat. Lowering the
+root to close a cushion gap also lowers the feet by that amount. Check the
+visible cushion, butt and floor contact together. Collision measurements help
+locate a surface but do not establish the rendered cushion contact by themselves.
+
+The reservation covers the two selected physical sitting spots and all their
+mapped native slots. It leaves other spots available for normal gameplay or
+a second scene on a disjoint pair. A four-seat L-shaped sofa can therefore
+host two scenes when each occupies a separate straight run. Pairs sharing
+even one sitting spot cannot run together. Bed reservations still cover the
+whole bed.
+
+SceneZOI reserves sofa slots with the native `Restricted` occupancy reason.
+`TryOccupySlot` also checks native activity tags such as `Sit` and `Sit_PassOut`,
+which do not describe a SceneZOI animation. The pair lease checks native entity
+eligibility and exact slot vacancy, calls native `OccupySlot` for each selected
+alias, then verifies the owner and reason and rolls back any claim outside the
+pair. This requires no invented native Sit interaction ID.
+
+Heartbeats and repeated acquire requests recheck every reserved native alias.
+If an alias disappears, changes owner or gains ordinary occupancy, SceneZOI
+stops acknowledging the lease and releases only its captured restrictions.
+Foreign occupants and unrelated occupancy reasons are preserved. A changed
+ownership state that prevents safe cleanup remains pending and is logged.
+
+A raw native slot is not necessarily a separate seat: one Zoi can hold more
+than one slot while sitting, and sofas can expose extra lying or posture
+targets. Map each physical spot to its exact native `component_name` and
+`slot_name` aliases. Do not infer capacity from raw slot count or reserve the
+whole sofa to work around an incomplete mapping. Measure the cushion contact
+positions separately: a native Sit slot can be an approach target in front of
+the cushion rather than the place where the Zoi actually sits.
+
+Sofa profiles add `sitting_spots` and `seat_pairs` to the profile fields above:
+
+```json
+{
+  "sitting_spots": [
+    {"id":"left","run":"front","offset_cm":{"x":-42.5,"y":0,"z":0},"yaw_degrees":0,
+     "slots":[{"component_name":"ExactLeftComponent","slot_name":"ExactLeftSlot"}]},
+    {"id":"right","run":"front","offset_cm":{"x":42.5,"y":0,"z":0},"yaw_degrees":0,
+     "slots":[{"component_name":"ExactRightComponent","slot_name":"ExactRightSlot"}]}
+  ],
+  "seat_pairs": [{"id":"left_right","label":"Left seats","spots":["left","right"]}]
+}
+```
+
+This fragment illustrates the schema; the component names and measurements
+are placeholders. Add the profile's schema version, ID, `kind:"sofa.pair"`,
+object row IDs and measured `surface_height_cm`. Spot offsets are relative
+to the furniture origin and its declared surface height. The selected pair's
+midpoint supplies the animation root; its shared yaw supplies the facing.
+Give each straight section its own `run`. Validation rejects different runs
+or facings, duplicate slot mappings and pairs that skip an intermediate seat.
+It cannot prove that invented slot names or a claimed straight run match the
+game model. Inspect and test every supported Object row.
+The optional pair `label` uses the existing localization lookup. Use labels
+such as `Left seats` and `Right seats` only when they describe the tested
+layout. Otherwise the picker uses localized numbered seat-pair labels.
+
+`find_furniture` returns a row for each supported pair, with `furniture_id`,
+`furniture_pair_id`, `sitting_spots` and current availability. Pass both IDs
+to a start operation to retain that exact pair through selection and entry.
+If an API call omits the pair ID, SceneZOI chooses the first available pair ID
+alphabetically. The debug picker asks the player to choose when more than one
+pair fits the selected roster; one eligible pair skips that extra step.
+The chosen pair is retained and rechecked before starting. Discovery and
+preflight do not reserve seats; the native acquisition is still the final
+authority if someone starts using them in the meantime.
+Pass `participants` to `find_furniture` when checking a particular roster.
+An occupied pair can be prepared when every occupant belongs to that roster:
+SceneZOI ends their current interactions, brings them to a standing posture,
+and waits for confirmed vacancy before reserving the selected slots. Other
+Zois are not interrupted to make room.
+
+A selected Zoi may already be sitting on a different object. After the current
+task is idle, SceneZOI queues the game's real `Stand` interaction against the
+captured source object. This runs the native GetUp animation and transform
+restoration; changing the logical posture alone leaves the old motion alive.
+Both destination-seat clearing and participant preparation share the same
+tracked native queue. It is protected from task cancellation and overlay cuts.
+Preparation waits for the complete interaction, Stand, released source claims,
+no remaining native posture motion and a stable capsule transform before Ready.
+Only an exact slot owned by that Zoi with a native Posture reason qualifies;
+bystanders, non-slot postures, vehicle and water movement are left alone.
+The old Sit is not restored on Exit, because another Zoi may now own that seat.
+Abort/Exit lets an in-flight GetUp finish before spatial restoration. The settled
+return transform updates the recovery journal before scene anchoring; original
+clothing, body and autonomy snapshots remain unchanged. The preparation log
+identifies the source object/slot, queue ID and whether native ownership,
+animation or spatial settlement is still preventing readiness.
+
+Exit and failed-start cleanup release only the scene's captured occupancy.
+The save journal retains the selected pair and exact native slots so cleanup
+can recover after a reload without claiming the spare seats. Test an occupied
+pair, both disjoint pairs, ordinary use of a spare spot, navigation, Exit and
+reload recovery before publishing a profile.
 
 ## Test a furniture profile
 

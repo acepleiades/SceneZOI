@@ -38,9 +38,7 @@ function M.lease(data)
             grabs[#grabs+1]={hand=row.hand,id=row.id,pose=row.pose}
         end
     end
-    local furniture={}
-    assert(type(data.furniture)=='table'and #data.furniture<=4,'Invalid recovery furniture')
-    for _,id in ipairs(data.furniture)do assert(type(id)=='string'and id:match('^%d+$'),'Invalid recovery furniture ID');furniture[#furniture+1]=id end
+    local furniture=require('SceneZOI.FurnitureLease').saved_rows(data.furniture)
     return {token=data.token,releasing=true,restored={},collision=data.collision,local_value=data.local_value,
         follow_parent=data.follow_parent,outfit=data.outfit,lent_costume=lent,recovering=true,body_merge=merge and {base=merge.base,final=merge.final},
         entry_location=UE.FVector(table.unpack(l)),entry_rotation=UE.FRotator(table.unpack(r)),saved_furniture=furniture,grab_poses=#grabs>0 and grabs or nil}

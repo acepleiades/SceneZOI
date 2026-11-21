@@ -102,3 +102,21 @@ cfg.selection_request=P.pack("early","open","1");E.tick(.2,actors,false);visible
 assert(enabled==false,"Before the simulation is ready the button stays off")
 E.stop()
 print("Start Solo passed: live only with a matching solo scene, caption follows the selection, an explicit click versus a hover or a cancel, hidden under the Game Menu and back, and the bound roster.")
+
+local Json=require('SceneZOI.Json');local choices={{id='left',label='Left seats'},{id='right',label='Right seats'}}
+local sofa_profile={kind='sofa.pair'}
+package.loaded['SceneZOI.Furniture']={pickable=function()return sofa_profile,choices[1]end,
+ available=function(_,id,ids)assert(ids[1]=='1'and ids[2]=='2');return sofa_profile,{id=id or choices[1].id}end,
+ choices=function()return choices end}
+local function sofa_open(token)
+ cfg.selection_request=P.pack(token,'open','1','50');tick(.2);visible=true;tick();E.reply(actor,P.pack(token,'armed'));tick();visible=false;tick()
+ E.reply(actor,P.pack(token,'selected','1+2'));tick()
+end
+sofa_open('pair_choice')
+local state=P.unpack(cfg.selection_state);assert(state[2]=='choosing_pair'and #Json.decode(P.decode(state[8]))==2,'Both eligible anchors are offered after roster selection')
+cfg.selection_pair=P.pack('older_token','choose','right');tick();assert(P.unpack(cfg.selection_state)[2]=='choosing_pair','Old pair clicks cannot carry into a new picker')
+cfg.selection_pair=P.pack('pair_choice','choose','right');tick();state=P.unpack(cfg.selection_state)
+assert(state[2]=='selected'and state[7]=='right','The explicit second anchor survives into the scene start')
+sofa_open('pair_cancel');cfg.selection_pair=P.pack('pair_cancel','cancel');tick();assert(P.unpack(cfg.selection_state)[2]=='cancelled'and authorized=='pair_cancel')
+choices={choices[1]};sofa_open('one_pair');state=P.unpack(cfg.selection_state);assert(state[2]=='selected'and state[7]=='left','A single eligible pair skips the extra picker')
+print('Sofa picker passed: two visible choices, explicit second anchor, stale-token rejection, Cancel and one-pair shortcut.')

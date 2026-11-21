@@ -11,6 +11,7 @@
     var pendingCommand = null;
     var active = false;
     var checkingStart = false;
+    var furnitureChoice = null;
     var noticeInitiator = null, noticeToken = null;
     var exiting = false;
     var reading = false;
@@ -140,6 +141,40 @@
             writePacket('focus', focusFields.join('|')).catch(function () {});
         }, 50);
     }
+    function finishFurnitureChoice(id) {
+        var choice=furnitureChoice;if(!choice)return;
+        furnitureChoice=null;
+        navigation.innerHTML='';navigationMarkup=null;
+        document.getElementById('scene-speed').style.display='';
+        root.style.visibility='hidden';updateHitRect();
+        choice.resolve(id);
+    }
+    function chooseFurniturePair(choices) {
+        if(active||checkingStart||furnitureChoice)return Promise.reject(new Error('Another scene selection is open.'));
+        if(!Array.isArray(choices)||choices.length<2||choices.length>128)return Promise.reject(new Error('Invalid sitting-pair choices.'));
+        var seen=new Set();
+        choices.forEach(function(choice){
+            if(!choice||typeof choice.id!=='string'||!/^[a-z][a-z0-9_.-]*$/.test(choice.id)||seen.has(choice.id)||typeof choice.label!=='string')throw new Error('Invalid sitting-pair choice.');
+            seen.add(choice.id);
+        });
+        return new Promise(function(resolve){
+            furnitureChoice={resolve:resolve};currentNode=null;
+            openPanel();
+            if(tasks)tasks.update();outfits.update();renderAutoMode();
+            document.getElementById('title-text').textContent=window.SceneZOILocalization.text('Choose seats');
+            status.textContent=window.SceneZOILocalization.text('Choose two adjacent seats for this scene.');
+            exit.textContent=window.SceneZOILocalization.text('Cancel');exit.disabled=false;
+            document.getElementById('scene-speed').style.display='none';
+            navigation.innerHTML='';navigationMarkup=null;
+            choices.forEach(function(choice){
+                var button=document.createElement('button');button.type='button';button.textContent=choice.label;
+                button.style.background='#a1d4fd';
+                button.addEventListener('click',function(){finishFurnitureChoice(choice.id);});
+                navigation.appendChild(button);
+            });
+            updateHitRect();
+        });
+    }
     function enqueueWrite(key, packet, current) {
         writes = writes.catch(function () {}).then(function () {
             if (current && !current()) throw new Error('Scene command superseded');
@@ -177,9 +212,9 @@
             function (error) { forget(); throw error; });
         return job.promise;
     }
-    function send(action, initiator, roster, node, furniture, apiToken) {
+    function send(action, initiator, roster, node, furniture, apiToken, pairId) {
         var fields = ['SZ2', client, String(sequence), action];
-        if (initiator && roster) {fields.push(initiator, node, roster);if(furniture||apiToken)fields.push(furniture||"none");if(apiToken)fields.push(apiToken);}
+        if (initiator && roster) {fields.push(initiator, node, roster);if(furniture||apiToken||pairId)fields.push(furniture||"none");if(apiToken||pairId)fields.push(apiToken||"none");if(pairId)fields.push(pairId);}
         var packet = fields.join('|');
         pendingCommand = packet;
         return writePacket('request', packet);
@@ -208,9 +243,10 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261114-autonomous-presets-ui-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261121-sofa-pairs-ui-2').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
+        if(furnitureChoice)finishFurnitureChoice(null);
         root.style.visibility = 'hidden';
         updateHitRect();
         if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
@@ -250,7 +286,8 @@
         clickedTarget: clickedTarget,
         refreshCatalog: refreshCatalog,
         decline: declineStart,
-        available: function(){return !active && !checkingStart && saveGuard.available();},
+        chooseFurniturePair: chooseFurniturePair,
+        available: function(){return !active && !checkingStart && !furnitureChoice && saveGuard.available();},
         sceneActive: function(){return active;},
         reject: function(message,initiator,token){
             if(active || checkingStart)return;
@@ -260,7 +297,7 @@
         start: function (entry) {
             var node=entry.node, initiator=entityId(entry.initiator);
             if (!window.SceneZOICatalog.nodes[node]) return Promise.reject(new Error('Unknown requested scene.'));
-            if (active || checkingStart || !saveGuard.available()) return Promise.resolve(false);
+            if (active || checkingStart || furnitureChoice || !saveGuard.available()) return Promise.resolve(false);
             var roster=Object.keys(entry.bindings).sort().map(function(role){
                 var id=entityId(entry.bindings[role]);
                 if (!id || !/^[a-z][a-z0-9_.-]*$/.test(role)) throw new Error('Invalid role assignment');
@@ -276,7 +313,7 @@
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
                 openPanel();show(window.SceneZOILocalization.text('Preparing Scene Mode…'));
-                return send('start',initiator,roster,node,entry.furniture,entry.api_token).then(function(){return true;});
+                return send('start',initiator,roster,node,entry.furniture,entry.api_token,entry.furniture_pair_id).then(function(){return true;});
             }).catch(function(error){
                 if(pendingCommand){show(window.SceneZOILocalization.text('Retrying the scene request…'));return false;}
                 if(active){active=false;pendingCommand=null;show(window.SceneZOILocalization.text('Could not request Scene Mode.'));}
@@ -290,6 +327,7 @@
         write:writePacket,refresh:refreshCatalog,start:function(entry){return window.SceneZOIControls.start(entry);}});
     setInterval(function(){addonBridge.poll();},250);
     exit.addEventListener('click', function () {
+        if(furnitureChoice){finishFurnitureChoice(null);return;}
         if (!active) { closePanel(); return; }
         exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false;
         show(window.SceneZOILocalization.text('Exiting and restoring all participants…'));
@@ -299,7 +337,7 @@
     });
     // Ended on purpose or by its own limits: nothing for the player to dismiss.
     var quietEnds = {ok: true, saving: true, character_editor: true, lifetime_expired: true, owner_expired: true,
-        goal_unreachable: true, required_stage_unavailable: true, no_progress: true, playback_budget_exceeded: true};
+        goal_unreachable: true, required_stage_unavailable: true, no_progress: true, playback_budget_exceeded: true, sofa_unavailable: true};
     var errors = {
         transition_destination_error: window.SceneZOILocalization.text('The transition finished, but its destination could not load. The scene has ended.'),
         busy: window.SceneZOILocalization.text('A participant is already owned by another scene.'),
@@ -336,9 +374,10 @@
         }
     }, 1000);
     function pollState() {
-        if (reading) return;
+        if (reading || furnitureChoice) return;
         reading = true;
         cfg('uimod.cfg_load', 'state').then(function (data) {
+            if(furnitureChoice)return;
             var value = data && data.value !== undefined ? data.value : data;
             if (typeof value !== 'string' || value === lastState) return;
             lastState = value;
@@ -380,6 +419,7 @@
         closePanel();
     }
     function attachPanel(f) {
+        if(furnitureChoice)finishFurnitureChoice(null);
         client = f[3]; sequence = Number(f[4]) || 0;
         active = true; exiting = f[7] === 'exiting'; playing = f[7] === 'playing'; heartbeat = 0;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
@@ -470,6 +510,7 @@
         }).catch(function () {}).then(function () { readingPlan = false; });
     }, 250);
     function renderNavigation() {
+        if(furnitureChoice)return;
         var html = '';
         ensureAutoButton();
         renderAutoMode();

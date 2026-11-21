@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "Content/JsonPatch/Text_UI_patch.json",
-      "sha256": "794e868e0591bed34fb88db24bd789e09e320b900638a5e53084fa2d6a19ee26"
+      "sha256": "16be28f08e3d6bff695e006637e20b6864bd939ec521e4dcd7d6ac52166817f5"
     }
   ],
   "records": [
@@ -49,6 +49,36 @@
       "owner": "scenezoi",
       "kind": "furniture_profile",
       "source": "bed.single.standard.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__sofa.pair.corner_four",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "sofa.pair.corner_four.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__sofa.pair.corner_three",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "sofa.pair.corner_three.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__sofa.pair.curtain",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "sofa.pair.curtain.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__sofa.pair.three",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "sofa.pair.three.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__furniture_profile__sofa.pair.two",
+      "owner": "scenezoi",
+      "kind": "furniture_profile",
+      "source": "sofa.pair.two.json"
     },
     {
       "id": "SceneZOI_Declaration_scenezoi__localization__text",

@@ -5,6 +5,7 @@ local C=require('SceneZOI.Config')
 local P=require('SceneZOI.Protocol')
 local J=require('SceneZOI.Json')
 local Diagnostics=require('SceneZOI.Diagnostics')
+local V=require('SceneZOI.DataValidation')
 local M={}
 local RETRY_SECONDS=1
 local records,revision,serial,host,seen={},0,0,nil,nil
@@ -23,7 +24,7 @@ end
 local function resources(record)
  local people,beds=J.array({}),J.array({})
  for id in pairs(record.people)do people[#people+1]=id end;table.sort(people)
- for _,bed in ipairs(record.beds)do beds[#beds+1]={id=bed.id,owner=bed.owner}end
+ for _,bed in ipairs(record.beds)do beds[#beds+1]=V.copy(bed)end
  return {session_id=record.token,participants=people,furniture=beds}
 end
 local function ordered()
@@ -47,19 +48,76 @@ end
 local function retire_if_empty(record)
  if next(record.people)==nil and #record.beds==0 then records[record.token]=nil end
 end
+local function owns(current,actor,id)
+ if not current then return false end
+ for _,person in ipairs(current.participants)do
+  if person.actor==actor and person.id==id then return true end
+ end
+ return false
+end
+local function settled_coordinates(data,token)
+ V.fields(data,{'token','checkpoint','location','rotation'},{'token','checkpoint','location','rotation'})
+ assert(data.token==token,'Wrong settled snapshot token')
+ V.number(data.checkpoint,1,1e9,true)
+ for _,key in ipairs({'location','rotation'})do
+  V.array(data[key],3);assert(#data[key]==3,'Incomplete settled coordinates')
+  for _,value in ipairs(data[key])do V.number(value,-1e12,1e12);assert(math.abs(value)<1e12,'Invalid settled coordinate')end
+ end
+ return data
+end
+local function settle(current,actor,id,fields)
+ if not current or fields[1]~=current.token or not current.preparing or current.stopping or
+  not owns(current,actor,id)or not current.journal_revision then return end
+ local record=records[current.token]
+ local original=record and not record.deferred and record.people[id]
+ if not original or not current.save_records or not current.save_records[id]then return end
+ local ok,data=pcall(settled_coordinates,decoded(fields[3]),current.token)
+ if not ok then return end
+ local changed=not V.equal(original.location,data.location)or not V.equal(original.rotation,data.rotation)
+ local published=current.entry_checkpoints and current.entry_checkpoints[id]or 0
+ local pending=current.entry_checkpoint_pending and current.entry_checkpoint_pending[id]or 0
+ local latest=math.max(published,pending)
+ if data.checkpoint<latest or(data.checkpoint==latest and changed)then return end
+ if data.checkpoint==latest and not current.journal_update_pending then return end
+ if changed then
+  -- The private message can update only entry coordinates. Never replace the
+  -- original body/clothing/policy/held-object state with post-prepare values.
+  local updated=V.copy(original)
+  updated.location,updated.rotation=V.copy(data.location),V.copy(data.rotation)
+  record.people[id],current.save_records[id]=updated,updated
+ end
+ -- Clear the old acknowledgement before publishing. Independent participants
+ -- may settle in different ticks; the latest combined journal must be cached
+ -- by the UI before any anchor or playback can use those entry coordinates.
+ current.entry_checkpoint_pending=current.entry_checkpoint_pending or {}
+ current.entry_checkpoint_pending[id]=data.checkpoint
+ current.save_ready=false;current.journal_update_pending=true
+ local written,result=pcall(publish,true)
+ if not written then
+  if not current.journal_write_failed then print('[SceneZOI] Settled save snapshot could not be written: '..tostring(result))end
+  current.journal_write_failed=true
+  return
+ end
+ current.journal_revision=result;current.journal_update_pending=nil
+ current.entry_checkpoints=current.entry_checkpoints or {}
+ for who,checkpoint in pairs(current.entry_checkpoint_pending)do current.entry_checkpoints[who]=checkpoint end
+ current.entry_checkpoint_pending=nil;current.journal_write_failed=nil
+end
 function M.offer(current,actor,fields)
  local id=P.id(actor:GetEntityId())
+ if fields[2]=='settled_snapshot'then settle(current,actor,id,fields);return end
  if fields[2]=='snapshot'then
-  if not current or fields[1]~=current.token then return end
-  local owned=false
-  for _,person in ipairs(current.participants)do if person.actor==actor then owned=true end end
-  if not owned then return end
+  if not current or fields[1]~=current.token or not owns(current,actor,id)then return end
+  -- Once published, only the explicit settled update can change the journal.
+  -- A delayed original offer must not overwrite the newer return coordinates.
+  if current.journal_revision then return end
   local data=decoded(fields[3]);if not data or data.token~=current.token then return end
   current.save_records=current.save_records or {};current.save_records[id]=data
   for _,person in ipairs(current.participants)do if not current.save_records[person.id]then return end end
   if current.journal_revision then return end
   local beds={}
-  if current.furniture then beds[1]={id=current.furniture.id,owner=current.furniture_owner.id}end
+  if current.furniture then beds[1]={id=current.furniture.id,owner=current.furniture_owner.id,
+   pair_id=current.furniture.selected_pair_id,spots=V.copy(current.furniture.spot_ids),slots=V.copy(current.furniture.slots)}end
   local people={};for key,value in pairs(current.save_records)do people[key]=value end
   serial=serial+1
   records[current.token]={token=current.token,serial=serial,people=people,beds=beds,sent={}}
@@ -90,7 +148,9 @@ function M.offer(current,actor,fields)
   retire_if_empty(record);publish()
  end
 end
+function M.checkpoint(current,id)return current.entry_checkpoints and current.entry_checkpoints[id]end
 function M.ready(current)
+ if current.journal_update_pending then return false end
  if current.save_ready then return true end
  if not current.journal_revision then return false end
  local f=P.unpack(read('save_ready'))
@@ -129,7 +189,13 @@ local function parse(row)
  assert(#row.furniture<=4,'Too much saved furniture')
  for _,bed in ipairs(row.furniture)do
   assert(type(bed.id)=='string'and bed.id:match('^%d+$')and type(bed.owner)=='string'and bed.owner:match('^%d+$'),'Invalid saved furniture')
-  record.beds[#record.beds+1]={id=bed.id,owner=bed.owner}
+  if bed.pair_id then
+   V.id(bed.pair_id);V.array(bed.spots,2);assert(#bed.spots==2 and bed.spots[1]~=bed.spots[2],'Invalid saved sitting spots')
+   for _,spot in ipairs(bed.spots)do V.id(spot)end
+   V.array(bed.slots,64);assert(#bed.slots>0,'Missing saved sofa slots')
+   for _,slot in ipairs(bed.slots)do V.fields(slot,{'component_name','slot_name'},{'component_name','slot_name'});V.name(slot.component_name);V.name(slot.slot_name)end
+  else assert(bed.spots==nil and bed.slots==nil,'Saved sofa slots need a pair ID')end
+  record.beds[#record.beds+1]=V.copy(bed)
  end
  return record
 end
@@ -207,7 +273,7 @@ function M.tick(actors)
    end
   end
   local owners={}
-  for _,bed in ipairs(record.beds)do owners[bed.owner]=owners[bed.owner]or {};table.insert(owners[bed.owner],bed.id)end
+   for _,bed in ipairs(record.beds)do owners[bed.owner]=owners[bed.owner]or {};table.insert(owners[bed.owner],bed.pair_id and V.copy(bed)or bed.id)end
   for id,ids in pairs(owners)do
    local actor,key=actors[id],'bed'..id
    if actor and now-(record.sent[key]or 0)>=RETRY_SECONDS then
@@ -224,10 +290,10 @@ function M.restore_waiting()
  return f~=nil and f[3]=='restore'
 end
 -- A start is refused only when it overlaps something not yet recovered.
-function M.overlaps(ids,furniture_id)
+function M.overlaps(ids,furniture_id,spot_ids)
  for _,record in pairs(records)do if record.deferred then
   for _,id in ipairs(ids)do if record.people[id]then return true end end
-  if furniture_id then for _,bed in ipairs(record.beds)do if bed.id==furniture_id then return true end end end
+  if furniture_id then for _,bed in ipairs(record.beds)do if bed.id==furniture_id and require('SceneZOI.FurniturePairs').overlap(spot_ids,bed.spots)then return true end end end
  end end
  return false
 end

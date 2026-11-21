@@ -18,6 +18,19 @@ local ground=F.prepare('50',{furniture={kind='bed.single',surface_height_cm=0}})
 assert(ground.anchor.Translation.Z==305,'Ground-authored clips use the profile height directly')
 assert(f.anchor.Scale3D.X==1 and F.valid(f));assert(f.original~=location,'Restoration/validation snapshot must hold plain independent coordinates')
 location.X=location.X+1;assert(not F.valid(f));location.X=location.X-1;assert(F.valid(f))
+-- The held target must remain upright as well as stay in place. This is
+-- shared by whole-bed and sofa placements, independent of slot reservations.
+rotation.Yaw=91;assert(not F.valid(f));rotation.Yaw=90
+for _,axis in ipairs({'Pitch','Roll'})do
+ rotation[axis]=.01
+ local valid,detail=F.valid(f)
+ assert(not valid and detail:find(axis:lower()..'=0.0100',1,true),'Held furniture tilt must be rejected and diagnosed')
+ rotation[axis]=.009;assert(F.valid(f),'Sub-threshold orientation noise remains valid')
+ rotation[axis]=0
+end
+local find_actor=F.actor;F.actor=function()return nil end
+assert(not F.valid(f),'A deleted or streamed-out target cannot remain valid')
+F.actor=find_actor;assert(F.valid(f),'The original unchanged target remains usable')
 scale.X=2;assert(not pcall(F.prepare,'50',{furniture={kind='bed.single',surface_height_cm=45}}));scale.X=1
 rotation.Pitch=10;assert(not pcall(F.prepare,'50',{furniture={kind='bed.single',surface_height_cm=45}}))
 print('Furniture placement passed: reflected default construction, explicit quaternion/translation/scale, realistic world coordinates, rotated offsets, low-bed height correction and independent numeric snapshot.')

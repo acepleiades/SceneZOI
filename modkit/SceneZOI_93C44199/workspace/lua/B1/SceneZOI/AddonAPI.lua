@@ -90,6 +90,7 @@ function M.context(token,fields)
  assert(fields[4]==row.entry.initiator and fields[5]==row.entry.node,'Add-on start identity changed')
  local assignments={};for role,id in pairs(row.entry.bindings)do assignments[#assignments+1]=role..':'..id end;table.sort(assignments)
  assert(fields[6]==table.concat(assignments,'+')and (fields[7]or 'none')==(row.entry.furniture or 'none'),'Add-on start roster/context changed')
+ assert((fields[9]or 'none')==(row.entry.furniture_pair_id or 'none'),'Add-on furniture pair changed')
  return row
 end
 function M.created(row,current)
@@ -138,9 +139,11 @@ local function appearance(value,ids)
  return selections
 end
 local function profile(args)
+ if args.furniture_pair_id then V.id(args.furniture_pair_id);assert(args.furniture_id,'A furniture pair requires a furniture ID')end
  if args.furniture_id then
   assert(type(args.furniture_id)=='string'and args.furniture_id:match('^%d+$'),'Invalid furniture ID')
-  return assert(require('SceneZOI.Furniture').available(args.furniture_id),'furniture_unavailable')
+  local selected,pair=require('SceneZOI.Furniture').available(args.furniture_id,args.furniture_pair_id,args.participants)
+  assert(selected,'furniture_unavailable');return selected,pair
  end
 end
 local function find(args,data)
@@ -150,7 +153,7 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','lifetime','goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','furniture_pair_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','lifetime','goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
  local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
  if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
@@ -166,8 +169,11 @@ local function start(actor,req,row,data,preflight)
  local ids={};for _,person in ipairs(people)do ids[#ids+1]=person.id end
  local selections=appearance(args.appearance,ids)
  assert(not require('SceneZOI.SaveBridge').restore_waiting(),'restore_pending')
- assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id),'restore_pending')
+ local furniture,selected_pair=profile(args)
+ local spot_ids=selected_pair and selected_pair.spots
+ assert(not require('SceneZOI.SaveBridge').overlaps(ids,args.furniture_id,spot_ids),'restore_pending')
  local Sessions=require('SceneZOI.Sessions')
+ if args.furniture_id then assert(not Sessions.furniture_holder(args.furniture_id,spot_ids),'furniture_unavailable')end
  for _,id in ipairs(ids)do assert(not Sessions.holder(id),'participant_busy')end
  -- Backward compatibility with add-ons that use session_restrictions on the original start operations.
  local restrictions=Search.criteria(data.metadata,args.restrictions or args.session_restrictions)
@@ -177,7 +183,7 @@ local function start(actor,req,row,data,preflight)
  local mode=preflight and(args.start_mode or(args.scene_id and 'start_scene'or 'start_at_hub'))or req.operation
  assert(mode=='start_at_hub'or mode=='start_scene'or mode=='start_random_scene'or mode=='start_autonomous_scene','Invalid start mode')
  if mode=='start_at_hub'then search.starting_hub_only=true end
- local rows=Search.find(data,search,people,profile(args),args.bindings);local allowed={}
+ local rows=Search.find(data,search,people,furniture,args.bindings);local allowed={}
  for _,candidate in ipairs(rows)do
   local named=mode=='start_scene'or autonomous and args.scene_id~=nil
   if Search.allowed(data.nodes,data.nodes[candidate.scene_id],restrictions)and(not named or candidate.scene_id==args.scene_id)then allowed[#allowed+1]=candidate end
@@ -187,13 +193,14 @@ local function start(actor,req,row,data,preflight)
  if autonomous then chosen=Plan.pick_entry(data,spec,allowed,people,restrictions)
  else chosen=assert(Search.random(allowed),'no_matching_scenes')end
  if args.context then assert(V.object(args.context)and #J.encode(args.context)<=4096,'Invalid/oversized add-on context')end
- if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id])end
+ local pair_id=selected_pair and selected_pair.id
+ if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id],pair_id)end
  if background then runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm,args.furniture_id)end
- if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),reservation=false,assets_checked=false,startup_rechecks=true}end
+ if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),furniture_pair_id=pair_id,reservation=false,assets_checked=false,startup_rechecks=true}end
  serial=serial+1;row.token='api.'..os.time()..'.'..serial;row.age=0;row.retry=1;row.stage='depart';row.departures={}
- local reserved,reason=Sessions.reserve(row.token,ids,args.furniture_id);assert(reserved,reason)
+ local reserved,reason=Sessions.reserve(row.token,ids,args.furniture_id,spot_ids);assert(reserved,reason)
  for _,p in ipairs(people)do row.departures[p.id]=false end
- row.entry={initiator=args.initiator,node=chosen.scene_id,bindings=chosen.bindings,furniture=args.furniture_id,api_token=row.token}
+ row.entry={initiator=args.initiator,node=chosen.scene_id,bindings=chosen.bindings,furniture=args.furniture_id,furniture_pair_id=pair_id,api_token=row.token}
  row.restrictions=restrictions;row.context=V.copy(args.context);row.appearance=selections;row.status={phase='accepted',scene_id=chosen.scene_id}
  row.placement,row.lifetime,row.plan=placement,lifetime,spec
  -- Without a length or a plan the runtime applies the player's NPC default once it knows nobody is household.
@@ -202,7 +209,7 @@ local function start(actor,req,row,data,preflight)
  -- Ensure the caller receives start failures/end events even without a subscription.
  local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
  if not subscribers[sk]then subscribers[sk]={addon_id=req.addon_id,client_id=req.client_id,actor=actor,names={['*']=true}}end
- return {accepted=true,scene_id=chosen.scene_id,start_request_id=req.request_id,autonomous=autonomous or nil,
+ return {accepted=true,scene_id=chosen.scene_id,start_request_id=req.request_id,furniture_pair_id=pair_id,autonomous=autonomous or nil,
   stages=spec and spec.stage_count or nil,route_uncertain=spec and spec.route_uncertain or nil}
 end
 local function execute(actor,req,row)
@@ -213,7 +220,7 @@ local function execute(actor,req,row)
   return result
  end
  -- Backward compatibility with add-ons that read maximum_sessions as the single focused session limit.
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
@@ -244,15 +251,16 @@ local function execute(actor,req,row)
  if op=='cancel_start'then
   V.fields(args,{'start_request_id'},{'start_request_id'})
   local target
-  local function mine(row)return row and row.req.addon_id==req.addon_id and row.req.client_id==req.client_id and row.req.request_id==args.start_request_id end
+  local function mine(candidate)return candidate and candidate.req.addon_id==req.addon_id and candidate.req.client_id==req.client_id and candidate.req.request_id==args.start_request_id end
   if mine(pending)then target=pending end
-  for _,row in pairs(background_starts)do if mine(row)then target=row end end
+  for _,candidate in pairs(background_starts)do if mine(candidate)then target=candidate end end
   assert(target,'request_not_found')
   M.fail_start(target.token,'Cancelled by its add-on');return {accepted=true}
  end
  local data=Catalog.get_snapshot()
  if op=='find_furniture'then
-  V.fields(args,{'origin_id','radius_m','scene_id','include_unavailable'},{'origin_id'})
+  V.fields(args,{'origin_id','radius_m','scene_id','include_unavailable','participants'},{'origin_id'})
+  if args.participants then roster(args)end
   return require('SceneZOI.Furniture').find(args,runtime().actors,data)
  end
  if op=='validate_start'then
@@ -265,7 +273,7 @@ local function execute(actor,req,row)
  if op=='get_definitions'then V.fields(args,{});return {tags=V.copy(data.metadata.tags),actions=V.copy(data.metadata.actions),tasks=V.copy(data.tasks.definitions),content_ratings={'GENERAL','SUGGESTIVE','EXPLICIT'}}end
  if op=='get_scene'then V.fields(args,{'scene_id'},{'scene_id'});return Catalog.public_node(Catalog.get(args.scene_id))end
  if op=='find_scenes'or op=='choose_random_scene'then
-  V.fields(args,{'participants','furniture_id','search','bindings'});local rows=find(args,data)
+  V.fields(args,{'participants','furniture_id','furniture_pair_id','search','bindings'});local rows=find(args,data)
   if op=='find_scenes'then return {scenes=rows,count=#rows}end
   return {scene=Search.random(rows)or J.null,count=#rows}
  end
@@ -317,9 +325,9 @@ function M.receive(actor,content)
 end
 -- Bounded on purpose: anything without a player panel needs a finite life.
 -- The picker with the controlled Zoi unselected: the background path an add-on uses, nobody to answer to.
-function M.start_from_picker(actor,ids,chosen,furniture)
+function M.start_from_picker(actor,ids,chosen,furniture,pair_id)
  local req={api_version=1,addon_id='scenezoi.picker',client_id='picker',request_id='picker.'..os.time()..'.'..math.random(1,1073741823),operation='start_scene',
-  arguments={participants=J.array(ids),initiator=ids[1],background=true,scene_id=chosen.node,furniture_id=furniture,placement={max_start_distance_m=100}}}
+  arguments={participants=J.array(ids),initiator=ids[1],background=true,scene_id=chosen.node,furniture_id=furniture,furniture_pair_id=pair_id,placement={max_start_distance_m=100}}}
  return start(actor,req,{req=req,actor=actor,origin_id=ids[1]},Catalog.get_snapshot())
 end
 function M.placement(value)

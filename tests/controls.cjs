@@ -12,6 +12,9 @@ function fixture(options = {}) {
   for (const suffix of ['', '-editor', '-person', '-mesh', '-bone', '-X', '-Y', '-Z', '-export', '-status']) {
     elements['attachment-preview'+suffix] = {style: {}, addEventListener(){}};
   }
+  elements['scene-speed']={style:{}};
+  elements['scene-navigation'].children=[];
+  elements['scene-navigation'].appendChild=function(el){this.children.push(el);};
   elements['scene-navigation'].parentNode={insertBefore(el){elements[el.id]=el;}};
   const classes=new Set(),documentListeners={};
   const root = {id:'app-root',style: {},classList:{toggle(name,on){on?classes.add(name):classes.delete(name);}},setAttribute(){}, offsetLeft:100, offsetTop:100, offsetWidth:410, offsetHeight:210,appendChild(el){elements[el.id]=el;},insertAdjacentHTML(){}};
@@ -66,6 +69,8 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/save-guard.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../modkit/SceneZOI_93C44199/ui/scenezoi/addon-bridge.js'),'utf8'),context);
   vm.runInNewContext(source,context);
+  root.choosePairs=choices=>context.SceneZOIControls.chooseFurniturePair(choices);
+  root.canStart=()=>context.SceneZOIControls.available();
 
   return {elements,root,timers,commands,hover,rects,classes,advanceTime(ms){time+=ms;},clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{
       const [,client,sequence,revision,node]=s.split('|');
@@ -80,6 +85,18 @@ async function flush(){for(let i=0;i<60;i++)await Promise.resolve();}
 const writes=(ui,key)=>ui.commands.filter(c=>c.params?.key===key).map(c=>c.params.value);
 const reads=(ui,...keys)=>ui.commands.filter(c=>c.command==='uimod.cfg_load' && keys.includes(c.params.key)).length;
 async function run(){
+  const pairPicker=fixture();await flush();
+  const pairResult=pairPicker.root.choosePairs([{id:'left',label:'Left seats'},{id:'right',label:'Right seats'}]);
+  assert.equal(pairPicker.root.canStart(),false);assert.equal(pairPicker.root.style.visibility,'visible');
+  assert.equal(pairPicker.elements['scene-navigation'].children.length,2);
+  const oldClient=writes(pairPicker,'ui_boot').at(-1);pairPicker.setState(`SZ2|${oldClient}|0|idle|ok`);pairPicker.timers[250]();await flush();
+  assert.equal(pairPicker.root.style.visibility,'visible','A previous idle acknowledgement cannot close the pair choices');
+  assert.equal(await pairPicker.start(),false,'No second start may steal this selection');
+  pairPicker.elements['scene-navigation'].children[1].listeners.click();assert.equal(await pairResult,'right');assert.equal(pairPicker.root.canStart(),true);
+  const cancelPicker=fixture();await flush();const cancelResult=cancelPicker.root.choosePairs([{id:'one',label:'<script>not markup</script>'},{id:'two',label:'Seat pair 2'}]);
+  assert.equal(cancelPicker.elements['scene-navigation'].children[0].textContent,'<script>not markup</script>');
+  cancelPicker.elements['scene-exit'].listeners.click();assert.equal(await cancelResult,null);assert.equal(writes(cancelPicker,'request').length,0,'Cancel never starts or mutates a scene');
+  console.log('Sofa pair chooser passed: both choices, explicit second pair, stale idle isolation, start exclusion, text safety and Cancel.');
   const hiddenPanel=fixture();await hiddenPanel.start();await flush();hiddenPanel.clickHide();
   assert(hiddenPanel.classes.has('scene-compact'));
   for(let i=0;i<12;i++){hiddenPanel.timers[1000]();await flush();}
@@ -90,6 +107,13 @@ async function run(){
   savingExit.setState(`SZ2|${savingFields[1]}|1|idle|saving`);savingExit.timers[250]();await flush();
   assert.equal(savingExit.root.style.visibility,'hidden','Saving exits close controls through the normal idle path');
   savingExit.runDeferred();await flush();assert.match(writes(savingExit,'focus').at(-1),/\|closed$/);
+  for(const [phase,code,visibility] of [['idle','sofa_unavailable','hidden'],['error','furniture_unavailable','visible']]){
+    const denied=fixture();await denied.start();await flush();
+    const fields=writes(denied,'request').at(-1).split('|');
+    denied.setState(`SZ2|${fields[1]}|${fields[2]}|${phase}|${code}`);denied.timers[250]();await flush();
+    assert.equal(denied.root.style.visibility,visibility,'Only the expected manual sofa denial skips Dismiss');
+    assert.equal(denied.commands.filter(c=>c.command==='toast.show').length,0,'The runtime owns its single denial toast');
+  }
   // The panel follows the controlled Zoi's scene, whoever started it, and a new start keeps this panel's own identity.
   const follower=fixture();await flush();
   assert.notEqual(follower.root.style.visibility,'visible');

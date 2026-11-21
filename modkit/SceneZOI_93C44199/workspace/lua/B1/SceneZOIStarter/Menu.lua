@@ -52,7 +52,7 @@ local function update(actors,ready,dt)
                     if tag and eligible then filter(tag,not solo,kept)end
                 else
                     local eligible=false
-                    local profile=ready and debug_start and require('SceneZOI.Furniture').available(tostring(data.TargetEntityId.Value))
+                    local profile=ready and debug_start and require('SceneZOI.Furniture').pickable(tostring(data.TargetEntityId.Value))
                     if profile then
                         for _,node in pairs(require('SceneZOI.Catalog').get_snapshot().nodes)do
                             if node.starting_hub and require('SceneZOI.FurnitureData').compatible(node,profile)then eligible=true;break end

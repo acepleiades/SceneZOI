@@ -18,5 +18,15 @@
     "source": "HZoi_bed_idle_M.fbx",
     "destination": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Bed_idle_M.SceneZOI_Bed_idle_M",
     "skeleton": "body"
+  },
+  {
+    "source": "HZoi_sofa_idle_F.fbx",
+    "destination": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Sofa_idle_F.SceneZOI_Sofa_idle_F",
+    "skeleton": "body"
+  },
+  {
+    "source": "HZoi_sofa_idle_M.fbx",
+    "destination": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Sofa_idle_M.SceneZOI_Sofa_idle_M",
+    "skeleton": "body"
   }
 ]

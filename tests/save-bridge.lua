@@ -92,3 +92,95 @@ B.boot()
 assert(B.restore_waiting())
 B.tick({})
 assert(B.overlaps({'6'})and not B.restore_waiting())
+
+-- A deferred sofa pair must not block unrelated seats on the same object.
+local sofa={id='50',owner='5',pair_id='ab',spots={'a','b'},slots={{component_name='SeatA',slot_name='SitA'},{component_name='SeatB',slot_name='SitB'}}}
+load_rows({{token='sofa.saved',participants={},furniture={sofa}}},'sofa',20)
+assert(B.overlaps({},'50',{'a','b'})and B.overlaps({},'50',{'b','c'})and not B.overlaps({},'50',{'c','d'}))
+assert(B.overlaps({},'50'),'A whole-object request still overlaps a pending pair')
+sent={};B.tick({['5']=five});assert(#sent==1 and sent[1].kind=='SceneZOI.FurnitureRecover')
+local recovery=J.decode(P.decode(sent[1].fields[2]))
+assert(recovery[1].pair_id=='ab'and recovery[1].spots[2]=='b'and recovery[1].slots[2].slot_name=='SitB','Exact physical/native pair identity survives the save bridge')
+print('Sofa save bridge passed: exact pair/slot recovery and disjoint-seat availability during deferred cleanup.')
+
+
+-- Native GetUp can finish after the first save acknowledgement. A new journal
+-- revision replaces only the return coordinates before the host may anchor.
+B.boot()
+local moving={token='scene.settled',preparing=true,participants={{actor=a,id='1'},{actor=b,id='2'}}}
+local first={version=1,token=moving.token,collision=true,local_value=true,follow_parent=false,
+ location={1,2,3},rotation={4,5,6},outfit=true,body_merge={base=true,final=false},grab_poses={{hand=0,id='7',pose='Hold'}},furniture={}}
+local second={version=1,token=moving.token,collision=false,local_value=false,follow_parent=true,
+ location={10,20,30},rotation={40,50,60},outfit=false}
+local function offer_snapshot(person,value)B.offer(moving,person,{moving.token,'snapshot',P.encode(J.encode(value))})end
+local checkpoints={['1']=1,['2']=1}
+local function settled(person,location,rotation,extra)
+ local value={token=moving.token,checkpoint=checkpoints[P.id(person:GetEntityId())]or 1,location=location,rotation=rotation}
+ for key,v in pairs(extra or {})do value[key]=v end
+ B.offer(moving,person,{moving.token,'settled_snapshot',P.encode(J.encode(value))})
+end
+offer_snapshot(a,first);offer_snapshot(b,second)
+local settled_host=journal().host
+cfg.save_ready=P.pack(settled_host,journal().revision,'ready');assert(B.ready(moving))
+local original_revision=journal().revision
+settled(a,{101,102,103},{0,90,0})
+local revision_a=journal().revision
+assert(revision_a==original_revision+1 and B.checkpoint(moving,'1')==1 and not B.checkpoint(moving,'2')and not moving.save_ready and not B.ready(moving),
+ 'The original ACK cannot authorize anchoring after a settled coordinate update')
+local saved=record(moving.token).participants['1']
+assert(saved.location[1]==101 and saved.rotation[2]==90 and saved.collision and saved.local_value and not saved.follow_parent)
+assert(saved.outfit and saved.body_merge.base and not saved.body_merge.final and saved.grab_poses[1].id=='7',
+ 'Body, outfit, policy, collision and held-object originals remain from the first snapshot')
+settled(a,{101,102,103},{0,90,0});assert(journal().revision==revision_a,'Repeated identical updates do not republish')
+offer_snapshot(a,first)
+assert(record(moving.token).participants['1'].location[1]==101 and journal().revision==revision_a,
+ 'A delayed original offer cannot revert settled return coordinates')
+-- Each participant can finish in a different tick. An ACK for the first update
+-- must not authorize a later update to another participant in the same journal.
+cfg.save_ready=P.pack(settled_host,revision_a,'ready');assert(B.ready(moving))
+settled(b,{201,202,203},{0,180,0})
+local revision_b=journal().revision
+assert(revision_b==revision_a+1 and B.checkpoint(moving,'2')==1 and not B.ready(moving))
+assert(record(moving.token).participants['1'].location[1]==101 and record(moving.token).participants['2'].location[1]==201)
+local before_rejected=cfg.save_snapshot
+settled(actor('1'),{999,0,0},{0,0,0}) -- Same entity ID does not establish actor identity.
+settled(c,{999,0,0},{0,0,0})
+settled(a,{999,0,0},{0,0,0},{collision=false})
+settled(a,{999,0},{0,0,0})
+B.offer(moving,a,{'wrong.token','settled_snapshot',P.encode(J.encode({token='wrong.token',checkpoint=1,location={999,0,0},rotation={0,0,0}}))})
+moving.preparing=false;settled(a,{999,0,0},{0,0,0});moving.preparing=true
+moving.stopping=true;settled(a,{999,0,0},{0,0,0});moving.stopping=nil
+assert(cfg.save_snapshot==before_rejected and journal().revision==revision_b,
+ 'Unowned, late, stopping, wrong-token or non-coordinate updates are inert')
+cfg.save_ready=P.pack(settled_host,revision_b,'ready');assert(B.ready(moving))
+-- A failed CFG write must hold even if an old/high acknowledgement is present.
+-- The next identical resend retries that intended journal without losing flags.
+fail_snapshot_write=true;checkpoints['1']=2
+settled(a,{301,302,303},{0,270,0})
+assert(journal().revision==revision_b and B.checkpoint(moving,'1')==1 and moving.journal_update_pending and not B.ready(moving),
+ 'A failed write must not publish the new entry checkpoint')
+cfg.save_ready=P.pack(settled_host,revision_b+100,'ready')
+assert(not B.ready(moving),'Write failure is not bypassed by any previous ready token')
+checkpoints['2']=2;settled(b,{401,402,403},{0,180,0})
+assert(B.checkpoint(moving,'1')==1 and B.checkpoint(moving,'2')==1 and journal().revision==revision_b,
+ 'Two independent pending participant updates cannot expose unpublished checkpoints')
+fail_snapshot_write=false
+settled(a,{301,302,303},{0,270,0})
+local revision_retry=journal().revision
+assert(revision_retry==revision_b+1 and B.checkpoint(moving,'1')==2 and B.checkpoint(moving,'2')==2 and not moving.journal_update_pending)
+assert(record(moving.token).participants['2'].location[1]==401 and record(moving.token).participants['2'].follow_parent,
+ 'One successful retry publishes both participants while preserving each original policy')
+assert(record(moving.token).participants['1'].location[1]==301 and record(moving.token).participants['1'].body_merge.base)
+cfg.save_ready=P.pack(settled_host,revision_b,'ready');assert(not B.ready(moving))
+cfg.save_ready=P.pack(settled_host,revision_retry,'ready');assert(B.ready(moving))
+settled(a,{301,302,303},{0,270,0});assert(journal().revision==revision_retry)
+settled(a,{101,102,103},{0,90,0},{checkpoint=1})
+settled(a,{999,0,0},{0,0,0})
+assert(journal().revision==revision_retry and record(moving.token).participants['1'].location[1]==301,
+ 'Stale checkpoints and different coordinates under the same checkpoint cannot revert the journal')
+B.finish(moving.token,{'1'},false)
+local deferred_revision=journal().revision
+settled(a,{999,0,0},{0,0,0})
+assert(journal().revision==deferred_revision and record(moving.token).participants['1'].location[1]==301,
+ 'A deferred recovery record cannot be rewritten by a late settlement message')
+print('Settled save bridge passed: transform-only updates, original state retained, independent participant revisions, latest-ACK gate, identity/phase rejection and write-failure retry.')

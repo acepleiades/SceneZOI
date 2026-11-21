@@ -31,32 +31,36 @@ function M.spots(except)
 end
 
 -- All or nothing: a start owns its whole roster and furniture, or none of it.
-function M.reserve(key, ids, furniture_id)
+function M.reserve(key, ids, furniture_id, spot_ids)
     for _, id in ipairs(ids) do
         if zois[id] and zois[id] ~= key then return false, "participant_busy" end
     end
-    if furniture_id and furniture[furniture_id] and furniture[furniture_id] ~= key then
-        return false, "furniture_unavailable"
+    for holder, held in pairs(furniture_id and furniture[furniture_id] or {}) do
+        if holder ~= key and require('SceneZOI.FurniturePairs').overlap(spot_ids, held or nil) then return false, "furniture_unavailable" end
     end
     for _, id in ipairs(ids) do zois[id] = key end
-    if furniture_id then furniture[furniture_id] = key end
+    if furniture_id then furniture[furniture_id] = furniture[furniture_id] or {};furniture[furniture_id][key] = spot_ids or false end
     return true
 end
 
 function M.transfer(from, to)
     for id, key in pairs(zois) do if key == from then zois[id] = to end end
-    for id, key in pairs(furniture) do if key == from then furniture[id] = to end end
+    for _, holders in pairs(furniture) do if holders[from] ~= nil then holders[to],holders[from] = holders[from],nil end end
     if spots[from] then spots[to], spots[from] = spots[from], nil end
 end
 
 function M.release(key)
     for id, holder in pairs(zois) do if holder == key then zois[id] = nil end end
-    for id, holder in pairs(furniture) do if holder == key then furniture[id] = nil end end
+    for id, holders in pairs(furniture) do holders[key] = nil;if not next(holders) then furniture[id] = nil end end
     spots[key] = nil
 end
 
 function M.holder(id) return zois[id] end
-function M.furniture_holder(id) return furniture[id] end
+function M.furniture_holder(id,spot_ids)
+    for holder,held in pairs(furniture[id] or {}) do
+        if require('SceneZOI.FurniturePairs').overlap(spot_ids,held or nil) then return holder end
+    end
+end
 
 function M.add(session)
     assert(not by_token[session.token], "Duplicate scene session")

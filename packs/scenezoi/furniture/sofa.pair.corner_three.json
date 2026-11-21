@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "id": "scenezoi.sofa.pair.corner_three",
+  "kind": "sofa.pair",
+  "objects": [
+    "Sofa03_v01"
+  ],
+  "surface_height_cm": 44,
+  "sitting_spots": [
+    {
+      "id": "front_left",
+      "run": "front",
+      "offset_cm": {
+        "x": 82.07568277216707,
+        "y": -44,
+        "z": 0
+      },
+      "yaw_degrees": 0,
+      "slots": [
+        {
+          "component_name": "InteractionSlot_L",
+          "slot_name": "InteractionSlot_L"
+        }
+      ]
+    },
+    {
+      "id": "front_right",
+      "run": "front",
+      "offset_cm": {
+        "x": -19.316110140856754,
+        "y": -44,
+        "z": 0
+      },
+      "yaw_degrees": 0,
+      "slots": [
+        {
+          "component_name": "InteractionSlot_R",
+          "slot_name": "InteractionSlot_R"
+        }
+      ]
+    },
+    {
+      "id": "side",
+      "run": "side",
+      "offset_cm": {
+        "x": -93.91558849159446,
+        "y": 37.23770033069757,
+        "z": 0
+      },
+      "yaw_degrees": -90,
+      "slots": [
+        {
+          "component_name": "InteractionSlot_R1",
+          "slot_name": "InteractionSlot_R1"
+        }
+      ]
+    }
+  ],
+  "seat_pairs": [
+    {
+      "id": "front",
+      "spots": [
+        "front_left",
+        "front_right"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "id": "scenezoi.sofa_idle",
+  "label": "Sofa Idle Hub",
+  "kind": "loop",
+  "duration": 4,
+  "fps": 60,
+  "tracks": {
+    "male": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Sofa_idle_M.SceneZOI_Sofa_idle_M",
+    "female": "/SceneZOI_93C44199/SceneZOI/Animations/SceneZOI_Sofa_idle_F.SceneZOI_Sofa_idle_F"
+  },
+  "navigation": [],
+  "participants": {
+    "male": {
+      "body": "male",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    },
+    "female": {
+      "body": "female",
+      "body_age": "Adult",
+      "growth_steps": [
+        "Youth",
+        "Adult",
+        "Old",
+        "Elderly"
+      ]
+    }
+  },
+  "anchor_participant": "male",
+  "gaze": {
+    "male": {
+      "participant": "female",
+      "component": "head",
+      "bones": [
+        "FACIAL_L_Eye",
+        "FACIAL_R_Eye"
+      ]
+    },
+    "female": {
+      "participant": "male",
+      "component": "head",
+      "bones": [
+        "FACIAL_L_Eye",
+        "FACIAL_R_Eye"
+      ]
+    }
+  },
+  "expressions": {
+    "male": {
+      "context": "Idle"
+    },
+    "female": {
+      "context": "Idle"
+    }
+  },
+  "tags": [
+    "affectionate",
+    "sitting",
+    "eye_contact"
+  ],
+  "participant_tags": {
+    "male": [
+      "sitting"
+    ],
+    "female": [
+      "sitting"
+    ]
+  },
+  "actions": [
+    {
+      "type": "hug",
+      "actor": "male",
+      "target": "female",
+      "performer": "male"
+    }
+  ],
+  "furniture": {
+    "kind": "sofa.pair",
+    "surface_height_cm": 44
+  },
+  "hub": "sofa.pair",
+  "starting_hub": true
+}

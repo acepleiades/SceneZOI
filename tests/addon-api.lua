@@ -66,3 +66,22 @@ r=request('solo','start_random_scene',{initiator='1',participants={'1'},search={
 request('solocancel','cancel_start',{start_request_id='solo'});assert(not API.has_pending())
 r=request('nobody','start_random_scene',{initiator='1',participants={}});assert(not r.ok)
 print('Public API passed: versioning, replay/conflict handling, shared matching, real startup context, independent group acknowledgements, ownership, copied events, status, no-match, cancellation and timeout.')
+
+local sofa=V.copy(neutral);sofa.id='test.sofa';sofa.furniture={kind='sofa.pair',surface_height_cm=44};data.nodes[sofa.id]=sofa
+local available_pair={id='right_pair',spots={'c','d'}}
+local furniture_profile={kind='sofa.pair'};local prepared_pair
+package.loaded['SceneZOI.Furniture']={available=function(id,pair)
+ if id=='50'and(not pair or pair==available_pair.id)then return furniture_profile,available_pair end
+end,prepare=function(id,node,pair)assert(id=='50'and node==sofa);prepared_pair=pair;return {}end}
+r=request('sofa_version','get_version');assert(r.result.features.furniture_pairs==1)
+r=request('sofa_preflight','validate_start',{initiator='1',participants={'1','2'},furniture_id='50',furniture_pair_id='right_pair',scene_id=sofa.id,start_mode='start_scene'})
+assert(r.ok and r.result.valid and r.result.furniture_pair_id=='right_pair'and prepared_pair=='right_pair'and not API.has_pending())
+r=request('sofa_start','start_scene',{initiator='1',participants={'1','2'},furniture_id='50',furniture_pair_id='right_pair',scene_id=sofa.id})
+assert(r.ok and r.result.accepted and r.result.furniture_pair_id=='right_pair')
+API.tick(.5);API.tick(.5);local start=J.decode(require('SceneZOI.Protocol').decode(cfg.api_start))
+local sofa_fields={'ui','2','start','1',sofa.id,'first:1+second:2','50',start.token,'right_pair'}
+assert(API.context(start.token,sofa_fields).entry.furniture_pair_id=='right_pair')
+sofa_fields[9]='left_pair';assert(not pcall(API.context,start.token,sofa_fields),'UI cannot substitute another sofa pair')
+request('sofa_cancel','cancel_start',{start_request_id='sofa_start'})
+r=request('sofa_badpair','start_scene',{initiator='1',participants={'1','2'},furniture_id='50',furniture_pair_id='missing_pair',scene_id=sofa.id});assert(not r.ok and r.code=='furniture_unavailable')
+print('Sofa start API passed: capability discovery, pair preflight, immutable UI handoff, cancellation and unavailable-pair rejection.')

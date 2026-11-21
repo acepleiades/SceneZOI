@@ -9,6 +9,14 @@ for(const selector of ['#scene-navigation button','#scene-exit','#scene-restore'
  assert(fonts.length>0,selector+' must set its native multilingual control font explicitly');
  assert.equal(fonts.at(-1)[1],'var(--inzoi-font-ui)',selector+' must retain the CJK fallback faces');
 }
+// A mistaken Windows text decode can leave JavaScript valid while corrupting
+// every ellipsis/apostrophe key. Such captions silently lose all translations.
+const app=fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/app.js','utf8');
+const english=JSON.parse(fs.readFileSync('packs/scenezoi/localization/text.json','utf8')).translations['en-US'].messages;
+for(const [,key] of app.matchAll(/SceneZOILocalization\.text\('([^']*[\u0080-\uFFFF][^']*)'/g)){
+ assert(Object.hasOwn(english,key),'UI localization key was corrupted or is undeclared: '+key);
+}
+assert(!app.includes('\uFFFD'),'UI source must not contain replacement characters');
 let language='fr-FR',pending=[],calls=0;
 const dictionary={culture:'en-US',messages:{'en-US':{Exit:'Exit'},'fr-FR':{Exit:'Quitter','From {min} to {max}':'De {min} à {max}','Bag':'Sac'}},labels:{}};
 const raw=Buffer.from(JSON.stringify(dictionary)).toString('hex');

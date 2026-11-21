@@ -52,6 +52,7 @@ print=function(first,...) if not tostring(first):match("^%[SceneZOI%]") then out
         lib.lua_close(state)
         print('PASS', filename.relative_to(repo)if filename.is_relative_to(repo)else filename, flush=True)
 subprocess.run([sys.executable,'tests/catalog.py'],check=True)
+subprocess.run([sys.executable,'tests/furniture_data.py'],check=True)
 subprocess.run([sys.executable,'tests/localization.py'],check=True)
 subprocess.run([sys.executable,'tests/scene_metadata.py'],check=True)
 subprocess.run([sys.executable,'tests/addon_annotations.py'],check=True)

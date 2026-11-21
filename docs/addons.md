@@ -71,7 +71,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 | `get_version` | Returns API version, runtime build, host instance, features, the single focused-session limit (`maximum_sessions: 1`) and the NPC-only session limit (`maximum_npc_sessions`). |
 | `get_definitions` | Returns registered tags/actions, aliases, role descriptions, task definitions and the rating enum. |
 | `get_scene` | `scene_id`; returns library metadata, role requirements, furniture and authored navigation. |
-| `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`; returns all matches and count. |
+| `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`, `furniture_pair_id`; returns all matches and count. |
 | `choose_random_scene` | Same inputs; returns one uniformly chosen match or JSON null, plus count. |
 | `start_scene` | Required `scene_id`, `participants`, `initiator`; optional bindings, search, restrictions, furniture and context. |
 | `start_random_scene` | Required participants/initiator; optional bindings, search, restrictions, furniture and context. |
@@ -239,7 +239,13 @@ starts with Auto-mode enabled, whether or not a participant is controlled.
 
 Supply `initiator` and `participants` as decimal string IDs for loaded Zois.
 Include the initiator in the roster. Optional `bindings` pin named roles and
-`furniture_id` selects supported furniture. Use `scene_id` to pin the initial
+`furniture_id` selects supported furniture. For a sofa, also pass the
+`furniture_pair_id` returned by `find_furniture` to choose an exact adjacent
+pair. Without it, the first available pair ID alphabetically is selected.
+Preflight and discovery do not reserve the pair; startup rechecks its seats.
+Disjoint pairs on the same sofa can host separate sessions. See
+[sofa profiles and placement](furniture.md#sofa-authoring-and-placement).
+Use `scene_id` to pin the initial
 node, or let SceneZOI select an eligible entry. `search` filters entry candidates.
 `restrictions` applies throughout the session, including authored transitions,
 completion routes and manual takeover. `placement` and `lifetime` use the

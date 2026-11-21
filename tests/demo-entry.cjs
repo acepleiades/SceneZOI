@@ -7,13 +7,14 @@ async function flush(){for(let i=0;i<45;i++)await Promise.resolve();}
 function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},fault={}){
  const values={state:'SZ2|none|0|idle|ok',selection_request:'SZ2|old|open|1',selection_host_ready:'SZ2|host|ready|none'};
  if(fault.delayedReceiver){values.selection_ui_ready='SZ2|host|ready|ui.old|launcher.99.1';values.selection_launcher_ready='SZ2|launcher.99.1|ready|ui.old|old';}
- const starts=[],declines=[],declineTokens=[],notices=[],toasts=[],reads=[];let available=true,activate,timer,visible=false,hides=0,tick=0;const retries=[];
+ const starts=[],declines=[],declineTokens=[],notices=[],toasts=[],reads=[],pairChoices=[];let available=true,activate,timer,visible=false,hides=0,tick=0;const retries=[];
  function cli(command,p){
   if(command==='toast.show'){toasts.push(p);return Promise.resolve({data:{}});}
   if(command==='entity.get_possessed')return Promise.resolve({data:{entity_id:controlled}});
   if(command==='entity.get_character_info')return Promise.resolve({data:{gender:body[p.entity_id],growth_step:'Youth'}});
   if(command==='uimod.cfg_save'){
    if(p.key==='selection_ui_ready'&&fault.readyWrites>0){fault.readyWrites--;return Promise.resolve({success:false,message:'Temporary write failure'});}
+   if(p.key==='selection_pair'&&fault.pairWrites>0){fault.pairWrites--;return Promise.resolve({success:false,message:'Temporary write failure'});}
    values[p.key]=p.value;return Promise.resolve({data:{}});
   }
   if(command==='uimod.cfg_load'){
@@ -27,15 +28,15 @@ function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},f
  }
  const common={Promise,Math,JSON,String,Number,Set,Error,Date:{now:()=>++tick}};
  const c={...common,wf:{MOD_ID:'mod'},window:null,
-  SceneZOIControls:{bootId:'ui.new',available:()=>available,sceneActive:()=>!available,decline:(id,token)=>{declines.push(id);declineTokens.push(token);},reject:(...a)=>notices.push(a),start:e=>{starts.push(e);return Promise.resolve(true);}},
+  SceneZOIControls:{bootId:'ui.new',available:()=>available,sceneActive:()=>!available,decline:(id,token)=>{declines.push(id);declineTokens.push(token);},reject:(...a)=>notices.push(a),start:e=>{starts.push(e);return Promise.resolve(true);},chooseFurniturePair:choices=>{pairChoices.push(choices);return Promise.resolve(fault.pairChoice===undefined?choices[0].id:fault.pairChoice);}},
   inzoi:{cli:{execute:cli}},setInterval:(f,t)=>{assert.equal(t,200);timer=f;}};
  c.window=c;function startReceiver(){vm.runInNewContext(receiver,c);}
  if(!fault.delayedReceiver)startReceiver();
  const l={...common,setTimeout:(f)=>retries.push(f),inzoi:{cli:{execute:cli},trigger:{onActivated:f=>activate=f},view:{hide:()=>{visible=false;hides++;}}}};
  vm.runInNewContext(launcher,l);
  return {activate:(id=controlled,kind='scenezoi_demo')=>{if(visible){visible=false;return Promise.resolve();}visible=true;return activate({triggerId:kind,targetEntityId:id});},
-  poll:()=>timer(),set:(kind,ids,node='scenezoi.standing_idle',roles='female:3+male:1',bed='none')=>values.selection_state=['SZ2',values.selection_request.split('|')[1],kind,ids,node,roles,bed].join('|'),
-  starts,declines,declineTokens,notices,toasts,reads,advanceTime:ms=>{tick+=ms;},setRequest:raw=>{values.selection_request=raw;},idle:()=>{available=true;},restartHost:(name='nextHost')=>{values.selection_host_ready='SZ2|'+name+'|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get ready(){return values.selection_ui_ready;},get launcher(){return values.selection_launcher_ready;},startReceiver,get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
+  poll:()=>timer(),set:(kind,ids,node='scenezoi.standing_idle',roles='female:3+male:1',bed='none',pair='none')=>values.selection_state=['SZ2',values.selection_request.split('|')[1],kind,ids,node,roles,bed,pair].join('|'),
+  starts,declines,declineTokens,notices,toasts,reads,pairChoices,setPairChoices:choices=>{values.selection_state=['SZ2',values.selection_request.split('|')[1],'choosing_pair','none','none','none','50','none',Buffer.from(JSON.stringify(choices),'utf8').toString('hex')].join('|');},get pairReply(){return values.selection_pair;},advanceTime:ms=>{tick+=ms;},setRequest:raw=>{values.selection_request=raw;},idle:()=>{available=true;},restartHost:(name='nextHost')=>{values.selection_host_ready='SZ2|'+name+'|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get ready(){return values.selection_ui_ready;},get launcher(){return values.selection_launcher_ready;},startReceiver,get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
 }
 async function boot(f){
  await flush();
@@ -65,6 +66,24 @@ async function run(){
  }
  const bed=await boot(fixture());await bed.activate('50','scenezoi_furniture');await bed.poll();await flush();assert(bed.request.endsWith('|1|50'));
  bed.set('selected','1+3','scenezoi.bed_single_idle','male:1+female:3','50');await bed.poll();await flush();assert.equal(bed.starts[0].furniture,'50');assert.equal(bed.starts[0].node,'scenezoi.bed_single_idle');
+ const sofa=await boot(fixture());await sofa.activate('50','scenezoi_furniture');await sofa.poll();await flush();
+ sofa.set('selected','1+3','author.sofa_idle','male:1+female:3','50','right_pair');await sofa.poll();await flush();assert.equal(sofa.starts[0].furniture_pair_id,'right_pair','Keep the selected physical pair through the UI handoff');
+ const choice=await boot(fixture('1',undefined,{pairChoice:'right'}));await choice.activate('50','scenezoi_furniture');await choice.poll();await flush();
+ choice.setPairChoices([{id:'left',label:'左側の座席'},{id:'right',label:'右側の座席'}]);await choice.poll();await flush();assert(choice.pairReply.endsWith('|choose|right'));assert.equal(choice.starts.length,0);
+ await choice.poll();await flush();assert.equal(choice.pairChoices.length,1,'An unchanged pending choice packet cannot reopen the chooser');
+ choice.set('selected','1+3','author.sofa_idle','male:1+female:3','50','right');await choice.poll();await flush();assert.equal(choice.starts[0].furniture_pair_id,'right');
+ for(const pairChoice of ['right',null]){
+  const retryChoice=await boot(fixture('1',undefined,{pairChoice,pairWrites:1}));await retryChoice.activate('50','scenezoi_furniture');await retryChoice.poll();
+  retryChoice.setPairChoices([{id:'left',label:'Left seats'},{id:'right',label:'Right seats'}]);await retryChoice.poll();await flush();
+  assert.equal(retryChoice.pairReply,undefined,'A failed reply is not a confirmed seat selection');
+  await retryChoice.poll();await flush();assert(retryChoice.pairReply.endsWith(pairChoice?'|choose|right':'|cancel'));
+  assert.equal(retryChoice.pairChoices.length,1,'Retry the same reply without reopening the chooser or needing a second click');
+ }
+ for(const code of ['sofa_unavailable','sofa_no_starting_scene']){
+  const denied=await boot(fixture());await denied.activate('50','scenezoi_furniture');await denied.poll();denied.set('unavailable',code,'none','none','50');
+  for(let i=0;i<4;i++){await denied.poll();await flush();}
+  assert.equal(denied.starts.length,0);assert.equal(denied.notices.length,0,'An unavailable sofa does not open a Dismiss notice');assert.equal(denied.declines.length,1,'Release picker focus once');
+ }
  const ff=await boot(fixture('3'));await ff.activate();await ff.poll();ff.set('unavailable','no_starting_scene');await ff.poll();await flush();assert.equal(ff.starts.length,0);assert.equal(ff.declines.length,1);assert.equal(ff.declineTokens[0],ff.request.split('|')[1]);
  const cold=await boot(fixture());const readyBefore=cold.launcher;cold.restartHost();
  await cold.poll();

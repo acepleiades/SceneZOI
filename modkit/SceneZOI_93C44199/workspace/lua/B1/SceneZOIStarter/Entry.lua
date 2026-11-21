@@ -2,6 +2,7 @@
 local Config=require("SceneZOI.Config")
 local Diagnostics=require("SceneZOI.Diagnostics")
 local Protocol=require("SceneZOI.Protocol")
+local Json=require("SceneZOI.Json")
 local Settings=require("SceneZOI.Settings")
 local M={}
 local pending,last_request,elapsed,host_token,ui_ready
@@ -12,13 +13,23 @@ local function cfg(command,key,value)
     if command=="uimod.cfg_load" and not ok then return nil end
     assert(ok,message);return data or message
 end
-local function publish(token,kind,detail,node,bindings)
-    local furniture = pending and pending.furniture
-    cfg("uimod.cfg_save","selection_state",Protocol.pack(token,kind,detail or "none",node or "none",bindings or "none",furniture or "none"))
+local function publish(token,kind,detail,node,bindings,context)
+    local source = context or pending
+    local furniture = source and source.furniture
+    cfg("uimod.cfg_save","selection_state",Protocol.pack(token,kind,detail or "none",node or "none",bindings or "none",furniture or "none",source and source.furniture_pair_id or 'none',
+        kind=='choosing_pair'and source and Protocol.encode(Json.encode(source.pair_choices))or 'none'))
     if kind=="selected" or kind=="unavailable" or kind=="error" then
         Diagnostics.record("picker_"..kind, {picker_id=token, scene_id=node, bindings=bindings, furniture_id=furniture,
-            code=kind=="unavailable" and detail or kind=="error" and "selection_error" or "ok"})
+            code=kind=="unavailable" and detail or kind=="error" and "selection_error" or "ok",
+            furniture_pair_id=source and source.furniture_pair_id})
     end
+end
+-- Expected manual-start denials need one short explanation, without opening a
+-- scene or turning an unavailable pair into a technical error/Dismiss panel.
+local function reject_sofa(p,code,message)
+    require('SceneZOI.Runtime').authorize_rejected_focus(p.actor,p.token)
+    pcall(require('SceneZOI.Localization').toast,message)
+    publish(p.token,'unavailable',code,nil,nil,p)
 end
 local function tell(p,kind) require("SceneZOI.SimulationRoute").send(p.actor,"SceneZOIStarter.Select",Protocol.pack(p.token,kind)) end
 local function widget()
@@ -33,7 +44,7 @@ local function restore_cap(p)
 end
 -- A lone Zoi can start only where a one-role starting scene fits its body and the clicked furniture.
 local function solo_start(actor,furniture,ratings)
-    local profile=furniture and require("SceneZOI.Furniture").available(furniture) or nil
+    local profile=furniture and require("SceneZOI.Furniture").pickable(furniture) or nil
     return require("SceneZOI.StartingScenes").choose(require("SceneZOI.Catalog").get_snapshot().nodes,
         {require("SceneZOI.Traits").capture(actor)},nil,profile,ratings)
 end
@@ -144,12 +155,24 @@ local function update(dt,actors,busy)
                     end
                     return
                 end
-                if furniture then assert(require('SceneZOI.Furniture').available(furniture),'The furniture is unavailable')end
+                local furniture_kind
+                if furniture then
+                    local Furniture=require('SceneZOI.Furniture')
+                    local profile=Furniture.pickable(furniture)
+                    local declared=profile or Furniture.profile and Furniture.profile(furniture)
+                    furniture_kind=declared and declared.kind
+                    if not profile and furniture_kind=='sofa.pair'then
+                        reject_sofa({token=fields[1],actor=actor,furniture=furniture},'sofa_unavailable',
+                            'The requested seats on this sofa are unavailable for this scene.')
+                        return
+                    end
+                    assert(profile,'The furniture is unavailable')
+                end
                 local w=widget();assert(not w:IsVisible(),"A native Zoi picker is already open")
                 local checked,solo=pcall(solo_start,actor,furniture)
                 if not checked then print("[SceneZOI] Solo start unavailable: "..tostring(solo)) end
                 local asset=assert(UE.UObject.Load("/Game/Data/DataAsset/DA_ZoiGroup.DA_ZoiGroup"))
-                pending={token=fields[1],actor=actor,widget=w,asset=asset,furniture=furniture,solo=checked and solo~=nil,
+                pending={token=fields[1],actor=actor,widget=w,asset=asset,furniture=furniture,furniture_kind=furniture_kind,solo=checked and solo~=nil,
                     old_cap=asset.MaxZoiGroupMemberNum:Find(inzoi.EB1ZoiGroupType.Default),
                     option_visibility=w.BW_WBP_GroupOption:GetVisibility(),age=0,heartbeat=0}
                 asset.MaxZoiGroupMemberNum:Add(inzoi.EB1ZoiGroupType.Default,Config.picker_cap)
@@ -202,6 +225,18 @@ local function update(dt,actors,busy)
             require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
         end
         if p.result[2]=="selected"then
+            if p.awaiting_pair then
+                local choice=Protocol.unpack(cfg('uimod.cfg_load','selection_pair'))
+                if not choice or choice[1]~=p.token then return end
+                if choice[2]=='cancel'then
+                    require('SceneZOI.Runtime').authorize_rejected_focus(p.actor,p.token)
+                    publish(p.token,'cancelled','cancelled');M.stop();return
+                end
+                if choice[2]~='choose'then return end
+                local offered=false;for _,pair in ipairs(p.pair_choices)do if pair.id==choice[3]then offered=true end end
+                assert(offered,'Unknown selected sitting pair')
+                p.furniture_pair_id=choice[3];p.awaiting_pair=nil;p.pair_complete=true
+            end
             local Catalog=require("SceneZOI.Catalog")
             local roster,ids,loaded,with_self,held={},{},true,false,false
             local self_id=Protocol.id(p.actor:GetEntityId())
@@ -212,10 +247,27 @@ local function update(dt,actors,busy)
                 if actors[id] then roster[#roster+1]=require("SceneZOI.Traits").capture(actors[id]) else loaded=false end
             end
             local profile
-            if p.furniture then profile=assert(require('SceneZOI.Furniture').available(p.furniture),'The furniture became unavailable during selection')end
+            if p.furniture then
+                local Furniture=require('SceneZOI.Furniture');local pair
+                profile,pair=Furniture.available(p.furniture,p.furniture_pair_id,ids)
+                if not profile and p.furniture_kind=='sofa.pair'then
+                    reject_sofa(p,'sofa_unavailable','The requested seats on this sofa are unavailable for this scene.')
+                    M.stop();return
+                end
+                assert(profile,'The furniture became unavailable during selection')
+                if profile.kind=='sofa.pair'and not p.pair_complete then
+                    p.pair_choices=Furniture.choices(p.furniture,ids)
+                    if #p.pair_choices>1 then
+                        p.awaiting_pair=true
+                        require('SceneZOI.Runtime').authorize_rejected_focus(p.actor,p.token)
+                        publish(p.token,'choosing_pair');return
+                    end
+                end
+                p.furniture_pair_id=pair and pair.id
+            end
             local chosen=loaded and not held and require("SceneZOI.StartingScenes").choose(Catalog.get_snapshot().nodes,roster,nil,profile) or nil
             -- With the controlled Zoi unselected the scene runs between the others, on the background path.
-            local npc_started=chosen and not with_self and pcall(require("SceneZOI.AddonAPI").start_from_picker,p.actor,ids,chosen,p.furniture)
+            local npc_started=chosen and not with_self and pcall(require("SceneZOI.AddonAPI").start_from_picker,p.actor,ids,chosen,p.furniture,p.furniture_pair_id)
             if npc_started then
                 require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
                 publish(p.token,"unavailable","npc_scene")
@@ -223,9 +275,13 @@ local function update(dt,actors,busy)
                 local roles={};for role,id in pairs(chosen.bindings)do roles[#roles+1]=role..":"..id end;table.sort(roles)
                 publish(p.token,"selected",p.result[3],chosen.node,table.concat(roles,"+"))
             else
-                pcall(require('SceneZOI.Localization').toast,held and 'A participant is already owned by another scene.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
-                require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
-                publish(p.token,"unavailable",held and "participant_busy" or "no_starting_scene")
+                if not held and p.furniture_kind=='sofa.pair'then
+                    reject_sofa(p,'sofa_no_starting_scene','The selected Zois do not match any starting scene on this sofa.')
+                else
+                    pcall(require('SceneZOI.Localization').toast,held and 'A participant is already owned by another scene.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
+                    require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
+                    publish(p.token,"unavailable",held and "participant_busy" or "no_starting_scene")
+                end
             end
         else publish(p.token,p.result[2],p.result[3])end
         pending=nil

@@ -18,9 +18,7 @@ function M.on_lua_message(self,owner,kind,content)
         if self.recovery_done and self.recovery_done[f[1]]then require('SceneZOI.SaveGuard').reply(owner,f[1],'furniture_recovered');return end
         local ok,beds=pcall(function()
             local rows=require('SceneZOI.Json').decode(assert(Protocol.decode(f[2])))
-            assert(type(rows)=='table'and #rows<=4,'Invalid saved furniture')
-            for _,id in ipairs(rows)do assert(type(id)=='string'and id:match('^%d+$'),'Invalid furniture ID')end
-            return rows
+            return require('SceneZOI.FurnitureLease').saved_rows(rows,tostring(owner:GetEntityId().Value))
         end)
         if ok then self.saved_beds=beds;self.recovery_request=f[1]end
         return
@@ -30,10 +28,10 @@ function M.on_lua_message(self,owner,kind,content)
         if not ok then
             local f=Protocol.unpack(content)
             if f then
-                local leases=require('SceneZOI.FurnitureLease');local l=leases.leases[f[2]]
+                local leases=require('SceneZOI.FurnitureLease');local l=leases.find(f[2],f[1],tostring(owner:GetEntityId().Value))
                 if f[3]=='acquire' and l and l.token==f[1]then pcall(leases.release,f[2],l)end
             end
-            if f then inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.FurnitureReply',Protocol.pack(f[1],f[2],'error'))end
+            if f then inzoi.message.send_to_client(owner:GetEntityId(),'SceneZOI.FurnitureReply',Protocol.pack(f[1],f[2],'error','native_error','none','none',f[5]or 'none','none'))end
             print('[SceneZOI] Furniture request failed: '..tostring(err))
         end
         return

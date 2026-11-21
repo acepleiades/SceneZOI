@@ -1,7 +1,7 @@
 # Add-on controls and outcomes
 
 These controls extend the version-1 native-message contract. Negotiate `get_version.features`: `explicit_bindings`, `preflight`,
-`furniture_discovery`, `session_results`, `integration_leases`, `live_controls`,
+`furniture_discovery`, `furniture_pairs`, `session_results`, `integration_leases`, `live_controls`,
 `presentation_overrides`, `facial_poses`, `head_attachments`, `appearance_variants`, `addon_data`, and `events: 2`. For background starts and automatic navigation, see the
 [session and plan API](addons.md#concurrent-and-background-sessions).
 
@@ -29,8 +29,12 @@ furniture availability. It does not reserve participants/furniture, depart group
 load animation assets or create a session. Startup rechecks and may still fail.
 
 `find_furniture` takes `origin_id`, optional `radius_m` (default 25, maximum 1000),
-`scene_id` and `include_unavailable`. Results contain `furniture_id`, `distance_m`,
-profile, `available` and `status` (`available`, `occupied`, `unknown`). It searches
+`scene_id`, `include_unavailable` and `participants`. Results contain `furniture_id`, `distance_m`,
+profile, `available` and `status` (`available`, `occupied`, `unknown`). Sofas return
+one row per adjacent sitting pair, including `furniture_pair_id` and `sitting_spots`.
+Pass both furniture IDs to the start call to retain that pair. Pass the intended
+`participants` to discovery when they may already occupy the selected seats;
+SceneZOI can prepare their seats without interrupting other Zois. It searches
 loaded objects supported by enabled furniture declarations, using the existing
 three-second occupancy cache. Unknown/stale status is never called available.
 It does not reserve objects; occupancy and transform checks still run on entry.
