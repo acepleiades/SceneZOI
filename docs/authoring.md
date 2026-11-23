@@ -394,17 +394,58 @@ replacement for the same region. [Standalone anatomy walkthrough](https://github
 
 ## Use the HZoi anatomy mesh in your own pack
 
-Download the free [male genitals authoring kit](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014)
-to include the same skeletal mesh used by HZoi in your own content pack. It is
-also the mesh used in both the Maya and Blender animation rigs. The editable
-ModKit assets work with animations exported from either editor. The download
-is hosted on the Blender rigs post because that post was published first.
+### How do I make my animation pack independent of HZoi's fallback penis?
 
-Move the kit's editable assets into your own registered ModKit project, export
-your own synchronized tracks and adapt the kit's scene-local attachment example.
-The mesh and clips ship under your own mod's asset paths. Players need SceneZOI
-and your pack; HZoi is required only if you separately reference its resources.
-The source mesh is credited to Ryan Reos’s *The Vagrant* and is subject to its
-own license. Follow the
+Include the mesh in your own pack and select your copy in your scenes.
+I recommend **HZoi_MaleAnatomy_v1.2.zip**, available under **Attachments** on the
+[rigs and male genitals asset post](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014).
+It is the same skeletal mesh used by HZoi and by the supplied Maya and Blender
+rigs. It works with animations from either editor; the download is on the
+Blender post because that post was published first.
+
+1. Import the kit's mesh, skeleton, materials, textures and stock coverage patch
+   into your own registered ModKit project. Include the assets in your package
+   inventory. Follow the ZIP's README for the import settings.
+2. Declare your own body and material profiles, using your pack's IDs and asset
+   paths. Register an [attachment variant](appearance-variants.md#register-the-assets)
+   that references those profiles and your copy of the mesh. Copying a reference
+   to `hzoi.body_layout` or `/HZoi_660649D8/...` still requires HZoi; importing
+   the assets does not rewrite your JSON references for you.
+3. Select that variant in each scene that uses it. For example, if you registered
+   `designer.anatomy_medium`, add this fragment to the scene with a `male` role:
+
+   ```json
+   {
+     "appearance": {
+       "male": {
+         "attachment_variants": {
+           "body_region": "designer.anatomy_medium"
+         }
+       }
+     }
+   }
+   ```
+
+   This selects your pack's mesh instead of depending on the automatic fallback.
+   If HZoi is also installed, SceneZOI uses one region replacement for that Zoi.
+   A gameplay add-on's explicit API selection still takes priority over the
+   scene default. [Selection order](appearance-variants.md#set-defaults-for-a-scene)
+4. Export your own synchronized male genitals tracks and import them against
+   your pack's copy of the attachment skeleton. Add your scene IDs and clip paths
+   to the variant's `node_animations`. If you have no clip, use the
+   [rest pose and optional bone rotations](#port-an-animation-without-a-separate-attachment-track).
+5. Test with HZoi disabled, then enabled. Check coverage, skin and hair matching,
+   clothing changes, navigation and Exit. The stock patch does not fit every
+   replacement body; supply [fitted patches](package-split.md#fit-a-coverage-patch-to-another-body)
+   for other cutouts you intend to support.
+
+Players need **SceneZOI and your finished pack**. They do not need to install
+the authoring ZIP or HZoi. HZoi becomes a dependency only if you separately
+reference its other assets or declarations, such as its recordings.
+
+The kit's scene-local attachment example is also supported. In either form,
+keep one region replacement per Zoi rather than also adding an ordinary prop
+through `add_attachment`. See the
 [independent pack walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md)
-for setup, coverage profiles and testing with HZoi disabled.
+for the import and coverage setup. The source mesh is credited to Ryan Reos's
+*The Vagrant* and retains its own license; preserve the kit's attribution.

@@ -35,6 +35,10 @@ SceneZOI runs on its own. Animation packs can add new scenes to its built-in idl
 
 Each Zoi can have their own voice and expression choices, which carry over across scenes and save files. [Personality Management](docs/playing.md#voice-and-expression-choices)
 
+For male genitals, I recommend using the same mesh as HZoi and the supplied
+Maya and Blender rigs. The [standalone asset pack](docs/authoring.md#how-do-i-make-my-animation-pack-independent-of-hzois-fallback-penis)
+lets you include it in your own animation pack without requiring HZoi.
+
 ## Contribute to SceneZOI
 
 Start with the [contribution guide](CONTRIBUTING.md) for setup, tests, and pull requests. The [documentation index](docs/README.md) links to the full authoring and developer reference.

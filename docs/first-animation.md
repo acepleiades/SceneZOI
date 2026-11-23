@@ -129,11 +129,13 @@ The male genitals track belongs to an attachment on the male role. It is not
 another participant. Export another attachment track for each additional
 animated skeletal mesh, such as a tongue.
 
-The [male genitals authoring kit](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack)
-provides the editable skeletal mesh used by HZoi and by both the Maya and Blender
-animation rigs. Use it to include that mesh in your own content pack without
-requiring players to install HZoi. The kit works with animations authored in
-either editor; its download is hosted on the Blender rigs post.
+For male genitals, I recommend using **HZoi_MaleAnatomy_v1.2.zip** from the
+[rigs and male genitals asset post](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014).
+It supplies the same mesh used by HZoi and by both the Maya and Blender rigs.
+You can package your own copy and select it explicitly in your scenes, so
+players do not need HZoi or its fallback attachment. The asset works with both
+editors even though the download is hosted on the Blender rigs post.
+[Set up your pack without HZoi](authoring.md#how-do-i-make-my-animation-pack-independent-of-hzois-fallback-penis).
 
 **Maya: export the male genitals.**
 

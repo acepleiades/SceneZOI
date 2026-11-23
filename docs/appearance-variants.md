@@ -29,6 +29,11 @@ pack, imported assets and participants. First, [set up the SDK client](addon-aut
 
 ## Register the assets
 
+For male genitals, I recommend the standalone **HZoi_MaleAnatomy_v1.2.zip**.
+It is the mesh used by HZoi and the supplied Maya and Blender rigs. You can
+include your own copy and select it with the variant system below, without
+requiring HZoi. [Download and set up your pack](authoring.md#how-do-i-make-my-animation-pack-independent-of-hzois-fallback-penis).
+
 Give each body or attachment size a stable ID in your pack's namespace. Add its
 declaration to the pack manifest's existing `data_files` list. File paths are
 relative to that manifest and must stay inside its source directory.
