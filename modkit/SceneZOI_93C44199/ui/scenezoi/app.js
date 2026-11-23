@@ -57,7 +57,7 @@
         changed:function(){updateHitRect();}}) : null;
     var outfits = window.SceneZOIOutfitUI.create({root:root, cfg:cfg, write:writePacket, tasks:tasks,
         state:function () { return {active:active, playing:playing, exiting:exiting, client:client, sequence:sequence,
-            revision:revision, pendingNavigation:pendingNavigation, counterBase:counterBase, token:sessionToken}; },
+            revision:revision, paused:clockPaused(), pendingNavigation:pendingNavigation, counterBase:counterBase, token:sessionToken}; },
         changed:function () { renderNavigation(); renderPlayback(); }});
 
     function decode(response) {
@@ -89,9 +89,9 @@
         outfits.update();
         root.style.visibility = 'visible';
         updateHitRect();
-        status.textContent = window.SceneZOILocalization.text(message);
+        status.textContent = clockPaused() ? playingMessage() : window.SceneZOILocalization.text(message);
         exit.textContent = active ? window.SceneZOILocalization.text('Exit') : window.SceneZOILocalization.text('Dismiss');
-        exit.disabled = exiting;
+        exit.disabled = exiting || clockPaused();
         document.getElementById('title-text').textContent = currentNode ? currentNode.label : 'SceneZOI';
         renderNavigation();
         renderPlayback();
@@ -104,6 +104,7 @@
         updateHitRect();
     }
     function updateHitRect() {
+        if (window.SceneZOIPanel) window.SceneZOIPanel.setClockPaused(clockPaused());
         if (typeof inzoi.view.setContentRect !== 'function') return;
         // An invisible DOM panel can still intercept world clicks through the native hit rectangle.
         var hidden = root.style.visibility === 'hidden';
@@ -192,13 +193,14 @@
             if (playerWrites[key] !== job || client !== job.client || sequence !== job.sequence ||
                 panelGeneration !== job.generation) return false;
             if (key === 'request') return pendingCommand === packet;
+            if (clockPaused()) return false;
             if (!active || exiting) return false;
             if (key === 'playback') return pendingPlayback === packet;
             if (key === 'navigation') return pendingNavigation === packet;
             return revision === job.revision;
         }
         function attempt(index) {
-            return enqueueWrite(key, packet, index ? current : null).catch(function (error) {
+            return enqueueWrite(key, packet, index ? current : function(){return key === 'request' || !clockPaused();}).catch(function (error) {
                 // Retail can reject the request before writing anything. Keep the original counter.
                 if (index === retryDelays.length || !current() ||
                         !/요청 제한 초과|(?:request|rate) limit exceeded|too many requests/i.test(String(error.message))) throw error;
@@ -243,7 +245,7 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261121-sofa-pairs-ui-2').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261122-paused-controls-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
         if(furnitureChoice)finishFurnitureChoice(null);
@@ -327,6 +329,7 @@
         write:writePacket,refresh:refreshCatalog,start:function(entry){return window.SceneZOIControls.start(entry);}});
     setInterval(function(){addonBridge.poll();},250);
     exit.addEventListener('click', function () {
+        if (clockPaused()) return;
         if(furnitureChoice){finishFurnitureChoice(null);return;}
         if (!active) { closePanel(); return; }
         exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false;
@@ -478,6 +481,7 @@
         if (autoButton.textContent !== caption) autoButton.textContent = caption;
         autoButton.setAttribute('aria-label', window.SceneZOILocalization.text('Auto-mode'));
         autoButton.setAttribute('aria-pressed', autoMode ? 'true' : 'false');
+        autoButton.disabled = clockPaused();
     }
     function applyPlan(value) {
         var fields = value.split('|');
@@ -492,7 +496,7 @@
         autoButton.id = 'scene-auto-mode'; autoButton.type = 'button';
         navigation.parentNode.insertBefore(autoButton, navigation);
         autoButton.addEventListener('click', function () {
-            if (!active || exiting || !hasPlan) return;
+            if (!active || exiting || !hasPlan || clockPaused()) return;
             var enabled = autoMode ? '0' : '1';
             autoCount = Math.max(autoCount + 1, counterBase + 1);
             writePacket('auto_mode', ['SZ2', client, String(sequence), 'auto_mode', String(autoCount), enabled, String(revision)].join('|')).catch(function () {});
@@ -519,7 +523,7 @@
                 var target = window.SceneZOICatalog.nodes[edge.target];
                 var caption = typeof edge.label === 'string' && edge.label.trim()
                     ? edge.label : target ? target.label : edge.target;
-                return '<button type="button" data-option="' + escapeText(edge.id) + '">' + escapeText(caption) + '</button>';
+                return '<button type="button"' + (clockPaused() ? ' disabled' : '') + ' data-option="' + escapeText(edge.id) + '">' + escapeText(caption) + '</button>';
             }).join('');
         }
         // Preserve the user's scroll position while status/clock polling continues.
@@ -528,7 +532,7 @@
     }
     navigation.addEventListener('click', function (event) {
         var option = event.target && event.target.getAttribute('data-option');
-        if (!option || !sessionToken || !active || !playing || exiting || scopedCatalogRead || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
+        if (!option || !sessionToken || !active || !playing || exiting || clockPaused() || scopedCatalogRead || pendingNavigation || autoMode || outfits.busy() || !currentNode || currentNode.kind === 'transition') return;
         if (!currentNode.navigation.some(function (edge) { return edge.id === option; })) return;
         pendingNavigation = ['SZ2', client, String(sequence), 'navigate', String(++navigationCount), option, String(revision), sessionToken].join('|');
         quickNavigationUntil = Date.now() + 2000;
@@ -570,19 +574,20 @@
         if (pendingNavigation) pollNavigation();
         else pollState();
     }, 100);
+    function clockPaused() { return active && gameScale === 0; }
     function playingMessage() {
         return gameScale === 0 ? window.SceneZOILocalization.text('Paused with the game clock') : currentNode && currentNode.kind === 'transition' ? window.SceneZOILocalization.text('Transition in progress') : '';
     }
     function renderPlayback() {
         speedLabel.textContent = 'x' + speeds[speedIndex - 1].toFixed(2);
-        speedDown.disabled = !active || !playing || exiting || autoSpeed || speedIndex === 1;
-        speedUp.disabled = !active || !playing || exiting || autoSpeed || speedIndex === speeds.length;
+        speedDown.disabled = !active || !playing || exiting || clockPaused() || autoSpeed || speedIndex === 1;
+        speedUp.disabled = !active || !playing || exiting || clockPaused() || autoSpeed || speedIndex === speeds.length;
         speedDots.innerHTML = speeds.map(function (_, index) {
             return '<span class="speed-dot' + (index + 1 === speedIndex ? ' selected' : '') + '"></span>';
         }).join('');
     }
     function selectSpeed(index) {
-        if (!active || !playing || exiting || autoSpeed || index < 1 || index > speeds.length || index === speedIndex) return;
+        if (!active || !playing || exiting || clockPaused() || autoSpeed || index < 1 || index > speeds.length || index === speedIndex) return;
         speedIndex = index;
         pendingPlayback = ['SZ2', client, String(sequence), 'speed', String(++playbackCounter), String(index)].join('|');
         writePacket('playback', pendingPlayback).catch(function () {});
@@ -603,10 +608,19 @@
             var acknowledged = Number(fields[3]), index = Number(fields[4]), scale = Number(fields[5]);
             if (!Number.isInteger(acknowledged) || acknowledged < acknowledgedPlayback ||
                 !Number.isInteger(index) || index < 1 || index > speeds.length || !Number.isFinite(scale) || scale < 0) return;
+            // Pause is independent of a speed-command acknowledgement. Never leave input
+            // enabled while waiting for an earlier click to reach the runtime.
+            var pausedChanged = (gameScale === 0) !== (scale === 0);
+            gameScale = scale;
+            if (pausedChanged) {
+                if (clockPaused()) { pendingNavigation = null; pendingPlayback = null; }
+                updateHitRect(); outfits.update(); renderNavigation(); renderPlayback();
+                exit.disabled = exiting || clockPaused();
+                if (clockPaused() || playing && !pendingNavigation) status.textContent = playingMessage();
+            }
             if (pendingPlayback && acknowledged < playbackCounter) return;
             acknowledgedPlayback = acknowledged;
             if (pendingPlayback && acknowledged >= playbackCounter) pendingPlayback = null;
-            var pausedChanged = (gameScale === 0) !== (scale === 0);
             speedIndex = index; gameScale = scale;
             renderPlayback();
             if (playing && !pendingNavigation && pausedChanged) status.textContent = playingMessage();

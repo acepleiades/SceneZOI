@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     var root = document.getElementById('app-root');
-    var compact = false, blocked = false, menuMode = 'normal', reading = null, pressed = null, expandedPosition = null;
+    var compact = false, blocked = false, clockPaused = false, menuMode = 'normal', reading = null, pressed = null, expandedPosition = null;
     var readCount = 0, readStatus = 'none', nativeState = null, lastInput = null;
     var readTimeout = 2000;
     var drag = null, suppressRestoreClick = false;
@@ -32,7 +32,7 @@
         root.classList.toggle('scene-compact', compact);
         root.classList.toggle('scene-menu-blocked', menuMode === 'dimmed');
         root.classList.toggle('scene-menu-hidden', menuMode === 'hidden');
-        root.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+        root.setAttribute('aria-disabled', blocked || clockPaused ? 'true' : 'false');
         // inZOI also injects a direct-to-native rect watcher. Its measurement does
         // not know about attached panels or modality; our controller reports both.
         window.__uimod_rectActive = false;
@@ -76,6 +76,14 @@
     function consume(event) {
         event.preventDefault(); event.stopImmediatePropagation();
     }
+    function endPointerGesture() {
+        if (typeof document.dispatchEvent !== 'function') return;
+        try { document.dispatchEvent(new MouseEvent('mouseup', {bubbles:true})); }
+        catch (_) {
+            var up = document.createEvent('MouseEvents');
+            up.initEvent('mouseup', true, true); document.dispatchEvent(up);
+        }
+    }
     // Capture before the game's injected button listener, scaffold dragging and
     // synthetic clicks. Mouseup handles cohtml builds that omit native click.
     document.addEventListener('mousedown', function (event) {
@@ -83,14 +91,14 @@
         if (!a) return;
         if (event.button != null && event.button !== 0) { consume(event); return; }
         suppressRestoreClick = false;
-        pressed = blocked ? null : a;
-        if (!blocked && compact && a === 'restore') {
+        pressed = blocked || clockPaused ? null : a;
+        if (!blocked && !clockPaused && compact && a === 'restore') {
             drag = {x:event.clientX, y:event.clientY, left:root.offsetLeft, top:root.offsetTop, moved:false};
         }
         consume(event);
     }, true);
     document.addEventListener('mousemove', function (event) {
-        if (!drag || blocked) return;
+        if (!drag || blocked || clockPaused) return;
         var dx = event.clientX - drag.x, dy = event.clientY - drag.y;
         if (!drag.moved && dx * dx + dy * dy < 16) return;
         drag.moved = true;
@@ -114,19 +122,19 @@
         }
         if (!a) return;
         consume(event);
-        if (!blocked && previous === a) collapse(a === 'hide');
+        if (!blocked && !clockPaused && previous === a) collapse(a === 'hide');
     }, true);
     document.addEventListener('click', function (event) {
         var a = action(event.target);
         if (!a) return;
         consume(event);
         if (a === 'restore' && suppressRestoreClick) { suppressRestoreClick = false; return; }
-        if (!blocked) collapse(a === 'hide');
+        if (!blocked && !clockPaused) collapse(a === 'hide');
     }, true);
     ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'wheel', 'keydown', 'keyup'].forEach(function (name) {
         document.addEventListener(name, function (event) {
             if (name === 'mousedown' || name === 'click') lastInput = {type:name,target:event.target && event.target.id || '',blocked:blocked};
-            if (blocked) consume(event);
+            if (blocked || clockPaused) consume(event);
         }, true);
     });
     function presentation(state) {
@@ -159,13 +167,7 @@
             if (next !== menuMode) {
                 var enteringMenu = !blocked && next !== 'normal';
                 // End a drag/resize before blocking document mouseup handlers.
-                if (enteringMenu) {
-                    try { document.dispatchEvent(new MouseEvent('mouseup', {bubbles:true})); }
-                    catch (_) {
-                        var up = document.createEvent('MouseEvents');
-                        up.initEvent('mouseup', true, true); document.dispatchEvent(up);
-                    }
-                }
+                if (enteringMenu) endPointerGesture();
                 menuMode = next; blocked = next !== 'normal'; pressed = null;
                 if (enteringMenu) release();
                 refresh();
@@ -173,8 +175,17 @@
         }).catch(function () { if (reading === request) readStatus = 'error'; }).then(function () { if (reading === request) reading = null; });
     }
     window.SceneZOIPanel = {
+        // Clock pause locks input without the Game Menu's dimming or off-screen hit rectangle.
+        setClockPaused: function (value) {
+            value = !!value;
+            if (value === clockPaused) return;
+            if (value) endPointerGesture();
+            clockPaused = value; pressed = null; drag = null;
+            if (value) release();
+            refresh();
+        },
         reset: function () { reading = null; readStatus = 'reset'; collapse(false); poll(); },
-        snapshot: function () { return {blocked:blocked,compact:compact,menu_mode:menuMode,read_status:readStatus,
+        snapshot: function () { return {blocked:blocked,clock_paused:clockPaused,compact:compact,menu_mode:menuMode,read_status:readStatus,
             request_id:readCount,request_age_ms:reading ? Math.max(0,Date.now()-reading.started) : 0,native:nativeState,last_input:lastInput}; }
     };
     setInterval(poll, 125);

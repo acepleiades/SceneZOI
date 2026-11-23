@@ -45,13 +45,13 @@
 
         var voices = window.SceneZOIVoiceUI.create({container:document.getElementById('voice-fields'),state:state,
             selected:function(){return selected;}, visible:function(){return opened && mode === 'personality';},
-            busy:function(){var s=state();return !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting;},
+            busy:function(){var s=state();return s.paused || !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting;},
             closeExpression:function(){expressionChoosing=false;},write:options.write,cfg:options.cfg,changed:changed});
         var settingsToggle=document.getElementById('scene-settings');
         var settings=window.SceneZOISettingsUI.create({container:document.getElementById('settings-fields'),state:state,
             visible:function(){return opened && mode==='settings';},write:options.write,cfg:options.cfg});
         function state() { return options.state(); }
-        function busy() { var s = state(); return voices.busy() || !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting; }
+        function busy() { var s = state(); return s.paused || voices.busy() || !!pending || !!personalityPending || serverBusy || !s.playing || !!s.pendingNavigation || s.exiting; }
         function reset() {
             opened = false; choosing = false; selected = null; participants = []; count = state().counterBase || 0; pending = null;
             serverBusy = true; serverRevision = 0; quickOutfitUntil = 0; listMarkup = null; selectorMarkup = null;
@@ -98,13 +98,13 @@
             if (!s.active || s.exiting) { opened = false; choosing = false; pending = null; personalityPending = null; expressionChoosing = false; }
             tools.style.display = s.active && !s.exiting ? 'flex' : 'none';
             panel.style.display = opened && s.active && !s.exiting ? 'flex' : 'none';
-            toggle.disabled = !s.active || s.exiting;
+            toggle.disabled = !s.active || s.exiting || s.paused;
             toggle.setAttribute('aria-expanded', opened && mode === 'outfit' ? 'true' : 'false');
             toggle.className = opened && mode === 'outfit' ? 'selected' : '';
-            personalityToggle.disabled = !s.active || s.exiting;
+            personalityToggle.disabled = !s.active || s.exiting || s.paused;
             personalityToggle.className = opened && mode === 'personality' ? 'selected' : '';
             personalityToggle.setAttribute('aria-expanded', opened && mode === 'personality' ? 'true' : 'false');
-            settingsToggle.disabled=!s.active || s.exiting;
+            settingsToggle.disabled=!s.active || s.exiting || s.paused;
             settingsToggle.className=opened && mode==='settings'?'selected':'';
             settingsToggle.setAttribute('aria-expanded',opened && mode==='settings'?'true':'false');
             document.getElementById('outfit-title').textContent = mode === 'settings' ? window.SceneZOILocalization.text('Scene Settings') : mode === 'personality' ? window.SceneZOILocalization.text('Personality Management') : window.SceneZOILocalization.text('Outfit Management');
@@ -155,15 +155,15 @@
         }
         function changed() { update(); options.changed(); }
         toggle.addEventListener('click', function () {
-            var s = state(); if (!s.active || s.exiting) return;
+            var s = state(); if (!s.active || s.exiting || s.paused) return;
             opened = mode !== 'outfit' || !opened; mode = 'outfit'; choosing = false; changed();
         });
         personalityToggle.addEventListener('click', function () {
-            var s = state(); if (!s.active || s.exiting) return;
+            var s = state(); if (!s.active || s.exiting || s.paused) return;
             opened = mode !== 'personality' || !opened; mode = 'personality'; choosing = false; changed();
         });
         settingsToggle.addEventListener('click',function(){
-            var s=state();if(!s.active || s.exiting)return;
+            var s=state();if(!s.active || s.exiting || s.paused)return;
             opened=mode!=='settings' || !opened;mode='settings';choosing=false;expressionChoosing=false;voices.close();changed();
         });
         expressionSelect.addEventListener('click' , function () {

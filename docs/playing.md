@@ -5,7 +5,7 @@
 ## Start a scene
 
 - **With a gameplay mod**, use the interactions it adds. Leave debug start off unless you also want to pick scenes yourself.
-- **Without a gameplay mod**, open **Solo SceneZOI session** below **AI Emote** on your controlled Zoi. Click the cog, turn on **Debug → SceneZOI manual start**, and exit. Use the new picker interaction on your controlled Zoi or on supported furniture. Choose whoever should take part and start the scene.
+- **Without a gameplay mod**, open **Solo SceneZOI session** below **AI Emote** on your controlled Zoi. Click the cog, turn on **Debug â†’ SceneZOI manual start**, and exit. Use the new picker interaction on your controlled Zoi or on supported furniture. Choose whoever should take part and start the scene.
 
 Animation packs can add choices to the built-in solo and paired idle hubs. What you see depends on which packs are installed, which Zois you chose, and where the scene is taking place. For example, a bed scene needs a supported bed and clips made for that placement.
 
@@ -17,6 +17,12 @@ If you have an idea for how scenes should fit into the game, you can
 - Use the scene panel to pick another animation, adjust playback speed, or **Exit**. Pausing inZOI pauses the scene. If an add-on started a scene with **Auto-mode**, turn it off to take manual control when the add-on permits it.
 - You can switch to a free Zoi and start a second household scene. Switch back to a participant to see the first scene's panel and use **Exit**.
 - Use the cog for sound, voices, task progress rates and other options. [Scene Settings](settings.md)
+
+When the game's clock is paused, SceneZOI shows **Paused with the game clock**
+and locks its scene controls, including navigation, clothing, settings and Exit.
+Resume the game with its clock controls to use them again. This keeps pose and
+clothing changes from jumping ahead while physics are frozen. SceneZOI's own
+animation speed is separate; choosing 0.5x does not pause or lock the panel.
 
 ## Voice and expression choices
 

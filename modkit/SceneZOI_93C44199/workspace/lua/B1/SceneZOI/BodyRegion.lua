@@ -293,6 +293,17 @@ function M.ready(session)
     end
     body.patch:SetHiddenInGame(false, true)
     body.coverage_committed = true
+    if body.reported_patch ~= body.patch then
+        body.reported_patch = body.patch
+        Diagnostics.record("attachment_coverage_ready", {scene_id=session.node.id,
+            session_id=body.scene_session and body.scene_session.token,
+            attachment_id=session.node.attachment_id, attachment_mesh=session.node.attachment.mesh,
+            participant_role=session.node.attachment.participant,
+            participant_id=body.coverage_owner and body.coverage_owner.id,
+            body_profile=session.node.attachment.body_profile, body_mesh_name=body.asset:GetName(),
+            patch_mesh=body.patch_selection.path, section=SECTION,
+            hidden_lod_count=#body.visibility, coverage_committed=true})
+    end
     return true
 end
 

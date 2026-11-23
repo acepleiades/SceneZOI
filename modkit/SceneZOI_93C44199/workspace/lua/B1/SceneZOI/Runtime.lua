@@ -154,7 +154,7 @@ local function apply_plan_speed(current)
     if index and index ~= current.clock.index then select_playback_speed(current, index, "auto_plan") end
 end
 
-local function playback_request(raw)
+local function playback_request(raw, paused)
     local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
     if not current or current.stopping or not fields or fields[1] ~= current.client or
@@ -164,8 +164,8 @@ local function playback_request(raw)
         not Config.playback_speeds[index] then return end
     if count > current.last_speed_command then
         current.last_speed_command = count
-        if not Plan.speed_index(current) then select_playback_speed(current, index, "player"); return end
-        Diagnostics.record("playback_speed_refused", {session_id = current.token, code = "speed_locked", requested_index = index})
+        if not paused and not Plan.speed_index(current) then select_playback_speed(current, index, "player"); return end
+        Diagnostics.record("playback_speed_refused", {session_id = current.token, code = paused and "game_paused" or "speed_locked", requested_index = index})
     end
     publish_playback(current)
 end
@@ -899,13 +899,22 @@ local function finish_transition(current)
     return true
 end
 
-local function navigate(raw)
+local function navigate(raw, paused)
     local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
     if not current or current.stopping or not fields or fields[1] ~= current.client or
         fields[2] ~= current.sequence or fields[3] ~= "navigate" or fields[7] ~= current.token then return end
     local count, revision = tonumber(fields[4]), tonumber(fields[6])
     if not count or count % 1 ~= 0 or count <= 0 then return end
+    -- A click can arrive before the panel sees pause. Consume it now so its
+    -- retained mailbox cannot change poses unexpectedly when the clock resumes.
+    if paused and count > current.last_navigation then
+        current.last_navigation = count
+        current.navigation_code = "navigation_locked"
+        Diagnostics.record("navigation_refused", {session_id=current.token, code="game_paused", edge_id=fields[5]})
+        publish_node(current, current.navigation_code)
+        return
+    end
     -- No new action can overtake an in-flight node change. Retries wait for readiness.
     if current.preparing then return end
     if count <= current.last_navigation then publish_node(current, current.navigation_code); return end
@@ -959,11 +968,12 @@ local function begin_outfit(current,change)
     publish_phase(current, "preparing", "ok")
     tell(change.participant, "SceneZOI.Outfit", outfit_packet(current))
 end
-local function outfit_request(raw)
+local function outfit_request(raw, paused)
     local current = Sessions.focused()
     if not current or current.stopping then return end
     local change = OutfitControl.request(current, raw)
     if not change then return end
+    if paused then change.error = "game_paused" end
     if change.error then
         current.acknowledged_outfit, current.outfit_code = change.counter, change.error
         return
@@ -1008,7 +1018,7 @@ local function set_auto_mode(current, enabled)
     end
 end
 
-local function auto_mode_request(raw)
+local function auto_mode_request(raw, paused)
     local current = Sessions.focused()
     local fields = Protocol.unpack(raw)
     if not current or current.stopping or not fields or fields[1] ~= current.client or
@@ -1016,23 +1026,30 @@ local function auto_mode_request(raw)
     local count = tonumber(fields[4])
     if not count or count % 1 ~= 0 or count <= (current.last_auto_mode or 0) then return end
     current.last_auto_mode = count
+    if paused then
+        Diagnostics.record("auto_mode_refused", {session_id=current.token, code="game_paused"})
+        return
+    end
     if tonumber(fields[6]) ~= current.revision then return end -- Sent before a scene change it could not see.
     set_auto_mode(current, fields[5] == "1")
 end
 
 -- Every control carries its own session identity, so it can be read whatever the request mailbox holds.
 local function apply_panel_controls(focused)
-    playback_request(read("playback"))
-    outfit_request(read("outfit"))
+    -- Read the native clock here, rather than the previous playback sample.
+    -- Public add-on calls and system cleanup retain their own lifecycle rules.
+    local paused = Clock.game_scale() == 0
+    playback_request(read("playback"), paused)
+    outfit_request(read("outfit"), paused)
     Settings.request(focused,"task_rates",read("settings_task_rates"))
     Settings.request(focused,"audio",read("settings_audio"))
     Settings.request(focused,"npc_scene",read("settings_npc_scene"))
     Settings.request(focused,"debug_start",read("settings_debug_start"))
     Personality.request(focused,read("personality"))
     VoicePersonality.request(focused,read("voice"))
-    navigate(read("navigation"))
-    auto_mode_request(read("auto_mode"))
-    AttachmentPreview.request(focused, read("attachment_preview"))
+    navigate(read("navigation"), paused)
+    auto_mode_request(read("auto_mode"), paused)
+    AttachmentPreview.request(focused, read("attachment_preview"), paused)
 end
 
 local function poll()

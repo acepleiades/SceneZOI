@@ -96,7 +96,7 @@ local function apply(session, encoded)
     return "preview_invalid"
 end
 
-function M.request(session, raw)
+function M.request(session, raw, paused)
     if session.stopping then return end
     local fields = Protocol.unpack(raw)
     if not fields or #fields ~= 7 or fields[1] ~= session.client or fields[2] ~= session.sequence or
@@ -104,7 +104,9 @@ function M.request(session, raw)
     local count = tonumber(fields[4])
     if not count or count % 1 ~= 0 or count < 1 or count > 9007199254740991 or count <= (session.attachment_preview_ack or 0) then return end
     session.attachment_preview_ack = count
-    if tonumber(fields[5]) ~= session.revision then
+    if paused then
+        session.attachment_preview_code = "game_paused"
+    elseif tonumber(fields[5]) ~= session.revision then
         session.attachment_preview_code = "preview_stale"
     elseif not session.started or session.preparing then
         session.attachment_preview_code = "preview_stale"

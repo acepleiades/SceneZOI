@@ -108,6 +108,27 @@ requests creates two meshes. Ordinary props continue to use their own
 attachments. Their mesh name or anchor does not identify them as a region
 replacement.
 
+### My replacement appears beside the body's original male genitals
+
+Select the variant in the `body_region` slot and give its attachment a compatible
+`body_profile`, as in the declaration above. That profile tells SceneZOI which
+body region to hide and which coverage patch to show beneath your mesh. This
+works for other packs' meshes and skeletons; it does not depend on HZoi's mesh
+name. An explicit replacement also removes the automatic fallback for that Zoi.
+
+`add_attachment` adds an ordinary prop. It does not replace male genitals or
+claim the body's crotch region. Using it alongside a selected anatomy variant
+can leave both visible. Use `set_appearance` for a replacement, and remove the
+old prop request when migrating. Do not hide arbitrary body sections based only
+on where an object is attached: a pelvis attachment could also be a prop that
+needs the body underneath it.
+
+For a report of two meshes, check `appearance_resolved` for the selected variant,
+slot and profile, then `attachment_coverage_ready` for the attachment mesh,
+selected patch, hidden section and LOD count. The latter is recorded when the
+mask has actually been applied. `body_patch_selected` alone reports selection,
+before that readiness check. These records stay in `scenezoi_runtime`.
+
 ## Set defaults for a scene
 
 Add `appearance` beside `tracks` in your scene JSON. Its keys are the scene's

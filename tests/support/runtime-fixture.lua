@@ -58,7 +58,7 @@ function M.new()
     UE = {UGameplayStatics = {GetPlayerController = function()
         return {GetCharacterEntityId = function() return {Value = fixture.controlled} end}
     end}}
-    inzoi = {UB1System = {Get = function() return {GetTimeManager = function() return {GetTimeScale = function() return 1 end, GetCurrentDateTime = function() return {GetTicks = function() return fixture.calendar or 0 end} end} end} end},
+    inzoi = {UB1System = {Get = function() return {GetTimeManager = function() return {GetTimeScale = function() return fixture.time_scale or 1 end, GetCurrentDateTime = function() return {GetTicks = function() return fixture.calendar or 0 end} end} end} end},
         cli = {execute = function(line)
             local key = line:match(" key=([^ ]+)")
             if line == "gameplay.get_settings" then return true, "", '{"auto_save_enabled":"1"}' end

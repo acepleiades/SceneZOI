@@ -48,12 +48,12 @@
         var inputs=keys.map(function(k){return document.getElementById((format.toggle?'setting-toggle-':'volume-number-')+k);});
         var status=document.getElementById('settings-status-'+group);
         function state(){return options.state();}
-        function available(){var s=state();return ready && !serverBusy && s.active && !s.exiting && !s.pendingNavigation;}
+        function available(){var s=state();return ready && !serverBusy && s.active && !s.exiting && !s.paused && !s.pendingNavigation;}
         function update(){
             var s=state(),key=s.client+':'+s.sequence;
             if(key!==session){session=key;values=keys.map(function(){return format.initial;});count=s.counterBase||0;ack=0;pending=null;ready=false;serverBusy=true;dragging=null;message='';}
             if(!s.active || s.exiting){pending=null;dragging=null;}
-            if(!options.visible())dragging=null;
+            if(!options.visible() || s.paused)dragging=null;
             var enabled=available();
             keys.forEach(function(k,i){
                 inputs[i].disabled=!enabled;
@@ -190,7 +190,7 @@
         function available(){
             var state=options.state();
             return !!identity&&sessionKey(state)===identity&&state.revision===revision&&state.playing&&
-                !state.pendingNavigation&&options.visible()&&!serverBusy;
+                !state.paused&&!state.pendingNavigation&&options.visible()&&!serverBusy;
         }
         function selectedRow(){return rows.find(function(row){return !row.hidden&&row.participant===person&&row.attachment===mesh;});}
         function angles(row){
@@ -284,6 +284,7 @@
         });
         exportButton.addEventListener('click',function(){if(available()&&!exportButton.disabled)send({action:'export'});});
         var results={
+            game_paused:'Paused with the game clock',
             preview_invalid:'Could not apply the preview.',
             preview_stale:'The scene changed. Try again.',
             preview_export_empty:'There are no attachment pose edits to export.',

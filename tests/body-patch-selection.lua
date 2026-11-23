@@ -89,6 +89,14 @@ local function hidden(m)for lod=0,3 do assert(not m.visibility[lod])end end
 -- Stock and a fitted replacement coexist without sharing selection or resources.
 local a,s=fixture(native);local b,t=fixture(source)
 prepare(a,s);prepare(b,t);ready(s);ready(t)
+local coverage={}
+for _,event in ipairs(events)do if event.name=='attachment_coverage_ready'then coverage[#coverage+1]=event.fields end end
+assert(#coverage==2 and coverage[1].patch_mesh==stock and coverage[2].patch_mesh==fitted)
+assert(coverage[1].hidden_lod_count==4 and coverage[2].coverage_committed,
+ 'Diagnostics must confirm the committed mask, not just the selected patch')
+local event_count=#events
+for _=1,10 do Body.ready(s);Body.ready(t)end
+assert(#events==event_count,'A stable patch must not flood the diagnostic history')
 assert(s.body_region.patch.asset==assets[stock]and t.body_region.patch.asset==assets[fitted])
 assert(s.body_region.patch_selection.reason=='default_unlisted_body')
 assert(t.body_region.patch_selection.matched_source==body_path)

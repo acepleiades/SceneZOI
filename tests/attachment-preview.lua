@@ -131,4 +131,9 @@ for _, reason in ipairs({'empty','read','full','write'}) do
     assert(found, 'Missing export failure diagnostic: '..reason)
 end
 assert(history:find("detail='Read failed'",1,true) and history:find("detail='Write failed'",1,true))
+local before=J.encode(a.context.rotations)
+Preview.request(s,P.pack(s.client,s.sequence,'attachment_preview',22,s.revision,s.token,
+ P.encode(J.encode({action='set',participant='10',attachment='pack.rule.first',bone='base',rotation={1,2,3}}))),true)
+assert(s.attachment_preview_ack==22 and s.attachment_preview_code=='game_paused')
+assert(J.encode(a.context.rotations)==before,'A paused preview command must not move attachment bones')
 print('Attachment preview passed: identity, range, anchor rejection, hidden edits, independent participants, stale edits, and per-scene reference export.')

@@ -30,6 +30,11 @@ function enter(input,type,fields){
  assert.equal(settingsReads,0,'A closed settings panel must leave settings state alone');
  visible=true;
  assert(number('sfx').disabled);raw=frame();await poll();assert(!number('sfx').disabled);
+ s.paused=true;ui.update();const pausedWrites=writes.length;
+ assert(number('sfx').disabled);typed('sfx','80');enter(number('sfx'),'keydown',{key:'Enter'});
+ slider('sfx').mousedown(event(175));docEvents.mousemove.forEach(f=>f(event(240)));docEvents.mouseup.forEach(f=>f());
+ assert.equal(writes.length,pausedWrites,'Paused numeric/slider events must not submit or queue settings');
+ s.paused=false;ui.update();assert(!number('sfx').disabled);
  slider('sfx').mousedown(event(175));assert.equal(number('sfx').value,'75');assert.equal(writes.length,0,'Dragging previews without flooding persistent storage');
  docEvents.mousemove.forEach(f=>f(event(240)));docEvents.mouseup.forEach(f=>f());assert.equal(writes.at(-1).v,'SZ2|test|1|settings_audio|1|2|140|100|100');
  ui.retry();assert.equal(writes.length,2);assert.equal(writes[0].v,writes[1].v);
@@ -197,6 +202,10 @@ async function checkAttachmentPreview(){
   assert(!element('-export').disabled,'A failed export can be retried');
  }
 
+ s.paused=true;ui.update();assert(x.disabled && element('-export').disabled);
+ const paused=writes.length;x.value='25';enter(x,'keydown',{key:'Enter'});element('-export').click();
+ assert.equal(writes.length,paused,'Paused preview edits and exports must do nothing');
+ s.paused=false;ui.update();assert(x.disabled && !element('-export').disabled,'Resume preserves hidden-mesh restrictions');
  s.pendingNavigation='pending';ui.update();
  assert(x.disabled);
  s.pendingNavigation=null;

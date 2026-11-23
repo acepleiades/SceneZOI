@@ -56,9 +56,17 @@ vm.runInNewContext(fs.readFileSync(base+'panel-state.js','utf8'),ctx);
  timers[125]();await flush();
  assert(classes.has('scene-menu-blocked')&&!classes.has('scene-menu-hidden'),'Options Back restores the dimmed panel');
  state={blocked:false,pause_reasons:['UserPause']};timers[125]();await flush();
- assert(!classes.has('scene-menu-blocked'),'Time-control pause alone must leave controls usable');
+ assert(!classes.has('scene-menu-blocked'),'Time-control pause does not use Game Menu dimming');
  assert(!emit('click',{id:'scene-exit',parentNode:root}));
  assert.equal(root['aria-disabled'],'false');ctx.inzoi.view.hover(true);assert.equal(hovers.at(-1),true);
+ ctx.window.SceneZOIPanel.setClockPaused(true);
+ assert.equal(root['aria-disabled'],'true');assert(!classes.has('scene-menu-blocked'));
+ assert.equal(ctx.window.SceneZOIPanel.snapshot().clock_paused,true);
+ for(const name of ['mousedown','mouseup','click','wheel','keydown','keyup'])assert(emit(name,{id:'scene-exit',parentNode:root}));
+ emit('click',icon);assert(!classes.has('scene-compact'),'Pause also blocks the native hide listener');
+ assert.notDeepEqual(reports.at(-1),[-10000,-10000,1,1],'Clock pause retains the panel hit area');
+ ctx.window.SceneZOIPanel.setClockPaused(false);assert.equal(root['aria-disabled'],'false');
+ assert(!emit('click',{id:'scene-exit',parentNode:root}));
  // An unrelated blocker, or a popup without the Esc stack, leaves presentation alone.
  for(const overlay of [
    {primary_kind:'modal_ui',input_block_ui_type:'',esc_stack_remains:true},
