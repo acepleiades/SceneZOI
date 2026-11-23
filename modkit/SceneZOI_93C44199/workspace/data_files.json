@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "Content/JsonPatch/Text_UI_patch.json",
-      "sha256": "2450a8fc78d4b02d6de7ee6d0be37683f1b0b06ebfd2d34da78cf92643ae2581"
+      "sha256": "458185d8f0d5cc4bce8da5cb5c26f5d063bcb54d5e9366f651b405deb2c13386"
     }
   ],
   "records": [
@@ -13,6 +13,12 @@
       "owner": "scenezoi",
       "kind": "action_dictionary",
       "source": "actions.json"
+    },
+    {
+      "id": "SceneZOI_Declaration_scenezoi__body_profile__male_crotch",
+      "owner": "scenezoi",
+      "kind": "body_profile",
+      "source": "male_crotch.json"
     },
     {
       "id": "SceneZOI_Declaration_scenezoi__facial_pose__open_o",

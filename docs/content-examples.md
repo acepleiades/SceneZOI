@@ -68,9 +68,10 @@ are the author's role IDs. Each role declares its body requirements separately.
 ## Trace an attachment through its profiles
 
 The [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json)
-provides the separate male-genitals mesh and maps scene IDs to its animation tracks. Its
-[body profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/body_layout.json) describes the
-section and coverage bit the game uses. Its
+provides the separate male-genitals mesh and maps scene IDs to its animation tracks.
+SceneZOI's [shared body profile](../packs/scenezoi/profiles/male_crotch.json) describes the
+section and coverage bit the game uses and supplies neutral stock/ZoiBits coverage.
+HZoi's own
 [material profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/skin_hair.json) describes which
 appearance values to copy. The same coverage rule can activate an attachment
 during an outfit change in an idle scene. [Compatibility profiles](package-split.md#presentation-and-compatibility-profiles)

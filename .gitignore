@@ -13,4 +13,12 @@ modkit/*/*.zip
 modkit/*/Meta/*.mod
 modkit/*/Meta/mod_manifest.json
 
+# Public neutral coverage meshes belong to the framework.
+!modkit/SceneZOI_93C44199/Content/
+modkit/SceneZOI_93C44199/Content/*
+!modkit/SceneZOI_93C44199/Content/Compatibility/
+modkit/SceneZOI_93C44199/Content/Compatibility/*
+!modkit/SceneZOI_93C44199/Content/Compatibility/StockCoveragePatch.uasset
+!modkit/SceneZOI_93C44199/Content/Compatibility/ZoiBitsMaleCoveragePatch.uasset
+
 # Authoritative workspace/lua, UI, SDK and project descriptors are source.

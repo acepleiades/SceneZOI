@@ -19,6 +19,7 @@ For questions, authoring help and collaboration, join the
 | Tags, actions or translated names | [Metadata and ratings](scene-metadata.md) · [Localization](localization.md) |
 | Where Zois look and how they react | [Gaze](gaze.md) · [Expression contexts](expressions.md#responsibilities-and-data) · [Facial poses](facial-poses.md) |
 | Voice and sound in a scene | [Voice instructions](voices.md#scene-instructions) · [Sound effects](sfx.md) |
+| A separate attachment that replaces the body's crotch region | [Shared neutral coverage patches](coverage-patches.md) · [Body and attachment choices](appearance-variants.md) |
 | Excitement, orgasm effects or a one-shot between poses | [Scene tasks](scene-tasks.md) · [Completion effects](completion-effects.md) · [Transitions](transitions.md) |
 | Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
 | Alternative bodies, male genitals, tongues or other skeletal attachments | [Declare variants and set scene defaults](appearance-variants.md) |

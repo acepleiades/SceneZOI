@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "id": "scenezoi.male_crotch",
+  "section": 17,
+  "coverage_bit": 17,
+  "full_coverage_exception": true,
+  "patch_mesh": "/SceneZOI_93C44199/Compatibility/StockCoveragePatch.StockCoveragePatch",
+  "patch_mesh_overrides": {
+    "/NaturalSkin_B5AE5C0D/Mesh/SKM_Male_Base_NS.SKM_Male_Base_NS": "/SceneZOI_93C44199/Compatibility/ZoiBitsMaleCoveragePatch.ZoiBitsMaleCoveragePatch"
+  },
+  "patch_material_slot": "shader_body_shader18",
+  "morph": "Body_Muscle"
+}

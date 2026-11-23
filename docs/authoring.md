@@ -396,23 +396,27 @@ replacement for the same region. [Standalone anatomy walkthrough](https://github
 
 ### How do I make my animation pack independent of HZoi's fallback penis?
 
-Include the mesh in your own pack and select your copy in your scenes.
-I recommend **HZoi_MaleAnatomy_v1.2.zip**, available under **Attachments** on the
-[rigs and male genitals asset post](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014).
-It is the same skeletal mesh used by HZoi and by the supplied Maya and Blender
-rigs. It works with animations from either editor; the download is on the
-Blender post because that post was published first.
+Include your own male genitals mesh and select it in your scenes. SceneZOI
+already provides the neutral crotch coverage patches and the shared
+`scenezoi.male_crotch` profile, so you do not need HZoi for that part.
 
-1. Import the kit's mesh, skeleton, materials, textures and stock coverage patch
-   into your own registered ModKit project. Include the assets in your package
-   inventory. Follow the ZIP's README for the import settings.
-2. Declare your own body and material profiles, using your pack's IDs and asset
-   paths. Register an [attachment variant](appearance-variants.md#register-the-assets)
-   that references those profiles and your copy of the mesh. Copying a reference
-   to `hzoi.body_layout` or `/HZoi_660649D8/...` still requires HZoi; importing
-   the assets does not rewrite your JSON references for you.
-3. Select that variant in each scene that uses it. For example, if you registered
-   `designer.anatomy_medium`, add this fragment to the scene with a `male` role:
+I recommend **HZoi_MaleAnatomy_v1.2.zip**, under **Attachments** on the
+[rigs and male genitals asset post](https://www.patreon.com/skyrimaceanimations/posts/inzoi-blender-172792014).
+It supplies the same mesh used by HZoi and both supplied animation rigs. It works
+with Maya and Blender even though the download is on the Blender rigs post.
+You can also use your own attachment mesh with a compatible setup.
+
+1. Import your attachment's mesh, skeleton, materials and textures into your own
+   ModKit project. Include those assets and your animation tracks in your pack.
+   You do not need to import or package the kit's older stock coverage patch.
+2. [Register an attachment variant](appearance-variants.md#register-the-assets).
+   For the compatible male body layout, set
+   `"body_profile": "scenezoi.male_crotch"`. Use your own mesh path and, when
+   needed, your own material profile for skin and hair matching. The kit includes
+   material-profile data you can adapt. Replace its older body-profile reference
+   with the shared framework ID; you do not need another body-profile declaration.
+3. Select your variant in each scene that uses it. For example, after registering
+   `designer.anatomy_medium`, add this fragment to a scene with a `male` role:
 
    ```json
    {
@@ -426,26 +430,22 @@ Blender post because that post was published first.
    }
    ```
 
-   This selects your pack's mesh instead of depending on the automatic fallback.
-   If HZoi is also installed, SceneZOI uses one region replacement for that Zoi.
-   A gameplay add-on's explicit API selection still takes priority over the
-   scene default. [Selection order](appearance-variants.md#set-defaults-for-a-scene)
-4. Export your own synchronized male genitals tracks and import them against
-   your pack's copy of the attachment skeleton. Add your scene IDs and clip paths
-   to the variant's `node_animations`. If you have no clip, use the
-   [rest pose and optional bone rotations](#port-an-animation-without-a-separate-attachment-track).
-5. Test with HZoi disabled, then enabled. Check coverage, skin and hair matching,
-   clothing changes, navigation and Exit. The stock patch does not fit every
-   replacement body; supply [fitted patches](package-split.md#fit-a-coverage-patch-to-another-body)
-   for other cutouts you intend to support.
+Your pack supplies the male genitals; SceneZOI supplies the neutral surface
+underneath. HZoi is unnecessary unless you separately reference its other
+resources, such as its recordings. If HZoi is installed, the scene's selection
+replaces its automatic fallback instead of adding a second mesh. A gameplay
+add-on's explicit API selection still takes priority over the scene default.
+[Selection order](appearance-variants.md#set-defaults-for-a-scene)
 
-Players need **SceneZOI and your finished pack**. They do not need to install
-the authoring ZIP or HZoi. HZoi becomes a dependency only if you separately
-reference its other assets or declarations, such as its recordings.
+Map your synchronized attachment clips in the variant's `node_animations`, or
+use the [rest pose and optional bone rotations](#port-an-animation-without-a-separate-attachment-track)
+when no clip is available. Test with HZoi disabled, then enabled, including
+clothing changes, navigation and Exit. Different body cutouts may need their own
+[fitted patch and profile](coverage-patches.md#i-need-a-patch-for-another-body).
 
-The kit's scene-local attachment example is also supported. In either form,
-keep one region replacement per Zoi rather than also adding an ordinary prop
-through `add_attachment`. See the
-[independent pack walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md)
-for the import and coverage setup. The source mesh is credited to Ryan Reos's
-*The Vagrant* and retains its own license; preserve the kit's attribution.
+The kit's scene-local attachment format is also supported; use the same shared
+`body_profile` there. Keep one region replacement per Zoi rather than also adding
+an ordinary `add_attachment` prop. See the
+[asset import walkthrough](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/standalone-anatomy.md).
+The source male genitals mesh is credited to Ryan Reos's *The Vagrant* and retains
+its own license; preserve the kit's attribution.

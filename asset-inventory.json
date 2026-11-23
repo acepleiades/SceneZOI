@@ -7,7 +7,9 @@
       "SceneZOI/Animations/SceneZOI_Bed_idle_F.uasset",
       "SceneZOI/Animations/SceneZOI_Bed_idle_M.uasset",
       "SceneZOI/Animations/SceneZOI_Sofa_idle_F.uasset",
-      "SceneZOI/Animations/SceneZOI_Sofa_idle_M.uasset"
+      "SceneZOI/Animations/SceneZOI_Sofa_idle_M.uasset",
+      "Compatibility/StockCoveragePatch.uasset",
+      "Compatibility/ZoiBitsMaleCoveragePatch.uasset"
     ]
   }
 }

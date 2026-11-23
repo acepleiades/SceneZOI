@@ -37,7 +37,9 @@ Each Zoi can have their own voice and expression choices, which carry over acros
 
 For male genitals, I recommend using the same mesh as HZoi and the supplied
 Maya and Blender rigs. The [standalone asset pack](docs/authoring.md#how-do-i-make-my-animation-pack-independent-of-hzois-fallback-penis)
-lets you include it in your own animation pack without requiring HZoi.
+lets you include it in your own animation pack without requiring HZoi. SceneZOI
+already provides the [neutral coverage patches and shared profile](docs/coverage-patches.md)
+that close the body beneath your attachment.
 
 ## Contribute to SceneZOI
 
@@ -45,4 +47,4 @@ Start with the [contribution guide](CONTRIBUTING.md) for setup, tests, and pull 
 
 ## License
 
-SceneZOI is licensed under [GPL-3.0-only](LICENSE). The inZOI ModKit and game assets referenced by the framework remain subject to the applicable inZOI ModKit terms. The separate [HZoi Reference](https://github.com/acepleiades/HZoi-Reference) includes adult examples and has its own asset rights.
+SceneZOI is licensed under [GPL-3.0-only](LICENSE). The inZOI ModKit and game-derived assets, including the neutral coverage meshes, remain subject to the applicable game and ModKit asset terms. The separate [HZoi Reference](https://github.com/acepleiades/HZoi-Reference) includes adult examples and has its own asset rights.

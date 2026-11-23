@@ -74,6 +74,7 @@ An attachment variant uses the same binding fields as an ordinary attachment.
   "schema_version": 1,
   "id": "designer.anatomy_medium",
   "label": "Medium anatomy",
+  "body": "male",
   "body_age": "Adult",
   "growth_steps": ["Youth", "Adult"],
   "attachment": {
@@ -81,7 +82,7 @@ An attachment variant uses the same binding fields as an ordinary attachment.
     "component": "body",
     "socket": "pelvis",
     "reference_bone": "pelvis",
-    "body_profile": "designer.body_region",
+    "body_profile": "scenezoi.male_crotch",
     "material_profile": "designer.skin",
     "retain_for_session": true
   },
@@ -97,9 +98,12 @@ Omit `body` when it fits both. A compatible penis mesh can therefore be selected
 for a female Zoi. Register separate variants when the bodies need different fits.
 
 `body_profile` describes the skin region being replaced; `material_profile`
-describes how the attachment matches its skin and hair. Declare profiles that
-fit your geometry and materials. Reuse HZoi's profiles only when your assets
-follow the same requirements. [Coverage and material profiles](package-split.md#presentation-and-compatibility-profiles)
+describes how the attachment matches its skin and hair. SceneZOI supplies
+`scenezoi.male_crotch` and its neutral stock/ZoiBits coverage meshes for compatible
+male body layouts. Use that shared profile directly; it does not require HZoi.
+Declare your own material profile for your attachment's slots and parameters.
+A different body layout or cutout needs a compatible custom body profile.
+[Shared coverage patches](coverage-patches.md). [Coverage and material profiles](package-split.md#presentation-and-compatibility-profiles)
 
 The body-region patch must also fit the body mesh. When two bodies use the same
 region layout but have different crotch shapes, use

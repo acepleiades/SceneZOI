@@ -34,13 +34,13 @@ to build SceneZOI. Consult the reference's rights notices before reuse.
 
 | Project | Owns |
 | --- | --- |
-| SceneZOI | Runtime, UI, manual starter, neutral hubs and their body tracks, furniture support, shared metadata and
-the bundled fixed facial pose. |
+| SceneZOI | Runtime, UI, manual starter, neutral hubs and their body tracks, furniture support, shared metadata, the bundled fixed facial pose and neutral crotch coverage meshes/profile. |
 | Content pack | Its animations, meshes, audio, expression/voice sets, compatibility profiles, scene JSON and navigation extensions. No executable content-pack registration. |
 | Gameplay add-on | Its own Lua, gameplay decisions, persistence and consequences, using the public API/SDK. |
 
-Do not put pack-specific asset paths, scene IDs, expression defaults or anatomy
-profiles into the framework. Geometry comes from the character meshes and enabled
+Do not put pack-specific asset paths, scene IDs, expression defaults or genital
+attachments into the framework. Shared neutral coverage belongs in SceneZOI;
+each pack supplies the anatomy it attaches. Geometry comes from the character meshes and enabled
 content declarations. SceneZOI has no content-pack dependency; its solo launcher and opt-in debug picker retain technical eligibility and availability checks.
 
 ## Native declarations and author builds
@@ -147,8 +147,8 @@ declared material index and at least one LOD, then waits for the actual source
 material before creating the replacement patch. Preparation and active/clothing
 masking use the same section checks. The checks run against the current mesh;
 appearance rebuilds are handled without a startup cache or per-mod registration.
-The patch's own material-slot name remains validated because the supplying pack
-owns that asset. Diagnostics show the observed mesh, material/LOD counts and
+The patch's own material-slot name remains validated against the profile
+that names it. Diagnostics show the observed mesh, material/LOD counts and
 whether the declared section's material is ready.
 
 For example, a pack with a replacement patch for its declared region can use:
@@ -170,7 +170,8 @@ framework default. No body-replacer names are needed for the default path.
 This supports unlisted replacement bodies that preserve the declared section,
 coverage mapping and skin/skeleton conventions. It does not infer the anatomical
 meaning of arbitrary geometry or remap a body that moves the region elsewhere.
-HZoi declares section/coverage bit 17; the framework has no hardcoded section 17.
+The shared `scenezoi.male_crotch` profile declares section/coverage bit 17 in
+framework data; the runtime has no hardcoded section 17.
 Attachments awaiting a rebuilding native body, layout or source material remain
 hidden and retry under the ordinary preparation timeout. A declared coverage
 patch that cannot load fails preparation. Test stock and actual replacements for fit,
@@ -229,10 +230,13 @@ a hard join, then test the actual skin material in motion. Move the camera and
 light, play the animation and check every LOD. A closed seam from one camera
 angle does not establish a smooth fit.
 
-HZoi's [body profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/body_layout.json)
-is a real example: it keeps the stock patch by default and declares a separate
-fit for the ZoiBits male mesh. See its
-[coverage-patch guide](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/body-coverage.md).
+SceneZOI supplies the neutral stock and ZoiBits-male coverage meshes, along with
+the shared [male-crotch profile](../packs/scenezoi/profiles/male_crotch.json).
+For compatible male body layouts, an attachment can use
+`"body_profile": "scenezoi.male_crotch"` without declaring another profile or
+requiring HZoi. See [shared coverage patches](coverage-patches.md).
+For a custom fit, your own profile may reference the framework stock mesh as its
+default and your own mesh for an override.
 
 For declared body profiles, resolved garment coverage also guards the matching
 render section when covering clothing prevents attachment activation. Manual
@@ -251,8 +255,8 @@ For an independently packaged copy of this attachment, see
 [the authoring workflow](authoring.md#use-the-hzoi-anatomy-mesh-in-your-own-pack).
 Use your own object paths and keep SceneZOI as the only mod dependency.
 
-HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json) points to its
-[body profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/body_layout.json) and [material profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/skin_hair.json). Follow those
+HZoi-Reference's [coverage attachment](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/region_attachment.json) uses SceneZOI's
+[shared body profile](../packs/scenezoi/profiles/male_crotch.json) and its own [material profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/skin_hair.json). Follow those
 IDs alongside `node_animations` to see how a content pack activates and animates
 an attachment at its own scenes and framework hubs. Section 17 and material
 slots describe those assets, not universal framework defaults. See the
