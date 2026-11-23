@@ -2,8 +2,11 @@
 local M = {}
 local Profiles=require("SceneZOI.Profiles")
 local ClothingCoverage=require("SceneZOI.ClothingCoverage")
+local Diagnostics=require("SceneZOI.Diagnostics")
+local unavailable_sources={}
 
--- A profile declares the section convention, not a list of body replacers.
+-- The shared section convention is not an eligibility list. A pack can supply
+-- fitted patches for exact body assets while retaining its default for others.
 -- Preparation and both masking guards operate on the actual unmerged body.
 local function section_available(mesh,profile)
     return mesh and mesh:GetSkeletalMeshAsset()~=nil and
@@ -60,11 +63,57 @@ function M.after_outfit(owner, change, profile)
     return coverage(flags,profile)
 end
 
-function M.load(profile)
+local function source_name(asset)
+    local ok,name=pcall(function()return asset:GetName()end)
+    if ok and name then return tostring(name)end
+end
+
+local function select_patch(profile,source)
+    local selected={path=profile.patch_mesh,reason="default_profile"}
+    if not source then return selected end
+    selected.source_name=source_name(source)
+    if not next(profile.patch_mesh_overrides or {})then return selected end
+    selected.reason="default_unlisted_body"
+    local paths={}
+    for path in pairs(profile.patch_mesh_overrides)do paths[#paths+1]=path end
+    table.sort(paths)
+    for _,path in ipairs(paths)do
+        -- Canonical object paths end in the object's exact name. This only
+        -- avoids loading unrelated large body meshes; a matching name never
+        -- selects a fit without comparing the loaded asset itself below.
+        local name=path:match("%.([^%.]+)$")
+        local relevant=not selected.source_name or name:lower()==selected.source_name:lower()
+        -- Missing optional body mods are remembered for this runtime. Successful
+        -- loads are resolved again only for a new rendered body, since a cached
+        -- Lua asset wrapper alone does not retain an Unreal object through GC.
+        if relevant and not unavailable_sources[path]then
+            local ok,candidate=pcall(UE.UObject.Load,path)
+            if not ok or not candidate then unavailable_sources[path]=true
+            elseif candidate==source then
+                local patch=profile.patch_mesh_overrides[path]
+                assert(not selected.matched_source or selected.path==patch,
+                    "Conflicting body coverage patches resolve to the same body asset")
+                selected.path,selected.matched_source,selected.reason=patch,path,"body_mesh_override"
+            end
+        end
+    end
+    return selected
+end
+
+function M.load(profile,source)
+    local profile_id=profile
     profile=Profiles.body(profile)
-    local asset = UE.UObject.Load(profile.patch_mesh)
-    assert(asset, "Stock skin patch is unavailable; install the supplying content pack")
-    return asset
+    local selected=select_patch(profile,source)
+    local asset=UE.UObject.Load(selected.path)
+    if not asset then
+        Diagnostics.record("body_patch_unavailable",{body_profile=profile_id,
+            body_mesh=selected.matched_source,body_mesh_name=selected.source_name,
+            patch_mesh=selected.path,selection=selected.reason})
+    end
+    -- A declared fit for a known body is required. Falling back to a different
+    -- geometry here would hide the source region while leaving an uncovered seam.
+    assert(asset,"Body coverage patch is unavailable; install the supplying content pack: "..selected.path)
+    return asset,selected
 end
 
 local function visibility_record(body, mesh)
@@ -129,17 +178,17 @@ local function configure_patch(session, body)
     local profile=body.profile;local SECTION=profile.section
     local actor, parent = body.actor, body.mesh
     local patch = actor:AddComponentByClass(UE.USkeletalMeshComponent:StaticClass(), true, UE.FTransform(), false)
-    assert(patch, "Could not create stock skin patch")
+    assert(patch, "Could not create body coverage patch")
     -- Retain partial creation immediately so early Exit or a failed setter still owns cleanup.
     body.patch = patch
     patch:SetHiddenInGame(true, true)
     patch:SetCollisionEnabled(0)
     patch:SetGenerateOverlapEvents(false)
     patch:SetSimulatePhysics(false)
-    patch:SetSkeletalMeshAsset(session.patch_asset)
-    assert(patch:GetMaterialIndex(profile.patch_material_slot) == SECTION, "Unexpected stock patch section layout")
-    assert(patch:K2_AttachToComponent(parent, "None", 0, 0, 0, false), "Could not attach stock skin patch")
-    -- This asset retains the full stock body origin. It follows the mesh root, not the pelvis;
+    patch:SetSkeletalMeshAsset(body.patch_asset)
+    assert(patch:GetMaterialIndex(profile.patch_material_slot) == SECTION, "Unexpected body coverage patch section layout")
+    assert(patch:K2_AttachToComponent(parent, "None", 0, 0, 0, false), "Could not attach body coverage patch")
+    -- Patch assets retain the full body origin. They follow the mesh root, not the pelvis;
     -- a pelvis attachment would apply the body's authored root-to-pelvis offset twice.
     patch:K2_SetRelativeTransform(UE.FTransform(), false, nil, true)
     patch:SetLeaderPoseComponent(parent, true, false)
@@ -150,7 +199,7 @@ local function configure_patch(session, body)
             patch:ShowMaterialSection(slot, slot, slot == SECTION, lod)
         end
     end
-    -- Pose sharing covers final deformation bones; the one stock muscle morph is separate.
+    -- Pose sharing covers final deformation bones; the declared muscle morph is separate.
     if profile.morph then patch:SetMorphTarget(profile.morph, parent:GetMorphTarget(profile.morph), true)end
     patch:PrestreamTextures(3, true, 0)
     body.patch_frames = 0
@@ -178,6 +227,7 @@ function M.prepare(session, actor)
         -- Keep retired geometry masked until final release. Re-enabling it here
         -- can expose the replacement geometry while the old component still draws.
         body.mesh, body.asset, body.frames = nil, nil, 0
+        body.patch_asset,body.patch_selection,body.coverage_committed=nil,nil,false
     end
     local setting = actor.AppearanceComponent.AppearanceSetting
     if setting.Body.bUseMeshMerge or setting.FinalBody.bUseMeshMerge then
@@ -203,6 +253,14 @@ function M.prepare(session, actor)
     if not body.patch then
         local mesh = actor.Mesh
         body.mesh, body.asset, body.material = mesh, mesh:GetSkeletalMeshAsset(), material
+        body.patch_asset,body.patch_selection=M.load(session.node.attachment.body_profile,body.asset)
+        local selected=body.patch_selection
+        Diagnostics.record("body_patch_selected",{scene_id=session.node.id,
+            participant_role=session.node.attachment.participant,
+            participant_id=body.coverage_owner and body.coverage_owner.id,
+            body_profile=session.node.attachment.body_profile,
+            body_mesh=selected.matched_source,body_mesh_name=selected.source_name,
+            patch_mesh=selected.path,selection=selected.reason})
         body.visibility = visibility_record(body, mesh).visibility
         configure_patch(session, body)
     end
@@ -214,7 +272,7 @@ function M.ready(session)
     local body = session.body_region
     if not body or not body.mesh or not body.patch then return false end
     assert(body.actor.Mesh == body.mesh and body.mesh:GetSkeletalMeshAsset() == body.asset,
-        "Participant body changed during skin patch preparation")
+        "Participant body changed during body coverage patch preparation")
     local material = body.mesh:GetMaterial(SECTION)
     if not material then body.patch_frames = 0; return false end
     if material ~= body.material then
@@ -255,8 +313,10 @@ function M.status(session)
         local b = mathlib.TransformLocation(body.patch:GetSocketTransform(name, 0), point)
         error_max = math.max(error_max, math.sqrt((a.X-b.X)^2 + (a.Y-b.Y)^2 + (a.Z-b.Z)^2))
     end
-    return string.format("patch_frames=%d:patch_pose_error_cm=%.6f:region_shown=%s:merge_resets=%d:guard_ticks=%d:body_section=%s", body.patch_frames,
-        error_max, tostring(body.mesh:IsMaterialSectionShown(SECTION, 0)), body.merge_resets or 0, body.guard_ticks or 0,section_status(body.mesh,body.profile))
+    local selected=body.patch_selection or {}
+    return string.format("patch_frames=%d:patch_pose_error_cm=%.6f:region_shown=%s:merge_resets=%d:guard_ticks=%d:body_section=%s:patch_mesh=%s:patch_selection=%s:patch_body_mesh=%s", body.patch_frames,
+        error_max, tostring(body.mesh:IsMaterialSectionShown(SECTION, 0)), body.merge_resets or 0, body.guard_ticks or 0,section_status(body.mesh,body.profile),
+        tostring(selected.path),tostring(selected.reason),tostring(selected.matched_source or selected.source_name))
 end
 
 function M.restore(session)

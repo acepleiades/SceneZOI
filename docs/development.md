@@ -44,6 +44,24 @@ Synchronize source and generated declarations to the registered working project,
 preserving unrelated work. Prepare Lua and verify its bytes against
 `workspace/lua/`. Validate the full Lua workspace and both UI apps in ModKit.
 
+To prepare Lua, run this in the open ModKit editor's Python console:
+
+```python
+import unreal
+assert unreal.inZoiUGCFunctionLibrary.pre_share_plugin("SceneZOI_93C44199"), "SceneZOI preparation failed"
+```
+
+This native operation exports the workspace to the plugin's prepared `lua/`
+directory without starting a game preview. The assertion requires `True`. Then compare
+every `B1/` and `B2/` Lua file and `lua_manifest.json` byte for byte with
+`workspace/lua/`. Check the file lists too, so deleted scripts cannot remain in
+the prepared output. Stop before packaging if anything differs.
+
+In the currently tested ModKit, `PackageUGC -Prepare=true` alone does not export
+changed workspace Lua. It can package the previous prepared files successfully.
+Run the native preparation and byte checks above before PackageUGC; a successful
+package or Lua analysis does not prove it contains the latest scripts.
+
 Remove deleted scripts from both the native `workspace/lua/` and prepared `lua/`
 trees during synchronization. A native chunk can load by filename even without
 a manifest entry, so copying new files over an old tree is insufficient.

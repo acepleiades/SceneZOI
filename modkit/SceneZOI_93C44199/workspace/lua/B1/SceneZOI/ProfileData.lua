@@ -1,10 +1,20 @@
 local V=require('SceneZOI.DataValidation')
 local M={}
 local function body(v)
- V.fields(v,{'schema_version','id','section','coverage_bit','full_coverage_exception','patch_mesh','patch_material_slot','morph'},{'schema_version','id','section','coverage_bit','patch_mesh','patch_material_slot'})
+ V.fields(v,{'schema_version','id','section','coverage_bit','full_coverage_exception','patch_mesh','patch_mesh_overrides','patch_material_slot','morph'},{'schema_version','id','section','coverage_bit','patch_mesh','patch_material_slot'})
  assert(v.schema_version==2,'Unsupported body profile version');V.id(v.id)
  V.number(v.section,0,255,true);V.number(v.coverage_bit,0,31,true)
  V.asset(v.patch_mesh);V.name(v.patch_material_slot)
+ if v.patch_mesh_overrides~=nil then
+  assert(V.object(v.patch_mesh_overrides),'Expected body-mesh patch override map')
+  local names,count={},0
+  for source,patch in pairs(v.patch_mesh_overrides)do
+   V.asset(source);V.asset(patch);count=count+1
+   local key=source:lower()
+   assert(not names[key],'Duplicate body-mesh patch override path');names[key]=true
+  end
+  assert(count<=64,'Too many body-mesh patch overrides')
+ end
  if v.morph then V.name(v.morph)end
  if v.full_coverage_exception~=nil then V.boolean(v.full_coverage_exception)end
 end

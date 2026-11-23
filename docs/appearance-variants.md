@@ -96,6 +96,12 @@ describes how the attachment matches its skin and hair. Declare profiles that
 fit your geometry and materials. Reuse HZoi's profiles only when your assets
 follow the same requirements. [Coverage and material profiles](package-split.md#presentation-and-compatibility-profiles)
 
+The body-region patch must also fit the body mesh. When two bodies use the same
+region layout but have different crotch shapes, use
+[coverage patches fitted to each body](package-split.md#fit-a-coverage-patch-to-another-body).
+SceneZOI can select the fitted patch from the body currently rendering without
+changing the selected male genitals or their animation tracks.
+
 When migrating an existing anatomy attachment, replace its old direct scene
 attachment or `add_attachment` request with variant selection. Keeping both
 requests creates two meshes. Ordinary props continue to use their own

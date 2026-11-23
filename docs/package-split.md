@@ -135,7 +135,10 @@ replaces the automatic coverage attachment rather than competing with it.
 Body profiles use `schema_version: 2`. A profile declares `section` (the shared
 render/material index), `coverage_bit`, optional `full_coverage_exception`,
 `patch_mesh`, `patch_material_slot` and optional `morph`, alongside its `id`.
-There is no mesh-name or participant-material-name allowlist. The removed
+An optional `patch_mesh_overrides` object selects a different patch for an exact
+body-mesh object path. It changes the patch's fit, while the declared section,
+coverage bit, patch material slot and morph stay the same. There is no approved
+body-replacer or participant-material-name allowlist. The removed
 `mesh_name`, `material_slot`, `minimum_materials` and `compatible_layouts` fields
 are rejected rather than retained as obsolete matching modes.
 
@@ -162,15 +165,74 @@ For example, a pack with a replacement patch for its declared region can use:
 ```
 
 Those indices and the patch slot are author-owned asset requirements, not a
-framework default. No body-replacer names are needed.
+framework default. No body-replacer names are needed for the default path.
 
 This supports unlisted replacement bodies that preserve the declared section,
 coverage mapping and skin/skeleton conventions. It does not infer the anatomical
 meaning of arbitrary geometry or remap a body that moves the region elsewhere.
 HZoi declares section/coverage bit 17; the framework has no hardcoded section 17.
-Attachments awaiting missing/rebuilding resources remain hidden and retry under
-the ordinary preparation timeout. Test stock and actual replacements for fit,
+Attachments awaiting a rebuilding native body, layout or source material remain
+hidden and retry under the ordinary preparation timeout. A declared coverage
+patch that cannot load fails preparation. Test stock and actual replacements for fit,
 shading, clothing masks and restoration.
+
+### Fit a coverage patch to another body
+
+A body can keep the same region numbers and still have a different crotch shape.
+If your attachment for male genitals hides that region, the stock patch may leave
+gaps around it. Supply a patch shaped for that body. The male genitals and their
+animation tracks remain separate; the patch only closes the body underneath.
+
+Add the body's full skeletal-mesh object path as a key in `patch_mesh_overrides`:
+
+```json
+{
+  "schema_version": 2,
+  "id": "designer.body_region",
+  "section": 17,
+  "coverage_bit": 17,
+  "patch_mesh": "/Designer/Compatibility/StockPatch.StockPatch",
+  "patch_material_slot": "shader_body_shader18",
+  "morph": "Body_Muscle",
+  "patch_mesh_overrides": {
+    "/AnotherBody/Mesh/Body.Body": "/Designer/Compatibility/FittedPatch.FittedPatch"
+  }
+}
+```
+
+SceneZOI reads the mesh actually rendering the Zoi's body after unmerging. An
+exact match uses its fitted patch; any unlisted mesh uses `patch_mesh`. This is
+checked again after a body change or clothing rebuild. It does not depend on
+the mod's folder name, installation order or the Zoi's display name. If a matched
+patch is missing or cannot load, SceneZOI reports a preparation failure
+rather than substituting a patch with a different fit. The observed body and
+chosen patch are recorded in `scenezoi_runtime`.
+
+Match the patch's outer edge to the target body's cutout, including bone weights
+and any supported morph deltas at that edge. A patch that fits the reference pose
+can open a seam when a thigh bends if those weights differ. All overrides use
+the profile's `section`, `patch_material_slot` and `morph`, so import them with
+that same layout. Test every LOD, raised and spread legs, crouching, twists,
+clothing changes and Exit. A stock fallback remains useful, but it cannot
+guarantee a fit for every body replacement.
+
+Closing the gap is only part of fitting the patch. Match the surface curvature
+across the edge and preserve the body's UV seams and separate normal/tangent
+values at each face corner, including tangent handedness. Do not weld texture
+charts just because their vertices share a 3D position. Preserve the authored
+normals and tangents through export and import: recomputing the patch's tangent
+basis can make its normal map catch light differently from the body, even when
+the edge positions and UVs match.
+
+Check a neutral grey material with light at a shallow angle to reveal dents or
+a hard join, then test the actual skin material in motion. Move the camera and
+light, play the animation and check every LOD. A closed seam from one camera
+angle does not establish a smooth fit.
+
+HZoi's [body profile](https://github.com/acepleiades/HZoi-Reference/blob/main/packs/hzoi/profiles/body_layout.json)
+is a real example: it keeps the stock patch by default and declares a separate
+fit for the ZoiBits male mesh. See its
+[coverage-patch guide](https://github.com/acepleiades/HZoi-Reference/blob/main/docs/body-coverage.md).
 
 For declared body profiles, resolved garment coverage also guards the matching
 render section when covering clothing prevents attachment activation. Manual
