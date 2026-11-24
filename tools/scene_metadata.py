@@ -2,6 +2,7 @@
 import copy,json,re,math
 from pathlib import Path
 RATINGS={'GENERAL':1,'SUGGESTIVE':2,'EXPLICIT':3}
+SEXUAL_ACTIVITIES=('non_penetrative','penetrative_non_coital','coital')
 def check(v,msg):
  if not v:raise ValueError(msg)
 def fields(v,allowed,required=()):
@@ -38,7 +39,7 @@ def dictionaries(documents):
    fields(data,['schema_version','id',key],['schema_version','id',key]);check(data['schema_version']==1,'Unsupported dictionary version');name(data['id'])
    check(isinstance(data[key],list)and len(data[key])<=512,'Invalid dictionary entries')
    for row in data[key]:
-    fields(row,['id','aliases','description','content_rating','actor_description','target_description','performer_description','actor_requirements','target_requirements','addon_data'],['id','description']+(['content_rating']if key=='actions'else []))
+    fields(row,['id','aliases','description','content_rating','sexual_activity','actor_description','target_description','performer_description','actor_requirements','target_requirements','addon_data'],['id','description']+(['content_rating']if key=='actions'else []))
     addon_data(row.get('addon_data'))
     ident=name(row['id']);check(ident==row['id'],'Canonical ID must be normalized')
     check(isinstance(row['description'],str)and 0<len(row['description'])<=160,'Invalid description')
@@ -48,6 +49,9 @@ def dictionaries(documents):
     check(owner=='scenezoi'or all(a.startswith(owner+'.')for a in aliases),'Custom aliases must use their owner namespace')
     if key=='actions':check(row['content_rating']in RATINGS,'Unknown action content_rating')
     else:check('content_rating'not in row,'Only actions have content_rating')
+    if 'sexual_activity' in row:
+     check(key=='actions','Only actions have sexual_activity')
+     check(row['sexual_activity'] in SEXUAL_ACTIVITIES,'Unknown action sexual_activity')
     for f in ['actor_description','target_description','performer_description']:
      if f in row:check(isinstance(row[f],str)and 0<len(row[f])<=160,'Invalid role description')
     for f in ['actor_requirements','target_requirements']:

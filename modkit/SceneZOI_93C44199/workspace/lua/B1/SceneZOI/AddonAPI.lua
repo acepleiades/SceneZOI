@@ -153,7 +153,7 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','furniture_pair_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','lifetime','goals','restrictions','end_policy','post_completion_stay_seconds','task_progress_multiplier','stages','required_stages','stage_preferences','auto_speed'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','furniture_pair_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','lifetime','goals','restrictions','auto_restrictions','end_policy','post_completion_stay_seconds','skip_post_completion_stay_after_manual','task_progress_multiplier','stages','stage_progress','required_stages','stage_preferences','stage_priorities','variety_groups','auto_speed'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
  local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
  if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
@@ -186,7 +186,11 @@ local function start(actor,req,row,data,preflight)
  local rows=Search.find(data,search,people,furniture,args.bindings);local allowed={}
  for _,candidate in ipairs(rows)do
   local named=mode=='start_scene'or autonomous and args.scene_id~=nil
-  if Search.allowed(data.nodes,data.nodes[candidate.scene_id],restrictions)and(not named or candidate.scene_id==args.scene_id)then allowed[#allowed+1]=candidate end
+  local node=data.nodes[candidate.scene_id]
+  if (not named or candidate.scene_id==args.scene_id)and Search.allowed(data.nodes,node,restrictions)and
+   (not spec or not spec.auto_restrictions or Search.allowed(data.nodes,node,spec.auto_restrictions))then
+   allowed[#allowed+1]=candidate
+  end
  end
  if mode=='start_scene'or autonomous and args.scene_id~=nil then V.id(args.scene_id)end
  local chosen
@@ -196,7 +200,9 @@ local function start(actor,req,row,data,preflight)
  local pair_id=selected_pair and selected_pair.id
  if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id],pair_id)end
  if background then runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm,args.furniture_id)end
- if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),furniture_pair_id=pair_id,reservation=false,assets_checked=false,startup_rechecks=true}end
+ if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),
+  furniture_pair_id=pair_id,reservation=false,assets_checked=false,startup_rechecks=true,
+  route_uncertain=spec and spec.route_uncertain or nil}end
  serial=serial+1;row.token='api.'..os.time()..'.'..serial;row.age=0;row.retry=1;row.stage='depart';row.departures={}
  local reserved,reason=Sessions.reserve(row.token,ids,args.furniture_id,spot_ids);assert(reserved,reason)
  for _,p in ipairs(people)do row.departures[p.id]=false end
@@ -220,7 +226,7 @@ local function execute(actor,req,row)
   return result
  end
  -- Backward compatibility with add-ons that read maximum_sessions as the single focused session limit.
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_post_completion_stay=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={autonomous_scenes=1,autonomous_stages=1,autonomous_stage_progress=1,autonomous_post_completion_stay=1,autonomous_stage_priorities=1,autonomous_auto_restrictions=1,autonomous_joint_goal_routes=1,autonomous_manual_completion_exit=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
  if op=='subscribe'or op=='unsubscribe'then
   V.fields(args,{'events','scope'});local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
   if op=='unsubscribe'then subscribers[sk]=nil;return {subscribed=false}end
@@ -307,7 +313,7 @@ function M.receive(actor,content)
  else
   local message=tostring(value);response.message=message
   local known={session_not_found=true,session_not_owned=true,session_not_ready=true,session_already_running=true,navigation_locked=true,speed_locked=true,participant_busy=true,session_limit=true,participant_too_far=true,goal_unreachable=true,required_stage_unavailable=true,session_has_no_plan=true,
-   no_matching_scenes=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
+   no_matching_scenes=true,scene_restricted=true,initiator_not_controlled=true,furniture_unavailable=true,incompatible_furniture=true,unsupported_api_version=true,
    unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,task_provider_unavailable=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')
   response.code=known[candidate]and candidate or 'invalid_request'

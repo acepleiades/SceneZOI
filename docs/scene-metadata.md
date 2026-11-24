@@ -115,6 +115,14 @@ Optional action fields `actor_description`,
 are descriptive metadata in v1; no new anatomy-detection system is introduced.
 Appearance-body/life-stage/furniture eligibility remains enforced independently.
 
+`sexual_activity` is optional action metadata. Use `non_penetrative` for
+external stimulation such as `handjob`, `penetrative_non_coital` for
+penetration other than vaginal intercourse such as `fellatio`, and `coital`
+for vaginal intercourse. Omit the field for supporting actions, completion
+annotations, and definitions that cover both external stimulation and penetration.
+The field is independent of `content_rating`. Add-ons can read it through
+`get_definitions` and pass the resulting action IDs in scene search criteria.
+
 Core names are global vocabulary. Custom definitions and aliases must use their
 owner namespace. Aliases are case-normalized, trimmed, and whitespace/hyphens
 normalize to underscores. Canonical IDs are normalized identifiers. Unknown

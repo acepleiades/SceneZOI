@@ -353,9 +353,23 @@ local function prepare_packet(current, participant)
         Protocol.encode(Json.encode(Catalog.simulation(current.node,participant))))
 end
 
+local function plan_allows(plan, node_id)
+    local restrictions = plan and plan.auto_restrictions
+    if not restrictions then return true end
+    local nodes = Catalog.get_snapshot().nodes
+    return Search.allowed(nodes, nodes[node_id], restrictions)
+end
+
+local function auto_allows(current, node_id)
+    return not (current.plan and current.plan.auto_mode) or plan_allows(current.plan, node_id)
+end
+
 local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon, furniture_pair_id)
     local node = Catalog.get(node_id)
-    if addon then assert(Search.allowed(Catalog.get_snapshot().nodes,node,addon.restrictions),'Scene is restricted for this session')end
+    if addon then
+        assert(Search.allowed(Catalog.get_snapshot().nodes,node,addon.restrictions),'Scene is restricted for this session')
+        assert(plan_allows(addon.plan, node_id), 'Scene is restricted in Auto-mode')
+    end
     assert((node.furniture~=nil)==(furniture_id~=nil),'Scene requires the matching furniture context')
     local furniture=furniture_id and Furniture.prepare(furniture_id,node,furniture_pair_id)or nil
     local participants, participant_ids, seen, roles = {}, {}, {}, {}
@@ -857,9 +871,7 @@ local function route_event(current,route,name,code)
     Events.emit(name,snapshot,code)
 end
 
-local function route_completion(current,candidates)
-    local route=TaskRoutes.select(current,candidates)
-    if not route then return end
+local function route_completion(current,route)
     local ok,node,assets,duration,loaded=pcall(function()
         local target=Catalog.task_destination(current.node,route,current)
         require("SceneZOI.Binding").resolve(current.participants,target)
@@ -885,7 +897,12 @@ local function finish_transition(current)
     current.transition_finished = true
     notify(current, "transition_completed")
     local ok, node, assets, duration, loaded = pcall(function()
+        assert(auto_allows(current, current.node.destination), 'Scene is restricted in Auto-mode')
         local target = Catalog.transition_destination(current.node,current)
+        local next_node = Plan.next_route_node(current)
+        if next_node and next_node ~= target.id then
+            target = Catalog.get(next_node, current)
+        end
         require("SceneZOI.Binding").resolve(current.participants, target)
         local clips, length = Catalog.load(target)
         return target, clips, length, Subsystems.load(target, length, current)
@@ -1011,6 +1028,10 @@ local function finish_appearance(current)
 end
 
 local function set_auto_mode(current, enabled)
+    if enabled and current.plan and not current.plan.auto_mode and current.node.kind == 'transition'
+        and not plan_allows(current.plan, current.node.id) then
+        return 'scene_restricted'
+    end
     if Plan.set_auto(current, enabled) then
         apply_plan_speed(current)
         notify(current, "plan_auto_mode_changed")
@@ -1031,7 +1052,8 @@ local function auto_mode_request(raw, paused)
         return
     end
     if tonumber(fields[6]) ~= current.revision then return end -- Sent before a scene change it could not see.
-    set_auto_mode(current, fields[5] == "1")
+    local code = set_auto_mode(current, fields[5] == "1")
+    if code then Diagnostics.record("auto_mode_refused", {session_id=current.token, code=code}) end
 end
 
 -- Every control carries its own session identity, so it can be read whatever the request mailbox holds.
@@ -1277,12 +1299,13 @@ local function apply_plan(current, action)
     if action.event then notify(current, action.event, nil, action.reason); publish_plan(current) end
     if action.navigate then
         Diagnostics.record("plan_navigation", {session_id = current.token, scene_id = current.node.id,
-            edge_id = action.navigate, destination = current.plan.heading, reason = action.reason, stage = current.plan.stage})
+            next_node_id = action.navigate, destination = current.plan.heading, reason = action.reason, stage = current.plan.stage})
     end
     if action.stop then stop_session(current, action.stop); return end
     if not action.navigate then return end
     local ok, node, assets, duration, loaded = pcall(function()
-        local target = Catalog.destination(current.node, action.navigate, current)
+        local target = Catalog.get(action.navigate, current)
+        assert(auto_allows(current, target.id), 'Scene is restricted in Auto-mode')
         require("SceneZOI.Binding").resolve(current.participants, target)
         local clips, length = Catalog.load(target)
         return target, clips, length, Subsystems.load(target, length, current)
@@ -1440,10 +1463,10 @@ local function advance(current, dt)
         current.clock:advance(dt, game_scale, modifier, responding and response_rate or nil)
         Playback.sample(current, current.clock:position(current.duration, current.node.kind))
         local completion_routes,completion_payloads={},{}
-        if current.tasks then Tasks.update(current.tasks, current, dt * game_scale, function(payload)
+        if current.tasks and auto_allows(current, current.node.id) then Tasks.update(current.tasks, current, dt * game_scale, function(payload)
             completion_payloads[#completion_payloads+1]=payload
             local candidate=TaskRoutes.candidate(current,payload)
-            if candidate then completion_routes[#completion_routes+1]=candidate end
+            if candidate and auto_allows(current, candidate.target) then completion_routes[#completion_routes+1]=candidate end
             current.event_index = (current.event_index or 0) + 1
             local snapshot = Session.snapshot(current)
             snapshot.event_index = current.event_index
@@ -1453,8 +1476,9 @@ local function advance(current, dt)
         end) end
         require('SceneZOI.VoiceResponses').trigger(current.voice_responses,completion_payloads)
         -- Resolve one route only after every participant's completion/event/action is committed.
-        if TaskRoutes.select(current,completion_routes) then
-            route_completion(current,completion_routes)
+        local completion_route = TaskRoutes.select(current,completion_routes)
+        if completion_route then
+            route_completion(current,completion_route)
         else
             CompletionEffects.trigger(current.completion_effects,completion_payloads)
         end
@@ -1573,7 +1597,8 @@ function M.set_auto_mode(id, enabled)
     local current = assert(Sessions.get(id), "session_not_found")
     assert(current.plan, "session_has_no_plan")
     assert(not current.stopping, "session_not_ready")
-    set_auto_mode(current, enabled)
+    local code = set_auto_mode(current, enabled)
+    assert(not code, code)
     return {auto_mode = current.plan.auto_mode}
 end
 function M.api_session(id)

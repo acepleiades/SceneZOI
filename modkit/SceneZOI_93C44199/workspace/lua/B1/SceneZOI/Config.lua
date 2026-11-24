@@ -5,7 +5,7 @@ return {
     max_npc_sessions = 15, standing_spacing_cm = 200, background_max_start_distance_cm = 1500,
     background_default_seconds = 600, background_max_seconds = 7200,
     plan_max_goals = 16, plan_max_completions = 100, plan_min_multiplier = 0.1, plan_max_multiplier = 5,
-    plan_max_seconds = 7200, plan_max_playback_seconds = 7200, plan_min_dwell_seconds = 4,
+    plan_max_seconds = 7200, plan_max_playback_seconds = 7200,
     plan_no_progress_seconds = 90, plan_wait_seconds = 300, plan_route_limit = 256,
     plan_max_stages = 16,
     heartbeat_interval = 1.0, slot = "DefaultSlot", max_duration_difference = 0.0001,

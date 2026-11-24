@@ -73,6 +73,15 @@ remain available. If a destination's assets fail at completion, the session
 ends with `transition_destination_error` and restores normally rather than
 remaining stuck on the last frame.
 
+## Make a transition play in Auto-mode
+
+Connect the source to your one-shot through navigation. When Auto-mode chooses a
+destination, it finds the shortest eligible path through those links. It plays
+each transition on that path in order and skips loops that are only there to
+connect the route, such as idle menus. If you add a shorter direct link to the
+destination, Auto-mode can take that link instead of playing the transition.
+[Auto-mode routing](addons.md#autonomous-scenes)
+
 ## Task and audio behavior
 
 Task progression, decay and completion counts freeze throughout a transition.

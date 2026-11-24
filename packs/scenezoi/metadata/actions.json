@@ -11,6 +11,7 @@
       ],
       "description": "Anal fingering.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "Participant using their hand",
       "target_description": "Participant with buttocks",
       "actor_requirements": [
@@ -29,6 +30,7 @@
       ],
       "description": "Anal fisting.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "Participant using their hand",
       "target_description": "Participant with buttocks",
       "actor_requirements": [
@@ -47,6 +49,7 @@
       ],
       "description": "Anal licking.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with buttocks",
       "actor_requirements": [
@@ -61,6 +64,7 @@
       "aliases": [],
       "description": "Anal sex.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "Participant with a penis",
       "target_description": "Participant with buttocks",
       "actor_requirements": [
@@ -92,6 +96,7 @@
       ],
       "description": "Anilingus.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with buttocks",
       "actor_requirements": [
@@ -125,6 +130,7 @@
       ],
       "description": "Breast job.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with breasts",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -144,6 +150,7 @@
       ],
       "description": "Breast slapping.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their hand",
       "target_description": "Participant with breasts",
       "actor_requirements": [
@@ -158,6 +165,7 @@
       ],
       "description": "Breast sliding.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their breasts.",
       "target_description": "the one who is receiving the massage",
       "actor_requirements": [
@@ -169,6 +177,7 @@
       "aliases": [],
       "description": "Breast smothering.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with breasts",
       "target_description": "the one with the head",
       "actor_requirements": [
@@ -182,6 +191,7 @@
       ],
       "description": "Butt smothering.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with buttocks",
       "target_description": "the one with the head",
       "actor_requirements": [
@@ -195,6 +205,7 @@
       ],
       "description": "Buttjob.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with buttocks",
       "target_description": "Participant with a penis",
       "target_requirements": [
@@ -231,6 +242,7 @@
       ],
       "description": "Cunnilingus.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with a vulva",
       "actor_requirements": [
@@ -255,6 +267,7 @@
       ],
       "description": "Deep throating.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -337,6 +350,7 @@
       ],
       "description": "Fellatio.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -355,6 +369,7 @@
       ],
       "description": "Footjob.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the feet",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -371,6 +386,7 @@
       ],
       "description": "Grinding foot.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with a vulva",
       "target_description": "the one with the foot",
       "actor_requirements": [
@@ -384,6 +400,7 @@
       ],
       "description": "Grinding object.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_requirements": [
         "vulva"
       ]
@@ -395,6 +412,7 @@
       ],
       "description": "Grinding penis.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with a vulva",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -411,6 +429,7 @@
       ],
       "description": "Grinding thigh.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with a vulva",
       "target_description": "the one with the thigh",
       "actor_requirements": [
@@ -426,6 +445,7 @@
       ],
       "description": "Groping breast.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their hands",
       "target_description": "Participant with breasts",
       "actor_requirements": [
@@ -444,6 +464,7 @@
       ],
       "description": "Groping butt.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their hands",
       "target_description": "Participant with buttocks",
       "actor_requirements": [
@@ -472,6 +493,7 @@
       ],
       "description": "Groping testicles.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their hands",
       "target_description": "Participant whose testicles are touched.",
       "actor_requirements": [
@@ -488,6 +510,7 @@
       ],
       "description": "Handjob.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their hand",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -809,6 +832,7 @@
       ],
       "description": "Licking nipple.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "the one with the nipple",
       "actor_requirements": [
@@ -850,6 +874,7 @@
       ],
       "description": "Oral fingering.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "Participant using their hand",
       "target_description": "the one with the mouth",
       "actor_requirements": [
@@ -894,6 +919,7 @@
       ],
       "description": "Penile licking.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with a penis",
       "actor_requirements": [
@@ -911,6 +937,7 @@
       ],
       "description": "Penile masturbation.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_requirements": [
         "hand"
       ],
@@ -949,6 +976,7 @@
       ],
       "description": "Rubbing penis against face.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant with a penis",
       "target_description": "the one with the head",
       "actor_requirements": [
@@ -963,6 +991,7 @@
       ],
       "description": "Scrotal licking.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "Participant whose scrotum is being licked.",
       "actor_requirements": [
@@ -1029,6 +1058,7 @@
       ],
       "description": "Sucking nipple.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "the one with the nipples",
       "actor_requirements": [
@@ -1045,6 +1075,7 @@
       ],
       "description": "Thighjob.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the thighs",
       "target_description": "Participant with a penis",
       "target_requirements": [
@@ -1095,6 +1126,7 @@
       ],
       "description": "Tribadism.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_requirements": [
         "vulva"
       ],
@@ -1117,6 +1149,7 @@
       ],
       "description": "Vaginal fingering.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "Participant using their hand",
       "target_description": "Participant whose vagina receives stimulation.",
       "actor_requirements": [
@@ -1135,6 +1168,7 @@
       ],
       "description": "Vaginal fisting.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "penetrative_non_coital",
       "actor_description": "Participant using their hand",
       "target_description": "Participant whose vagina receives stimulation.",
       "actor_requirements": [
@@ -1149,6 +1183,7 @@
       "aliases": [],
       "description": "Vaginal sex.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "coital",
       "actor_description": "Participant with a penis",
       "target_description": "Participant whose vagina receives stimulation.",
       "actor_requirements": [
@@ -1196,6 +1231,7 @@
       ],
       "description": "Vulval licking.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "the one with the mouth",
       "target_description": "Participant with a vulva",
       "actor_requirements": [
@@ -1213,6 +1249,7 @@
       ],
       "description": "Vulval masturbation.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_requirements": [
         "hand"
       ],
@@ -1229,6 +1266,7 @@
       ],
       "description": "Vulval rubbing.",
       "content_rating": "EXPLICIT",
+      "sexual_activity": "non_penetrative",
       "actor_description": "Participant using their hand",
       "target_description": "Participant with a vulva",
       "actor_requirements": [

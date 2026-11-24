@@ -4,6 +4,14 @@ local function read(p)local f=assert(io.open(p,'rb'));local v=J.decode(f:read('*
 local source={by_kind={}}
 for kind,file in pairs({tag_dictionary='tags',action_dictionary='actions'})do source.by_kind[kind]={{owner='scenezoi',source=file,data=read('packs/scenezoi/metadata/'..file..'.json')}}end
 local registry=Meta.compile(source);assert(#registry.warnings==0,table.concat(registry.warnings,';'));assert(registry.action_names.embracing=='hug')
+local classified={schema_version=1,id='test.actions',actions={{id='test.example',description='Example',content_rating='EXPLICIT',sexual_activity='non_penetrative'}}}
+assert(Meta.dictionary(classified,'action_dictionary','test')['test.example'].sexual_activity=='non_penetrative')
+for _,invalid in ipairs({'unknown',J.null,{}})do
+ classified.actions[1].sexual_activity=invalid
+ assert(not pcall(Meta.dictionary,classified,'action_dictionary','test'))
+end
+local classified_tag={schema_version=1,id='test.tags',tags={{id='test.example',description='Example',sexual_activity='non_penetrative'}}}
+assert(not pcall(Meta.dictionary,classified_tag,'tag_dictionary','test'))
 local function node(id,actions)
  return {id=id,label=id,kind='loop',navigation={},participants={first={body='female'},second={body='female'},third={body='male'}},tags={'doting'},participant_tags={first={'kneel'},second={'standing'}},actions=actions}
 end

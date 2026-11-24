@@ -1,5 +1,7 @@
 -- A plan drives a live session: it can end it, it locks navigation, and the snapshot reports it.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;tests/?.lua;'..package.path
+local Search=require('SceneZOI.SceneSearch')
+local TaskRoutes=require('SceneZOI.TaskRoutes')
 local F=require('support.runtime-fixture').new()
 local R,P,cfg=F.Runtime,F.Protocol,F.cfg
 local J=require('SceneZOI.Json');local Sessions=require('SceneZOI.Sessions')
@@ -73,3 +75,105 @@ local result=R.set_auto_mode(shown,true);assert(result.auto_mode==true and R.sna
 ok=pcall(R.navigate_to,shown,'test.node');assert(not ok,'Back on, it is locked again')
 R.stop('ok',shown);F.reply(shown,1,'released');F.reply(shown,2,'released');R.flush_notifications()
 print('Plan runtime passed: a timed plan ends a scene with its outcome, navigation is locked while it drives, and the owner can always stop it.')
+
+-- A blocked automatic redirect can still play its completion effect. Manual
+-- navigation keeps the normal catalog rules, including entry into that route.
+local catalog=require('SceneZOI.Catalog')
+local data=catalog.get_snapshot()
+local function route_node(id,kind,rating,destination)
+ return {id=id,kind=kind,content_rating=rating,destination=destination,
+  participants=F.node.participants,anchor_participant='first',navigation={}}
+end
+local blocked=route_node('test.blocked','loop','EXPLICIT')
+local bridge=route_node('test.bridge','transition','GENERAL',blocked.id)
+F.node.content_rating='GENERAL'
+F.node.task_completion_routes={first={charge=bridge.id}}
+data.nodes={[F.node.id]=F.node,[bridge.id]=bridge,[blocked.id]=blocked}
+catalog.get_snapshot=function()return data end
+catalog.get=function(id)return assert(data.nodes[id])end
+local runtime_search=require('SceneZOI.SceneSearch')
+runtime_search.allowed=Search.allowed
+runtime_search.matches=Search.matches
+local routes=require('SceneZOI.TaskRoutes');routes.candidate=TaskRoutes.candidate;routes.select=TaskRoutes.select
+local tasks=require('SceneZOI.Tasks')
+tasks.inspect=function()return {}end
+tasks.progress=tasks.inspect
+tasks.enter_node=function()end
+local sent,effects=false,0
+tasks.update=function(_,current,_,emit)
+ if sent then return end
+ sent=true
+ emit({participant_id=current.bindings.first.id,participant_role='first',task={id='charge',completed=true,completion_index=1}})
+end
+require('SceneZOI.CompletionEffects').trigger=function(_,payloads) effects=effects+#payloads end
+
+local restricted=plan_row(3,4,{type='addon'},true)
+restricted.plan.auto_restrictions={allowed_content_ratings={'GENERAL'}}
+local denied=plan_row(3,4,{type='addon'},true)
+denied.plan.auto_restrictions=restricted.plan.auto_restrictions
+denied.entry.node=bridge.id
+ok,err=pcall(R.start_background,denied)
+assert(not ok and tostring(err):find('Scene is restricted in Auto-mode',1,true),'Start rechecks the transition destination')
+assert(Sessions.reserve(restricted.token,{'3','4'}))
+token=R.start_background(restricted);ready(token,{3,4})
+Sessions.get(token).tasks={}
+R.tick(.05)
+assert(sent and effects==1 and R.snapshot(token).node_id==F.node.id,'A restricted completion redirect falls back to effects')
+R.set_auto_mode(token,false)
+assert(R.navigate_to(token,bridge.id).accepted,'Manual navigation can enter a transition excluded from Auto-mode')
+ok,err=pcall(R.set_auto_mode,token,true)
+assert(not ok and tostring(err):find('scene_restricted',1,true) and R.snapshot(token).plan.auto_mode==false,
+ 'A manual transition can settle before Auto-mode is re-enabled')
+R.stop('ok',token);F.reply(token,3,'released');F.reply(token,4,'released');R.flush_notifications()
+print('Auto-mode restrictions passed: startup transition closure, completion effects fallback, and manual navigation.')
+-- Route planning may skip neutral loops, including the landing loop between two
+-- one-shots. The runtime still waits for each one-shot's authored endpoint.
+local first_hub=route_node('test.first_hub','loop','GENERAL')
+local landing=route_node('test.landing','loop','GENERAL')
+local final_hub=route_node('test.final_hub','loop','GENERAL')
+local final=route_node('test.activity','loop','SUGGESTIVE')
+local second=route_node('test.second','transition','GENERAL',final_hub.id)
+local first=route_node('test.first','transition','GENERAL',landing.id)
+F.node.navigation={{id='toward_hub',target=first_hub.id}}
+first_hub.navigation={{id='toward_first',target=first.id}}
+landing.navigation={{id='toward_second',target=second.id}}
+final_hub.navigation={{id='toward_activity',target=final.id}}
+for _,node in ipairs({first_hub,landing,final_hub,final,first,second})do data.nodes[node.id]=node end
+catalog.transition_destination=function(node)return catalog.get(node.destination)end
+local loaded={}
+catalog.load=function(node)
+ loaded[#loaded+1]=node.id
+ return {first='a',second='b'}, 1
+end
+local completed={}
+F.Events.subscribe('transition_completed',function(e)completed[#completed+1]=e.node_id end)
+
+local staged=plan_row(3,4,{type='duration',seconds=20,clock='game'},true)
+staged.plan.stage_count=2
+staged.plan.stage_priorities={{stage=2,matches={{allowed_content_ratings={'SUGGESTIVE'}}}}}
+assert(Sessions.reserve(staged.token,{'3','4'}))
+token=R.start_background(staged);ready(token,{3,4})
+for _=1,40 do R.tick(.25)end
+assert(R.snapshot(token).node_id==first.id,'The first transition is selected through the unplayed hub')
+local function accept_node(revision)
+ F.reply(token,3,'ready','female:npc',revision);F.reply(token,4,'ready','female:npc',revision)
+ R.tick(.05);R.tick(.05)
+ assert(R.snapshot(token).phase=='playing')
+end
+accept_node(2)
+R.tick(.25);R.flush_notifications()
+assert(R.snapshot(token).node_id==first.id and #completed==0,'The first one-shot cannot be cut short')
+for _=1,4 do R.tick(.25)end
+R.flush_notifications()
+assert(R.snapshot(token).node_id==second.id and completed[1]==first.id,'The landing hub supplies the next transition without playing')
+accept_node(3)
+R.tick(.25);R.flush_notifications()
+assert(R.snapshot(token).node_id==second.id and #completed==1,'The second one-shot cannot be cut short')
+for _=1,4 do R.tick(.25)end
+R.flush_notifications()
+assert(R.snapshot(token).node_id==final.id and completed[2]==second.id,'The last bridge hub is skipped')
+assert(table.concat(loaded,',')=='test.node,test.first,test.second,test.activity','Only the activity and its one-shots are loaded')
+accept_node(4)
+R.stop('ok',token);F.reply(token,3,'released');F.reply(token,4,'released');R.flush_notifications()
+assert(ended[token].code == 'ok' and Sessions.holder('3') == nil)
+print('Automatic transition chain passed: both one-shots finish in order and three intermediate loops are skipped.')

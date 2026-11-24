@@ -1,20 +1,27 @@
 -- The public API starts background scenes without touching the single-session contract add-ons already rely on.
 package.path='modkit/SceneZOI_93C44199/workspace/lua/B1/?.lua;'..package.path
 local J=require('SceneZOI.Json');local P=require('SceneZOI.Protocol');local Sessions=require('SceneZOI.Sessions')
+local V=require('SceneZOI.DataValidation')
 local task_registry=dofile('tests/support/task-registry.lua')
 local function actor(id,body)return {id=tostring(id),body=body,GetEntityId=function()return {Value=id}end}end
 local a,b,c,d,e,f=actor(1,'male'),actor(2,'female'),actor(3,'male'),actor(4,'female'),actor(5,'male'),actor(6,'female')
 local actors={['1']=a,['2']=b,['3']=c,['4']=d,['5']=e,['6']=f}
 UE={UGameplayStatics={GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=1}end}end}}
-local node={id='test.hub',kind='loop',starting_hub=true,participants={first={body='male'},second={body='female'}},navigation={}}
+local node={id='test.hub',kind='loop',starting_hub=true,content_rating='GENERAL',
+ participants={first={body='male'},second={body='female'}},anchor_participant='first',tracks={},navigation={}}
 local data={metadata={tags={},actions={}},nodes={[node.id]=node},tasks=task_registry({})}
 local started,stopped,renewed,count,too_far,limit,API=nil,{},{},0,false,false,nil
 started={}
 package.loaded['SceneZOI.Traits']={capture=function(x)return {id=x.id,body=x.body}end}
 package.loaded['SceneZOI.DataFiles']={refresh=function()error('Add-on requests must reuse the startup declarations')end}
 package.loaded['SceneZOI.Catalog']={refresh=function()return data end,get_snapshot=function()return data end}
-package.loaded['SceneZOI.SceneSearch']={criteria=function(_,v)return v or {}end,allowed=function()return true end,
- find=function(_,_,people)return {{scene_id='test.hub',bindings={first=people[1].id,second=people[2].id}}}end,random=function(rows)return rows[1]end}
+local Search=require('SceneZOI.SceneSearch')
+package.loaded['SceneZOI.SceneSearch']={criteria=function(_,v)return v or {}end,allowed=Search.allowed,matches=Search.matches,
+ find=function(snapshot,_,people)
+  local rows={}
+  for id in pairs(snapshot.nodes)do rows[#rows+1]={scene_id=id,bindings={first=people[1].id,second=people[2].id}}end
+  return rows
+ end,random=function(rows)return rows[1]end}
 package.loaded['SceneZOI.Furniture']={}
 local player
 package.loaded['SceneZOI.Runtime']={actors=actors,
@@ -134,16 +141,27 @@ r=request('stop_session',{session_id='background.1'});assert(r.ok and stopped[#s
 local goal={{participant_id='5',task_id='charge'}}
 data.tasks=task_registry({charge={maximum=100}});node.tasks={first={charge={rate=1}}}
 r=request('start_at_hub',{initiator='5',participants={'5','6'},background=true,goals=goal});assert(not r.ok and r.code=='invalid_request'and Sessions.holder('5')==nil)
+r=request('start_at_hub',{initiator='5',participants={'5','6'},background=true,auto_restrictions={}})
+assert(not r.ok and r.code=='invalid_request'and Sessions.holder('5')==nil)
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'}});assert(not r.ok and r.code=='invalid_request','A plan needs goals or an end policy')
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='6',task_id='charge'}}});assert(not r.ok and r.code=='goal_unreachable','The data shows no scene can finish it')
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='5',task_id='nope'}}});assert(not r.ok and r.code=='task_not_found')
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals={{participant_id='9',task_id='charge'}}});assert(not r.ok and r.code=='participant_not_found')
 assert(Sessions.holder('5')==nil,'A refused plan holds nothing')
-r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals=goal,restrictions={allowed_content_ratings={'GENERAL'}},context={purpose='test'}})
-assert(r.ok and r.result.autonomous==true and r.result.stages==1 and r.result.scene_id=='test.hub')
+r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal,auto_restrictions={allowed_content_ratings={'EXPLICIT'}}})
+assert(r.ok and not r.result.valid and r.result.code=='no_matching_scenes'and Sessions.holder('5')==nil)
+r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},goals=goal,stages=4,stage_progress='fastest',
+ restrictions={allowed_content_ratings={'GENERAL'}},auto_restrictions={allowed_content_ratings={'GENERAL','SUGGESTIVE'}},
+ stage_priorities={{stage=1,matches={{allowed_content_ratings={'GENERAL'}}}}},variety_groups={['test.hub']='test.rest'},
+ post_completion_stay_seconds=6,skip_post_completion_stay_after_manual=true,context={purpose='test'}})
+assert(r.ok and r.result.autonomous==true and r.result.stages==4 and r.result.scene_id=='test.hub')
 API.tick(.5);depart();API.tick(.05)
 local planned=started['background.'..count];assert(planned.plan.goals[1].task_id=='charge'and planned.plan.end_policy.type=='goals'and planned.context.purpose=='test')
+assert(planned.plan.stage_progress=='fastest')
+assert(planned.plan.stage_priorities[1].matches[1].allowed_content_ratings[1]=='GENERAL')
+assert(planned.plan.variety_groups['test.hub']=='test.rest'and planned.plan.skip_post_completion_stay_after_manual==true)
 assert(planned.restrictions.allowed_content_ratings[1]=='GENERAL','Named restrictions become the session restrictions')
+assert(planned.plan.auto_restrictions.allowed_content_ratings[2]=='SUGGESTIVE'and not planned.restrictions.allowed_content_ratings[2],'Auto-only restrictions are plan state')
 assert(planned.default_length==false,'A plan has its own end')
 Sessions.release('background.'..count);started['background.'..count]=nil
 -- A timed plan is not cut short by the default deadline, and the deadline still has a ceiling.
@@ -160,12 +178,26 @@ assert(started['background.'..count].default_length==true and started['backgroun
 Sessions.release('background.'..count);started['background.'..count]=nil
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal});assert(r.ok and r.result.valid and Sessions.holder('5')==nil)
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals={{participant_id='6',task_id='charge'}}});assert(r.ok and r.result.valid==false and r.result.code=='goal_unreachable')
+local conditional=V.copy(node)
+conditional.id='test.conditional'
+conditional.tasks={second={charge={rate=1}}}
+conditional.task_completion_routes={second={charge=node.id}}
+conditional.navigation={}
+data.nodes[conditional.id]=conditional
+r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',scene_id=conditional.id,
+ goals={goal[1],{participant_id='6',task_id='charge'}}})
+assert(r.ok and r.result.valid and r.result.route_uncertain and Sessions.holder('5')==nil,'Conditional routes are disclosed in preflight')
+data.nodes[conditional.id]=nil
 -- Only the owner can switch a scene between automatic and manual.
 started['background.1']=started['background.1']or {}
 r=request('set_auto_mode',{session_id='background.1',enabled=false},'other.addon');assert(not r.ok and r.code=='session_not_owned')
 r=request('set_auto_mode',{session_id='background.1',enabled='no'});assert(not r.ok and r.code=='invalid_request')
 r=request('set_auto_mode',{session_id='background.1',enabled=false});assert(r.ok and r.result.auto_mode==false and started['background.1'].auto==false)
 assert(request('get_version').result.features.autonomous_stages==1)
+assert(request('get_version').result.features.autonomous_stage_progress==1)
+local planner_features=request('get_version').result.features
+assert(planner_features.autonomous_stage_priorities==1 and planner_features.autonomous_auto_restrictions==1)
+assert(planner_features.autonomous_joint_goal_routes==1 and planner_features.autonomous_manual_completion_exit==1)
 -- An add-on that comes back through another Zoi can still ask about its own request.
 local _,asked=request('list_sessions',{})
 serial=serial+1

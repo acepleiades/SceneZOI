@@ -8,9 +8,9 @@ local sequence = 0
 local request_fields = {"addon_id", "client_id", "request_id", "operation", "api_version", "expected_instance_id"}
 local argument_fields = {
     "participants", "initiator", "furniture_id", "scene_id", "search", "session_restrictions",
-    "bindings", "appearance", "body", "start_mode", "background", "placement", "lifetime", "goals", "restrictions",
-    "end_policy", "post_completion_stay_seconds", "task_progress_multiplier", "stages",
-    "required_stages", "stage_preferences", "auto_speed", "session_id", "participant_id",
+    "bindings", "appearance", "body", "start_mode", "background", "placement", "lifetime", "goals", "restrictions", "auto_restrictions",
+    "end_policy", "post_completion_stay_seconds", "skip_post_completion_stay_after_manual", "task_progress_multiplier", "stages", "stage_progress",
+    "required_stages", "stage_preferences", "stage_priorities", "variety_groups", "auto_speed", "session_id", "participant_id",
     "task_id", "enabled", "speed_index", "multiplier", "value", "amount", "rate_multiplier",
     "completion_hold", "request_id", "start_request_id", "origin_id", "radius_m",
     "include_unavailable", "reason", "events", "scope", "capabilities", "effect_id",

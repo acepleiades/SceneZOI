@@ -89,6 +89,18 @@ class MetadataTests(unittest.TestCase):
   doc={'schema_version':1,'id':'speech.tags','tags':[{'id':'speech.reverse_cowgirl','aliases':['speech.reverse_riding'],'description':'Custom speech classification.'}]}
   r=dictionaries(builtin_documents()+[('speech','tag_dictionary','example',doc)])
   self.assertEqual(r['tag_names']['speech.reverse_riding'],'speech.reverse_cowgirl')
+ def test_sexual_activity_is_optional_action_metadata(self):
+  actions=self.registry['actions']
+  self.assertEqual({a['id'] for a in actions.values() if a.get('sexual_activity')=='coital'},{'vaginal_sex'})
+  self.assertNotIn('sexual_activity',actions['holding_penis_at_base'])
+  self.assertNotIn('sexual_activity',actions['vaginal_toying'])
+  for invalid in ('unknown',None,[]):
+   docs=builtin_documents()
+   docs[1][3]['actions'][0]['sexual_activity']=invalid
+   with self.assertRaisesRegex(ValueError,'Unknown action sexual_activity'):dictionaries(docs)
+  docs=builtin_documents()
+  docs[0][3]['tags'][0]['sexual_activity']='non_penetrative'
+  with self.assertRaisesRegex(ValueError,'Only actions have sexual_activity'):dictionaries(docs)
  def test_descriptive_examples_and_removed_position_names(self):
   for key in ['doggy_style','doggystyle','reverse_cowgirl','mating_press','butterfly','spooning']:
    self.assertNotIn(key,self.registry['tag_names'])

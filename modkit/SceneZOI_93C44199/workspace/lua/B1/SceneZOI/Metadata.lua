@@ -2,6 +2,7 @@
 local V=require('SceneZOI.DataValidation')
 local J=require('SceneZOI.Json')
 local M={ratings={GENERAL=1,SUGGESTIVE=2,EXPLICIT=3}}
+local sexual_activities={non_penetrative=true,penetrative_non_coital=true,coital=true}
 function M.name(s)
  assert(type(s)=='string'and #s<=96,'Invalid metadata name')
  s=s:lower():match('^%s*(.-)%s*$'):gsub('[%s%-]+','_');V.id(s);return s
@@ -16,7 +17,7 @@ function M.dictionary(data,kind,owner)
  V.fields(data,{'schema_version','id',key},{'schema_version','id',key});assert(data.schema_version==1,'Unsupported metadata dictionary version');V.id(data.id);V.array(data[key],512)
  local out={}
  for _,d in ipairs(data[key])do
-  V.fields(d,{'id','aliases','description','content_rating','actor_description','target_description','performer_description','actor_requirements','target_requirements','addon_data'},key=='actions'and {'id','description','content_rating'}or {'id','description'})
+  V.fields(d,{'id','aliases','description','content_rating','sexual_activity','actor_description','target_description','performer_description','actor_requirements','target_requirements','addon_data'},key=='actions'and {'id','description','content_rating'}or {'id','description'})
   assert(d.id==M.name(d.id),'Canonical metadata IDs must be normalized');V.name(d.description)
   if owner and owner~='scenezoi'then assert(d.id:sub(1,#owner+1)==owner..'.','Custom metadata must use its owner namespace')end
   for _,alias in ipairs(d.aliases or {})do assert(alias==M.name(alias),'Dictionary aliases must use lowercase words separated by underscores')end
@@ -24,6 +25,10 @@ function M.dictionary(data,kind,owner)
   local value=V.copy(d);value.aliases=J.array(names(d.aliases))
   if key=='actions'then assert(M.ratings[d.content_rating],'Unknown action content_rating')
   else assert(d.content_rating==nil,'Only actions have content_rating')end
+  if d.sexual_activity~=nil then
+   assert(key=='actions','Only actions have sexual_activity')
+   assert(type(d.sexual_activity)=='string' and sexual_activities[d.sexual_activity],'Unknown action sexual_activity')
+  end
   for _,k in ipairs({'actor_description','target_description','performer_description'})do if d[k]then V.name(d[k])end end
   for _,k in ipairs({'actor_requirements','target_requirements'})do if d[k]then value[k]=names(d[k])end end
   if owner and owner~='scenezoi'then for _,alias in ipairs(value.aliases)do assert(alias:sub(1,#owner+1)==owner..'.','Custom aliases must use their owner namespace')end end

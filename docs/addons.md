@@ -69,7 +69,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 | Operation | Arguments / result |
 | --- | --- |
 | `get_version` | Returns API version, runtime build, host instance, features, the single focused-session limit (`maximum_sessions: 1`) and the NPC-only session limit (`maximum_npc_sessions`). |
-| `get_definitions` | Returns registered tags/actions, aliases, role descriptions, task definitions and the rating enum. |
+| `get_definitions` | Returns registered tags and actions, aliases, role descriptions, optional action `sexual_activity` metadata, task definitions and the rating enum. |
 | `get_scene` | `scene_id`; returns library metadata, role requirements, furniture and authored navigation. |
 | `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`, `furniture_pair_id`; returns all matches and count. |
 | `choose_random_scene` | Same inputs; returns one uniformly chosen match or JSON null, plus count. |
@@ -248,7 +248,8 @@ Disjoint pairs on the same sofa can host separate sessions. See
 Use `scene_id` to pin the initial
 node, or let SceneZOI select an eligible entry. `search` filters entry candidates.
 `restrictions` applies throughout the session, including authored transitions,
-completion routes and manual takeover. `placement` and `lifetime` use the
+completion routes and manual takeover. `auto_restrictions` adds another filter
+while Auto-mode is on. `placement` and `lifetime` use the
 [background start fields](#concurrent-and-background-sessions).
 
 | Plan field | Meaning |
@@ -256,10 +257,15 @@ completion routes and manual takeover. `placement` and `lifetime` use the
 | `goals` | Up to 16 `{participant_id, task_id, completions}` entries. Use an installed task ID from `get_definitions` and a roster member's ID. Each participant/task pair can appear once. `completions` is an integer from 1 to 100, defaults to 1, and counts new completions in this session. |
 | `end_policy` | `{type:'goals'}` (default with goals), `{type:'duration', seconds, clock}` with 1–7,200 seconds and `clock` set to `game` (default) or `real`, or `{type:'addon'}`. Required without goals. |
 | `post_completion_stay_seconds` | Optional time at Normal game speed, from 0 to 7,200 seconds. Fractional values are allowed and the default is 0. For the `goals` end policy, the timer starts when all goals and required stages are met. It follows inZOI's native time controls, runs alongside authored completion responses, and pauses when the game is paused or Auto-mode is off. |
+| `skip_post_completion_stay_after_manual` | For the `goals` end policy, set `true` to waive the stay when the last outstanding goal completes while Auto-mode is off. Default `false`. Check `features.autonomous_manual_completion_exit` before passing it. |
 | `task_progress_multiplier` | 0.1-5, default 1. Scales positive task rates under the plan. |
 | `stages` | A positive integer or `{min, max}`, up to 16. Default 1. Chosen once and returned in the accepted response. |
+| `stage_progress` | With goals, use `"fastest"` to advance stages on the most advanced goal or `"slowest"` to use the least advanced goal (default). Check `features.autonomous_stage_progress` before passing it. |
 | `required_stages` | Up to 16 `{stage?, match}` entries. Each scene query in `match` must match a loop that actually plays under Auto-mode. Omit `stage` to match any stage. A numbered stage must exist for every possible count. |
 | `stage_preferences` | Up to 16 ordered `{from?, to?, match}` entries that rank eligible loops. `from` defaults to 0 and `to` defaults to 1. The first stage is at fraction 0 and the last at 1, evenly spaced. A one-stage plan is at 0. |
+| `stage_priorities` | Optional list of 1–16 `{stage, matches}` entries. Each stage is a unique integer that must exist for every possible stage count. The 1–16 ordered scene queries in `matches` specify which loops to prefer first and which to try next. Stages without an entry use general selection. Check `features.autonomous_stage_priorities`. |
+| `variety_groups` | Up to 256 entries mapping scene IDs to group IDs, using the same lowercase identifier format. Use a shared group ID for loops representing the same position or activity. Scenes without a group use their own scene ID. Used with `stage_priorities`. |
+| `auto_restrictions` | Optional [scene search criteria](#search-and-session-restrictions) for automatic entry, navigation, transitions and task-completion routes. Lifetime restrictions also apply. Check `features.autonomous_auto_restrictions`. |
 | `auto_speed` | `true` or omitted uses 1.0× in a one-stage plan and steps from 0.5× to 2.0× across multiple stages. Set `false` to keep manual speed control, or supply `{start, finish}` from 0.5 to 2.0. Each stage selects the nearest player preset to its interpolated speed. Ties select the faster preset. Task rates use game time. |
 
 ### Timed start with bundled content
@@ -299,9 +305,37 @@ preflight leaves the roster and furniture available to other starts.
    the event, query `get_session_result` with the session ID while the host still
    retains the result.
 
-The planner follows authored navigation edges and transitions. It uses the
-slowest goal's progress to advance stages. A goal's progress is its completed
-count plus the current meter fraction, divided by its requested count. A goal
+On hosts with `features.autonomous_joint_goal_routes`, goal preflight checks that
+one route can complete all goals. For example, two mutually exclusive branches
+that each finish a different goal cannot establish a viable route. A bounded
+search or a conditional completion route can still report `route_uncertain` in
+preflight and start replies. When candidates match the same number of required
+stages, a proven route takes priority over an uncertain one.
+
+The planner finds a path through the pack's navigation links. It starts the
+destination as soon as it is ready, playing every one-shot transition on the
+chosen path in order. Loops used only to connect the path, such as an idle menu,
+are skipped. For example, `stages: 4` with `stage_progress: "fastest"` makes stages two through four
+due at 25%, 50% and 75% of the leading goal. The stage also selects the
+automatic speed preset. A goal-based end still waits for every goal.
+Use `stage_preferences` with scene metadata to favor opening loops at
+`from: 0, to: 0` and closing loops at `from: 1, to: 1`.
+
+Use `stage_priorities` when the order of those choices matters. For each stage,
+the planner tries the first query that has a reachable loop with a viable route
+to the outstanding goals. Eligible loops matching none of the queries are a
+fallback. Within the best available tier, it favors groups that have yet to play.
+Only loop playback counts toward its group. Scene IDs
+distinguish loops by default. For example, pass
+`"variety_groups": {"author.loop_a": "author.position_a", "author.loop_b": "author.position_a"}`
+to count both alternatives as the same position. The current loop is eligible
+too, so it can continue when it is the only suitable choice in that tier.
+Connect your activities with navigation links. If you want Auto-mode to play
+a transition between two activities, put the one-shot on the shortest navigation
+path between them. A shorter direct link can bypass it.
+
+A goal's progress is its completed count plus the current meter fraction,
+divided by its requested count. A goal
 at 100% still needs the task engine's completion event to count as satisfied.
 The goal uses the current scene's task definition. If a new scene resolves the
 same task ID to another definition, the meter keeps its percentage and
@@ -326,6 +360,7 @@ Background deadlines and owner leases run independently of the plan clocks.
 | Add-on stays at the milestone without stopping | `owner_expired` | `wait_expired` after 300 seconds of active waiting |
 | Nothing advanced for 90 seconds, including a completion hold that never lifts | `no_progress` | `no_progress` |
 | Caps or restrictions left no route | `goal_unreachable` or `required_stage_unavailable` | same |
+| Auto-mode resumed on a restricted loop and could not reach an eligible one | `scene_restricted` | same |
 | Playback budget of 7,200 seconds | `playback_budget_exceeded` | same |
 
 Copied snapshots carry `plan` with `auto_mode`, `state`, `outcome`, `goals`
@@ -349,12 +384,25 @@ the scene active longer. Check `get_version.features.autonomous_post_completion_
 before sending this field to an older framework. Explicit stops and lifetime
 limits still take effect during the stay.
 
+With `skip_post_completion_stay_after_manual: true`, resuming Auto-mode
+after completing the last outstanding goal in manual mode waives the stay.
+Active authored responses and transitions still settle before exit. A timer
+already in progress before Auto-mode was disabled resumes normally.
+
 A session with a plan shows an **Auto-mode** toggle in its panel, and an owner can
 call `set_auto_mode` with `session_id` and `enabled`. While it is on, manual and
 `navigate_to_scene` navigation is refused with `navigation_locked`. Off keeps the
 node, tasks, goals and restrictions, and suspends automatic navigation, automatic preset selection,
-the task progress multiplier, the plan clock and planned Exit. The current speed preset carries over and the speed buttons become available. While the plan selects the speed, the panel shows that preset and `set_speed` returns `speed_locked`. Stage credit is earned only
+the task progress multiplier, automatic holds on fulfilled tasks, the plan clock and
+planned Exit. The current speed preset carries over and the speed buttons become available. While the plan selects the speed, the panel shows that preset and `set_speed` returns `speed_locked`. Stage credit is earned only
 under Auto-mode. Turning it back on re-evaluates from the current state.
+
+If Auto-mode resumes on a loop rejected by `auto_restrictions`, task progress
+pauses on that loop while the planner looks for an eligible destination.
+A manual transition rejected by those criteria returns `scene_restricted`
+when the owner attempts to re-enable Auto-mode. Retry after the transition
+finishes. If the criteria block an automatic task-completion redirect, its
+ordinary completion effects can still play.
 
 SceneZOI verifies technical eligibility. The add-on that starts an autonomous scene
 decides who agrees to what, including age and consent rules for its content.
@@ -363,8 +411,10 @@ decides who agrees to what, including age and consent rules for its content.
 
 `search` selects the initial scene. `session_restrictions` is a separate,
 session-owned copy controlling every scene that may play afterward.
+Autonomous starts can also pass `auto_restrictions`, which applies only while
+Auto-mode is on.
 
-Both use the same criteria:
+These fields use the same criteria:
 
 | Field | Meaning |
 | --- | --- |

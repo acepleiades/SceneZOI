@@ -44,6 +44,8 @@ refused({end_policy={type='duration',seconds=10,clock='wall'}},'Invalid plan clo
 refused({end_policy={type='duration',seconds=99999}},'Invalid')
 refused({goals={goal_lead},task_progress_multiplier=0},'Invalid')
 refused({goals={goal_lead},task_progress_multiplier=9},'Invalid')
+refused({goals={goal_lead},stage_progress='average'},'Invalid stage progress')
+refused({end_policy={type='duration',seconds=5},stage_progress='fastest'},'Stage progress requires goals')
 assert(spec_of({goals={goal_lead}}).end_policy.type=='goals','Goals end on goals by default')
 assert(spec_of({end_policy={type='duration',seconds=5}}).end_policy.clock=='game','Game time is the default clock')
 assert(spec_of({goals={goal_lead}}).goals[1].completions==1,'One completion by default')
@@ -84,24 +86,20 @@ local function step(s,count,dt,scale)
    if action.event then actions[#actions+1]=action.event end
    if action.stop then actions.stop=action.stop;return action end
    if action.navigate then
-    local target
-    for _,edge in ipairs(s.node.navigation)do if edge.id==action.navigate then target=edge.target end end
-    s.node=assert(nodes[target],'A plan navigates only along authored edges');s.revision=s.revision+1;actions.navigations=actions.navigations+1
+    s.node=assert(nodes[action.navigate],'A plan navigates to a declared playback node')
+    s.revision=s.revision+1;actions.navigations=actions.navigations+1
    end
   end
  end
 end
-local dwell=C.plan_min_dwell_seconds
+local frame=.016
 
--- A goal plan leaves a node that moves nothing, then ends once the goal is met.
+-- A goal plan immediately leaves a node that moves nothing, then ends once the goal is met.
 local s=session({goals={goal_lead}});assert(Plan.locked(s),'Manual navigation is refused while a plan drives')
-step(s,1,dwell+.1);assert(s.node.id=='both'or s.node.id=='light','A motionless hub is left after the dwell')
+step(s,1,frame);assert(s.node.id=='both'or s.node.id=='light','A motionless hub is left on the first tick')
 step(s,30,1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
 local snap=Plan.snapshot(s);assert(snap.goals[1].satisfied and snap.goals[1].completed==1 and snap.goals[1].requested==1 and snap.state=='finished')
 assert(not Plan.locked(s))
-
--- Minimum dwell: nothing moves on before it.
-s=session({goals={goal_lead}});step(s,1,dwell*.5);assert(s.node.id=='hub'and actions.navigations==0,'Rapid switching is avoided')
 
 -- A cap stops a goal: the plan moves to a node that can finish it.
 s=session({goals={goal_partner}},'light')
@@ -111,7 +109,7 @@ assert(s.node.id=='both','Reassessed once the cap stopped the goal')
 step(s,20,1);assert(actions.stop=='ok'and s.tasks.participants['2'].charge.completions==1)
 
 -- Least-progressed first: at the hub both are at zero and the finishing node wins.
-s=session({goals={goal_lead,goal_partner}});step(s,1,dwell+.1);assert(s.node.id=='both')
+s=session({goals={goal_lead,goal_partner}});step(s,1,frame);assert(s.node.id=='both')
 
 -- Repeated completions count, and progress is continuous across a reset.
 s=session({goals={{participant_id='1',task_id='charge',completions=2}}},'both')
@@ -126,13 +124,15 @@ assert(Tasks.inspect(s.tasks,s)[1].plan_rate_multiplier==2)
 s.plan.auto_mode=false;step(s,1,1);assert(s.tasks.participants['1'].charge.value==70,'A manual takeover removes the plan multiplier')
 
 -- A stalled plan ends instead of playing forever. Decay never counts as progress.
-s=session({goals={goal_lead}},'still');s.plan.dwell=-1e9
-step(s,math.floor(C.plan_no_progress_seconds)+2,1);assert(actions.stop=='no_progress'and s.plan.outcome=='no_progress')
+s=session({goals={goal_lead}},'both');s.tasks.participants['1'].charge.value=100
+local stalled
+for _=1,math.floor(C.plan_no_progress_seconds)+2 do stalled=Plan.tick(s,1,1) or stalled end
+assert(stalled.stop=='no_progress'and s.plan.outcome=='no_progress')
 -- Caps and restrictions can leave nothing to do: end cleanly rather than switch forever.
-s=session({goals={goal_lead}},'still');step(s,1,dwell+.1);assert(actions.stop=='goal_unreachable')
+s=session({goals={goal_lead}},'still');step(s,1,frame);assert(actions.stop=='goal_unreachable')
 nodes.both.content_rating='EXPLICIT'
 s=session({goals={goal_partner}},'light');s.session_restrictions={allowed_content_ratings={'GENERAL'}}
-step(s,6,1);step(s,1,dwell);assert(actions.stop=='goal_unreachable','A restriction is never relaxed to rescue a run')
+step(s,6,1);assert(actions.stop=='goal_unreachable','A restriction is never relaxed to rescue a run')
 nodes.both.content_rating='GENERAL'
 
 -- Clocks: at 3x a game-time plan finishes in a third of the real time; a real-time plan does not.
@@ -162,11 +162,11 @@ step(s,3,1);assert(#actions==1,'The milestone is published once')
 assert(s.tasks.participants['1'].charge.value==0 and Plan.frozen(s,'1','charge'),'A fulfilled task does not complete again')
 assert(Tasks.inspect(s.tasks,s)[1].effective_rate==0)
 assert(s.tasks.participants['2'].charge.value>0,'Others are unaffected')
-local before=s.node;step(s,2,dwell);assert(s.node==before and not actions.stop,'The last loop holds while the add-on decides')
+local before=s.node;step(s,2,frame);assert(s.node==before and not actions.stop,'The last loop holds while the add-on decides')
 -- An owner that never calls stop does not hold the scene forever.
 step(s,math.floor(C.plan_wait_seconds)+2,1);assert(actions.stop=='owner_expired'and s.plan.outcome=='wait_expired')
 -- An add-on plan with neither goals nor a timer stays where it is.
-s=session({end_policy={type='addon'}},'still');step(s,2,dwell);assert(s.node.id=='still'and not actions.stop)
+s=session({end_policy={type='addon'}},'still');step(s,2,frame);assert(s.node.id=='still'and not actions.stop)
 
 -- A transition plays out: the clock counts it, nothing navigates or ends during it.
 s=session({end_policy={type='duration',seconds=2}},'still');s.node={id='t',kind='transition',destination='still',participants=s.node.participants}
@@ -177,7 +177,7 @@ s=session({goals={goal_lead}},'both');s.completion_effects={motion={}};step(s,12
 s.completion_effects=nil;step(s,1,1);assert(actions.stop=='ok')
 
 -- A fractional stay overlaps the response and follows changes to native game speed.
-s=session({goals={goal_lead},post_completion_stay_seconds=2.5},'both')
+s=session({goals={goal_lead},post_completion_stay_seconds=2.5,skip_post_completion_stay_after_manual=true},'both')
 s.completion_effects={motion={}}
 step(s,5,1,2)
 assert(s.plan.state=='resolving' and not actions.stop)
@@ -207,6 +207,8 @@ s=session({end_policy={type='addon'}},'still');step(s,1,C.plan_max_playback_seco
 -- While a finished scene resolves its completion response, a fulfilled task must not complete again.
 s=session({goals={goal_lead}},'both');s.completion_effects={motion={}};step(s,30,1)
 assert(s.tasks.participants['1'].charge.completions==1 and s.plan.state=='resolving','No extra completion while waiting to end')
+assert(Plan.set_auto(s,false) and not Plan.frozen(s,'1','charge'),'Manual control releases plan task holds')
+step(s,10,1);assert(s.tasks.participants['1'].charge.completions==2 and not actions.stop)
 
 -- Stages: the count is chosen once, from the requested range, and reported.
 local function plan_spec(args)local spec=spec_of(args);spec.seed=11;return spec end
@@ -230,11 +232,19 @@ end
 s=at(80,35);step(s,2,.001);assert(s.plan.stage==2,'80% and 35% of their goals is stage 2')
 s=at(90,25);step(s,2,.001);assert(s.plan.stage==2,'Exactly 25% means the next stage is due')
 s=at(90,24.9);step(s,1,.001);assert(s.plan.stage==1)
+-- The fastest goal can drive the speed and stage while the other goal is still open.
+s=staged({goals={goal_lead,goal_partner},stages=4,stage_progress='fastest'},'both',4)
+s.tasks.participants['2'].charge.value=25
+step(s,1,.001)
+assert(s.plan.stage==2 and Plan.speed_index(s)==2,'The leading partner sets the stage and speed')
+s.tasks.participants['2'].charge.completions=1
+for _=1,8 do step(s,1,.001)end
+assert(s.plan.stage==4 and Plan.speed_index(s)==4 and not actions.stop,'One completion advances the stages while the other goal stays open')
 -- Decay cannot move a stage back.
 s=at(80,35);step(s,2,.001);assert(s.plan.stage==2);s.tasks.participants['2'].charge.value=1;step(s,3,.001);assert(s.plan.stage==2,'Once entered, a stage is kept')
 -- Several boundaries at once are entered one at a time, each with a playing update.
 s=at(99,99);local stages={}
-for _=1,8 do s.plan.dwell=dwell;step(s,1,.001);stages[#stages+1]=s.plan.stage end
+for _=1,8 do step(s,1,.001);stages[#stages+1]=s.plan.stage end
 assert(s.plan.stage==4,'Queued stages are all reached')
 local jumps=0;for i=2,#stages do local d=stages[i]-stages[i-1];assert(d<=1,'One stage per playing update');jumps=jumps+d end
 -- Required stages: a selector must have its loop actually play.
@@ -258,16 +268,16 @@ s.node={id='t',kind='transition',destination='c',content_rating='EXPLICIT',parti
 -- A goal met early still has to play what is required.
 s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'c');s.tasks.participants['1'].charge.value=99.9
 step(s,1,1);assert(s.tasks.participants['1'].charge.completions==1 and not actions.stop,'Not done until the required stage has played')
-step(s,1,dwell);assert(s.node.id=='b','It moves to the loop the requirement needs')
+assert(s.node.id=='b','It moves to the loop the requirement needs immediately')
 step(s,1,.5);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
 -- Fast progress does not pass a stage whose required loop has not played while there is a way to it: the stage
 -- stays until that loop plays, then the next one is entered.
 s=staged({goals={goal_lead,goal_partner},stages=3,required_stages={{stage=1,match=suggestive}}},'a',3)
 s.tasks.participants['1'].charge.value=50;s.tasks.participants['2'].charge.value=50
-step(s,3,.001);assert(not actions.stop and s.plan.stage==1,'Progress before the dwell does not skip the required stage')
-step(s,1,dwell);assert(s.node.id=='b','It goes to the loop the stage needs')
-step(s,1,.001);assert(s.plan.required_stages[1].met,'and plays it')
-s.plan.dwell=dwell;step(s,1,.001);assert(s.plan.stage==2 and not actions.stop,'then the next stage is entered')
+step(s,1,frame)
+assert(not actions.stop and s.plan.stage==1 and s.node.id=='b','Enter the required loop before advancing, even when the next stage is already due')
+step(s,1,frame)
+assert(s.plan.required_stages[1].met and s.plan.stage==2 and not actions.stop,'Playing the required loop lets the next stage begin')
 -- With no way to the required loop, the safety stop still ends the plan.
 node('island',{lead=full(1),partner=full(1)},{},{content_rating='GENERAL'})
 s=staged({goals={goal_lead,goal_partner},stages=3,required_stages={{stage=1,match=suggestive}}},'island',3)
@@ -278,19 +288,91 @@ local preference={{from=0,to=.4,match=suggestive},{from=.6,to=1,match=explicit}}
 local early=plan_spec({goals={goal_lead},stages=4,stage_preferences=preference});early.stage_count=4
 assert(Plan.pick_entry(data,early,{row('a'),row('b'),row('c')},people,{}).scene_id=='b','Early in the plan the early preference wins')
 s=staged({goals={goal_lead,goal_partner},stages=4,stage_preferences=preference},'b',4);s.plan.stage=4
-assert(Plan.route(s,s.plan)=='to.c','Late in the plan the late preference wins')
+assert(Plan.route(s,s.plan)=='c','Late in the plan the late preference wins')
+-- Ordered stage choices are stronger than goal score and fall through when needed.
+local goals={goal_lead,goal_partner}
+local ordered_start={{stage=1,matches={suggestive,explicit}}}
+refused({goals=goals,stage_priorities={}},'Stage priorities need')
+refused({goals=goals,stages=2,stage_priorities={{stage=2,matches={}}}},'needs at least one match')
+refused({goals=goals,stages={min=1,max=2},stage_priorities={{stage=2,matches={explicit}}}},'Invalid numeric value')
+refused({goals=goals,stage_priorities={ordered_start[1],ordered_start[1]}},'Duplicate stage priority')
+node('priority.open',{lead=full(1),partner=capped(1,50)},{'c'},{content_rating='SUGGESTIVE'})
+assert(picked({goals=goals,stage_priorities=ordered_start},{row('priority.open'),row('c')}).scene_id=='priority.open')
+assert(picked({goals=goals,stage_priorities=ordered_start},{row('c'),row('a')}).scene_id=='c','Try the next match when the first has no candidates')
+assert(picked({goals=goals,stage_priorities=ordered_start,required_stages={{stage=1,match=explicit}}},{row('b'),row('c')}).scene_id=='c',
+ 'An ordered preference cannot override a mandatory stage')
+
+-- A different authored position wins within the best tier. The current loop
+-- stays available even when the graph offers a lower-ranked unplayed loop.
+rated('closing.first','EXPLICIT',{'closing.copy','closing.second','closing.fallback'})
+rated('closing.copy','EXPLICIT',{'closing.first'})
+rated('closing.second','EXPLICIT',{'closing.first'})
+rated('closing.fallback','SUGGESTIVE',{'closing.first'})
+local function last_stage(start)
+ local out=staged({goals=goals,stages=4,stage_priorities={{stage=4,matches={explicit,suggestive}}},
+  variety_groups={['closing.first']='position.one',['closing.copy']='position.one'}},start,4)
+ out.plan.stage=3
+ out.tasks.participants['1'].charge.value=75
+ out.tasks.participants['2'].charge.value=75
+ return out
+end
+s=last_stage('closing.first')
+step(s,1,.01)
+assert(s.plan.stage==4 and s.node.id=='closing.second','An unplayed position beats a different loop in a played position')
+nodes['closing.first'].navigation={{id='fallback',target='closing.fallback'}}
+s=last_stage('closing.first')
+step(s,2,.01)
+assert(s.plan.stage==4 and s.node.id=='closing.first' and actions.navigations==0,'Keep the only suitable closing loop')
+node('priority.interlude',nil,{'closing.first'},{content_rating='SUGGESTIVE'})
+nodes['closing.first'].navigation={{id='interlude',target='priority.interlude'}}
+s=last_stage('closing.first')
+s.plan.stage_priorities[1].matches={suggestive,explicit}
+step(s,1,.01)
+assert(s.node.id=='priority.interlude','A preferred stage loop can lead to another loop that completes the goals')
+step(s,1,frame)
+assert(s.node.id=='closing.first','Goal recovery leaves the interlude when it has played')
+
+-- Preflight and playback require one directed route that covers both goals.
+node('joint.hub',nil,{'joint.first','joint.last'})
+node('joint.first',{lead=full(1)},{},{content_rating='SUGGESTIVE'})
+node('joint.last',{partner=full(1)},{},{content_rating='EXPLICIT'})
+ok,err=pcall(picked,{goals=goals},{row('joint.hub')})
+assert(not ok and tostring(err):find('goal_unreachable',1,true),'Mutually exclusive one-way branches cannot be combined')
+nodes['joint.first'].navigation={{id='finish.other',target='joint.last'}}
+local joint_spec=spec_of({goals=goals})
+assert(Plan.pick_entry(data,joint_spec,{row('joint.hub')},people,{}).scene_id=='joint.hub'and not joint_spec.route_uncertain,
+ 'A directed route can complete one goal and then the other')
+s=session({goals=goals,stage_priorities={{stage=1,matches={explicit,suggestive}}}},'joint.hub')
+step(s,1,frame)
+assert(s.node.id=='joint.first','The preferred one-way dead end cannot strand an open goal')
+s.tasks.participants['1'].charge.completions=1
+step(s,1,frame)
+assert(s.node.id=='joint.last','After the first goal, the route can enter the last loop')
+
+-- Excluded intermediate nodes cannot be used to reach an allowed loop.
+node('auto.hub',nil,{'auto.blocked','auto.finish'},{content_rating='GENERAL'})
+node('auto.blocked',nil,{'auto.finish'},{content_rating='EXPLICIT'})
+node('auto.finish',{lead=full(1),partner=full(1)},{'auto.hub'},{content_rating='GENERAL'})
+local auto_filter={allowed_content_ratings={'GENERAL'}}
+local auto_spec=spec_of({goals=goals,auto_restrictions=auto_filter})
+assert(Plan.pick_entry(data,auto_spec,{row('auto.hub')},people,{}).scene_id=='auto.hub')
+s=session({goals=goals,auto_restrictions=auto_filter},'auto.blocked')
+step(s,1,.01)
+assert(s.node.id=='auto.finish','Resuming Auto leaves the restricted manual loop via a permitted edge')
+nodes['auto.hub'].navigation={{id='blocked',target='auto.blocked'}}
+ok,err=pcall(Plan.pick_entry,data,auto_spec,{row('auto.hub')},people,{})
+assert(not ok and tostring(err):find('goal_unreachable',1,true),'Auto-only restrictions apply to the complete route')
 -- A stage change prefers a different loop, and keeps the current one when it is the only choice.
 s=staged({goals={goal_lead,goal_partner},stages=2},'a',2)
-s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49;s.plan.dwell=dwell;step(s,2,1)
+s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49;step(s,2,1)
 assert(s.plan.stage==2 and s.node.id~='a','A new stage plays a different loop')
 s=session({end_policy={type='duration',seconds=10},stages=2},'still');s.plan.stage_count=2
 step(s,12,.5);assert(s.plan.stage==2 and s.node.id=='still','The only loop is reused')
--- A route through a hub keeps its destination: it does not fall back to the loop it just left.
+-- Nodes that only connect the route are bypassed when the stage changes.
 node('x',{lead=full(1),partner=full(1)},{'h'});node('h',nil,{'x','y'});node('y',{lead=full(1),partner=capped(1,50)},{'h'})
 s=staged({goals={goal_lead,goal_partner},stages=2},'x',2)
 s.tasks.participants['1'].charge.value=49;s.tasks.participants['2'].charge.value=49
-s.plan.dwell=dwell;step(s,1,1);assert(s.plan.stage==2 and s.node.id=='h','Through the hub')
-s.plan.dwell=dwell;step(s,1,.1);assert(s.node.id=='y','On to the different loop, not back to x')
+step(s,1,1);assert(s.plan.stage==2 and s.node.id=='y' and actions.navigations==1,'A route through the hub goes straight to the destination')
 -- A timed plan with no goals divides its duration evenly across stages.
 s=session({end_policy={type='duration',seconds=8},stages=4},'a');s.plan.stage_count=4
 step(s,3,1);assert(s.plan.stage==2);step(s,2,1);assert(s.plan.stage==3,'Even division of the duration')
@@ -306,7 +388,7 @@ s=session({end_policy={type='addon'},auto_speed=false},'still');assert(Plan.spee
 s=session({goals={goal_lead},task_progress_multiplier=2,end_policy={type='duration',seconds=100}},'hub')
 assert(Plan.set_auto(s,false)and not Plan.locked(s),'Off frees manual navigation')
 assert(not Plan.set_auto(s,false),'A repeat changes nothing')
-step(s,1,dwell+1);assert(s.node.id=='hub'and actions.navigations==0 and s.plan.game_used==0,'No automatic navigation and a stopped clock')
+step(s,1,10);assert(s.node.id=='hub'and actions.navigations==0 and s.plan.game_used==0,'No automatic navigation and a stopped clock')
 s.node=nodes.both;step(s,1,1);assert(s.tasks.participants['1'].charge.value==10,'No plan multiplier while manual')
 assert(Plan.speed_index(s)==nil)
 assert(Plan.set_auto(s,true)and Plan.locked(s));step(s,1,1);assert(s.tasks.participants['1'].charge.value==30 and s.plan.game_used==1,'Back on, the plan resumes')
@@ -314,6 +396,31 @@ assert(Plan.set_auto(s,true)and Plan.locked(s));step(s,1,1);assert(s.tasks.parti
 s=session({goals={goal_lead}},'both');Plan.set_auto(s,false)
 step(s,10,1);assert(s.tasks.participants['1'].charge.completions==1 and not actions.stop)
 Plan.set_auto(s,true);step(s,1,.1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
+
+local manual_stay={goals={goal_lead,goal_partner},post_completion_stay_seconds=6,skip_post_completion_stay_after_manual=true}
+s=session(manual_stay,'both')
+s.tasks.participants['1'].charge.completions=1
+assert(Plan.set_auto(s,false))
+step(s,10,1);assert(s.tasks.participants['2'].charge.completions==1 and not actions.stop)
+assert(Plan.set_auto(s,true))
+assert(Plan.frozen(s,'2','charge'),'Resuming a completed plan holds the goal before task updates')
+s.completion_effects={motion={}}
+step(s,1,.1);assert(not actions.stop,'Re-enabling Auto still lets the completion response settle')
+s.completion_effects=nil
+s.node={id='t',kind='transition',destination='both',participants=s.node.participants}
+step(s,1,.1);assert(not actions.stop,'Re-enabling Auto still lets a transition end')
+s.node=nodes.both
+step(s,1,.1);assert(actions.stop=='ok' and s.plan.outcome=='goals_met','The last goal completed in manual mode waives the stay')
+
+s=session(manual_stay,'both')
+assert(Plan.set_auto(s,false));step(s,5,1);assert(Plan.set_auto(s,true))
+step(s,5,1);assert(not actions.stop,'Completing the goals after re-enabling Auto starts the ordinary stay')
+step(s,6,1);assert(actions.stop=='ok')
+
+s=session({goals={goal_lead,goal_partner},post_completion_stay_seconds=6},'both')
+assert(Plan.set_auto(s,false));step(s,10,1);assert(Plan.set_auto(s,true))
+step(s,1,1);assert(not actions.stop,'The stay is preserved for existing callers')
+step(s,6,1);assert(actions.stop=='ok')
 -- A meter held at its maximum still needs a real completion: the plan waits, within the no-progress window.
 s=session({goals={goal_lead}},'both');s.tasks.participants['1'].charge.value=100
 for _=1,math.floor(C.plan_no_progress_seconds)-2 do assert(not Plan.tick(s,1,1),'A completion hold is not a dead end') end
@@ -331,10 +438,10 @@ ok,err=pcall(picked,{goals={goal_lead},required_stages={{match=suggestive}}},{ro
 assert(not ok and tostring(err):find('required_stage_unavailable',1,true),'Two dead ends cannot both be played')
 assert(pcall(picked,{goals={goal_lead},required_stages={{match=suggestive}}},{row('gate')}),'Finishing first and then going there is viable')
 -- It finishes the goal first when the required loop has no way back.
-s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'gate');step(s,1,dwell+.1)
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'gate');step(s,1,frame)
 assert(s.node.id=='fin','A dead-end requirement waits for the goal')
-step(s,10,1);assert(s.tasks.participants['1'].charge.completions==1 and s.node.id=='fin')
-s.plan.dwell=dwell;step(s,1,.1);assert(s.node.id=='dead','Then it plays what was required')
+step(s,9,1);assert(s.node.id=='fin')
+step(s,1,1);assert(s.tasks.participants['1'].charge.completions==1 and s.node.id=='dead','It moves to the required scene as soon as the goal completes')
 step(s,1,.1);assert(actions.stop=='ok'and s.plan.outcome=='goals_met')
 -- Reachable only through a completion route: possible, not provable, and reported as such.
 node('door',{lead=capped(10,50),partner=capped(10,50)},{},{task_completion_routes={charge={lead='late'}}});node('late',{lead=full(),partner=full()},{})
@@ -342,9 +449,9 @@ spec=plan_spec({goals={goal_lead}});assert(Plan.pick_entry(data,spec,{row('door'
 -- With neither goals nor a timer the plan cannot pass its first stage.
 refused({end_policy={type='addon'},stages=2,required_stages={{stage=2,match=suggestive}}},'required_stage_unavailable')
 -- Authored responses resolve before anything moves on.
-s=session({goals={goal_lead}});s.completion_effects={shakes={['1']={}}};step(s,1,dwell+.1);assert(s.node.id=='hub','A shake holds navigation')
-s.completion_effects=nil;s.voice_responses={channels={['1']={}}};step(s,1,dwell+.1);assert(s.node.id=='hub','A voice response holds navigation')
-s.voice_responses=nil;step(s,1,dwell+.1);assert(s.node.id~='hub')
+s=session({goals={goal_lead}});s.completion_effects={shakes={['1']={}}};step(s,1,frame);assert(s.node.id=='hub','A shake holds navigation')
+s.completion_effects=nil;s.voice_responses={channels={['1']={}}};step(s,1,frame);assert(s.node.id=='hub','A voice response holds navigation')
+s.voice_responses=nil;step(s,1,frame);assert(s.node.id~='hub')
 s=session({goals={goal_lead},end_policy={type='addon'}},'both');s.completion_effects={motion={}};step(s,12,1)
 assert(#actions==0 and s.plan.state=='resolving','The milestone waits for the response')
 s.completion_effects=nil;step(s,1,1);assert(actions[1]=='plan_goals_met')
@@ -357,10 +464,16 @@ assert(actions.stop=='ok'and s.plan.outcome=='duration_elapsed')
 -- A capped goal gets a loop that can move it, even while another goal is still advancing.
 s=session({goals={goal_lead,goal_partner}},'light');step(s,6,1);assert(s.node.id=='both','Reassessed for the goal the cap stopped')
 -- A required loop is visited before the final completion where possible.
-s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'a');step(s,1,dwell+.1)
+s=staged({goals={goal_lead},required_stages={{match=suggestive}}},'a');step(s,1,frame)
 assert(s.node.id=='b'and s.tasks.participants['1'].charge.completions==0,'The required loop comes first')
--- Rapid boundary crossings do not flip through loops.
-s=at(99,99);step(s,8,.016);assert(actions.navigations==0,'Navigation waits for the dwell')
+-- Split goals must not send the planner back and forth as their relative progress changes.
+node('focus.lead',{lead=full()},{'focus.partner'})
+node('focus.partner',{partner=full()},{'focus.lead'})
+s=session({goals={goal_lead,goal_partner}},'focus.lead')
+step(s,60,frame)
+assert(actions.navigations==0 and s.node.id=='focus.lead','Hold the useful loop until its goal is complete')
+step(s,10,1)
+assert(s.node.id=='focus.partner' and actions.navigations==1,'Advance immediately once the remaining goal needs a different loop')
 -- Any goal rising resets the stall timer, even while another one decays.
 s=session({goals={goal_lead,goal_partner}},'both')
 for i=1,65 do s.tasks.participants['1'].charge.value=i;s.tasks.participants['2'].charge.value=60-i*.9;assert(not Plan.tick(s,1.4,1)or actions.stop==nil) end
