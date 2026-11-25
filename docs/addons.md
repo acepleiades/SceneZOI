@@ -69,6 +69,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 | Operation | Arguments / result |
 | --- | --- |
 | `get_version` | Returns API version, runtime build, host instance, features, the single focused-session limit (`maximum_sessions: 1`) and the NPC-only session limit (`maximum_npc_sessions`). |
+| `open_partner_picker` | No arguments. Opens the game's Zoi picker for the controlled Zoi and one partner. See [Choosing a partner](#choosing-a-partner). |
 | `get_definitions` | Returns registered tags and actions, aliases, role descriptions, optional action `sexual_activity` metadata, task definitions and the rating enum. |
 | `get_scene` | `scene_id`; returns library metadata, role requirements, furniture and authored navigation. |
 | `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`, `furniture_pair_id`; returns all matches and count. |
@@ -451,6 +452,22 @@ assignments remain fixed; incompatible target roles/furniture still fail.
 Ratings describe declared actions. They do not automatically classify or filter
 manual outfit changes, saved voice choices, exposed attachments or other cosmetic
 presentation. Content authors must describe rating-relevant activities accurately.
+
+## Choosing a partner
+
+For an interaction that asks the player to pick one other Zoi, check
+`get_version` for `features.partner_picker == 1`, then send
+`open_partner_picker` from the controlled Zoi. The picker uses the same
+native window as debug start. The initiator must be out of any gameplay
+group to open it.
+
+The response acknowledges that opening was requested. Wait for
+`partner_picker_finished` with the original `request_id` before sending
+an invitation or starting a scene. `code: "selected"` supplies the chosen
+`partner_id`. `"cancelled"` means the picker closed without a valid pair.
+`"picker_unavailable"` means the native picker could not complete. The
+result goes directly to the requesting add-on. This operation leaves
+existing gameplay groups intact.
 
 ## Events and ownership
 

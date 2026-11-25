@@ -10,14 +10,18 @@ local function send(p,kind,detail)
     inzoi.message.send_to_client(entity(p.owner_id),"SceneZOIStarter.Selection",Protocol.pack(p.token,kind,detail or "none"))
 end
 function M.bind()bound=true end
-function M.open(owner,token)
+function M.open(owner,token,partner)
     assert(bound,"Native scene selection hooks are unavailable")
     assert(not pending,"A native scene selection is already open")
     local ok,_,data=inzoi.cli.execute("entity.get_possessed")
     local owner_id=id(owner:GetEntityId())
     assert(ok and data and data:match('"entity_id"%s*:%s*"?(%d+)')==owner_id,"Only the controlled Zoi can open Scene Mode")
-    local p={token=token,owner_id=owner_id,last_heartbeat=os.time()}
-    Departure.leave(owner)
+    local p={token=token,owner_id=owner_id,last_heartbeat=os.time(),partner=partner}
+    -- Gameplay invitations should leave existing groups intact. The native Create
+    -- picker can only open for an ungrouped leader.
+    if partner then
+        assert(owner:GetZoiGroupId().Value==inzoi.FB1ZoiGroupId().Value,"The controlled Zoi is in a group")
+    else Departure.leave(owner) end
     -- Let native departure packets reach B1 before it chooses Create versus Edit.
     pending=p;p.opening=2
 end
@@ -46,7 +50,13 @@ function M.create(leader,characters)
         if b==p.owner_id then return false end
         return tonumber(a)<tonumber(b)
     end) end
-    p.ids=ids;p.confirmed=not p.expired and #ids>=1 and #ids<=Config.picker_cap
+    p.ids=ids
+    if p.partner then
+        p.confirmed=not p.expired and #ids==2 and seen[p.owner_id]==true
+        if p.confirmed then p.partner_id=ids[2] end
+    else
+        p.confirmed=not p.expired and #ids>=1 and #ids<=Config.picker_cap
+    end
     return true
 end
 function M.tick()
@@ -77,11 +87,13 @@ function M.tick()
                 local manager=assert(inzoi.getB2Manager("FB2EntityManager"))
                 local roster={}
                 for _,value in ipairs(p.ids) do roster[#roster+1]=assert(manager:FindCharacter(entity(value)),"A selected Zoi is no longer loaded") end
-                for _,character in ipairs(roster) do Departure.leave(character) end
+                if not p.partner then
+                    for _,character in ipairs(roster) do Departure.leave(character) end
+                end
             end)
             if not ok then pending=nil;send(p,"error",Protocol.encode(tostring(err)));return end
         end
-        send(p,p.confirmed and "selected" or "cancelled",p.confirmed and table.concat(p.ids,"+") or "none")
+        send(p,p.confirmed and "selected" or "cancelled",p.confirmed and (p.partner_id or table.concat(p.ids,"+")) or "none")
         pending=nil
     end
 end

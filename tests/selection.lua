@@ -64,5 +64,21 @@ function manager:CreateZoiGroup()native_calls=native_calls+1;return {Value=42}en
 local hook=require("Systems.B2ZoiGroupManager")
 assert(hook.Override_CreateZoiGroup(manager,1,{Value=1},{person(2)},true).Value==42 and native_calls==1)
 open("hook");assert(hook.Override_CreateZoiGroup(manager,1,{Value=1},{person(2)},true).Value==0 and native_calls==1)
+closed("hook")
+local function open_partner(token) S.open(owner,token,true);S.tick();S.tick() end
+local before_removes=#removes
+groups[2]=9
+open_partner("partner")
+assert(S.create({Value=1},{person(2),person(1)}))
+closed("partner")
+assert(replies[#replies]=="SZ2|partner|selected|2" and groups[2]==9 and #removes==before_removes)
+open_partner("partner_extra")
+S.create({Value=1},{person(1),person(2),person(3)});closed("partner_extra")
+assert(replies[#replies]=="SZ2|partner_extra|cancelled|none")
+open_partner("partner_without_initial")
+S.create({Value=1},{person(2),person(3)});closed("partner_without_initial")
+assert(replies[#replies]=="SZ2|partner_without_initial|cancelled|none")
+groups[1]=9
+assert(not pcall(open_partner,"already_grouped") and groups[1]==9 and #removes==before_removes)
 S.clear()
 print("Selection passed: leave-first, verified fallback, unrelated/new groups preserved, deferred NPC departure, roster validation, cancellation, expiry, no native scene group.")

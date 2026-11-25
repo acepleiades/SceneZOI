@@ -86,11 +86,29 @@ local function release(p,close)
     if p.widget and p.menu_hidden~=nil then pcall(show_after_menu,p) end
     if p.widget and p.opened then
         if close and p.widget:IsVisible() then p.widget:OnClickedClose() end
-        caption(p,false)
+        if p.partner_callback then
+            p.widget.BW_WBP_ButtonOK.BW_Text:SetText(p.ok_caption)
+            p.widget.BW_Text_MainTitle:SetText(p.original_title)
+            p.widget.BW_WBP_ButtonOK.bIsDimmed=p.original_dimmed
+        else
+            caption(p,false)
+        end
         p.widget.BW_WBP_GroupOption:SetVisibility(p.option_visibility)
         p.widget.BW_WBP_ButtonOK.BW_Button:SetIsEnabled(true)
     end
 end
+function M.open_partner(actor,callback)
+    local w=widget()
+    assert(not pending and not w:IsVisible(),"picker_busy")
+    local asset=assert(UE.UObject.Load("/Game/Data/DataAsset/DA_ZoiGroup.DA_ZoiGroup"),"picker_unavailable")
+    local p={token="partner."..os.time().."."..math.random(1,1073741823),actor=actor,widget=w,asset=asset,
+        old_cap=asset.MaxZoiGroupMemberNum:Find(inzoi.EB1ZoiGroupType.Default),
+        option_visibility=w.BW_WBP_GroupOption:GetVisibility(),age=0,heartbeat=0,partner_callback=callback}
+    asset.MaxZoiGroupMemberNum:Add(inzoi.EB1ZoiGroupType.Default,2)
+    pending=p
+    tell(p,"open_partner")
+end
+
 function M.boot()
     last_request=cfg("uimod.cfg_load","selection_request");elapsed=0
     -- Native cfg_load rejects missing keys; a new install has no request yet.
@@ -110,11 +128,12 @@ function M.reply(actor,content)
         if fields[2]=="armed" then pending.armed=true else pending.result=fields end
     end
 end
-function M.stop()
+function M.stop(partner_code)
     local p=pending;if not p then return end
     pending=nil
-    require("SceneZOI.SimulationRoute").discard("SceneZOIStarter.Select",Protocol.pack(p.token,"open"))
+    require("SceneZOI.SimulationRoute").discard("SceneZOIStarter.Select",Protocol.pack(p.token,p.partner_callback and "open_partner" or "open"))
     release(p,true);tell(p,"cancel")
+    if p.partner_callback then p.partner_callback(partner_code or "cancelled") end
 end
 local function update(dt,actors,busy)
     elapsed=(elapsed or 0)+dt
@@ -193,17 +212,25 @@ local function update(dt,actors,busy)
     if p.widget:IsVisible() then
         if not p.opened then
             p.opened=true
-            restore_cap(p);tell(p,"shown");publish(p.token,"selecting")
+            if p.partner_callback then
+                p.ok_caption=tostring(p.widget.BW_WBP_ButtonOK.BW_Text:GetText())
+                p.original_title=tostring(p.widget.BW_Text_MainTitle:GetText())
+                p.original_dimmed=p.widget.BW_WBP_ButtonOK.bIsDimmed
+            else publish(p.token,"selecting") end
+            restore_cap(p);tell(p,"shown")
         end
         p.widget.BW_WBP_GroupOption:SetVisibility(1)
-        p.widget.BW_Text_MainTitle:SetText(require("SceneZOI.Localization").text("(Debug) SceneZOI manual start"))
+        local text=require("SceneZOI.Localization").text
+        p.widget.BW_Text_MainTitle:SetText(text(p.partner_callback and "Choose a partner" or "(Debug) SceneZOI manual start"))
         local count=tonumber(tostring(p.widget.BW_Text_TitleNum:GetText()):match("%d+")) or 0
         local alone=p.solo and count==1
-        local can_start=p.armed and (alone or count>=2 and count<=Config.picker_cap) or false
+        local can_start=p.armed and (count==2 or not p.partner_callback and (alone or count>=2 and count<=Config.picker_cap)) or false
         local button=p.widget.BW_WBP_ButtonOK.BW_Button
         button:SetIsEnabled(can_start)
         p.widget.BW_WBP_ButtonOK.bIsDimmed=not can_start
-        caption(p,alone)
+        if p.partner_callback then
+            p.widget.BW_WBP_ButtonOK.BW_Text:SetText(text("Invite"))
+        else caption(p,alone) end
         -- With nobody else picked the game just closes the picker and reports nothing. Start Solo needs an explicit
         -- click: the button held down (IsPressed), not a pointer resting on it. Closing the picker (X, Esc, its close
         -- handler) never presses it, however close the pointer was. If the press cannot be read, nothing starts.
@@ -221,6 +248,12 @@ local function update(dt,actors,busy)
     end
     if p.result and not p.opened then p.closed=true;release(p,false) end
     if p.result and p.closed then
+        if p.partner_callback then
+            pending=nil
+            local kind=p.result[2]
+            p.partner_callback(kind=="error" and "picker_unavailable" or kind,kind=="selected" and p.result[3] or nil)
+            return
+        end
         if p.result[2]=="error" or p.result[2]=="unavailable" then
             require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
         end
@@ -290,6 +323,12 @@ end
 function M.tick(dt,actors,busy)
     local ok,err=pcall(update,math.max(tonumber(dt) or 0,0),actors,busy)
     if not ok then
+        if pending and pending.partner_callback then
+            local callback=pending.partner_callback
+            if not pcall(M.stop,"picker_unavailable") then callback("picker_unavailable") end
+            print("[SceneZOI] Partner picker failed: "..tostring(err))
+            return
+        end
         local fields=Protocol.unpack(last_request)
         local token=pending and pending.token or fields and fields[1]
         pcall(cfg,"uimod.cfg_save","selection_error",Protocol.encode(tostring(err)))

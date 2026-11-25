@@ -41,7 +41,9 @@ function M.on_lua_message(self,owner,kind,content)
     if not fields then return end
     local token=fields[1]
     local ok,err=pcall(function()
-        if fields[2]=="open" then Selection.open(owner,token) else Selection.message(owner,fields) end
+        if fields[2]=="open" or fields[2]=="open_partner" then
+            Selection.open(owner,token,fields[2]=="open_partner")
+        else Selection.message(owner,fields) end
     end)
     if not ok then
         Selection.cancel(token)
