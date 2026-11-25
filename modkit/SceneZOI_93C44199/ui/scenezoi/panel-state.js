@@ -184,6 +184,7 @@
             if (value) release();
             refresh();
         },
+        expand: function () { if (compact) collapse(false); },
         reset: function () { reading = null; readStatus = 'reset'; collapse(false); poll(); },
         snapshot: function () { return {blocked:blocked,clock_paused:clockPaused,compact:compact,menu_mode:menuMode,read_status:readStatus,
             request_id:readCount,request_age_ms:reading ? Math.max(0,Date.now()-reading.started) : 0,native:nativeState,last_input:lastInput}; }

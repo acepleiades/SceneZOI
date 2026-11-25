@@ -74,20 +74,20 @@ local function read(key)
     if ok then return data or message end
 end
 
-local function publish(client, sequence, phase, code)
-    local value = Protocol.pack(client or "none", sequence or 0, phase, code or "ok")
+local function publish(client, sequence, phase, code, stop_notice)
+    local value = Protocol.pack(client or "none", sequence or 0, phase, code or "ok", stop_notice)
     if value == state_value then return end
     local ok, message = inzoi.cli.execute(command("uimod.cfg_save", "state") .. " value=" .. value)
     if ok then state_value = value
     else print("[SceneZOI] Status bridge failed: " .. tostring(message)) end
 end
 
-local function remember(client, sequence, phase, code, actor, silent)
+local function remember(client, sequence, phase, code, actor, silent, stop_notice)
     local key = client .. "|" .. sequence
     if not completed[key] then completion_order[#completion_order + 1] = key end
-    completed[key] = {phase = phase, code = code, actor = actor}
+    completed[key] = {phase = phase, code = code, actor = actor, stop_notice = stop_notice}
     if #completion_order > 32 then completed[table.remove(completion_order, 1)] = nil end
-    if not silent then publish(client, sequence, phase, code) end
+    if not silent then publish(client, sequence, phase, code, stop_notice) end
 end
 
 local function tell(participant, kind, content)
@@ -125,11 +125,20 @@ local function phase_of(current)
 end
 
 -- Tells the controls which session they now show; the panel follows the controlled Zoi.
-local function publish_focus()
+local function publish_focus(ended, phase, code, stop_notice)
     focus_serial = focus_serial + 1
     local current = Sessions.focused()
-    local value = current and Protocol.pack(focus_serial, current.token, current.client, current.sequence,
-        current.revision, current.node.id, phase_of(current)) or Protocol.pack(focus_serial, "none")
+    local value
+    if current then
+        value = Protocol.pack(focus_serial, current.token, current.client, current.sequence,
+            current.revision, current.node.id, phase_of(current))
+    elseif ended then
+        -- Focus and status are polled independently. Deliver the terminal status
+        -- here too so losing focus never races the notice off the screen.
+        value = Protocol.pack(focus_serial, "none", ended.client, ended.sequence, phase, code, stop_notice)
+    else
+        value = Protocol.pack(focus_serial, "none")
+    end
     pcall(inzoi.cli.execute, command("uimod.cfg_save", "focus_session") .. " value=" .. value)
 end
 
@@ -214,11 +223,20 @@ local function finish_stop(old, code)
     local normal = {ok = true, saving = true, character_editor = true, addon_requested = true, lifetime_expired = true, owner_expired = true,
         goal_unreachable = true, required_stage_unavailable = true, no_progress = true, playback_budget_exceeded = true,
         sofa_unavailable = true}
-    -- A scene with no panel still retires its request ID, silently.
-    remember(old.client, old.sequence, normal[code] and "idle" or "error", code, controlled and controlled.actor, not had_panel)
+    local panel_code, stop_notice = code, nil
+    if old.stop_origin.addon_id and (code == "ok" or code == "addon_requested") then
+        if old.cleanup_complete then
+            stop_notice = Protocol.encode(old.stop_display_reason) -- "00" means use the localized default.
+        else
+            panel_code = "restore_error"
+        end
+    end
+    local panel_phase = normal[panel_code] and "idle" or "error"
+    -- A session with no panel still retires its request ID, silently.
+    remember(old.client, old.sequence, panel_phase, panel_code, controlled and controlled.actor, not had_panel, stop_notice)
     if had_panel then
         pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
-        publish_focus()
+        publish_focus(old, panel_phase, panel_code, stop_notice)
         if code=='saving'then
             pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
         end
@@ -377,7 +395,7 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         local role, id = assignment:match("^([%w_.-]+):(%d+)$")
         assert(role and node.participants[role] and not roles[role] and not seen[id], "Invalid or duplicate role assignment")
         local holder = Sessions.holder(id)
-        assert(not holder or (addon and holder == addon.token), "A participant is already in a scene")
+        assert(not holder or (addon and holder == addon.token), "A participant is already in another session.")
         local actor = assert(M.actors[id], "All participants must be loaded nearby")
         local participant = Native.capture(actor)
         participant.id, participant.role = id, role
@@ -1118,7 +1136,7 @@ local function poll()
     local client, sequence, action = fields[1], fields[2], fields[3]
     local previous = completed[client .. "|" .. sequence]
     if previous then
-        if not focused or client==focused.client and sequence==focused.sequence then publish(client,sequence,previous.phase,previous.code)end
+        if not focused or client==focused.client and sequence==focused.sequence then publish(client,sequence,previous.phase,previous.code,previous.stop_notice)end
         return
     end
     -- The mailbox keeps a scene's Start packet: while that scene is out of focus it is not a new request.
@@ -1130,7 +1148,7 @@ local function poll()
             if action == "start" then
                 Diagnostics.record("start_rejected", {client = client, sequence = sequence, scene_id = fields[5], code = "busy"})
                 remember(client,sequence,"error","busy",nil,true)
-                pcall(require('SceneZOI.Localization').toast,'A SceneZOI scene is already in progress. End it before starting another.')
+                pcall(require('SceneZOI.Localization').toast,'A SceneZOI session is already in progress. End it before starting another.')
             end
             return
         end
@@ -1153,7 +1171,7 @@ local function poll()
         if not ok then
             Addons.fail_start(fields[8],err)
             M.diagnostic("Entry failed: " .. tostring(err))
-            request.code = tostring(err):find("already in a scene", 1, true) and "busy" or "entry_error"
+            request.code = tostring(err):find("already in another session", 1, true) and "busy" or "entry_error"
             request.detail = Diagnostics.detail(err)
             Diagnostics.record("start_rejected", request)
             local manual = fields[8]==nil or fields[8]=='none'
@@ -1184,7 +1202,7 @@ function M.boot()
     publish_focus()
     Localization.refresh()
     Settings.boot()
-    -- Panel commands persist on disk and use the client and sequence to identify a scene.
+    -- Panel commands persist on disk and use the client and sequence to identify a session.
     background_client, direct_serial = Addons.boot(), 0
     Autosave.boot()
     Save.boot()

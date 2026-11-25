@@ -290,7 +290,7 @@ Ordinary starts require the controlled Zoi as initiator and participant.
 Autonomous starts can use eligible loaded NPCs, including solo rosters, and can
 run alongside other sessions with separate participants. The message carrier
 does not have to participate in a background encounter.
-[NPC and concurrent scenes](addons.md#concurrent-and-background-sessions)
+[NPC and concurrent sessions](addons.md#concurrent-and-background-sessions)
 
 ## Use a bed, sofa or a different body
 
@@ -329,7 +329,7 @@ walks into the room. Your mod should establish all three facts: a sexual action
 is currently playing, C has the relevant relationship with A, and C can actually
 witness it. Being on the same property is not enough to establish that C saw it.
 
-An add-on can observe manual scenes and scenes started by another mod. Request
+An add-on can observe sessions started manually or by another mod. Request
 `subscribe` with `scope = "all"` and events such as `session_started`,
 `node_entered` and `session_ended`. Use `list_sessions` to read already-running
 sessions; the snapshot returned by `subscribe` alone is not a list of them all.

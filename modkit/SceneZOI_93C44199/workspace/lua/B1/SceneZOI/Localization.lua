@@ -11,7 +11,7 @@ local canonical={};for _,v in pairs(aliases)do canonical[v:lower()]=v end;canoni
 function M.conflicts()return compiled.conflicts or {} end
 function M.normalize(value)
  if type(value)~='string'then return 'en-US'end
- value=value:gsub('_','-'):lower()
+ value=value:gsub('_','-'):lower():gsub('-mod$','')
  return canonical[value]or aliases[value]or 'en-US'
 end
 local function library()return compiled end

@@ -66,7 +66,7 @@
                 document.getElementById('volume-fill-'+k).style.width=((values[i]-min)*100/(max-min))+'%';
                 document.getElementById('volume-thumb-'+k).style.left=((values[i]-min)*100/(max-min))+'%';
             });
-            status.textContent=!ready?window.SceneZOILocalization.text('Loading settings...'):serverBusy?window.SceneZOILocalization.text('Preparing scene...'):pending?window.SceneZOILocalization.text('Saving settings...'):window.SceneZOILocalization.text(message || 'Saved for future scene sessions.');
+            status.textContent=!ready?window.SceneZOILocalization.text('Loading settings...'):serverBusy?window.SceneZOILocalization.text('Waiting for playback...'):pending?window.SceneZOILocalization.text('Saving settings...'):window.SceneZOILocalization.text(message || 'Saved for future sessions.');
         }
         function commit(){
             if(!available())return;
@@ -324,7 +324,7 @@
         function groupOptions(id){return {container:document.getElementById(id),state:options.state,visible:options.visible,write:options.write,cfg:options.cfg};}
         var tasks=createGroup(groupOptions('task-rate-settings'),'task_rates',['task-female','task-male'],['Female Task Progress Rate','Male Task Progress Rate'],'100% uses authored progress. Choose 10% to 500%.',10,500);
         var audio=createGroup(groupOptions('audio-volume-settings'),'audio',['sfx','female','male'],['Sound Effects','Female Voice Sets','Male Voice Sets'],'100% uses the authored volume. 0% mutes the channel.',0,200);
-        var npc=createGroup(groupOptions('npc-scene-settings'),'npc_scene',['npc-scene-length'],['Default NPC Scene Length'],'How long a scene between Zois you do not control lasts, unless an add-on asks for longer. Choose 5 to 120 in-game minutes. It applies to new scenes.',5,120,{unit:'in-game min',translated:true,initial:15});
+        var npc=createGroup(groupOptions('npc-scene-settings'),'npc_scene',['npc-scene-length'],['Default NPC session duration'],'Default duration for new sessions involving only Zois outside your household. Choose 5 to 120 in-game minutes. Add-ons can set their own duration.',5,120,{unit:'in-game min',translated:true,initial:15});
         var debugStart=createGroup(groupOptions('debug-start-settings'),'debug_start',['manual-start'],['SceneZOI manual start'],'Use the picker to start scenes from your Zoi or supported furniture.',0,1,{toggle:true,initial:0});
         var preview=createAttachmentPreview(groupOptions('attachment-preview'));
         return {update:function(){preview.update();tasks.update();audio.update();npc.update();debugStart.update();},retry:function(){preview.retry();tasks.retry();audio.retry();npc.retry();debugStart.retry();}};

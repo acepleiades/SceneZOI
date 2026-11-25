@@ -129,7 +129,7 @@
             else if (personalityPending) personalityStatus.textContent = window.SceneZOILocalization.text('Saving expression set...');
             else if (profile.error) personalityStatus.textContent = window.SceneZOILocalization.text('Expression is unavailable. See diagnostics.');
             else if (!expressions.length) personalityStatus.textContent = window.SceneZOILocalization.text('No expression sets installed for this body.');
-            else personalityStatus.textContent = window.SceneZOILocalization.text(personalityMessage || 'Saved for future scene sessions.');
+            else personalityStatus.textContent = window.SceneZOILocalization.text(personalityMessage || 'Saved for future sessions.');
 
             voices.update();
             choices.style.display = choosing ? 'block' : 'none';

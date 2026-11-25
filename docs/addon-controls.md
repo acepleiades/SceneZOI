@@ -23,10 +23,14 @@ not silently get swapped. Search results return the actual complete assignment.
 `start_mode: "start_scene" | "start_random_scene" | "start_at_hub" | "start_autonomous_scene"`.
 The default
 is direct when `scene_id` is present, otherwise a hub. It returns `valid`, the
-matched scene/bindings, or a stable failure `code` and diagnostic `message`.
+matched scene, bindings, and `anchor_participant_id`, or a stable failure `code` and diagnostic `message`.
 It checks current eligibility, control, recovery/busy gates, restrictions and
 furniture availability. It does not reserve participants/furniture, depart groups,
 load animation assets or create a session. Startup rechecks and may still fail.
+With the `preflight_start_distance` feature, pass `check_start_distance: false`
+to defer the background distance check while the participants walk to the venue.
+Roster, role, route, and furniture checks still apply. Run the default validation
+after arrival. Actual starts always check distance.
 
 `find_furniture` takes `origin_id`, optional `radius_m` (default 25, maximum 1000),
 `scene_id`, `include_unavailable` and `participants`. Results contain `furniture_id`, `distance_m`,
@@ -103,10 +107,23 @@ is detected by lease expiry. Registrations are limited to 64, session attachment
 to 32. This is cooperation between trusted executable mods, not an anti-cheat or
 security boundary. No per-command popup is introduced.
 
-`request_stop {session_id,reason}` needs `interrupt` (or creator identity). It
-requests ordinary Exit for a manual/foreign session, records the caller/reason,
-and notifies the creator through ordinary ending/ended events. It cannot cancel
-cleanup or replace it. New writes are refused during cleanup.
+`request_stop {session_id, reason, display_reason?}` needs `interrupt` (or creator
+identity). Use it to end a session after a gameplay event, such as a spectator
+walking in. Supply a stable ID in `reason`, for example `witness_sighting`. The
+creator can also end its own session with `stop_session {session_id, display_reason?}`.
+
+If `get_version` reports `features.stop_session_display_reason`, either operation
+can supply a short explanation for the player in `display_reason`. Use one line
+of localized plain UTF-8 text (up to 512 bytes). Include the final punctuation.
+For example, send “Jaewoo and Minah decided to stop after someone walked in on
+them.” SceneZOI adds the localized “Session ended” prefix. Calls that omit the
+text show a generic add-on ending message.
+
+After successful cleanup, an already-visible panel shows the message and closes
+after ten real seconds. The player can dismiss it sooner. Background sessions do
+not open a panel. A cleanup failure shows the technical notice until the player
+dismisses it. The message is for display only. The caller and machine reason
+remain available in `stop_origin` with ordinary ending and ended events.
 
 Successful integration control/release operations emit `addon_control_changed`
 while a session remains active, with copied

@@ -182,3 +182,49 @@ loaded = Subsystems.load(resolved_hub, hub.duration, {
 assert(loaded[1].retained == retained and next(warnings) == nil,
     'Valid coverage and retained declarations must satisfy ownership before outfit filtering')
 print('Optional tracks passed: asset availability, catalog pruning, and attachment pose ownership diagnostics.')
+
+-- A two-goal gameplay add-on should work with its bundled bed route when the
+-- optional library is absent. Other body-role combinations depend on content.
+local baseBed, optionalBed = scene('base_bed'), scene('optional_bed')
+local maleBed, femaleBed = scene('male_bed'), scene('female_bed')
+local nodes = {baseBed, optionalBed}
+for _, node in ipairs({baseBed, optionalBed, maleBed, femaleBed}) do
+    node.furniture = {kind = 'bed.single', surface_height_cm = 0}
+    node.tasks = {lead = {charge = {rate = 1}}, partner = {charge = {rate = 1}}}
+end
+optionalBed.hide_if_tracks_missing = true
+optionalBed.tracks.partner = '/Optional/Bed.Bed'
+maleBed.participants.partner.body = 'male'
+femaleBed.participants.lead.body = 'female'
+local gameplay_pack = {owner = 'test', source = 'gameplay', data = {
+    schema_version = 3, id = 'test', nodes = nodes, extensions = {},
+}}
+source.by_kind.scene_pack = {gameplay_pack}
+source.by_kind.coverage_attachment = nil
+local bed_profile = {kind = 'bed.single', surface_height_cm = 68}
+package.loaded['SceneZOI.Furniture'] = {
+    available = function(id) if id == '50' then return bed_profile end end,
+    prepare = function(id, node) assert(id == '50' and node.furniture.kind == 'bed.single') end,
+}
+local actors = require('SceneZOI.Runtime').actors
+actors['3'] = {id = '3', body = 'male'}
+actors['4'] = {id = '4', body = 'female'}
+local function bedPreflight(first, second, named)
+    return request('validate_start', {initiator = first, participants = {first, second}, furniture_id = '50',
+        start_mode = 'start_autonomous_scene', scene_id = named, check_start_distance = false,
+        goals = {{participant_id = first, task_id = 'charge'}, {participant_id = second, task_id = 'charge'}}})
+end
+Catalog.refresh(true)
+local fallback = bedPreflight('1', '2')
+assert(fallback.ok and fallback.result.valid and fallback.result.scene_id == baseBed.id, J.encode(fallback))
+assert(not bedPreflight('1', '2', optionalBed.id).result.valid)
+assert(bedPreflight('1', '3').result.code == 'no_matching_scenes')
+assert(bedPreflight('2', '4').result.code == 'no_matching_scenes')
+assets[optionalBed.tracks.partner] = 10
+nodes[#nodes + 1], nodes[#nodes + 2] = maleBed, femaleBed
+Catalog.refresh(true)
+assert(bedPreflight('1', '2', optionalBed.id).result.valid)
+assert(bedPreflight('1', '3', maleBed.id).result.valid)
+assert(bedPreflight('2', '4', femaleBed.id).result.valid)
+assert(not API.has_pending() and not Sessions.holder('1') and not Sessions.holder('4'))
+print('Two-goal single-bed preflight passed with optional tracks and with content-provided same-body routes.')

@@ -87,3 +87,21 @@ possessed='2';assert(direct('stale','1')[2]=='error','A click for a previous Zoi
 possessed='1';owner='other';assert(direct('held','1')[3]=='participant_busy')
 owner=nil;eligible=false;assert(direct('incompatible','1')[3]=='no_starting_scene')
 print('Direct solo entry passed: one eligible role, no picker, supported ratings, control and ownership checks, and no default furniture start.')
+
+local confirmed_count=0
+local confirm_enabled
+function widget.BW_WBP_ButtonOK.BW_Button:SetIsEnabled(enabled) confirm_enabled=enabled end
+widget.BW_WBP_ButtonOK.BW_Text={GetText=function()return 'Create'end,SetText=function()end}
+function widget.BW_Text_MainTitle:GetText()return 'Create Zoi Group'end
+function widget.BW_Text_TitleNum:GetText()return confirmed_count..' / 2'end
+package.loaded['SceneZOI.Localization'].text=function(text)return text end
+local answer
+E.open_partner(actor,function(code,partner)answer={code,partner}end)
+local token=P.unpack(sent[#sent])[1]
+visible=true;E.tick(.2,{['1']=actor},false);assert(confirm_enabled==false)
+E.reply(actor,P.pack(token,'armed'))
+confirmed_count=1
+E.tick(.2,{['1']=actor},false);assert(confirm_enabled==true,'One partner should enable Invite when the native picker omits the controlled tile')
+E.reply(actor,P.pack(token,'selected','2'));visible=false
+E.tick(.2,{['1']=actor},false)
+assert(answer and answer[1]=='selected' and answer[2]=='2')

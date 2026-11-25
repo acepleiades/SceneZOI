@@ -141,7 +141,7 @@ native and playback checks.
 
 ## Control focus and duplicate entry
 
-Actual B1 controller identity, not the participant's captured entry-control trait, selects the focused session. The panel, task tray, input and autosave suspension follow that session. Control can move anywhere without ending a scene. NPC-only picker starts and add-on background sessions have bounded lifetimes. Closed-panel input uses a currently registered world-context actor. A failed or missing controller lookup is not treated as a switch.
+Actual B1 controller identity, not the participant's captured entry-control trait, selects the focused session. The panel, task tray, input and autosave suspension follow that session. Control can move anywhere without ending a session. NPC-only picker starts and add-on background sessions have bounded lifetimes. Closed-panel input uses a currently registered world-context actor. A failed or missing controller lookup is not treated as a switch.
 
 Busy entry is a native toast and rejection, including stale launcher/native/runtime requests. The active session's status mailbox is preserved; duplicate rejected commands do not repeatedly toast. Optional toast failures cannot end the existing session. last_stop records the initiating reason, last_exit records final and initiating results, and controller_range retains the latest bounded distance/readiness diagnostic. An older last_error is not evidence of a new failure.
 

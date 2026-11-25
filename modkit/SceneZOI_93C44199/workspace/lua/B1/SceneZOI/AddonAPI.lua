@@ -153,8 +153,11 @@ local function find(args,data)
 end
 local function start(actor,req,row,data,preflight)
  local args=req.arguments
- V.fields(args,{'participants','initiator','furniture_id','furniture_pair_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','lifetime','goals','restrictions','auto_restrictions','end_policy','post_completion_stay_seconds','skip_post_completion_stay_after_manual','task_progress_multiplier','stages','stage_progress','required_stages','stage_preferences','stage_priorities','variety_groups','auto_speed'},{'participants','initiator'})
+ V.fields(args,{'participants','initiator','furniture_id','furniture_pair_id','scene_id','search','session_restrictions','context','bindings','appearance','start_mode','background','placement','check_start_distance','lifetime','goals','restrictions','auto_restrictions','end_policy','post_completion_stay_seconds','skip_post_completion_stay_after_manual','task_progress_multiplier','stages','stage_progress','required_stages','stage_preferences','stage_priorities','variety_groups','auto_speed'},{'participants','initiator'})
  if args.background~=nil then V.boolean(args.background)end
+ if args.check_start_distance~=nil then
+  assert(preflight,'check_start_distance requires validate_start');V.boolean(args.check_start_distance)
+ end
  local autonomous=req.operation=='start_autonomous_scene'or preflight and args.start_mode=='start_autonomous_scene'
  if not autonomous then for _,field in ipairs(Plan.fields)do assert(args[field]==nil,'Plan fields require start_autonomous_scene')end end
  local background=args.background==true or autonomous
@@ -199,8 +202,11 @@ local function start(actor,req,row,data,preflight)
  if args.context then assert(V.object(args.context)and #J.encode(args.context)<=4096,'Invalid/oversized add-on context')end
  local pair_id=selected_pair and selected_pair.id
  if preflight and args.furniture_id then require('SceneZOI.Furniture').prepare(args.furniture_id,data.nodes[chosen.scene_id],pair_id)end
- if background then runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm,args.furniture_id)end
+ if background and args.check_start_distance~=false then
+  runtime().check_start_distance(data.nodes[chosen.scene_id],chosen.bindings,placement.max_start_distance_cm,args.furniture_id)
+ end
  if preflight then return {valid=true,scene_id=chosen.scene_id,bindings=V.copy(chosen.bindings),
+  anchor_participant_id=chosen.bindings[data.nodes[chosen.scene_id].anchor_participant],
   furniture_pair_id=pair_id,reservation=false,assets_checked=false,startup_rechecks=true,
   route_uncertain=spec and spec.route_uncertain or nil}end
  serial=serial+1;row.token='api.'..os.time()..'.'..serial;row.age=0;row.retry=1;row.stage='depart';row.departures={}
@@ -226,12 +232,21 @@ local function execute(actor,req,row)
   return result
  end
  -- Backward compatibility with add-ons that read maximum_sessions as the single focused session limit.
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={partner_picker=1,autonomous_scenes=1,autonomous_stages=1,autonomous_stage_progress=1,autonomous_post_completion_stay=1,autonomous_stage_priorities=1,autonomous_auto_restrictions=1,autonomous_joint_goal_routes=1,autonomous_manual_completion_exit=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={stop_session_display_reason=1,partner_picker=1,partner_picker_candidate_filter=1,preflight_start_distance=1,autonomous_scenes=1,autonomous_stages=1,autonomous_stage_progress=1,autonomous_post_completion_stay=1,autonomous_stage_priorities=1,autonomous_auto_restrictions=1,autonomous_joint_goal_routes=1,autonomous_manual_completion_exit=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
  if op=='open_partner_picker'then
-  V.fields(args,{})
+  V.fields(args,{'candidate_ids'})
+  local candidates
+  if args.candidate_ids~=nil then
+   V.array(args.candidate_ids,1024);candidates={}
+   for _,id in ipairs(args.candidate_ids)do
+    assert(type(id)=='string'and id:match('^[1-9]%d*$'),'Invalid candidate ID')
+    candidates[id]=true
+   end
+  end
   assert(require('SceneZOI.Controller').controlled_id(runtime().actors)==P.id(actor:GetEntityId()),'initiator_not_controlled')
   assert(not runtime().is_active(),'session_already_running')
   local function finished(code,partner)
+   if code=='selected'and candidates and not candidates[partner]then code,partner='partner_ineligible',nil end
    local event={name='partner_picker_finished',request_id=req.request_id,code=code,partner_id=partner}
    deliver(actor,'SceneZOI.API.Event',{api_version=1,instance_id=instance,addon_id=req.addon_id,client_id=req.client_id,event=event})
   end
@@ -260,7 +275,16 @@ local function execute(actor,req,row)
  if op=='get_request_status'then
   V.fields(args,{'request_id'},{'request_id'});local k=V.copy(req);k.request_id=args.request_id;local r=assert(cache[key(k,P.id(actor:GetEntityId()))]or latest[request_key(k)],'request_not_found');return V.copy(r.status or {phase='completed',response=r.response})
  end
- if op=='stop_session'then V.fields(args,{'session_id'},{'session_id'});owned(req);runtime().api_session(args.session_id).stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason='creator_stop'};runtime().stop('ok',args.session_id);return {accepted=true}end
+ if op=='stop_session'then
+  V.fields(args,{'session_id','display_reason'},{'session_id'});owned(req)
+  local session=runtime().api_session(args.session_id)
+  local display_reason=V.stop_display_reason(args.display_reason)
+  if session.stopping then return {accepted=true} end -- Preserve the original stop and its author.
+  session.stop_display_reason=display_reason
+  session.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason='creator_stop'}
+  runtime().stop('ok',args.session_id)
+  return {accepted=true}
+ end
  if op=='navigate_to_scene'then
   V.fields(args,{'session_id','scene_id'},{'session_id','scene_id'});owned(req);V.id(args.scene_id)
   return runtime().navigate_to(args.session_id,args.scene_id)

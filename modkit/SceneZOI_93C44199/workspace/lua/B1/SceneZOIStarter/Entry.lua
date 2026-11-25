@@ -149,7 +149,7 @@ local function update(dt,actors,busy)
         if raw~=last_request and fields then
             last_request=raw
             if fields[2]=="open" and busy then
-                pcall(require('SceneZOI.Localization').toast,'A SceneZOI scene is already in progress. End it before starting another.')
+                pcall(require('SceneZOI.Localization').toast,'A SceneZOI session is already in progress. End it before starting another.')
                 publish(fields[1],'unavailable','busy')
             elseif fields[2]=="open" and not pending then
                 require("SceneZOI.Localization").refresh()
@@ -169,7 +169,7 @@ local function update(dt,actors,busy)
                         publish(fields[1],"selected",id,chosen.node,role..":"..id)
                     else
                         require('SceneZOI.Runtime').authorize_rejected_focus(actor,fields[1])
-                        pcall(require('SceneZOI.Localization').toast,held and 'A participant is already owned by another scene.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
+                        pcall(require('SceneZOI.Localization').toast,held and 'A participant is already in another session.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
                         publish(fields[1],"unavailable",held and "participant_busy" or "no_starting_scene")
                     end
                     return
@@ -224,7 +224,10 @@ local function update(dt,actors,busy)
         p.widget.BW_Text_MainTitle:SetText(text(p.partner_callback and "Choose a partner" or "(Debug) SceneZOI manual start"))
         local count=tonumber(tostring(p.widget.BW_Text_TitleNum:GetText()):match("%d+")) or 0
         local alone=p.solo and count==1
-        local can_start=p.armed and (count==2 or not p.partner_callback and (alone or count>=2 and count<=Config.picker_cap)) or false
+        local count_allowed
+        if p.partner_callback then count_allowed=count==1 or count==2
+        else count_allowed=alone or count>=2 and count<=Config.picker_cap end
+        local can_start=p.armed and count_allowed or false
         local button=p.widget.BW_WBP_ButtonOK.BW_Button
         button:SetIsEnabled(can_start)
         p.widget.BW_WBP_ButtonOK.bIsDimmed=not can_start
@@ -311,7 +314,7 @@ local function update(dt,actors,busy)
                 if not held and p.furniture_kind=='sofa.pair'then
                     reject_sofa(p,'sofa_no_starting_scene','The selected Zois do not match any starting scene on this sofa.')
                 else
-                    pcall(require('SceneZOI.Localization').toast,held and 'A participant is already owned by another scene.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
+                    pcall(require('SceneZOI.Localization').toast,held and 'A participant is already in another session.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')
                     require("SceneZOI.Runtime").authorize_rejected_focus(p.actor,p.token)
                     publish(p.token,"unavailable",held and "participant_busy" or "no_starting_scene")
                 end

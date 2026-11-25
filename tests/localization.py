@@ -11,6 +11,12 @@ class LocalizationTests(unittest.TestCase):
   for culture,groups in self.data['translations'].items():
    self.assertEqual(set(groups['messages']),set(english['messages']),culture)
    self.assertEqual(set(groups['labels']),set(english['labels']),culture)
+ def test_native_partner_picker_messages(self):
+  for culture,groups in self.data['translations'].items():
+   for key in ('Choose a partner','Invite'):
+    with self.subTest(culture=culture,key=key):
+     self.assertTrue(groups['messages'][key])
+     if culture!='en-US':self.assertNotEqual(groups['messages'][key],key)
  def test_placeholder_and_nonexecuting_text_contract(self):
   data=copy.deepcopy(self.data);data['translations']['fr-FR']['messages']['Enter a whole number from {min} to {max}.']='Choisir {min}'
   with self.assertRaises(ValueError):validate(data)

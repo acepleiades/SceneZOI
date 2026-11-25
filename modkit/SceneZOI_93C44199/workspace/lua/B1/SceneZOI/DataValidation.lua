@@ -20,6 +20,14 @@ end
 function M.name(v)
  assert(type(v)=='string'and #v>=1 and #v<=160 and v:match('%S') and not v:find('[%z\1-\31]'),'Invalid data name');return v
 end
+function M.stop_display_reason(v)
+ if v==nil then return nil end
+ assert(type(v)=='string' and #v<=512 and not v:find('%c') and
+  not v:find('\226\128[\168\169]') and (not utf8 or utf8.len(v)), 'Invalid display_reason')
+ local message=v:match('^%s*(.-)%s*$')
+ assert(message~='', 'Invalid display_reason')
+ return message
+end
 function M.asset(v)
  assert(type(v)=='string'and #v<=512 and v:match('^/[A-Za-z0-9_/]+%.[A-Za-z0-9_]+$'),'Invalid asset path');return v
 end

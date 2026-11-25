@@ -176,7 +176,19 @@ Sessions.release('background.'..count);started['background.'..count]=nil
 local picked=API.start_from_picker({GetEntityId=function()return {Value=5}end},{'5','6'},{node='test.hub'},nil);assert(picked.accepted);API.tick(.5);depart();API.tick(.05)
 assert(started['background.'..count].default_length==true and started['background.'..count].placement.max_start_distance_cm==10000)
 Sessions.release('background.'..count);started['background.'..count]=nil
-r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal});assert(r.ok and r.result.valid and Sessions.holder('5')==nil)
+local distance_check={initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal}
+too_far=true
+r=request('validate_start',distance_check);assert(r.ok and not r.result.valid and r.result.code=='participant_too_far')
+distance_check.check_start_distance=false
+r=request('validate_start',distance_check)
+assert(r.ok and r.result.valid and r.result.anchor_participant_id=='5' and Sessions.holder('5')==nil)
+local actual_start=V.copy(distance_check);actual_start.start_mode=nil
+r=request('start_autonomous_scene',actual_start);assert(not r.ok and r.code=='invalid_request')
+actual_start.check_start_distance=nil
+r=request('start_autonomous_scene',actual_start);assert(not r.ok and r.code=='participant_too_far')
+too_far=false
+distance_check.check_start_distance=nil
+r=request('validate_start',distance_check);assert(r.ok and r.result.valid and Sessions.holder('5')==nil)
 r=request('validate_start',{initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals={{participant_id='6',task_id='charge'}}});assert(r.ok and r.result.valid==false and r.result.code=='goal_unreachable')
 local conditional=V.copy(node)
 conditional.id='test.conditional'

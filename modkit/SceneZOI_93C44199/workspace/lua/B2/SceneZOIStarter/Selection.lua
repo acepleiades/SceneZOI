@@ -52,8 +52,12 @@ function M.create(leader,characters)
     end) end
     p.ids=ids
     if p.partner then
-        p.confirmed=not p.expired and #ids==2 and seen[p.owner_id]==true
-        if p.confirmed then p.partner_id=ids[2] end
+        -- The controlled initiator belongs to the invitation even when the native picker omits their tile.
+        local partner
+        if #ids==1 and not seen[p.owner_id] then partner=ids[1]
+        elseif #ids==2 and seen[p.owner_id] then partner=ids[2] end
+        p.confirmed=not p.expired and partner~=nil
+        if p.confirmed then p.partner_id=partner end
     else
         p.confirmed=not p.expired and #ids>=1 and #ids<=Config.picker_cap
     end

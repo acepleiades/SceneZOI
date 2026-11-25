@@ -114,7 +114,58 @@ async function run(){
     assert.equal(denied.root.style.visibility,visibility,'Only the expected manual sofa denial skips Dismiss');
     assert.equal(denied.commands.filter(c=>c.command==='toast.show').length,0,'The runtime owns its single denial toast');
   }
-  // The panel follows the controlled Zoi's scene, whoever started it, and a new start keeps this panel's own identity.
+  const reason = 'Søren and Minah stopped after someone walked in on them.';
+  const hexReason = text => Buffer.from(text, 'utf8').toString('hex');
+  const stopNotice=fixture();await flush();
+  stopNotice.setFocus('SZ2|1|host.5.6|host|6|3|scenezoi.standing_idle|playing');
+  stopNotice.timers[250]();await flush();
+  stopNotice.clickHide();assert(stopNotice.classes.has('scene-compact'));
+  // The final focus packet can be read before the status mailbox updates.
+  stopNotice.setFocus('SZ2|2|none|host|6|idle|addon_requested|' + hexReason(reason));
+  stopNotice.timers[250]();await flush();
+  assert(!stopNotice.classes.has('scene-compact'),'Expand a compact panel so the player can read the notice');
+  assert.equal(stopNotice.elements['scene-status'].textContent,'Session ended: ' + reason);
+  assert.equal(stopNotice.elements['scene-exit'].textContent,'Dismiss (10)');
+  stopNotice.advanceTime(1000);
+  stopNotice.setState('SZ2|host|6|idle|addon_requested|' + hexReason(reason));
+  stopNotice.timers[250]();await flush();
+  assert.equal(stopNotice.elements['scene-exit'].textContent,'Dismiss (9)','Duplicate delivery must not restart the countdown');
+  stopNotice.advanceTime(9000);stopNotice.timers[250]();await flush();
+  assert.equal(stopNotice.elements['scene-exit'].textContent,'Dismiss (0)');
+  stopNotice.runDeferred();assert.equal(stopNotice.root.style.visibility,'hidden');
+  stopNotice.runDeferred();await flush();
+  assert.match(writes(stopNotice,'focus').at(-1),/\|host\|6\|closed$/);
+
+  for (const [phase,code,encoded,expected] of [
+    ['idle','ok','00','The add-on ended this session.'],
+    ['idle','ok',hexReason('<b>Plain text.</b>'),'Session ended: <b>Plain text.</b>'],
+    ['error','restore_error',hexReason(reason),'Cleanup reported an error. Check the diagnostic records before continuing.'],
+    ['error','interrupted',null,'The session ended unexpectedly. Check the diagnostic records.']
+  ]) {
+    const ended=fixture();await ended.start();await flush();
+    const [,client,seq]=writes(ended,'request').at(-1).split('|');
+    ended.setState(['SZ2',client,seq,phase,code,encoded].filter(Boolean).join('|'));
+    ended.timers[250]();await flush();
+    assert.equal(ended.elements['scene-status'].textContent,expected);
+    assert.equal(ended.elements['scene-exit'].textContent,phase==='idle'?'Dismiss (10)':'Dismiss');
+    if (phase==='idle') ended.elements['scene-exit'].listeners.click();
+    ended.advanceTime(15000);ended.timers[250]();ended.runDeferred();await flush();
+    assert.equal(ended.root.style.visibility,phase==='idle'?'hidden':'visible');
+  }
+
+  const replaced=fixture();await flush();
+  replaced.setFocus('SZ2|1|host.1.5|host|5|1|scenezoi.standing_idle|playing');
+  replaced.timers[250]();await flush();
+  replaced.setState('SZ2|host|5|idle|ok|00');
+  replaced.timers[250]();await flush();
+  replaced.advanceTime(10000);replaced.timers[250]();await flush();
+  replaced.setFocus('SZ2|2|host.1.6|host|6|1|scenezoi.standing_idle|playing');
+  replaced.timers[250]();await flush();
+  replaced.runDeferred();
+  assert.equal(replaced.root.style.visibility,'visible','A prior panel timer cannot close a new session');
+  assert.equal(replaced.elements['scene-exit'].textContent,'Exit');
+
+  // The panel follows the controlled Zoi's session, whoever started it.
   const follower=fixture();await flush();
   assert.notEqual(follower.root.style.visibility,'visible');
   follower.setFocus('SZ2|1|host.5.6|host|6|3|scenezoi.standing_idle|playing');follower.timers[250]();await flush();

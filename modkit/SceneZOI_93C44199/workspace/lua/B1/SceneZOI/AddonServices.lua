@@ -55,8 +55,11 @@ function M.execute(actor,req)
   return true,runtime().api_clear_appearance(s,p.id)
  end
  if op=='request_stop'then
-  fields({'reason'},{'reason'});authorize('interrupt');V.id(args.reason)
-  s.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason=args.reason};runtime().stop('addon_requested',s.token);return true,{accepted=true}
+  fields({'reason','display_reason'},{'reason'});authorize('interrupt');V.id(args.reason)
+  s.stop_display_reason=V.stop_display_reason(args.display_reason)
+  s.stop_origin={addon_id=req.addon_id,client_id=req.client_id,reason=args.reason}
+  runtime().stop('addon_requested',s.token)
+  return true,{accepted=true}
  end
  if op=='get_navigation'then fields({});return true,runtime().api_navigation(s)end
  if op=='get_task_state'then fields({});return true,{definitions=Tasks.public_definitions(s.tasks,s),participants=Tasks.inspect(s.tasks,s)}end

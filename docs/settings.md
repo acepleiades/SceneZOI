@@ -5,14 +5,16 @@ Management. It opens Scene Settings in the same attached panel. Only one of
 these panels is open at a time; task-tray ordering, resizing, compact mode,
 native-menu blocking and Exit behavior are shared.
 
-## NPC scene length
+<a id="npc-scene-length"></a>
 
-**Default NPC Scene Length** accepts whole in-game minutes from **5 to 120**,
-default **15**. It applies to scenes that start after the change, when every
+## NPC session duration
+
+**Default NPC session duration** accepts whole in-game minutes from **5 to 120**,
+default **15**. It applies to sessions that start after the change, when every
 participant is an NPC, and an add-on asked for neither a `lifetime` nor a plan.
-Those scenes end on the game's calendar, so game speed, pause and skipped time
+Those sessions end on the game's calendar, so game speed, pause and skipped time
 count as the game counts them. At normal speed 15 in-game minutes is about 30
-real seconds. An add-on's `lifetime` overrides this setting. A scene with a
+real seconds. An add-on's `lifetime` overrides this setting. A session with a
 household Zoi keeps its own limit. The value is stored under
 `scenezoi_settings`, key `npc_scene`.
 
@@ -99,7 +101,7 @@ On the tested retail build, the package is installed at
 
 | Subdirectory | Purpose |
 | --- | --- |
-| `scenezoi_settings/` | Global audio, task-rate, NPC scene length and debug start preferences |
+| `scenezoi_settings/` | Global audio, task-rate, NPC session duration and debug start preferences |
 | `scenezoi_personality/` | Per-Zoi expression preferences |
 | `scenezoi_voice/` | Per-Zoi voice preferences |
 | `scenezoi_runtime/` | Runtime transport, status and diagnostics |

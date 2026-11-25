@@ -15,7 +15,7 @@ IDs: translating a label should not break navigation or saved choices.
 SceneZOI refreshes language on initialization, save load, session start and
 before the participant picker. An idle check updates entry text after an Options
 language change. Start a new session to check translated scene presentation;
-an already-open scene does not promise an immediate language refresh.
+an already-open session does not promise an immediate language refresh.
 
 ## Included languages
 

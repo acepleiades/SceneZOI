@@ -70,7 +70,7 @@ assert(sent[#sent][2]=='cancel','Close the picker lease after its selected seats
 available=true;eligible=false;selected('unsupported.roster')
 check_denied('unsupported.roster','sofa_no_starting_scene','The selected Zois do not match any starting scene on this sofa.')
 held=true;selected('participant.busy')
-check_denied('participant.busy','participant_busy','A participant is already owned by another scene.')
+check_denied('participant.busy','participant_busy','A participant is already in another session.')
 held=false;eligible=true;selected('retry.valid')
 local result=P.unpack(cfg.selection_state)
 assert(result[2]=='selected'and result[4]=='test.sofa_hub'and result[7]=='left',

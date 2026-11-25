@@ -14,6 +14,8 @@
     var furnitureChoice = null;
     var noticeInitiator = null, noticeToken = null;
     var exiting = false;
+    var dismissal = null;
+    var dismissDelay = 10000;
     var reading = false;
     var lastState = '';
     var pendingNavigation = null, quickNavigationUntil = 0;
@@ -89,8 +91,8 @@
         outfits.update();
         root.style.visibility = 'visible';
         updateHitRect();
-        status.textContent = clockPaused() ? playingMessage() : window.SceneZOILocalization.text(message);
-        exit.textContent = active ? window.SceneZOILocalization.text('Exit') : window.SceneZOILocalization.text('Dismiss');
+        status.textContent = clockPaused() ? playingMessage() : message;
+        exit.textContent = window.SceneZOILocalization.text(active ? 'Exit' : 'Dismiss');
         exit.disabled = exiting || clockPaused();
         document.getElementById('title-text').textContent = currentNode ? currentNode.label : 'SceneZOI';
         renderNavigation();
@@ -98,6 +100,7 @@
     }
     function openPanel() {
         panelGeneration++;
+        dismissal = null;
         // Keep the always-on native view running; hiding it suspends its timers.
         if (window.SceneZOIPanel) window.SceneZOIPanel.reset();
         root.style.visibility = 'visible';
@@ -114,8 +117,12 @@
     }
     function closePanel() {
         panelGeneration++;
+        dismissal = null;
         scopedCatalogRead = null;
-        var closedSequence = sequence;
+        var closedGeneration = panelGeneration;
+        var focusFields=['SZ2', client, String(sequence), noticeInitiator?'rejected':'closed'];
+        if(noticeInitiator)focusFields.push(noticeInitiator,noticeToken);
+        noticeInitiator=null;noticeToken=null;
         if (window.SceneZOIPanel) window.SceneZOIPanel.reset();
         root.style.visibility = 'hidden';
         if (tasks) tasks.update();
@@ -133,12 +140,9 @@
         releaseHover();
         // Release hover after the click dispatch too; never suspend the native view.
         setTimeout(function () {
-            if (root.style.visibility !== 'hidden') return;
+            if (panelGeneration !== closedGeneration || root.style.visibility !== 'hidden') return;
             releaseHover();
             // The runtime restores game input after this acknowledgement, not before closure.
-            var focusFields=['SZ2', client, String(closedSequence), noticeInitiator?'rejected':'closed'];
-            if(noticeInitiator)focusFields.push(noticeInitiator,noticeToken);
-            noticeInitiator=null;noticeToken=null;
             writePacket('focus', focusFields.join('|')).catch(function () {});
         }, 50);
     }
@@ -245,9 +249,10 @@
         cfg('uimod.cfg_save', 'ui_error', String(event.message || 'UI error')).catch(function () {});
     });
     cfg('uimod.cfg_save', 'ui_boot', client).catch(function () {});
-    cfg('uimod.cfg_save', 'ui_build', '20261122-paused-controls-ui-1').catch(function () {});
+    cfg('uimod.cfg_save', 'ui_build', '20261125-session-dismissal-ui-1').catch(function () {});
     function declineStart(initiator,token) {
         if (active) return;
+        dismissal = null;
         if(furnitureChoice)finishFurnitureChoice(null);
         root.style.visibility = 'hidden';
         updateHitRect();
@@ -334,35 +339,56 @@
         if (!active) { closePanel(); return; }
         exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false;
         show(window.SceneZOILocalization.text('Exiting and restoring all participants…'));
+        var exitGeneration = panelGeneration;
         send('exit').catch(function () {
-            show(window.SceneZOILocalization.text('Retrying Exit and waiting for all participants…'));
+            if (active && exiting && panelGeneration === exitGeneration) {
+                show(window.SceneZOILocalization.text('Retrying Exit and waiting for all participants…'));
+            }
         });
     });
-    // Ended on purpose or by its own limits: nothing for the player to dismiss.
-    var quietEnds = {ok: true, saving: true, character_editor: true, lifetime_expired: true, owner_expired: true,
+    function updateDismissal() {
+        if (!dismissal) return;
+        var seconds = Math.max(0, Math.ceil((dismissal.until - Date.now()) / 1000));
+        if (seconds === dismissal.seconds) return;
+        dismissal.seconds = seconds;
+        exit.textContent = window.SceneZOILocalization.text('Dismiss ({seconds})', {seconds:seconds});
+        if (seconds === 0) {
+            var finished = dismissal;
+            setTimeout(function () { if (dismissal === finished) closePanel(); }, 100);
+        }
+    }
+    function decodedStopReason(encoded) {
+        if (encoded !== '00' && encoded.length <= 1024 && /^(?:[0-9a-f]{2})+$/i.test(encoded)) {
+            try { return decodeURIComponent(encoded.replace(/../g, function (byte) { return '%' + byte; })); }
+            catch (_) {}
+        }
+        return null;
+    }
+    // Ended on purpose or by its own limits without an add-on notice.
+    var quietEnds = {ok: true, addon_requested: true, saving: true, character_editor: true, lifetime_expired: true, owner_expired: true,
         goal_unreachable: true, required_stage_unavailable: true, no_progress: true, playback_budget_exceeded: true, sofa_unavailable: true};
     var errors = {
-        transition_destination_error: window.SceneZOILocalization.text('The transition finished, but its destination could not load. The scene has ended.'),
-        busy: window.SceneZOILocalization.text('A participant is already owned by another scene.'),
+        transition_destination_error: window.SceneZOILocalization.text('The transition finished, but its destination could not load. The session has ended.'),
+        busy: window.SceneZOILocalization.text('A participant is already in another session.'),
         binding_error: window.SceneZOILocalization.text('The selected Zois do not match this scene’s roles.'),
         body_type: window.SceneZOILocalization.text('This scene requires compatible adult body skeletons.'),
         eligibility: window.SceneZOILocalization.text('The selected Zois do not meet the participant requirements for this scene.'),
-        possession_changed: window.SceneZOILocalization.text('The controlled Zoi changed before the scene could start.'),
-        entry_error: window.SceneZOILocalization.text('Scene entry failed. The diagnostic records contain the reason.'),
+        possession_changed: window.SceneZOILocalization.text('The controlled Zoi changed before the session could start.'),
+        entry_error: window.SceneZOILocalization.text('Session entry failed. The diagnostic records contain the reason.'),
         prepare_error: window.SceneZOILocalization.text('A participant could not enter Scene Mode.'),
         prepare_timeout: window.SceneZOILocalization.text('The current tasks did not finish or all participants did not acknowledge preparation.'),
         appearance_timeout: window.SceneZOILocalization.text('The participants’ appearance did not finish updating. The blocking clothing slot or animation state was recorded in the diagnostic log.'),
         attachment_timeout: window.SceneZOILocalization.text('The scene attachment did not finish preparing. Details were recorded in the diagnostic log.'),
         playback_error: window.SceneZOILocalization.text('Scene playback failed; cleanup was requested.'),
-        ui_disconnected: window.SceneZOILocalization.text('The scene ended because its control panel disconnected.'),
+        ui_disconnected: window.SceneZOILocalization.text('The session ended because its control panel disconnected.'),
         outfit_timeout: window.SceneZOILocalization.text('The outfit did not finish updating. Cleanup was requested.'),
         restore_error: window.SceneZOILocalization.text('Cleanup reported an error. Check the diagnostic records before continuing.'),
-        restore_timeout: window.SceneZOILocalization.text('Scene cleanup did not finish. Check the diagnostic records.'),
-        runtime_error: window.SceneZOILocalization.text('The scene stopped after a runtime error. Cleanup was requested.')
+        restore_timeout: window.SceneZOILocalization.text('Session cleanup did not finish. Check the diagnostic records.'),
+        runtime_error: window.SceneZOILocalization.text('The session stopped after a runtime error. Cleanup was requested.')
     };
     setInterval(function () {
         outfits.retry();
-        // Retry the same scene ID until acknowledged; a retry must never create a second scene.
+        // Retry the same session request until acknowledged without creating a second session.
         if (pendingCommand) writePacket('request', pendingCommand).catch(function () {});
         if (pendingNavigation && !exiting) writePacket('navigation', pendingNavigation).catch(function () {});
         if (pendingPlayback && !exiting) writePacket('playback', pendingPlayback).catch(function () {});
@@ -376,41 +402,51 @@
             }
         }
     }, 1000);
+    function applyState(fields) {
+        // A closed or superseded panel must not reopen on a repeated terminal status.
+        if (!active || fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
+        var phase = fields[3], code = fields[4];
+        // Playing/Preparing may arrive after Exit; preserve the pending Exit and its retries.
+        if (phase === 'playing') {
+            if (!exiting) { pendingCommand = null; playing = true; show(playingMessage()); }
+        }
+        else if (phase === 'preparing') {
+            if (!exiting) { pendingCommand = null; playing = false; show(window.SceneZOILocalization.text('Preparing all participants…')); }
+        }
+        else if (phase === 'exiting') { exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false; show(window.SceneZOILocalization.text('Restoring all participants…')); }
+        else {
+            active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
+            pendingCommand = null;
+            var addonStop = phase === 'idle' && fields[5] && (code === 'ok' || code === 'addon_requested');
+            if (!addonStop && phase === 'idle' && quietEnds[code]) { closePanel(); return; }
+            if (window.SceneZOIPanel) window.SceneZOIPanel.expand();
+            if (addonStop) {
+                var reason = decodedStopReason(fields[5]);
+                show(reason ? window.SceneZOILocalization.text('Session ended: {reason}', {reason:reason}) :
+                    window.SceneZOILocalization.text('The add-on ended this session.'));
+                dismissal = {until:Date.now() + dismissDelay};
+                updateDismissal();
+            } else show(errors[code] || window.SceneZOILocalization.text('The session ended unexpectedly. Check the diagnostic records.'));
+        }
+    }
     function pollState() {
-        if (reading || furnitureChoice) return;
+        if (!active || reading || furnitureChoice) return;
         reading = true;
         cfg('uimod.cfg_load', 'state').then(function (data) {
-            if(furnitureChoice)return;
             var value = data && data.value !== undefined ? data.value : data;
             if (typeof value !== 'string' || value === lastState) return;
             lastState = value;
-            var fields = value.split('|');
-            // Late status from an older panel/session must not close or reset the current one.
-            if (fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
-            var phase = fields[3], code = fields[4];
-            // Playing/Preparing may arrive after Exit; preserve the pending Exit and its retries.
-            if (phase === 'playing') {
-                if (!exiting) { pendingCommand = null; playing = true; show(playingMessage()); }
-            }
-            else if (phase === 'preparing') {
-                if (!exiting) { pendingCommand = null; playing = false; show(window.SceneZOILocalization.text('Preparing all participants…')); }
-            }
-            else if (phase === 'exiting') { exiting = true; pendingNavigation = null; pendingPlayback = null; playing = false; show(window.SceneZOILocalization.text('Restoring all participants…')); }
-            else {
-                active = false; exiting = false; pendingNavigation = null; pendingPlayback = null; playing = false;
-                pendingCommand = null;
-                if (phase === 'idle' && quietEnds[code]) closePanel();
-                else show(errors[code] || window.SceneZOILocalization.text(window.SceneZOILocalization.text('Scene ended: {code}'),{code:code}));
-            }
+            applyState(value.split('|'));
         }).catch(function () {}).then(function () { reading = false; });
     }
     setInterval(function () {
         saveGuard.poll();
+        updateDismissal();
         // The generated window scaffold can report layout later; keep its hidden hit area off-screen.
         if (root.style.visibility === 'hidden') updateHitRect();
         pollState();
     }, 250);
-    // The panel follows the controlled Zoi: it shows that Zoi's scene, or nothing.
+    // The panel follows the controlled Zoi: it shows that Zoi's session, or nothing.
     function detachPanel() {
         sessionToken = null;
         if (!active) return;
@@ -453,7 +489,11 @@
     }
     function applyFocus(f) {
         if (f[0] !== 'SZ2') return;
-        if (f[2] === 'none') { scopedCatalogRead = null; detachPanel(); return; }
+        if (f[2] === 'none') {
+            if (f.length >= 7) applyState(['SZ2'].concat(f.slice(3)));
+            else { scopedCatalogRead = null; detachPanel(); }
+            return;
+        }
         var samePanel = active && client === f[3] && String(sequence) === f[4] && (!sessionToken || sessionToken === f[2]);
         if (samePanel && sessionToken) return;
         sessionToken = f[2];

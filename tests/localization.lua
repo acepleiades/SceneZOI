@@ -16,6 +16,7 @@ L.refresh();assert(L.text('Exit')=='Quitter'and L.text('From {min} to {max}',{mi
 assert(L.label('scene','designer.hub','Original')=='Accueil franÃ§ais');assert(L.label('scene','missing','Original')=='Original')
 language='pt_BR';L.refresh();assert(L.culture=='pt-BR'and L.text('Exit')=='Exit'and L.label('scene','designer.hub','Original')=='English hub','Missing locale/entry falls back to English independently')
 for _,culture in ipairs({'ko-KR','en-US','zh-CN','zh-TW','ja-JP','ru-RU','es-ES','pt-BR','pt-PT','de-DE','fr-FR','it-IT','pl-PL','tr-TR','nl-NL'})do assert(L.normalize(culture)==culture)end
+assert(L.normalize('fr-FR_mod')=='fr-FR' and L.normalize('ko_mod')=='ko-KR')
 language='xx';L.refresh();assert(L.culture=='en-US')
 language='fr-FR';L.tick(2);assert(L.culture=='fr-FR','Idle refresh follows game setting changes')
 L.toast('Exit');assert(writes[#writes]:find('Quitter',1,true))

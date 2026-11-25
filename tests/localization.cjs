@@ -27,6 +27,8 @@ const L=context.window.SceneZOILocalization;
  assert.equal(L.text('Exit'),'Exit');await L.refresh();assert.equal(L.text('Exit'),'Quitter');assert.equal(context.document.documentElement.lang,'fr-FR');
  assert.equal(L.text('From {min} to {max}',{min:10,max:500}),'De 10 à 500');assert.equal(L.text('Missing'),'Missing');
  assert.equal(L.html('<script>'), '&lt;script&gt;');assert.equal(L.outfitLabel('accessory','Bag','Bag: bag_asset','bag_asset'),'Sac');assert.equal(L.outfitLabel('accessory','Bag','Bag: My bag','bag_asset'),'Sac: My bag');
+ language='fr-FR_mod';await L.refresh();assert.equal(L.text('Exit'),'Quitter');
+ assert.equal(L.normalize('ko_mod'),'ko-KR');
  language='xx';await L.refresh();assert.equal(L.text('Exit'),'Exit');
  language='ja-JP';await L.refresh();assert.equal(L.text('Exit'),'Exit','An absent translation keeps English');
  console.log('Localization UI passed: language changes, English entry fallback, placeholder formatting, safe text/markup and preserved custom outfit names.');

@@ -46,7 +46,17 @@ call('set_outfit_item',{session_id=s.token,participant_id='1',item_id='shirt',en
 assert(call('get_outfit_state',{session_id=s.token}).participants[1].items.shirt.enabled==true,'Outfit queued through readiness, not mutated synchronously')
 assert(not pcall(call,'register_integration',{capabilities={'unknown'}}));assert(Control.muted(s,'1'),'Invalid registration must not clear existing leases')
 call('release_overrides',{session_id=s.token});assert(Control.speed(s)==1 and not Control.muted(s,'1'))
-call('request_stop',{session_id=s.token,reason='crime_witness'});assert(ended=='addon_requested'and s.stop_origin.addon_id=='observer'and s.stop_origin.reason=='crime_witness')
+local message = 'Søren and Minah stopped after someone walked in.'
+for _,bad in ipairs({'', '  ', 'a\nb', 'a\226\128\168b', string.rep('x',513), 12}) do
+ assert(not pcall(call,'request_stop',{session_id=s.token,reason='crime_witness',display_reason=bad}))
+ assert(not s.stop_origin and not s.stop_display_reason and not ended)
+end
+call('request_stop',{session_id=s.token,reason='crime_witness',display_reason=' '..message..' '})
+assert(ended=='addon_requested' and s.stop_origin.addon_id=='observer' and s.stop_origin.reason=='crime_witness')
+assert(s.stop_display_reason==message and s.stop_origin.display_reason==nil)
+s.stopping=false
+call('request_stop',{session_id=s.token,reason='crime_witness'})
+assert(s.stop_display_reason==nil and s.stop_origin.reason=='crime_witness')
 assert(not pcall(call,'set_voice_mute',{session_id=s.token,participant_id='1',muted=true}),'Writes fail during cleanup')
 assert(call('get_session_result',{session_id='unknown'}).result==J.null)
 print('Public services: noncreator capabilities, invalid-write isolation, normalized tasks, actual set/modify, held completion, speed, voice/expression/outfit leases, observer stop and cleanup write refusal passed.')

@@ -60,8 +60,7 @@ See [entry and extensions](package-split.md#roles-entry-and-extensions).
 
 The picker checks compatibility, loaded Zois, ownership and furniture
 availability. Your gameplay mod decides proposal and relationship rules.
-Unselecting the controlled Zoi permits an NPC-only session, using **Default NPC
-Scene Length**. Larger rosters and other NPC starts use the [public API](addons.md).
+Unselecting the controlled Zoi permits an NPC-only session, using **Default NPC session duration**. Larger rosters and other NPC starts use the [public API](addons.md).
 The API returns failures for the caller to handle; the manual picker displays
 its own notifications. [No-match handling](addon-authoring.md#handle-a-start-with-no-matching-scene)
 
@@ -70,7 +69,7 @@ its own notifications. [No-match handling](addon-authoring.md#handle-a-start-wit
 The debug picker makes its controlled requester leave their gameplay group
 before opening. After selection it also makes selected NPCs leave theirs.
 These are real game-group departures: native rules may dissolve a group or
-stop its activity. Cancelling the picker or exiting a scene does not rebuild
+stop its activity. Cancelling the picker or exiting a session does not rebuild
 the group or resume its old tasks. The direct solo launcher does not perform
 this picker departure.
 
@@ -100,7 +99,7 @@ alone.
 Switching the controlled Zoi changes which session the panel shows. Controlling
 a Zoi outside every session hides it while the others keep playing. Each
 session keeps its own roster and ownership. Furniture also needs enough free
-seats for concurrent scenes. [Sofa reservations](furniture.md#sofa-authoring-and-placement)
+seats for concurrent sessions. [Sofa reservations](furniture.md#sofa-authoring-and-placement)
 
 ## Participant task ownership
 
@@ -115,7 +114,7 @@ Cancelled interactions are not reconstructed or resumed.
 Test the intended roster through the picker, navigate between its scenes, and
 Exit. Check normal movement and clothing restoration afterward. Try a roster
 with no matching scene and a participant already in another session; both
-should fail without disturbing the active scene. For furniture, also try an
+should fail without disturbing the active session. For furniture, also try an
 occupied object.
 
 After changing packs, restart the game to load their declarations. Contributors

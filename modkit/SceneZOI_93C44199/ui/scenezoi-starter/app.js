@@ -54,7 +54,7 @@
                 var raw = data && data.value !== undefined ? data.value : data;
                 var phase = String(raw || '').split('|')[3];
                 if (phase && phase !== 'idle' && phase !== 'error') {
-                    return inzoi.cli.execute('toast.show',{message:window.SceneZOILocalization.text('A SceneZOI scene is already in progress. End it before starting another.'),lifetime:5,immediate:true});
+                    return inzoi.cli.execute('toast.show',{message:window.SceneZOILocalization.text('A SceneZOI session is already in progress. End it before starting another.'),lifetime:5,immediate:true});
                 }
                 var token = 'pick.' + Date.now() + '.' + Math.floor(Math.random() * 1000000);
                 return cfg('uimod.cfg_save', 'selection_request', ['SZ2', token, 'open', controlled, bed].join('|'));

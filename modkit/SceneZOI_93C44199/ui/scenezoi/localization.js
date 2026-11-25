@@ -4,7 +4,7 @@
  var culture='en-US',data={messages:{},labels:{}},listeners=[],serial=0;
  var aliases={en:'en-US',ko:'ko-KR',ja:'ja-JP',de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES',ru:'ru-RU',pl:'pl-PL',pt:'pt-PT',tr:'tr-TR',nl:'nl-NL',zh:'zh-CN'};
  var canonical={};Object.keys(aliases).forEach(function(k){canonical[aliases[k].toLowerCase()]=aliases[k];});canonical['pt-br']='pt-BR';canonical['zh-tw']='zh-TW';canonical['zh-hans']='zh-CN';canonical['zh-hant']='zh-TW';
- function normalize(v){v=String(v||'').replace(/_/g,'-').toLowerCase();return canonical[v]||aliases[v]||'en-US';}
+ function normalize(v){v=String(v||'').replace(/_/g,'-').toLowerCase().replace(/-mod$/,'');return canonical[v]||aliases[v]||'en-US';}
  function decode(r){if(r&&r.success===false)throw Error('Localization bridge unavailable');var v=r&&r.data!==undefined?r.data:r;return typeof v==='string'?JSON.parse(v):v;}
  function text(english,values){var rows=data.messages||{},value=(rows[culture]||{})[english]||(rows['en-US']||{})[english]||english;return value.replace(/{([\w]+)}/g,function(_,k){return values&&values[k]!==undefined?String(values[k]):'{'+k+'}';});}
  function html(english,values){return text(english,values).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

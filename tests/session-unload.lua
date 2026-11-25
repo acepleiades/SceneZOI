@@ -54,6 +54,32 @@ R.flush_notifications()
 assert(ended[fourth].code=='restore_timeout'and journal_people(fourth)['4']and not journal_people(fourth)['3'])
 print('Unload outcomes passed: missing actors end as unloaded, cleanup does not wait for them, per-participant results, deferred recovery and real timeouts.')
 
+local function addon_stop(sequence, code, display_reason, release_detail)
+    local token=start(sequence,1,2)
+    local session=R.api_session(token)
+    session.stop_origin={addon_id='test',client_id='client',reason='test_stop'}
+    session.stop_display_reason=display_reason
+    R.stop(code,token)
+    assert(P.unpack(cfg.state)[3]=='exiting','Show the notice only after cleanup')
+    F.reply(token,1,'released',release_detail)
+    F.reply(token,2,'released')
+    local state,focus=P.unpack(cfg.state),P.unpack(cfg.focus_session)
+    assert(focus[2]=='none' and focus[3]==state[1] and focus[4]==state[2] and
+        focus[5]==state[3] and focus[6]==state[4] and focus[7]==state[5],
+        'Either mailbox can deliver the same terminal status to the bound panel')
+    R.tick(.25)
+    assert(P.unpack(cfg.state)[5]==state[5],'A replay of a completed request keeps its notice')
+    return state
+end
+local with_reason=addon_stop(21,'addon_requested','Søren and Minah stopped.')
+assert(with_reason[3]=='idle' and with_reason[4]=='addon_requested' and
+    P.decode(with_reason[5])=='Søren and Minah stopped.')
+local generic=addon_stop(22,'ok',nil)
+assert(generic[3]=='idle' and generic[4]=='ok' and generic[5]=='00')
+local error_state=addon_stop(23,'addon_requested','Do not show this.','restore_error')
+assert(error_state[3]=='error' and error_state[4]=='restore_error' and error_state[5]==nil)
+
+
 local diagnostics = require("SceneZOI.Diagnostics")
 local record = diagnostics.record
 local releases = {}

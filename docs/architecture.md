@@ -1,7 +1,8 @@
 # Runtime architecture
 
-A scene is a fixed cast of Zois playing synchronized tracks. Each session owns
-its own clock, current scene, temporary changes and cleanup. The panel follows
+A session has a fixed cast of Zois and owns their playback clock, temporary
+changes and cleanup. A scene is one node with synchronized tracks. A session
+can move between scenes while keeping the same cast. The panel follows
 the Zoi under player control. Several sessions can run at once.
 
 ## Follow a scene through the code
@@ -17,7 +18,7 @@ Links below point to the Lua or UI source in the ModKit overlay.
 | Tracks play or change | [Clock](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Clock.lua) drives [Playback](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Playback.lua). [Subsystems](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/Subsystems.lua) manages optional presentation. |
 | A body or attachment is selected | [VariantData](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/VariantData.lua) validates declarations. [VariantSelection](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/VariantSelection.lua) resolves per-Zoi choices; [TemporaryBody](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/TemporaryBody.lua) owns rendered bodies and native restoration. |
 | Clothing covers an unmerged body | [ClothingCoverage](../modkit/SceneZOI_93C44199/workspace/lua/B1/SceneZOI/ClothingCoverage.lua) applies the resolved native body-region mask before optional attachment masks. |
-| A scene ends | Runtime coordinates cleanup. Each owner releases its resources, and the save journal keeps any restoration still outstanding. |
+| A session ends | Runtime coordinates cleanup. Each owner releases its resources, and the save journal keeps any restoration still outstanding. |
 
 The clothing menu captures the settled entry outfit after native tasks finish
 and any initial body-layout refresh, before the scene removes clothing. That

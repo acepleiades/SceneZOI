@@ -69,7 +69,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 | Operation | Arguments / result |
 | --- | --- |
 | `get_version` | Returns API version, runtime build, host instance, features, the single focused-session limit (`maximum_sessions: 1`) and the NPC-only session limit (`maximum_npc_sessions`). |
-| `open_partner_picker` | No arguments. Opens the game's Zoi picker for the controlled Zoi and one partner. See [Choosing a partner](#choosing-a-partner). |
+| `open_partner_picker` | Optional `candidate_ids`. Opens the game's Zoi picker for the controlled Zoi and one partner. See [Choosing a partner](#choosing-a-partner). |
 | `get_definitions` | Returns registered tags and actions, aliases, role descriptions, optional action `sexual_activity` metadata, task definitions and the rating enum. |
 | `get_scene` | `scene_id`; returns library metadata, role requirements, furniture and authored navigation. |
 | `find_scenes` | Optional `search`, `participants`, `bindings`, `furniture_id`, `furniture_pair_id`; returns all matches and count. |
@@ -83,7 +83,7 @@ recent 256 responses per runtime; the SDK retries each second and times out afte
 | `set_auto_mode` | Required `session_id`, `enabled`; switches a planned session between automatic and manual. Only its owner may call it. |
 | `get_session` | Optional `session_id`; returns a copied snapshot/null and current event cursor. |
 | `navigate_to_scene` | Required `session_id`, `scene_id`; only the creating add-on/client may command it. |
-| `stop_session` | Required `session_id`; only the creating add-on/client may command it. |
+| `stop_session` | Required `session_id`, optional `display_reason`. Only the creating add-on/client can call it. See [ending a session](addon-controls.md#cooperation-between-independent-add-ons). |
 | `subscribe` | Optional `events` list, default `["*"]`, and `scope` (`focused`, `owned`, `all`; default `focused`). Returns event cursor and a current snapshot; observe manual and add-on sessions. |
 | `unsubscribe` | Removes this caller's subscription. |
 | `get_request_status` | Required original `request_id`; inspect asynchronous start progress. |
@@ -164,7 +164,7 @@ Replace the IDs with compatible loaded Zois; replace the bundled idles with your
 installed solo scenes when ready.
 
 The SDK's `owner` argument is the loaded Zoi carrying the API message. It is
-separate from `arguments.initiator`, which identifies the Zoi starting the scene.
+separate from `arguments.initiator`, which identifies the Zoi starting the session.
 The message carrier need not join the roster. Do not add the controlled Zoi to
 every roster just because it sends the requests. Both starts can use the same
 SDK client and loaded owner:
@@ -199,7 +199,7 @@ showing a panel.
 | Field | Meaning |
 | --- | --- |
 | `placement` | `max_start_distance_m` (0-100, default 15) from each participant to the anchor, checked before the roster is held and again before playback. `exit`: `restore` (default) or `stay`, which applies only to ordinary Exit on floor the game reports as walkable. |
-| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Explicit values range from 1 to 7,200 seconds. Without a lifetime or plan, NPC-only scenes use the player's **Default NPC Scene Length** (5 to 120 in-game minutes, default 15). Other background starts default to 600 seconds. A timed plan defaults to the greater of 600 seconds and `duration × 1.5 + 60`, capped at 7,200 seconds. The deadline and the 7,200-second ceiling count time spent without a panel, including game pauses. A lease runs even with the panel visible. A lapsed lease ends with `owner_expired`. A deadline or ceiling ends with `lifetime_expired`. |
+| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Explicit values range from 1 to 7,200 seconds. Without a lifetime or plan, NPC-only sessions use the player's **Default NPC session duration** (5 to 120 in-game minutes, default 15). Other background starts default to 600 seconds. A timed plan defaults to the greater of 600 seconds and `duration × 1.5 + 60`, capped at 7,200 seconds. The deadline and the 7,200-second ceiling count time spent without a panel, including game pauses. A lease runs even with the panel visible. A lapsed lease ends with `owner_expired`. A deadline or ceiling ends with `lifetime_expired`. |
 
 Sessions without a household participant count against `maximum_npc_sessions`
 from `get_version` (currently 15). A household scene does not count against that
@@ -227,7 +227,7 @@ Ending a session reports the outcome for each participant in `restoration`:
 `restored`, `released_on_unload` or `deferred_recovery`. A save ends every session.
 
 **Migration.** `controller_too_far` is no longer emitted: control can move anywhere
-without ending a scene. `get_version` keeps `maximum_sessions: 1` for add-ons that
+without ending a session. `get_version` keeps `maximum_sessions: 1` for add-ons that
 read it, and describes the player's single focused session. Check
 `features.background_sessions` before using `background`.
 
@@ -459,7 +459,8 @@ For an interaction that asks the player to pick one other Zoi, check
 `get_version` for `features.partner_picker == 1`, then send
 `open_partner_picker` from the controlled Zoi. The picker uses the same
 native window as debug start. The initiator must be out of any gameplay
-group to open it.
+group to open it. The controlled Zoi is included automatically, even when
+the native window displays only partner candidates.
 
 The response acknowledges that opening was requested. Wait for
 `partner_picker_finished` with the original `request_id` before sending
@@ -468,6 +469,11 @@ an invitation or starting a scene. `code: "selected"` supplies the chosen
 `"picker_unavailable"` means the native picker could not complete. The
 result goes directly to the requesting add-on. This operation leaves
 existing gameplay groups intact.
+
+With `features.partner_picker_candidate_filter == 1`, provide
+`candidate_ids` as an array of eligible entity IDs. If the player chooses
+an ID outside this list, the finish event returns `"partner_ineligible"`
+without a partner ID. The native window controls which tiles it displays.
 
 ## Events and ownership
 
