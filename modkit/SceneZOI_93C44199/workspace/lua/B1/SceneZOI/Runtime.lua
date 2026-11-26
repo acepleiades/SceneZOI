@@ -49,6 +49,7 @@ local boot_request, last_save_request
 local direct_serial, focus_serial = 0, 0
 local background_client
 local completed, completion_order = {}, {}
+local shown_end_notice
 local pending_focus, last_focus
 local last_start_packet
 local rejected_focus = {}
@@ -116,6 +117,33 @@ end
 -- Only the session the controls are bound to writes the controls' mailboxes.
 local function has_panel(current) return Sessions.focused() == current end
 
+local function mark_panel_seen(current)
+    current.panel_seen = true
+    -- Starting or viewing a newer session supersedes older notices for its participants.
+    for _, key in ipairs(completion_order) do
+        local notice = completed[key].end_notice
+        if notice then
+            for _, participant in ipairs(current.participants) do notice.members[participant.id] = nil end
+        end
+    end
+end
+
+local function find_end_notice(id)
+    local latest
+    for i = #completion_order, 1, -1 do
+        local record = completed[completion_order[i]]
+        local notice = record.end_notice
+        if notice and notice.members[id] then
+            if not latest then
+                latest, record.end_notice = notice, nil
+            else
+                notice.members[id] = nil
+            end
+        end
+    end
+    return latest
+end
+
 local function publish_phase(current, phase, code)
     if has_panel(current) then publish(current.client, current.sequence, phase, code) end
 end
@@ -130,8 +158,13 @@ local function publish_focus(ended, phase, code, stop_notice)
     local current = Sessions.focused()
     local value
     if current then
+        shown_end_notice = nil
         value = Protocol.pack(focus_serial, current.token, current.client, current.sequence,
             current.revision, current.node.id, phase_of(current))
+    elseif shown_end_notice then
+        local notice = shown_end_notice
+        value = Protocol.pack(focus_serial, "notice", notice.client, notice.sequence,
+            "idle", notice.code, notice.reason, notice.scene_id)
     elseif ended then
         -- Focus and status are polled independently. Deliver the terminal status
         -- here too so losing focus never races the notice off the screen.
@@ -232,11 +265,32 @@ local function finish_stop(old, code)
         end
     end
     local panel_phase = normal[panel_code] and "idle" or "error"
-    -- A session with no panel still retires its request ID, silently.
-    remember(old.client, old.sequence, panel_phase, panel_code, controlled and controlled.actor, not had_panel, stop_notice)
+    local show_for_current, notice_id, notice = had_panel, nil, nil
+    if stop_notice and old.panel_seen then
+        local members = {}
+        for _, participant in ipairs(old.participants) do members[participant.id] = true end
+        local known, id = pcall(Controller.controlled_id, M.actors)
+        if known and id and members[id] and not Sessions.focused() then notice_id = id end
+        show_for_current = had_panel and notice_id ~= nil
+        notice = {
+            client = old.client, sequence = old.sequence, scene_id = old.node.id, code = panel_code,
+            reason = stop_notice, members = members,
+        }
+    end
+    -- A session without live focus must retire its request quietly, even if its notice can be shown later.
+    remember(old.client, old.sequence, panel_phase, panel_code, controlled and controlled.actor, not show_for_current, stop_notice)
+    completed[old.client .. "|" .. old.sequence].end_notice = notice
+    if notice_id then
+        shown_end_notice = find_end_notice(notice_id)
+        if not had_panel then publish_focus() end
+    end
     if had_panel then
         pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
-        publish_focus(old, panel_phase, panel_code, stop_notice)
+        if show_for_current and not shown_end_notice then publish_focus(old, panel_phase, panel_code, stop_notice)
+        else
+            if not show_for_current then publish("none", 0, "idle", "ok") end
+            publish_focus()
+        end
         if code=='saving'then
             pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
         end
@@ -469,6 +523,7 @@ local function begin(fields)
     local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon,fields[9]~='none'and fields[9]or nil)
     current.manual_sofa_start = not addon and current.furniture and current.furniture.profile.kind=='sofa.pair' or false
     Sessions.add(current)
+    mark_panel_seen(current)
     Sessions.focus(current)
     Addons.created(addon,current)
     if Catalog.publish then Catalog.publish(current)end
@@ -1102,6 +1157,10 @@ local function poll()
         if focus[3] == "closed" then
             local ended = completed[focus[1] .. "|" .. focus[2]]
             actor = ended and ended.actor
+            if shown_end_notice and focus[1] == shown_end_notice.client and focus[2] == shown_end_notice.sequence then
+                shown_end_notice = nil
+                publish_focus()
+            end
         elseif focus[3] == "rejected" and focus[4] then
             local key = focus[5]
             local candidate = key and rejected_focus[key]
@@ -1136,7 +1195,10 @@ local function poll()
     local client, sequence, action = fields[1], fields[2], fields[3]
     local previous = completed[client .. "|" .. sequence]
     if previous then
-        if not focused or client==focused.client and sequence==focused.sequence then publish(client,sequence,previous.phase,previous.code,previous.stop_notice)end
+        -- A persistent Start must never replay a notice to a Zoi outside the ended roster.
+        if not previous.stop_notice and (not focused or client==focused.client and sequence==focused.sequence) then
+            publish(client,sequence,previous.phase,previous.code)
+        end
         return
     end
     -- The mailbox keeps a scene's Start packet: while that scene is out of focus it is not a new request.
@@ -1217,6 +1279,7 @@ end
 
 -- The controls follow the Zoi the player controls.
 local function bind_panel(current)
+    mark_panel_seen(current)
     current.ui_age = 0
     state_value = nil
     current.playback_state, current.node_state, current.outfit_state = nil, nil, nil
@@ -1235,7 +1298,13 @@ local function update_focus()
     if not known or not id then return end -- An unknown lookup is not evidence of a switch.
     local target = Sessions.get(Sessions.holder(id))
     local old = Sessions.focused()
-    if target == old then return end
+    local previous_notice = shown_end_notice
+    if target or shown_end_notice and not shown_end_notice.members[id] then shown_end_notice = nil end
+    if not target and not shown_end_notice then shown_end_notice = find_end_notice(id) end
+    if target == old then
+        if shown_end_notice ~= previous_notice then publish_focus() end
+        return
+    end
     Sessions.focus(target)
     if target then bind_panel(target)
     else

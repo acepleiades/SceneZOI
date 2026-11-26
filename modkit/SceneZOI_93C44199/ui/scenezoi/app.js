@@ -14,7 +14,7 @@
     var furnitureChoice = null;
     var noticeInitiator = null, noticeToken = null;
     var exiting = false;
-    var dismissal = null;
+    var dismissal = null, lastDismissedNotice = null;
     var dismissDelay = 10000;
     var reading = false;
     var lastState = '';
@@ -115,8 +115,9 @@
             hidden ? -10000 : root.offsetTop, hidden ? 1 : root.offsetWidth,
             hidden ? 1 : root.offsetHeight);
     }
-    function closePanel() {
+    function closePanel(detached) {
         panelGeneration++;
+        if (dismissal) lastDismissedNotice = client + '|' + sequence;
         dismissal = null;
         scopedCatalogRead = null;
         var closedGeneration = panelGeneration;
@@ -143,7 +144,7 @@
             if (panelGeneration !== closedGeneration || root.style.visibility !== 'hidden') return;
             releaseHover();
             // The runtime restores game input after this acknowledgement, not before closure.
-            writePacket('focus', focusFields.join('|')).catch(function () {});
+            if (!detached) writePacket('focus', focusFields.join('|')).catch(function () {});
         }, 50);
     }
     function finishFurnitureChoice(id) {
@@ -402,6 +403,14 @@
             }
         }
     }, 1000);
+    function showAddonStop(encodedReason) {
+        if (window.SceneZOIPanel) window.SceneZOIPanel.expand();
+        var reason = decodedStopReason(encodedReason);
+        show(reason ? window.SceneZOILocalization.text('Session ended: {reason}', {reason:reason}) :
+            window.SceneZOILocalization.text('The add-on ended this session.'));
+        dismissal = {until:Date.now() + dismissDelay};
+        updateDismissal();
+    }
     function applyState(fields) {
         // A closed or superseded panel must not reopen on a repeated terminal status.
         if (!active || fields[0] !== 'SZ2' || fields[1] !== client || fields[2] !== String(sequence)) return;
@@ -419,14 +428,11 @@
             pendingCommand = null;
             var addonStop = phase === 'idle' && fields[5] && (code === 'ok' || code === 'addon_requested');
             if (!addonStop && phase === 'idle' && quietEnds[code]) { closePanel(); return; }
-            if (window.SceneZOIPanel) window.SceneZOIPanel.expand();
-            if (addonStop) {
-                var reason = decodedStopReason(fields[5]);
-                show(reason ? window.SceneZOILocalization.text('Session ended: {reason}', {reason:reason}) :
-                    window.SceneZOILocalization.text('The add-on ended this session.'));
-                dismissal = {until:Date.now() + dismissDelay};
-                updateDismissal();
-            } else show(errors[code] || window.SceneZOILocalization.text('The session ended unexpectedly. Check the diagnostic records.'));
+            if (addonStop) showAddonStop(fields[5]);
+            else {
+                if (window.SceneZOIPanel) window.SceneZOIPanel.expand();
+                show(errors[code] || window.SceneZOILocalization.text('The session ended unexpectedly. Check the diagnostic records.'));
+            }
         }
     }
     function pollState() {
@@ -449,13 +455,16 @@
     // The panel follows the controlled Zoi: it shows that Zoi's session, or nothing.
     function detachPanel() {
         sessionToken = null;
-        if (!active) return;
+        if (!active) {
+            if (dismissal) closePanel(true);
+            return;
+        }
         active = false; exiting = false; playing = false; currentNode = null;
         pendingCommand = null; pendingNavigation = null; pendingPlayback = null;
         client = ownClient; sequence = ownSequence; counterBase = 0;
         hasPlan = false; autoMode = false; autoSpeed = false; lastPlan = null;
         renderAutoMode();
-        closePanel();
+        closePanel(true);
     }
     function attachPanel(f) {
         if(furnitureChoice)finishFurnitureChoice(null);
@@ -489,6 +498,22 @@
     }
     function applyFocus(f) {
         if (f[0] !== 'SZ2') return;
+        if (f[2] === 'notice') {
+            // The runtime presents these only to a participant of the ended session.
+            var sameNotice = client === f[3] && String(sequence) === f[4];
+            if (!f[7] || lastDismissedNotice === f[3] + '|' + f[4] || (sameNotice && dismissal)) return;
+            if (active) {
+                if (sameNotice) applyState(['SZ2'].concat(f.slice(3, 8)));
+                return;
+            }
+            if (checkingStart || furnitureChoice) return;
+            client = f[3]; sequence = Number(f[4]) || 0;
+            sessionToken = null;
+            currentNode = window.SceneZOICatalog.nodes[f[8]] || null;
+            openPanel();
+            showAddonStop(f[7]);
+            return;
+        }
         if (f[2] === 'none') {
             if (f.length >= 7) applyState(['SZ2'].concat(f.slice(3)));
             else { scopedCatalogRead = null; detachPanel(); }

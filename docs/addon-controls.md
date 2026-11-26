@@ -119,11 +119,13 @@ For example, send “Jaewoo and Minah decided to stop after someone walked in on
 them.” SceneZOI adds the localized “Session ended” prefix. Calls that omit the
 text show a generic add-on ending message.
 
-After successful cleanup, an already-visible panel shows the message and closes
-after ten real seconds. The player can dismiss it sooner. Background sessions do
-not open a panel. A cleanup failure shows the technical notice until the player
-dismisses it. The message is for display only. The caller and machine reason
-remain available in `stop_origin` with ordinary ending and ended events.
+After successful cleanup, the panel shows the message and closes ten real seconds
+after it appears. If the player switched to a bystander before the session ended,
+the message appears when they return to one of the participants, provided they
+had already opened that session’s panel. The player can dismiss it sooner.
+A cleanup failure shows the technical notice until the player dismisses it.
+The message is for display only. The caller and machine reason remain available
+in `stop_origin` with ordinary ending and ended events.
 
 Successful integration control/release operations emit `addon_control_changed`
 while a session remains active, with copied

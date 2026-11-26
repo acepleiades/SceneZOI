@@ -121,7 +121,7 @@ async function run(){
   stopNotice.timers[250]();await flush();
   stopNotice.clickHide();assert(stopNotice.classes.has('scene-compact'));
   // The final focus packet can be read before the status mailbox updates.
-  stopNotice.setFocus('SZ2|2|none|host|6|idle|addon_requested|' + hexReason(reason));
+  stopNotice.setFocus('SZ2|2|notice|host|6|idle|addon_requested|' + hexReason(reason) + '|scenezoi.standing_idle');
   stopNotice.timers[250]();await flush();
   assert(!stopNotice.classes.has('scene-compact'),'Expand a compact panel so the player can read the notice');
   assert.equal(stopNotice.elements['scene-status'].textContent,'Session ended: ' + reason);
@@ -135,6 +135,29 @@ async function run(){
   stopNotice.runDeferred();assert.equal(stopNotice.root.style.visibility,'hidden');
   stopNotice.runDeferred();await flush();
   assert.match(writes(stopNotice,'focus').at(-1),/\|host\|6\|closed$/);
+
+  const deferredNotice=fixture();await flush();
+  deferredNotice.setFocus('SZ2|1|host.5.6|host|6|3|scenezoi.standing_idle|playing');
+  deferredNotice.timers[250]();await flush();
+  deferredNotice.setFocus('SZ2|2|none');
+  deferredNotice.timers[250]();await flush();
+  deferredNotice.advanceTime(20000);
+  assert.equal(deferredNotice.root.style.visibility,'hidden');
+  const noticeFields='notice|host|6|idle|addon_requested|' + hexReason(reason) + '|scenezoi.standing_idle';
+  deferredNotice.setFocus('SZ2|3|' + noticeFields);
+  deferredNotice.timers[250]();await flush();
+  assert.equal(deferredNotice.root.style.visibility,'visible');
+  assert.equal(deferredNotice.elements['scene-status'].textContent,'Session ended: ' + reason);
+  assert.equal(deferredNotice.elements['scene-exit'].textContent,'Dismiss (10)','The countdown starts on return, even after more than ten seconds away');
+  deferredNotice.elements['scene-exit'].listeners.click();
+  deferredNotice.setFocus('SZ2|4|' + noticeFields);
+  deferredNotice.timers[250]();await flush();
+  assert.equal(deferredNotice.root.style.visibility,'hidden','A notice received again before the close acknowledgement cannot reopen');
+  deferredNotice.setFocus('SZ2|5|host.5.7|host|7|1|scenezoi.standing_idle|playing');
+  deferredNotice.timers[250]();await flush();
+  deferredNotice.setFocus('SZ2|6|notice|host|8|idle|addon_requested|' + hexReason(reason) + '|scenezoi.standing_idle');
+  deferredNotice.timers[250]();await flush();
+  assert.equal(deferredNotice.elements['scene-exit'].textContent,'Exit','A notice cannot override the panel for another active session');
 
   for (const [phase,code,encoded,expected] of [
     ['idle','ok','00','The add-on ended this session.'],

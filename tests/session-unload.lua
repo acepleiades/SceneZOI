@@ -64,7 +64,7 @@ local function addon_stop(sequence, code, display_reason, release_detail)
     F.reply(token,1,'released',release_detail)
     F.reply(token,2,'released')
     local state,focus=P.unpack(cfg.state),P.unpack(cfg.focus_session)
-    assert(focus[2]=='none' and focus[3]==state[1] and focus[4]==state[2] and
+    assert(focus[2]==(state[5] and 'notice' or 'none') and focus[3]==state[1] and focus[4]==state[2] and
         focus[5]==state[3] and focus[6]==state[4] and focus[7]==state[5],
         'Either mailbox can deliver the same terminal status to the bound panel')
     R.tick(.25)
@@ -79,6 +79,65 @@ assert(generic[3]=='idle' and generic[4]=='ok' and generic[5]=='00')
 local error_state=addon_stop(23,'addon_requested','Do not show this.','restore_error')
 assert(error_state[3]=='error' and error_state[4]=='restore_error' and error_state[5]==nil)
 
+local function focus_as(id)
+    F.controlled=id
+    R.tick(.25)
+    return P.unpack(cfg.focus_session)
+end
+local function stop_without_focus(token, a, b)
+    local session=R.api_session(token)
+    session.stop_origin={addon_id='test',client_id='client',reason='test_stop'}
+    session.stop_display_reason='The session stopped after someone walked in.'
+    R.stop('addon_requested',token)
+    F.reply(token,a,'released')
+    F.reply(token,b,'released')
+end
+local deferred=start(24,1,2)
+assert(focus_as(3)[2]=='none')
+stop_without_focus(deferred,1,2)
+assert(focus_as(3)[2]=='none','The bystander must never receive the participants’ notice')
+assert(P.unpack(cfg.state)[5]==nil,'An old Start cannot replay the notice at the bystander')
+local notice=focus_as(1)
+assert(notice[2]=='notice' and notice[3]=='ui' and notice[4]=='24' and notice[6]=='addon_requested' and
+    P.decode(notice[7])=='The session stopped after someone walked in.',
+    'The notice survives loss of focus until a participant returns')
+cfg.focus=P.pack('ui',24,'closed')
+assert(focus_as(1)[2]=='none','Closing the notice clears the focus mailbox')
+assert(focus_as(2)[2]=='none','The other participant cannot resurrect a dismissed notice')
+
+deferred=start(25,1,2)
+assert(focus_as(3)[2]=='none')
+stop_without_focus(deferred,1,2)
+assert(focus_as(2)[2]=='notice')
+assert(focus_as(3)[2]=='none','Leaving the participants hides an already-shown notice')
+assert(focus_as(1)[2]=='none','Returning cannot reset that notice’s countdown')
+
+deferred=start(26,1,2)
+assert(focus_as(3)[2]=='none')
+stop_without_focus(deferred,1,2)
+local successor=start(27,1,2)
+assert(focus_as(1)[2]==successor,'A new active session takes priority over an old notice')
+R.stop('ok',successor)
+F.reply(successor,1,'released')
+F.reply(successor,2,'released')
+assert(focus_as(2)[2]=='none','A notice from before the new session stays superseded')
+
+assert(focus_as(3)[2]=='none')
+local background={token='qa.unseen',has_household=true,lifetime={deadline_seconds=600},
+    placement={max_start_distance_cm=1500,exit='restore'},req={addon_id='test',client_id='client',request_id='start'},
+    restrictions={},entry={initiator='1',node='test.node',bindings={first='1',second='2'}}}
+assert(Sessions.reserve(background.token,{'1','2'}))
+local unseen=R.start_background(background)
+local unseen_session=R.api_session(unseen)
+local saved=P.encode(J.encode({token=unseen,collision=true}))
+for id=1,2 do R.save_reply(F.actors[id],P.pack(unseen,'snapshot',saved))end
+local snapshot=J.decode(P.decode(cfg.save_snapshot))
+cfg.save_ready=P.pack(snapshot.host,snapshot.revision,'ready')
+R.tick(.05)
+stop_without_focus(unseen,1,2)
+R.flush_notifications()
+assert(ended[unseen].code=='addon_requested' and unseen_session.cleanup_complete==true)
+assert(focus_as(1)[2]=='none','A background session that never held the panel cannot open it after cleanup')
 
 local diagnostics = require("SceneZOI.Diagnostics")
 local record = diagnostics.record
