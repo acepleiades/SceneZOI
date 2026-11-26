@@ -29,9 +29,7 @@
         input.addEventListener('blur', function () { sawDown = sawPress = false; });
     }
     function createGroup(options,group,keys,labels,note,min,max,format) {
-        format=format||{unit:'%',initial:100};
-        function unit(){return format.translated?window.SceneZOILocalization.text(format.unit):format.unit;}
-        function valueText(value){return value+(format.translated?' ':'')+unit();}
+        format=format||{initial:100};
         var container=options.container, session='', values=keys.map(function(){return format.initial;}), count=0, ack=0, pending=null;
         var ready=false, serverBusy=true, reading=false, dragging=null, message='';
         var hint=note?'<p id="settings-hint-'+group+'" class="audio-settings-note" data-i18n="'+note+'">'+window.SceneZOILocalization.html(note)+'</p>':'';
@@ -42,7 +40,7 @@
             return '<div class="audio-setting"><label data-i18n="'+labels[i]+'" id="volume-label-'+key+'" for="volume-number-'+key+'">'+window.SceneZOILocalization.html(labels[i])+'</label>'+
                 '<div class="audio-setting-row"><div id="volume-slider-'+key+'" class="volume-slider" role="slider" tabindex="0" aria-labelledby="volume-label-'+key+'" aria-valuemin="'+min+'" aria-valuemax="'+max+'">'+
                 '<span class="volume-track"></span><span id="volume-fill-'+key+'" class="volume-fill"></span><span id="volume-thumb-'+key+'" class="volume-thumb"></span></div>'+
-                '<input id="volume-number-'+key+'" type="text" inputmode="numeric" maxlength="3" aria-labelledby="volume-label-'+key+'" autocomplete="off"><span'+(format.translated?' data-i18n="'+format.unit+'"':'')+'>'+window.SceneZOILocalization.html(format.unit)+'</span></div></div>';
+                '<input id="volume-number-'+key+'" type="text" inputmode="numeric" maxlength="3" aria-labelledby="volume-label-'+key+'" autocomplete="off"><span>%</span></div></div>';
         }).join('')+'<div id="settings-status-'+group+'" role="status" aria-live="polite"></div>';
         var sliders=format.toggle?[]:keys.map(function(k){return document.getElementById('volume-slider-'+k);});
         var inputs=keys.map(function(k){return document.getElementById((format.toggle?'setting-toggle-':'volume-number-')+k);});
@@ -60,7 +58,7 @@
                 if(format.toggle){inputs[i].setAttribute('aria-checked',String(values[i]===1));return;}
                 sliders[i].setAttribute('aria-disabled',enabled?'false':'true');
                 sliders[i].setAttribute('aria-valuenow',String(values[i]));
-                sliders[i].setAttribute('aria-valuetext',valueText(values[i]));
+                sliders[i].setAttribute('aria-valuetext',values[i]+'%');
                 sliders[i].tabIndex=enabled?0:-1;
                 if(document.activeElement!==inputs[i])inputs[i].value=String(values[i]);
                 document.getElementById('volume-fill-'+k).style.width=((values[i]-min)*100/(max-min))+'%';
@@ -320,13 +318,12 @@
         return {update:update,retry:function(){if(pending&&available())options.write('attachment_preview',pending.packet).catch(function(){});}};
     }
     window.SceneZOISettingsUI={create:function(options){
-        options.container.innerHTML='<section id="attachment-preview" style="display:none"></section><h3 class="settings-section-title"><span data-i18n="Task Progress">'+window.SceneZOILocalization.html("Task Progress")+'</span></h3><div id="task-rate-settings"></div><h3 class="settings-section-title"><span data-i18n="Audio Volume">'+window.SceneZOILocalization.html("Audio Volume")+'</span></h3><div id="audio-volume-settings"></div><h3 class="settings-section-title"><span data-i18n="NPC Scenes">'+window.SceneZOILocalization.html("NPC Scenes")+'</span></h3><div id="npc-scene-settings"></div><h3 class="settings-section-title" data-i18n="Debug">'+window.SceneZOILocalization.html('Debug')+'</h3><div id="debug-start-settings"></div>';
+        options.container.innerHTML='<section id="attachment-preview" style="display:none"></section><h3 class="settings-section-title"><span data-i18n="Task Progress">'+window.SceneZOILocalization.html("Task Progress")+'</span></h3><div id="task-rate-settings"></div><h3 class="settings-section-title"><span data-i18n="Audio Volume">'+window.SceneZOILocalization.html("Audio Volume")+'</span></h3><div id="audio-volume-settings"></div><h3 class="settings-section-title" data-i18n="Debug">'+window.SceneZOILocalization.html('Debug')+'</h3><div id="debug-start-settings"></div>';
         function groupOptions(id){return {container:document.getElementById(id),state:options.state,visible:options.visible,write:options.write,cfg:options.cfg};}
         var tasks=createGroup(groupOptions('task-rate-settings'),'task_rates',['task-female','task-male'],['Female Task Progress Rate','Male Task Progress Rate'],'100% uses authored progress. Choose 10% to 500%.',10,500);
         var audio=createGroup(groupOptions('audio-volume-settings'),'audio',['sfx','female','male'],['Sound Effects','Female Voice Sets','Male Voice Sets'],'100% uses the authored volume. 0% mutes the channel.',0,200);
-        var npc=createGroup(groupOptions('npc-scene-settings'),'npc_scene',['npc-scene-length'],['Default NPC session duration'],'Default duration for new sessions involving only Zois outside your household. Choose 5 to 120 in-game minutes. Add-ons can set their own duration.',5,120,{unit:'in-game min',translated:true,initial:15});
         var debugStart=createGroup(groupOptions('debug-start-settings'),'debug_start',['manual-start'],['SceneZOI manual start'],'Use the picker to start scenes from your Zoi or supported furniture.',0,1,{toggle:true,initial:0});
         var preview=createAttachmentPreview(groupOptions('attachment-preview'));
-        return {update:function(){preview.update();tasks.update();audio.update();npc.update();debugStart.update();},retry:function(){preview.retry();tasks.retry();audio.retry();npc.retry();debugStart.retry();}};
+        return {update:function(){preview.update();tasks.update();audio.update();debugStart.update();},retry:function(){preview.retry();tasks.retry();audio.retry();debugStart.retry();}};
     }};
 })();

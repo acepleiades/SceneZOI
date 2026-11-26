@@ -2,8 +2,8 @@
 local Config=require('SceneZOI.Config')
 local Protocol=require('SceneZOI.Protocol')
 local M={}
-local order={'task_rates','audio','npc_scene','debug_start'}
-local groups={task_rates={values={100,100},min=10,max=500},audio={values={100,100,100},min=0,max=200},npc_scene={values={15},min=5,max=120,default=15},
+local order={'task_rates','audio','debug_start'}
+local groups={task_rates={values={100,100},min=10,max=500},audio={values={100,100,100},min=0,max=200},
  debug_start={values={0},min=0,max=1,default=0}}
 local function decode(f,offset,size,spec,loading)
  if not f then return nil end
@@ -41,7 +41,6 @@ function M.task_multiplier(body)
  local index=body=='female'and 1 or body=='male'and 2
  return index and groups.task_rates.values[index]/100 or 1
 end
-function M.npc_scene_minutes()return groups.npc_scene.values[1]end
 function M.debug_start_enabled()return groups.debug_start.values[1]==1 end
 function M.request(session,group,raw)
  if session.stopping or session.ended or not groups[group]then return end

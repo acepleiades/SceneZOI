@@ -60,7 +60,7 @@ See [entry and extensions](package-split.md#roles-entry-and-extensions).
 
 The picker checks compatibility, loaded Zois, ownership and furniture
 availability. Your gameplay mod decides proposal and relationship rules.
-Unselecting the controlled Zoi permits an NPC-only session, using **Default NPC session duration**. Larger rosters and other NPC starts use the [public API](addons.md).
+Unselecting the controlled Zoi permits an NPC-only session. It uses the [standard background deadline](addons.md#background-placement-and-lifetime). Larger rosters and other NPC starts use the [public API](addons.md).
 The API returns failures for the caller to handle; the manual picker displays
 its own notifications. [No-match handling](addon-authoring.md#handle-a-start-with-no-matching-scene)
 

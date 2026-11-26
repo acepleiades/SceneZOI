@@ -199,7 +199,7 @@ showing a panel.
 | Field | Meaning |
 | --- | --- |
 | `placement` | `max_start_distance_m` (0-100, default 15) from each participant to the anchor, checked before the roster is held and again before playback. `exit`: `restore` (default) or `stay`, which applies only to ordinary Exit on floor the game reports as walkable. |
-| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Explicit values range from 1 to 7,200 seconds. Without a lifetime or plan, NPC-only sessions use the player's **Default NPC session duration** (5 to 120 in-game minutes, default 15). Other background starts default to 600 seconds. A timed plan defaults to the greater of 600 seconds and `duration × 1.5 + 60`, capped at 7,200 seconds. The deadline and the 7,200-second ceiling count time spent without a panel, including game pauses. A lease runs even with the panel visible. A lapsed lease ends with `owner_expired`. A deadline or ceiling ends with `lifetime_expired`. |
+| `lifetime` | Exactly one of `deadline_seconds` or `lease_seconds` (renew with `renew_session`). Explicit values range from 1 to 7,200 seconds. The default background deadline is 600 seconds, including for NPC-only sessions. A timed plan defaults to the greater of 600 seconds and `duration × 1.5 + 60`, capped at 7,200 seconds. The deadline and the 7,200-second ceiling count time spent without a panel, including game pauses. A lease runs even with the panel visible. A lapsed lease ends with `owner_expired`. A deadline or ceiling ends with `lifetime_expired`. |
 
 Sessions without a household participant count against `maximum_npc_sessions`
 from `get_version` (currently 15). A household scene does not count against that

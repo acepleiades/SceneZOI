@@ -1,19 +1,19 @@
 require('./fixtures/localization.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const elements={},docEvents={},timers=[],writes=[];
-for(const key of ['sfx','female','male','task-female','task-male','npc-scene-length'])for(const part of ['slider','number','fill','thumb'])elements['volume-'+part+'-'+key]={style:{},value:'',setAttribute(k,v){this[k]=v;},addEventListener(k,f){this[k]=f;},getBoundingClientRect(){return {left:100,width:200};}};
-for(const k of ['settings-status-audio','settings-status-task_rates','settings-status-npc_scene','audio-volume-settings','task-rate-settings','npc-scene-settings','debug-start-settings','settings-status-debug_start'])elements[k]={};
+for(const key of ['sfx','female','male','task-female','task-male'])for(const part of ['slider','number','fill','thumb'])elements['volume-'+part+'-'+key]={style:{},value:'',setAttribute(k,v){this[k]=v;},addEventListener(k,f){this[k]=f;},getBoundingClientRect(){return {left:100,width:200};}};
+for(const k of ['settings-status-audio','settings-status-task_rates','audio-volume-settings','task-rate-settings','debug-start-settings','settings-status-debug_start'])elements[k]={};
 elements['setting-toggle-manual-start']={addEventListener(k,f){this[k]=f;},setAttribute(k,v){this[k]=v;}};
 for(const suffix of ['','-editor','-person','-mesh','-bone','-X','-Y','-Z','-export','-status']){
  elements['attachment-preview'+suffix]={style:{},value:'',addEventListener(k,f){this[k]=f;}};
 }
-let taskRaw='',npcRaw='',debugRaw='',settingsReads=0;
+let taskRaw='',debugRaw='',settingsReads=0;
 let previewRaw='',previewReads=0,previewDeferred=null;
 let s={client:'test',sequence:1,revision:2,active:true,exiting:false,pendingNavigation:null},raw='',visible=true,deferred=null;
 const document={getElementById:k=>elements[k],activeElement:null,addEventListener(k,f){(docEvents[k]??=[]).push(f);}};
 const context={window:{addEventListener(){}},document,setInterval(f){timers.push(f);},Number,String,Object,Math,Promise};
 vm.runInNewContext(fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8'),context);
-const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key.startsWith('settings_'))settingsReads++;if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='settings_npc_scene_state')return Promise.resolve({value:npcRaw});if(key==='attachment_preview_state'){previewReads++;return previewDeferred?new Promise(resolve=>{previewDeferred=resolve;}):Promise.resolve({value:previewRaw});}return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
+const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key.startsWith('settings_'))settingsReads++;if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='attachment_preview_state'){previewReads++;return previewDeferred?new Promise(resolve=>{previewDeferred=resolve;}):Promise.resolve({value:previewRaw});}return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
 const number=k=>elements['volume-number-'+k],slider=k=>elements['volume-slider-'+k];
 const event=x=>({button:0,clientX:x,preventDefault(){}});
 function frame(ack=0,values=[100,100,100],code='ok',rev=s.revision){return ['SZ2',s.client,s.sequence,rev,ack,code,...values].join('|');}
@@ -86,20 +86,11 @@ function enter(input,type,fields){
  assert.match(elements['task-rate-settings'].innerHTML,/aria-valuemin="10" aria-valuemax="500"/);
  const markup=fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8');assert(markup.indexOf('Female Task Progress Rate')<markup.indexOf("['Sound Effects'"),'Task sliders must precede volume sliders');
  const css=fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/index.html','utf8');
- assert.match(css,/#settings-status-task_rates, #settings-status-audio, #settings-status-npc_scene \{ font-size: 12px/,'Both settings hint/status blocks must use the shared 12px presentation');
- npcRaw=frame(0,[15]);timers[2]();for(let i=0;i<10;i++)await Promise.resolve();
- assert.equal(number('npc-scene-length').value,'15','The NPC length arrives from the runtime');
- assert.equal(slider('npc-scene-length')['aria-valuetext'],'15 in-game min','The unit says in-game minutes');
- assert.match(elements['npc-scene-settings'].innerHTML,/aria-valuemin="5" aria-valuemax="120"/);
- assert.match(elements['npc-scene-settings'].innerHTML,/data-i18n="in-game min"/);
- const npcWrites=writes.length;typed('npc-scene-length','4');typed('npc-scene-length','121');assert.equal(writes.length,npcWrites,'Out-of-range minutes are refused');
- assert.match(elements['settings-status-npc_scene'].textContent,/5 to 120/);
- number('npc-scene-length').value='60';
- enter(number('npc-scene-length'),'keypress',{charCode:13});
- assert.match(writes.at(-1).v,/\|settings_npc_scene\|\d+\|2\|60$/);assert.equal(writes.at(-1).k,'settings_npc_scene');
+ assert.match(css,/#settings-status-task_rates, #settings-status-audio \{ font-size: 12px/,'Both settings hint/status blocks must use the shared 12px presentation');
+ assert.doesNotMatch(markup,/npc-scene-settings|Default NPC session duration/);
  const debug=elements['setting-toggle-manual-start'];
  assert(debug.disabled);
- debugRaw=frame(0,[0]);timers[3]();for(let i=0;i<10;i++)await Promise.resolve();
+ debugRaw=frame(0,[0]);timers[2]();for(let i=0;i<10;i++)await Promise.resolve();
  assert(!debug.disabled && debug['aria-checked']==='false');
  const debugMarkup=elements['debug-start-settings'].innerHTML;
  assert.match(debugMarkup,/<button[^>]+role="switch"[^>]+aria-describedby="settings-hint-debug_start"/);
@@ -108,7 +99,7 @@ function enter(input,type,fields){
  assert.doesNotMatch(debugMarkup,/\(Debug\)/);
  assert.doesNotMatch(elements['debug-start-settings'].innerHTML,/<input/);
  debug.click();assert.match(writes.at(-1).v,/\|settings_debug_start\|1\|2\|1$/);
- debugRaw=frame(1,[1]);timers[3]();for(let i=0;i<10;i++)await Promise.resolve();
+ debugRaw=frame(1,[1]);timers[2]();for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(debug['aria-checked'],'true');debug.click();assert.match(writes.at(-1).v,/\|settings_debug_start\|2\|2\|0$/);
  await checkAttachmentPreview();
  console.log('Settings UI passed: drag/keyboard/numeric input, bounded values, coalesced persistence, retry/ack ordering, stale/foreign frames, failure feedback, panel/Exit cancellation and cross-session settings.');
@@ -117,7 +108,7 @@ function enter(input,type,fields){
 async function checkAttachmentPreview(){
  const element=(suffix='')=>elements['attachment-preview'+suffix];
  const frame=(ack,rows,code='ok',token=s.token)=>['SZ2',s.client,s.sequence,s.revision,ack,code,token,Buffer.from(JSON.stringify(rows)).toString('hex')].join('|');
- const poll=async()=>{timers[4]();for(let i=0;i<10;i++)await Promise.resolve();};
+ const poll=async()=>{timers[3]();for(let i=0;i<10;i++)await Promise.resolve();};
  const request=()=>{
   const packet=writes.filter(row=>row.k==='attachment_preview').at(-1);
   assert(packet);
@@ -209,7 +200,7 @@ async function checkAttachmentPreview(){
  s.pendingNavigation='pending';ui.update();
  assert(x.disabled);
  s.pendingNavigation=null;
- previewDeferred=true;timers[4]();const finishRead=previewDeferred;await Promise.resolve();
+ previewDeferred=true;timers[3]();const finishRead=previewDeferred;await Promise.resolve();
  s={...s,revision:s.revision+1};ui.update();
  finishRead({value:previewRaw});for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(element().style.display,'none','A late previous revision cannot expose the old attachments');

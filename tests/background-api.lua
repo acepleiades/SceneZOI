@@ -82,7 +82,6 @@ assert(#departs==2,'Participants first leave their gameplay groups')
 depart('npc');API.tick(.05)
 local row=started['background.1'];assert(row and row.entry.initiator=='3'and row.entry.node=='test.hub'and row.context.purpose=='test')
 assert(not row.has_household,'Two NPCs make an NPC-only scene')
-assert(row.default_length==true,'Nobody asked a length: the player default can apply')
 assert(row.placement.max_start_distance_cm==1500 and row.placement.exit=='restore'and row.lifetime.deadline_seconds==600,'Unset placement and lifetime take bounded defaults')
 assert(Sessions.holder('3')=='background.1','The reservation moves to the session')
 
@@ -162,19 +161,19 @@ assert(planned.plan.stage_priorities[1].matches[1].allowed_content_ratings[1]=='
 assert(planned.plan.variety_groups['test.hub']=='test.rest'and planned.plan.skip_post_completion_stay_after_manual==true)
 assert(planned.restrictions.allowed_content_ratings[1]=='GENERAL','Named restrictions become the session restrictions')
 assert(planned.plan.auto_restrictions.allowed_content_ratings[2]=='SUGGESTIVE'and not planned.restrictions.allowed_content_ratings[2],'Auto-only restrictions are plan state')
-assert(planned.default_length==false,'A plan has its own end')
+assert(planned.lifetime.deadline_seconds==600,'Goals use the ordinary background safety deadline')
 Sessions.release('background.'..count);started['background.'..count]=nil
 -- A timed plan is not cut short by the default deadline, and the deadline still has a ceiling.
 r=request('start_autonomous_scene',{initiator='5',participants={'5','6'},end_policy={type='duration',seconds=6000}});assert(r.ok);API.tick(.5);depart();API.tick(.05)
 assert(started['background.'..count].lifetime.deadline_seconds==7200)
 Sessions.release('background.'..count);started['background.'..count]=nil
--- A requested length keeps its own limit, whatever the player's default is.
+-- An explicit deadline is passed through to the runtime.
 r=request('start_scene',{initiator='5',participants={'5','6'},background=true,scene_id='test.hub',lifetime={deadline_seconds=900}});assert(r.ok);API.tick(.5);depart();API.tick(.05)
-assert(started['background.'..count].lifetime.deadline_seconds==900 and started['background.'..count].default_length==false)
+assert(started['background.'..count].lifetime.deadline_seconds==900)
 Sessions.release('background.'..count);started['background.'..count]=nil
--- The picker's NPC-only start takes the same path and the player's default length.
+-- The NPC-only picker uses the same background deadline and allows longer placement distance.
 local picked=API.start_from_picker({GetEntityId=function()return {Value=5}end},{'5','6'},{node='test.hub'},nil);assert(picked.accepted);API.tick(.5);depart();API.tick(.05)
-assert(started['background.'..count].default_length==true and started['background.'..count].placement.max_start_distance_cm==10000)
+assert(started['background.'..count].lifetime.deadline_seconds==600 and started['background.'..count].placement.max_start_distance_cm==10000)
 Sessions.release('background.'..count);started['background.'..count]=nil
 local distance_check={initiator='5',participants={'5','6'},start_mode='start_autonomous_scene',goals=goal}
 too_far=true

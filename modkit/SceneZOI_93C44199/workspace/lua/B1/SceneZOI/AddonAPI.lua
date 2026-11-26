@@ -215,8 +215,6 @@ local function start(actor,req,row,data,preflight)
  row.entry={initiator=args.initiator,node=chosen.scene_id,bindings=chosen.bindings,furniture=args.furniture_id,furniture_pair_id=pair_id,api_token=row.token}
  row.restrictions=restrictions;row.context=V.copy(args.context);row.appearance=selections;row.status={phase='accepted',scene_id=chosen.scene_id}
  row.placement,row.lifetime,row.plan=placement,lifetime,spec
- -- Without a length or a plan the runtime applies the player's NPC default once it knows nobody is household.
- row.default_length=args.lifetime==nil and not spec
  if background then background_starts[row.token]=row else pending=row end
  -- Ensure the caller receives start failures/end events even without a subscription.
  local sk=req.addon_id..'|'..req.client_id..'|'..P.id(actor:GetEntityId())
