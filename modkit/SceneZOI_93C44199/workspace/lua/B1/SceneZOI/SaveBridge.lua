@@ -48,6 +48,16 @@ end
 local function retire_if_empty(record)
  if next(record.people)==nil and #record.beds==0 then records[record.token]=nil end
 end
+local function confirm_participant(record,id,source)
+ local position=record.positions and record.positions[id]
+ if position then
+  position.simulation_restored=true
+  return false
+ end
+ record.people[id]=nil
+ Diagnostics.record('participant_recovered',{session_id=record.token,participant_id=id,source=source})
+ return true
+end
 local function owns(current,actor,id)
  if not current then return false end
  for _,person in ipairs(current.participants)do
@@ -135,8 +145,7 @@ function M.offer(current,actor,fields)
  else
   local record=records[fields[1]];if not record then return end
   if fields[2]=='recovered'and record.people[id]then
-   record.people[id]=nil
-   Diagnostics.record('participant_recovered',{session_id=record.token,participant_id=id})
+   if not confirm_participant(record,id)then return end
   elseif fields[2]=='furniture_recovered'then
    local beds={}
    for _,bed in ipairs(record.beds)do
@@ -159,10 +168,20 @@ function M.ready(current)
  end
  return false
 end
+-- Same-world stream-out can leave the replacement client actor at the old animation anchor.
+-- These transforms are for the current world only and are never serialized into saves.
+function M.defer_position(token,id,anchor,original)
+ local record=records[token]
+ if not record or not record.people[id]then return end
+ record.positions=record.positions or {}
+ record.positions[id]={anchor=anchor,original=original}
+ return true
+end
 -- A session ended: keep only what its cleanup could not confirm, to recover later.
 function M.finish(token,people,furniture)
  local record=records[token];if not record then return end
  local kept={};for _,id in ipairs(people or {})do kept[id]=record.people[id]end
+ for id in pairs(record.positions or {})do kept[id]=record.people[id]end
  record.people=kept
  record.beds=furniture and record.beds or {}
  record.deferred=true
@@ -172,9 +191,7 @@ end
 -- The simulation side confirmed its release after the client actor was gone.
 function M.resolve(token,id)
  local record=records[token];if not record or not record.people[id]then return false end
- record.people[id]=nil
- Diagnostics.record('participant_recovered',{session_id=token,participant_id=id,source='late_release'})
- retire_if_empty(record);publish()
+ if confirm_participant(record,id,'late_release')then retire_if_empty(record);publish()end
  return true
 end
 local function parse(row)
@@ -246,6 +263,17 @@ end
 local function send(actor,kind,record,value)
  pcall(function()require('SceneZOI.SimulationRoute').send(actor,kind,P.pack(record.token,P.encode(J.encode(value))))end)
 end
+local function restore_position(actor,position)
+ local current,anchor,original=actor:K2_GetActorLocation(),position.anchor.Translation,position.original.Translation
+ local dx,dy=current.X-anchor.X,current.Y-anchor.Y
+ -- A streamed-in Zoi can settle to floor height at the old scene's XY.
+ -- Leave horizontal movement and moves to another floor alone.
+ if dx*dx+dy*dy>9 or current.Z<math.min(anchor.Z,original.Z)-3 or
+     current.Z>math.max(anchor.Z,original.Z)+3 then return 'position_changed' end
+ local moved=actor:K2_SetActorTransform(position.original,false,nil,true)
+ assert(moved~=false,'Native position update failed')
+ return 'restored'
+end
 function M.tick(actors)
  local raw=read('save_restore')
  if raw and raw~=seen then
@@ -265,11 +293,24 @@ function M.tick(actors)
  end
  -- Each resource recovers when it is loaded, however long that takes.
  local now=os.time()
+ local recovered=false
  for _,record in pairs(records)do if record.deferred then
   for id,data in pairs(record.people)do
    local actor=actors[id]
    if actor and now-(record.sent[id]or 0)>=RETRY_SECONDS then
-    record.sent[id]=now;send(actor,'SceneZOI.Recover',record,data)
+    record.sent[id]=now
+    local position=record.positions and record.positions[id]
+    if position and position.simulation_restored then
+     local ok,result=pcall(restore_position,actor,position)
+     if ok then
+      record.positions[id],record.people[id]=nil,nil
+      recovered=true
+      Diagnostics.record('participant_recovered',{session_id=record.token,participant_id=id,presentation_position=result})
+     elseif position.last_error~=tostring(result) then
+      position.last_error=tostring(result)
+      Diagnostics.record('presentation_recovery_wait',{session_id=record.token,participant_id=id,code=position.last_error})
+     end
+    else send(actor,'SceneZOI.Recover',record,data)end
    end
   end
   local owners={}
@@ -280,7 +321,9 @@ function M.tick(actors)
     record.sent[key]=now;send(actor,'SceneZOI.FurnitureRecover',record,ids)
    end
   end
+  retire_if_empty(record)
  end end
+ if recovered then publish()end
 end
 -- A loaded journal that has not been read yet could name anyone.
 function M.restore_waiting()

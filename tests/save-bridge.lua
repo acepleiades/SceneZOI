@@ -184,3 +184,89 @@ settled(a,{999,0,0},{0,0,0})
 assert(journal().revision==deferred_revision and record(moving.token).participants['1'].location[1]==301,
  'A deferred recovery record cannot be rewritten by a late settlement message')
 print('Settled save bridge passed: transform-only updates, original state retained, independent participant revisions, latest-ACK gate, identity/phase rejection and write-failure retry.')
+
+-- Released simulation state does not confirm the new client's rendered position.
+B.boot()
+local native_time, previous_time = 1000, os.time
+os.time = function() return native_time end
+local function transform(x, y, z)
+ return {Translation={X=x,Y=y,Z=z}, Rotation={X=0,Y=0,Z=0,W=1}, Scale3D={X=1,Y=1,Z=1}}
+end
+local anchor, entry = transform(500,600,750), transform(380,600,700)
+local function visual_actor(id, position)
+ local client=actor(id)
+ client.transform,client.writes=position,0
+ function client:GetTransform() return self.transform end
+ function client:K2_GetActorLocation() return self.transform.Translation end
+ function client:K2_SetActorTransform(target,sweep,hit,teleport)
+  assert(target==entry and sweep==false and hit==nil and teleport==true,
+   'Return to the original client transform in one non-swept native teleport')
+  self.writes=self.writes+1
+  if self.fail then return false end
+  self.transform=target
+  return true
+ end
+ return client
+end
+local function queue_position(token,id)
+ local owner=actor(id)
+ local current={token=token,participants={{actor=owner,id=id}}}
+ -- Recovery uses a normal persisted record created before anchoring.
+ B.offer(current,owner,{token,'snapshot',P.encode(J.encode({token=token,collision=true}))})
+ local original=J.encode(record(token))
+ B.defer_position(token,id,anchor,entry)
+ assert(J.encode(record(token))==original,'The native client transform is kept out of the durable save format')
+ return owner
+end
+
+local client_id, client_token = '21','client.near'
+local original_actor=queue_position(client_token,client_id)
+B.finish(client_token,{client_id},false)
+local returned=visual_actor(client_id,transform(501,602,700)) -- The actor settled from the furniture to the floor.
+B.tick({[client_id]=returned})
+assert(returned.writes==0 and B.overlaps({client_id}),'Do not reconcile the client before simulation acknowledges')
+B.offer(nil,original_actor,{client_token,'recovered'})
+assert(B.overlaps({client_id}),'A simulation acknowledgement cannot release the overlap guard by itself')
+B.tick({})
+assert(B.overlaps({client_id}) and returned.writes==0,'A missing client waits even after simulation confirms its release')
+native_time=native_time+2
+B.tick({[client_id]=returned})
+assert(returned.writes==1 and returned:GetTransform()==entry)
+assert(not B.overlaps({client_id}) and not record(client_token),'Restoring the rendered position retires the journal entry')
+B.tick({[client_id]=returned})
+assert(returned.writes==1,'A later client tick does not apply the transform again')
+
+local moved_id, moved_token = '22','client.moved'
+queue_position(moved_token,moved_id)
+assert(B.resolve(moved_token,moved_id),'The simulation relay can confirm before cleanup hands off to the journal')
+B.finish(moved_token,{},false)
+assert(B.overlaps({moved_id}),'A live relay does not discard the pending client check')
+local new_position=transform(504,600,700)
+local moved=visual_actor(moved_id,new_position)
+B.tick({[moved_id]=moved})
+assert(moved.writes==0 and moved:GetTransform()==new_position,'Do not pull back a Zoi that already moved away')
+assert(not B.overlaps({moved_id}) and not record(moved_token))
+
+local upstairs_id,upstairs_token='24','client.upstairs'
+queue_position(upstairs_token,upstairs_id)
+B.finish(upstairs_token,{upstairs_id},false)
+B.resolve(upstairs_token,upstairs_id)
+local upstairs=visual_actor(upstairs_id,transform(500,600,1000))
+B.tick({[upstairs_id]=upstairs})
+assert(upstairs.writes==0 and not B.overlaps({upstairs_id}),'Do not move a Zoi who is now on a different floor')
+
+local retry_id,retry_token='23','client.retry'
+local retry_source=queue_position(retry_token,retry_id)
+B.finish(retry_token,{retry_id},false)
+B.offer(nil,retry_source,{retry_token,'recovered'})
+local retry=visual_actor(retry_id,anchor)
+retry.fail=true
+B.tick({[retry_id]=retry})
+assert(retry.writes==1 and B.overlaps({retry_id}),'A failed native transform leaves the participant guarded')
+retry.fail=false
+native_time=native_time+2
+B.tick({[retry_id]=retry})
+assert(retry.writes==2 and retry:GetTransform()==entry and not B.overlaps({retry_id}) and not record(retry_token),
+ 'A transient client write failure is retried before retiring the recovery')
+os.time=previous_time
+print('Client position recovery passed: no durable format change, separate simulation and client confirmation, released-on-unload relay, no movement overwrite, and retry.')

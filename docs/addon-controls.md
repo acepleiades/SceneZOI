@@ -65,6 +65,9 @@ sessions in this host instance. Snapshots/results include `result_facts`:
   including `restore_error`/`restore_timeout` when applicable.
   `cleanup_complete` describes the participant/furniture/owned-engine barrier;
   independent global autosave/overhead restoration may still retry while idle.
+  If a participant unloads, the session ends once the remaining cleanup settles.
+  `participant_unloaded` with `cleanup_complete=false` can mean that SceneZOI
+  queued restoration of the unloaded Zoi or their furniture for when they return.
 - `playing_seconds` is host real time actually playing while game time advances;
   `playing_game_seconds` scales that time by the native game multiplier.
   Preparation, pause and cleanup count toward neither. `animation_seconds` is
@@ -119,10 +122,11 @@ For example, send “Jaewoo and Minah decided to stop after someone walked in on
 them.” SceneZOI adds the localized “Session ended” prefix. Calls that omit the
 text show a generic add-on ending message.
 
-After successful cleanup, the panel shows the message and closes ten real seconds
-after it appears. If the player switched to a bystander before the session ended,
-the message appears when they return to one of the participants, provided they
-had already opened that session’s panel. The player can dismiss it sooner.
+After successful cleanup, the open panel shows the message and closes ten real
+seconds after it appears. SceneZOI shows it when the player controls a participant
+both when the add-on stops the session and when cleanup finishes. Endings that
+happen in the background stay silent when the player switches back to a participant.
+The player can dismiss the message sooner.
 A cleanup failure shows the technical notice until the player dismisses it.
 The message is for display only. The caller and machine reason remain available
 in `stop_origin` with ordinary ending and ended events.

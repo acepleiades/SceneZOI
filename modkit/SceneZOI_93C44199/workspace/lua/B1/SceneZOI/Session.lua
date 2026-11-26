@@ -32,10 +32,14 @@ function M.all(current, field)
     return true
 end
 
-function M.cleanup_complete(current)
+function M.cleanup_ready(current)
     return current.addon_effects_restored and current.subsystems_restored and current.temporary_bodies_restored and current.clothing_coverage_restored and
         M.all(current,'released')and M.all(current,'client_restored')and
-        (not current.furniture or current.furniture_released and not current.furniture_deferred)or false
+        (not current.furniture or current.furniture_released or current.furniture_deferred)or false
+end
+
+function M.cleanup_complete(current)
+    return M.cleanup_ready(current) and not current.furniture_deferred
 end
 
 function M.controlled(current)

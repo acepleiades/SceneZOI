@@ -7,9 +7,9 @@ F.Events.subscribe('session_ended',function(e)ended[e.id]=e end)
 for id=1,4 do F.add_actor(id)end
 R.boot()
 local J=require('SceneZOI.Json')
-local function start(sequence,a,b)
+local function start(sequence,a,b,furniture)
  F.controlled=a -- A manual start's initiator is the Zoi the player controls.
- cfg.request=P.pack('ui',sequence,'start',tostring(a),'test.node','first:'..a..'+second:'..b,'none')
+ cfg.request=P.pack('ui',sequence,'start',tostring(a),'test.node','first:'..a..'+second:'..b,furniture or 'none')
  cfg.heartbeat=P.pack('ui',sequence,'heartbeat','beat'..sequence)
  R.tick(.25)
  local token=assert(R.snapshot()).id
@@ -20,8 +20,12 @@ local function start(sequence,a,b)
  R.tick(.05)
  return token
 end
+local function journal_record(token)
+ for _,record in ipairs(J.decode(P.decode(cfg.save_snapshot)).records)do if record.token==token then return record end end
+end
 local function journal_people(token)
- for _,record in ipairs(J.decode(P.decode(cfg.save_snapshot)).records)do if record.token==token then return record.participants end end
+ local record=journal_record(token)
+ return record and record.participants
 end
 local function row(event,id)for _,person in ipairs(event.participants)do if person.id==id then return person end end end
 -- Both answer: ordinary cleanup.
@@ -64,7 +68,7 @@ local function addon_stop(sequence, code, display_reason, release_detail)
     F.reply(token,1,'released',release_detail)
     F.reply(token,2,'released')
     local state,focus=P.unpack(cfg.state),P.unpack(cfg.focus_session)
-    assert(focus[2]==(state[5] and 'notice' or 'none') and focus[3]==state[1] and focus[4]==state[2] and
+    assert(focus[2]=='none' and focus[3]==state[1] and focus[4]==state[2] and
         focus[5]==state[3] and focus[6]==state[4] and focus[7]==state[5],
         'Either mailbox can deliver the same terminal status to the bound panel')
     R.tick(.25)
@@ -84,43 +88,130 @@ local function focus_as(id)
     R.tick(.25)
     return P.unpack(cfg.focus_session)
 end
-local function stop_without_focus(token, a, b)
+
+local Save=require('SceneZOI.SaveBridge')
+local Furniture=require('SceneZOI.Furniture')
+local original_prepare=Furniture.prepare
+local bed_id='50'
+F.node.furniture={kind='bed'}
+Furniture.prepare=function(id)
+    assert(id==bed_id)
+    return {id=id,profile={id='test.bed',kind='bed'},anchor={}}
+end
+local function start_bed(sequence)
+    local token=start(sequence,1,2,bed_id)
+    local scene=R.api_session(token)
+    assert(scene.save_ready and Sessions.furniture_holder(bed_id)==token)
+    R.furniture_reply(F.actors[1],{token,bed_id,'held','native_slot_reserved','slot','slot'})
+    assert(scene.furniture_ready,'The bed restriction must be acquired before either Zoi unloads')
+    return token,scene
+end
+
+local owner_unloaded, owner_scene=start_bed(31)
+assert(#focus_as(3)==2,'The player switches to a bystander before streaming the scene out')
+R.unregister(F.actors[1])
+assert(R.snapshot(owner_unloaded).phase=='exiting','Keep waiting for the still-loaded partner')
+F.add_actor(1)
+assert(#focus_as(1)==2,'A new actor wrapper for the same Zoi cannot reopen the stopping panel')
+F.reply(owner_unloaded,2,'released')
+R.tick(.25)
+R.flush_notifications()
+assert(not R.snapshot(owner_unloaded) and ended[owner_unloaded].code=='participant_unloaded',
+    'Once the remaining partner replies, the nonresponsive bed owner must not force a timeout')
+assert(owner_scene.cleanup_complete==false,'The deferred participant and bed were not yet confirmed restored')
+assert(not Sessions.holder('1') and not Sessions.furniture_holder(bed_id),'Retirement releases live claims')
+local pending=assert(journal_record(owner_unloaded))
+assert(pending.participants['1'] and not pending.participants['2'])
+assert(#pending.furniture==1 and pending.furniture[1].id==bed_id and pending.furniture[1].owner=='1')
+assert(Save.overlaps({'1'}) and Save.overlaps({},bed_id) and not Save.overlaps({'2'}),
+    'The journal blocks only the unconfirmed Zoi and the recovering bed after retirement')
+assert(#focus_as(1)==2,'Returning before the journal recovers does not reopen the ended panel')
+R.reply(F.actors[3],P.pack(owner_unloaded,'released_unloaded','1','simulation_end'))
+assert(not Save.overlaps({'1'}) and Save.overlaps({},bed_id),'Participant release cannot retire the bed record')
+R.save_reply(F.actors[2],P.pack(owner_unloaded,'furniture_recovered'))
+assert(Save.overlaps({},bed_id),'Only the recorded bed owner can acknowledge its release')
+R.save_reply(F.actors[1],P.pack(owner_unloaded,'furniture_recovered'))
+assert(not journal_record(owner_unloaded) and not Save.overlaps({},bed_id),'A confirmed bed can be reused')
+
+local everyone_unloaded, everyone_scene=start_bed(32)
+assert(#focus_as(3)==2)
+R.unregister(F.actors[1])
+R.unregister(F.actors[2])
+R.tick(.25)
+R.flush_notifications()
+assert(not R.snapshot(everyone_unloaded) and ended[everyone_unloaded].code=='participant_unloaded',
+    'With both Zois gone, cleanup retires without waiting for an impossible reply')
+assert(everyone_scene.cleanup_complete==false and Save.overlaps({'1'}) and Save.overlaps({'2'}) and Save.overlaps({},bed_id))
+for id=1,2 do
+    R.reply(F.actors[3],P.pack(everyone_unloaded,'released_unloaded',id,'simulation_end'))
+    F.add_actor(id)
+end
+assert(#focus_as(2)==2 and Save.overlaps({},bed_id),'Late participant replies leave only the deferred bed')
+R.save_reply(F.actors[1],P.pack(everyone_unloaded,'furniture_recovered'))
+assert(not journal_record(everyone_unloaded))
+
+local reachable_bed, reachable_scene=start_bed(33)
+R.stop('ok',reachable_bed)
+F.reply(reachable_bed,1,'released')
+F.reply(reachable_bed,2,'released')
+R.tick(.25)
+assert(R.snapshot(reachable_bed).phase=='exiting' and Sessions.furniture_holder(bed_id)==reachable_bed,
+    'A bed with a reachable owner must still acknowledge its release')
+for _=1,200 do R.tick(.05)end
+R.flush_notifications()
+assert(ended[reachable_bed].code=='restore_timeout' and reachable_scene.cleanup_complete==false)
+assert(not Save.overlaps({'1','2'}) and Save.overlaps({},bed_id),'A genuine timeout retires to the same recovery barrier')
+R.save_reply(F.actors[1],P.pack(reachable_bed,'furniture_recovered'))
+assert(not journal_record(reachable_bed))
+F.node.furniture=nil
+Furniture.prepare=original_prepare
+print('Furniture unload outcomes passed: prompt retirement, return during cleanup, independent recovery, and real release timeouts.')
+
+local function request_addon_stop(token)
     local session=R.api_session(token)
     session.stop_origin={addon_id='test',client_id='client',reason='test_stop'}
     session.stop_display_reason='The session stopped after someone walked in.'
     R.stop('addon_requested',token)
+end
+local function stop_without_focus(token, a, b)
+    request_addon_stop(token)
     F.reply(token,a,'released')
     F.reply(token,b,'released')
 end
-local deferred=start(24,1,2)
+local background_stop=start(24,1,2)
 assert(focus_as(3)[2]=='none')
-stop_without_focus(deferred,1,2)
+stop_without_focus(background_stop,1,2)
 assert(focus_as(3)[2]=='none','The bystander must never receive the participants’ notice')
 assert(P.unpack(cfg.state)[5]==nil,'An old Start cannot replay the notice at the bystander')
-local notice=focus_as(1)
-assert(notice[2]=='notice' and notice[3]=='ui' and notice[4]=='24' and notice[6]=='addon_requested' and
-    P.decode(notice[7])=='The session stopped after someone walked in.',
-    'The notice survives loss of focus until a participant returns')
-cfg.focus=P.pack('ui',24,'closed')
-assert(focus_as(1)[2]=='none','Closing the notice clears the focus mailbox')
-assert(focus_as(2)[2]=='none','The other participant cannot resurrect a dismissed notice')
+assert(#focus_as(1)==2 and #focus_as(2)==2,'Switching to either participant cannot open the panel afterward')
 
-deferred=start(25,1,2)
-assert(focus_as(3)[2]=='none')
-stop_without_focus(deferred,1,2)
-assert(focus_as(2)[2]=='notice')
-assert(focus_as(3)[2]=='none','Leaving the participants hides an already-shown notice')
-assert(focus_as(1)[2]=='none','Returning cannot reset that notice’s countdown')
+local stale_focus=start(25,1,2)
+F.controlled=3 -- The game updates possession before the runtime polls panel focus.
+stop_without_focus(stale_focus,1,2)
+assert(#P.unpack(cfg.focus_session)==2 and P.unpack(cfg.state)[5]==nil,
+    'Stale panel focus cannot publish a reason while controlling a bystander')
+assert(#focus_as(1)==2,'Possession after the stop cannot expose its reason')
 
-deferred=start(26,1,2)
-assert(focus_as(3)[2]=='none')
-stop_without_focus(deferred,1,2)
-local successor=start(27,1,2)
-assert(focus_as(1)[2]==successor,'A new active session takes priority over an old notice')
-R.stop('ok',successor)
-F.reply(successor,1,'released')
-F.reply(successor,2,'released')
-assert(focus_as(2)[2]=='none','A notice from before the new session stays superseded')
+local return_during_cleanup=start(26,1,2)
+assert(#focus_as(3)==2)
+request_addon_stop(return_during_cleanup)
+assert(#focus_as(2)==2,'Returning during a background stop cannot reopen the panel')
+F.reply(return_during_cleanup,1,'released')
+F.reply(return_during_cleanup,2,'released')
+assert(#focus_as(2)==2 and P.unpack(cfg.state)[5]==nil,'Returning before cleanup finishes cannot expose its reason')
+
+local leave_during_cleanup=start(27,1,2)
+request_addon_stop(leave_during_cleanup)
+F.controlled=3
+F.reply(leave_during_cleanup,1,'released')
+F.reply(leave_during_cleanup,2,'released')
+assert(#P.unpack(cfg.focus_session)==2 and P.unpack(cfg.state)[5]==nil,
+    'Leaving before cleanup finishes drops the notice')
+
+addon_stop(28,'addon_requested','This notice was shown to a participant.')
+assert(#focus_as(2)>2,'Switching between participants can keep the visible notice')
+assert(#focus_as(3)==2,'Leaving the participants hides an already-shown notice')
+assert(#focus_as(1)==2,'Returning cannot reopen a notice that was hidden on departure')
 
 assert(focus_as(3)[2]=='none')
 local background={token='qa.unseen',has_household=true,lifetime={deadline_seconds=600},

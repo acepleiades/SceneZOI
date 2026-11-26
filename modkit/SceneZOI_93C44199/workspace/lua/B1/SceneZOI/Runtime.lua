@@ -117,31 +117,9 @@ end
 -- Only the session the controls are bound to writes the controls' mailboxes.
 local function has_panel(current) return Sessions.focused() == current end
 
-local function mark_panel_seen(current)
-    current.panel_seen = true
-    -- Starting or viewing a newer session supersedes older notices for its participants.
-    for _, key in ipairs(completion_order) do
-        local notice = completed[key].end_notice
-        if notice then
-            for _, participant in ipairs(current.participants) do notice.members[participant.id] = nil end
-        end
-    end
-end
-
-local function find_end_notice(id)
-    local latest
-    for i = #completion_order, 1, -1 do
-        local record = completed[completion_order[i]]
-        local notice = record.end_notice
-        if notice and notice.members[id] then
-            if not latest then
-                latest, record.end_notice = notice, nil
-            else
-                notice.members[id] = nil
-            end
-        end
-    end
-    return latest
+local function is_controlling_participant(current)
+    local known, id = pcall(Controller.controlled_id, M.actors)
+    return known and id ~= nil and Sessions.holder(id) == current.token
 end
 
 local function publish_phase(current, phase, code)
@@ -161,10 +139,6 @@ local function publish_focus(ended, phase, code, stop_notice)
         shown_end_notice = nil
         value = Protocol.pack(focus_serial, current.token, current.client, current.sequence,
             current.revision, current.node.id, phase_of(current))
-    elseif shown_end_notice then
-        local notice = shown_end_notice
-        value = Protocol.pack(focus_serial, "notice", notice.client, notice.sequence,
-            "idle", notice.code, notice.reason, notice.scene_id)
     elseif ended then
         -- Focus and status are polled independently. Deliver the terminal status
         -- here too so losing focus never races the notice off the screen.
@@ -230,23 +204,32 @@ local function retain_unconfirmed(old)
         if not participant.released then unconfirmed[#unconfirmed + 1] = participant.id end
     end
     for _, participant in ipairs(old.unloaded or {}) do
-        if participant.restoration == "deferred_recovery" then unconfirmed[#unconfirmed + 1] = participant.id end
+        if participant.restoration == "deferred_recovery" or participant.presentation_deferred then
+            unconfirmed[#unconfirmed + 1] = participant.id
+        end
     end
-    pcall(Save.finish, old.token, unconfirmed, old.furniture ~= nil and (not old.furniture_released or old.furniture_deferred == true))
+    pcall(Save.finish, old.token, unconfirmed, old.furniture ~= nil and not old.furniture_released)
     return #unconfirmed == 0
 end
 
 local function finish_stop(old, code)
     if not Sessions.has(old) then return end
     local had_panel = has_panel(old)
+    local addon_stop = old.stop_origin.addon_id ~= nil
+    -- The panel's focus can lag behind a character switch by a poll interval.
+    local show_for_current = had_panel and (not addon_stop or
+        old.addon_stop_observed and is_controlling_participant(old))
+    if show_for_current and old.stop_reason == "participant_unloaded" then
+        show_for_current = is_controlling_participant(old)
+    end
     old.final_focus = had_panel or old.focus_at_stop == true
+    local confirmed = retain_unconfirmed(old)
     Sessions.remove(old)
     if had_panel and Catalog.publish then pcall(Catalog.publish)end
     reconcile_autosave()
     code = code or "ok"
     old.ended = true
     old.cleanup_code=code
-    local confirmed = retain_unconfirmed(old)
     old.cleanup_complete=Session.cleanup_complete(old) and confirmed
     Effects.retain(old)
     notify(old, "session_ended", code)
@@ -265,31 +248,20 @@ local function finish_stop(old, code)
         end
     end
     local panel_phase = normal[panel_code] and "idle" or "error"
-    local show_for_current, notice_id, notice = had_panel, nil, nil
-    if stop_notice and old.panel_seen then
+    if show_for_current and stop_notice then
         local members = {}
         for _, participant in ipairs(old.participants) do members[participant.id] = true end
-        local known, id = pcall(Controller.controlled_id, M.actors)
-        if known and id and members[id] and not Sessions.focused() then notice_id = id end
-        show_for_current = had_panel and notice_id ~= nil
-        notice = {
-            client = old.client, sequence = old.sequence, scene_id = old.node.id, code = panel_code,
-            reason = stop_notice, members = members,
-        }
+        shown_end_notice = {client = old.client, sequence = old.sequence, members = members}
     end
-    -- A session without live focus must retire its request quietly, even if its notice can be shown later.
+    -- Background completions retire the request without leaving a notice to display on return.
     remember(old.client, old.sequence, panel_phase, panel_code, controlled and controlled.actor, not show_for_current, stop_notice)
-    completed[old.client .. "|" .. old.sequence].end_notice = notice
-    if notice_id then
-        shown_end_notice = find_end_notice(notice_id)
-        if not had_panel then publish_focus() end
-    end
     if had_panel then
         pcall(inzoi.cli.execute,command('uimod.cfg_save','last_exit')..' value='..Protocol.pack(old.client,old.sequence,code,old.stop_code))
-        if show_for_current and not shown_end_notice then publish_focus(old, panel_phase, panel_code, stop_notice)
+        if show_for_current then publish_focus(old, panel_phase, panel_code, stop_notice)
         else
-            if not show_for_current then publish("none", 0, "idle", "ok") end
+            publish("none", 0, "idle", "ok")
             publish_focus()
+            pending_focus = {actor = controlled and controlled.actor, age = 0, client = old.client, sequence = old.sequence}
         end
         if code=='saving'then
             pcall(require('SceneZOI.Localization').toast,'SceneZOI ended because the game is saving.')
@@ -298,13 +270,19 @@ local function finish_stop(old, code)
     M.diagnostic("Ended " .. old.token .. ": " .. code)
 end
 
+local function finish_if_ready(current)
+    if Sessions.has(current) and Session.cleanup_ready(current) then
+        finish_stop(current, current.stop_code)
+    end
+end
+
 -- Only an ordinary end may leave Zois where the scene put them; anything else uses the original snapshot.
 local function stays_in_place(old)
     return old.exit_policy == "stay" and (old.stop_code == "ok" or old.stop_code == "addon_requested")
 end
 
 local function request_release(old)
-    if old.furniture and not old.furniture_released then
+    if old.furniture and not old.furniture_released and not old.furniture_deferred then
         local ok,err=pcall(tell,old.furniture_owner,'SceneZOI.Furniture',Protocol.pack(old.token,old.furniture.id,'release',old.furniture_ready and 'held' or 'unconfirmed',
             old.furniture.selected_pair_id or 'none',old.furniture.slots and Protocol.encode(Json.encode(old.furniture.slots))or 'none',
             old.furniture.spot_ids and Protocol.encode(Json.encode(old.furniture.spot_ids))or 'none'))
@@ -347,9 +325,7 @@ local function request_release(old)
             if not ok then M.diagnostic("Release delivery failed: " .. tostring(err)) end
         end
     end
-    if Sessions.has(old) and Session.cleanup_complete(old)then
-        finish_stop(old, old.stop_code)
-    end
+    finish_if_ready(old)
 end
 
 local function stop_session(old, code)
@@ -358,6 +334,7 @@ local function stop_session(old, code)
     old.stop_reason=code or 'ok'
     old.focus_at_stop=has_panel(old)
     old.stop_origin=old.stop_origin or {source='framework',reason=old.stop_reason}
+    if old.stop_origin.addon_id then old.addon_stop_observed = is_controlling_participant(old) end
     old.stopping, old.stop_code, old.age, old.heartbeat = true, code or "ok", 0, 0
     reconcile_autosave()
     if has_panel(old) then
@@ -523,7 +500,6 @@ local function begin(fields)
     local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon,fields[9]~='none'and fields[9]or nil)
     current.manual_sofa_start = not addon and current.furniture and current.furniture.profile.kind=='sofa.pair' or false
     Sessions.add(current)
-    mark_panel_seen(current)
     Sessions.focus(current)
     Addons.created(addon,current)
     if Catalog.publish then Catalog.publish(current)end
@@ -623,7 +599,13 @@ function M.furniture_reply(actor,fields)
             furniture_pair_id=fields[7]~='none'and fields[7]or nil,
             code=fields[3], reason=fields[4], component=fields[5], slot=fields[6], stopping=c.stopping==true})
     end
-    if c.stopping then if fields[3]=='released'then c.furniture_released=true end;return end
+    if c.stopping then
+        if fields[3] == 'released' then
+            c.furniture_released, c.furniture_deferred = true, nil
+            finish_if_ready(c)
+        end
+        return
+    end
     if fields[3]=='preparing'then
         c.furniture_wait=fields[4]or 'native_preparation'
         return
@@ -692,9 +674,14 @@ local function drop_unloaded(current, actor)
             current.unloaded = current.unloaded or {}
             current.unloaded[#current.unloaded + 1] = participant
             participant.restoration = participant.released and "restored" or "deferred_recovery"
+            if participant.changed and participant.desired and participant.transform and
+                not (participant.restored and participant.restored.position) then
+                participant.presentation_deferred = Save.defer_position(current.token, participant.id,
+                    participant.desired, participant.transform)
+            end
             if participant == current.furniture_owner and current.furniture and not current.furniture_released then
                 -- Only this Zoi can release it. The journal keeps the furniture for when it returns.
-                current.furniture_released, current.furniture_deferred = true, true
+                current.furniture_deferred = true
             end
             return true
         end
@@ -880,7 +867,7 @@ function M.reply(actor, content)
                     participant.released, participant.restoration = true, "restored"
                     if fields[4] == "1" then pcall(Native.restore_position, participant) end
                     if detail ~= "ok" then current.stop_code = "restore_error" end
-                    if Session.cleanup_complete(current) then finish_stop(current, current.stop_code) end
+                    finish_if_ready(current)
                 else
                     report_participant_release(current, participant, fields[5], fields[6], "direct")
                     stop_session(current, detail == "ok" and "interrupted" or detail)
@@ -1195,7 +1182,7 @@ local function poll()
     local client, sequence, action = fields[1], fields[2], fields[3]
     local previous = completed[client .. "|" .. sequence]
     if previous then
-        -- A persistent Start must never replay a notice to a Zoi outside the ended roster.
+        -- A persistent Start must never replay a session-end notice.
         if not previous.stop_notice and (not focused or client==focused.client and sequence==focused.sequence) then
             publish(client,sequence,previous.phase,previous.code)
         end
@@ -1279,7 +1266,6 @@ end
 
 -- The controls follow the Zoi the player controls.
 local function bind_panel(current)
-    mark_panel_seen(current)
     current.ui_age = 0
     state_value = nil
     current.playback_state, current.node_state, current.outfit_state = nil, nil, nil
@@ -1298,11 +1284,16 @@ local function update_focus()
     if not known or not id then return end -- An unknown lookup is not evidence of a switch.
     local target = Sessions.get(Sessions.holder(id))
     local old = Sessions.focused()
+    -- A stopped background session or a streamed-out session cannot capture the panel on return.
+    if target and target.stopping and (target.stop_origin.addon_id and not target.addon_stop_observed or
+        target.stop_reason == "participant_unloaded" and target ~= old) then target = nil end
     local previous_notice = shown_end_notice
     if target or shown_end_notice and not shown_end_notice.members[id] then shown_end_notice = nil end
-    if not target and not shown_end_notice then shown_end_notice = find_end_notice(id) end
     if target == old then
-        if shown_end_notice ~= previous_notice then publish_focus() end
+        if shown_end_notice ~= previous_notice then
+            publish("none", 0, "idle", "ok")
+            publish_focus()
+        end
         return
     end
     Sessions.focus(target)
