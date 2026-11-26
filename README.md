@@ -20,7 +20,7 @@ SceneZOI is a free, open-source animation framework for **inZOI**. It keeps Zois
 
 **With a gameplay mod**, use that mod's interactions to start a scene.
 
-**Without a gameplay mod**, click your controlled Zoi and choose **Solo SceneZOI session** below **AI Emote**. Open the cog menu, go to **Debug**, and enable **SceneZOI manual start**. Exit the solo session. You can now open the scene picker from your controlled Zoi or supported furniture.
+**Without a gameplay mod**, click your controlled Zoi and choose **Solo SceneZOI Session** below **AI Emote**. Open the cog menu, go to **Debug**, and enable **SceneZOI manual start**. Exit the solo session. You can now open the scene picker from your controlled Zoi or supported furniture.
 
 SceneZOI runs on its own. Animation packs can add new scenes to its built-in idle hubs. For more help with play, settings or reporting a problem, see the [player guide](docs/playing.md).
 

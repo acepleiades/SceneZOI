@@ -7,7 +7,7 @@ native-menu blocking and Exit behavior are shared.
 
 ## Debug manual start
 
-Choose **Solo SceneZOI session** below **AI Emote** on the controlled Zoi to open
+Choose **Solo SceneZOI Session** below **AI Emote** on the controlled Zoi to open
 Scene Settings without a picker. Enable **SceneZOI manual start** under **Debug**
 to replace the solo launcher with **(Debug) SceneZOI manual start** on the
 controlled Zoi and supported available furniture. Turn the toggle off to restore the solo

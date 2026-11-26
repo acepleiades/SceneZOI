@@ -16,13 +16,14 @@
       "id": "scenezoi_demo",
       "type": "interaction_menu",
       "target": "character",
-      "label_key": "Solo SceneZOI session"
+      "label_key": "Solo SceneZOI Session"
     },
     {
       "id": "scenezoi_furniture",
       "type": "interaction_menu",
       "target": "object",
-      "label_key": "(Debug) SceneZOI manual start"
+      "label_key": "(Debug) SceneZOI manual start",
+      "filter": {"objectCategory": ["Bed", "Sofa"]}
     }
   ]
 }

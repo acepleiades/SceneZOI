@@ -95,6 +95,7 @@ widget.BW_WBP_ButtonOK.BW_Text={GetText=function()return 'Create'end,SetText=fun
 function widget.BW_Text_MainTitle:GetText()return 'Create Zoi Group'end
 function widget.BW_Text_TitleNum:GetText()return confirmed_count..' / 2'end
 package.loaded['SceneZOI.Localization'].text=function(text)return text end
+package.loaded['SceneZOI.Clock']={game_scale=function()return 1 end}
 local answer
 E.open_partner(actor,function(code,partner)answer={code,partner}end)
 local token=P.unpack(sent[#sent])[1]

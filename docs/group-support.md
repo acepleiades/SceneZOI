@@ -44,7 +44,7 @@ navigation. The reference does not contain authored three-person choreography.
 
 Use the manual picker to test your pack without writing a gameplay integration:
 
-1. Click the controlled Zoi and choose **Solo SceneZOI session**, below **AI Emote**.
+1. Click the controlled Zoi and choose **Solo SceneZOI Session**, below **AI Emote**.
 2. In **Scene Settings → Debug**, enable **SceneZOI manual start**. This replaces
    the solo launcher with the picker and enables entries on supported furniture.
 3. Select the intended participants. The picker permits one to three total.

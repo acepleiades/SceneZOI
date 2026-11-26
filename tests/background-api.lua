@@ -209,6 +209,7 @@ assert(request('get_version').result.features.autonomous_stage_progress==1)
 local planner_features=request('get_version').result.features
 assert(planner_features.autonomous_stage_priorities==1 and planner_features.autonomous_auto_restrictions==1)
 assert(planner_features.autonomous_joint_goal_routes==1 and planner_features.autonomous_manual_completion_exit==1)
+assert(planner_features.autonomous_auto_speed_minimum==1)
 -- An add-on that comes back through another Zoi can still ask about its own request.
 local _,asked=request('list_sessions',{})
 serial=serial+1

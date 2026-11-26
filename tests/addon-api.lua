@@ -43,10 +43,19 @@ assert(r.result.actions.holding_penis_at_base.sexual_activity==nil)
 r=request('query','find_scenes',{participants={'1','2'},search={allowed_content_ratings={'GENERAL'},required_actions={'embrace'}}});assert(r.ok and r.result.count==1 and r.result.scenes[1].bindings.first=='1')
 r=request('unknown','find_scenes',{search={required_tags={'not_registered'}}});assert(not r.ok)
 
-local finished
-package.loaded['SceneZOIStarter.Entry']={open_partner=function(_,callback) finished=callback end}
+local finished,paused
+package.loaded['SceneZOIStarter.Entry']={open_partner=function(_,callback)
+ assert(not paused,'game_paused');finished=callback
+end}
 require('SceneZOI.Runtime').is_active=function() return false end
 local picker_events=#events
+package.loaded['SceneZOI.Localization']={text=function(key)
+ assert(key=='Paused with the game clock');return 'Game paused'
+end}
+paused=true
+r=request('picker_paused','open_partner_picker',{})
+assert(not r.ok and r.code=='game_paused'and r.message=='Game paused'and not finished and #events==picker_events)
+paused=false
 r=request('picker_default','open_partner_picker',{});assert(r.ok and r.result.opened)
 finished('selected','2')
 assert(events[#events].event.code=='selected' and events[#events].event.partner_id=='2')

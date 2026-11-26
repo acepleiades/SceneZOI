@@ -300,6 +300,18 @@ For a sofa, also pass `furniture_pair_id`: it identifies two adjacent seats,
 leaving the rest available. Preflight is a check, not a reservation.
 [Furniture discovery](addon-controls.md#starting-and-finding)
 
+If players should start an encounter from a furniture menu, declare an
+`interaction_menu` UI Mod trigger with `"id": "scenezoi_furniture"`,
+`"target": "object"` and your own `label_key`. SceneZOI shows that entry on
+objects with a supported bed or sofa profile, including sofas it discovers
+from native sitting slots. Add `"filter": {"objectCategory": ["Bed", "Sofa"]}`
+to have inZOI skip the entry when it opens menus for other kinds of furniture.
+In this filter, `objectCategory` reads the object's inZOI `filterCategory`.
+Set that field to `Bed` or `Sofa` when creating these objects in ModKit.
+The entry uses the ModKit icon on the left. Your trigger still handles the click. Pass its
+`targetEntityId` to your add-on and check availability for the chosen Zois
+before requesting playback. [Furniture profiles](furniture.md)
+
 If your encounter should use a particular body or male genitals attachment,
 declare compatible variants and pass each Zoi's choices through the appearance
 API. These choices survive clothing updates and are restored on Exit without

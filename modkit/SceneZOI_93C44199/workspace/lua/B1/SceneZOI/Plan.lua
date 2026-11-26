@@ -99,10 +99,17 @@ end
 local function auto_speed(value)
  if value==nil then return true end
  if type(value)=='boolean'then return value end
- V.fields(value,{'start','finish'},{'start','finish'})
+ V.fields(value,{'start','finish','minimum'},{'start','finish'})
  local speeds=C.playback_speeds
  V.number(value.start,speeds[1],speeds[#speeds]);V.number(value.finish,speeds[1],speeds[#speeds])
- return {start=value.start,finish=value.finish}
+ local minimum
+ if value.minimum~=nil then
+  for _,speed in ipairs(speeds)do
+   if value.minimum==speed then minimum=speed;break end
+  end
+  assert(minimum,'Invalid minimum Auto-mode playback speed')
+ end
+ return {start=value.start,finish=value.finish,minimum=minimum}
 end
 
 function M.parse(args,definitions,ids,metadata)
@@ -829,14 +836,15 @@ function M.speed_index(session)
  local plan=session.plan
  if not plan or not plan.auto_mode or not plan.auto_speed then return end
  local speeds=C.playback_speeds
- local start,finish
+ local start,finish,minimum
  if plan.auto_speed==true then
   if plan.stage_count==1 then return 2 end
   start,finish=speeds[1],speeds[#speeds]
  else
-  start,finish=plan.auto_speed.start,plan.auto_speed.finish
+  start,finish,minimum=plan.auto_speed.start,plan.auto_speed.finish,plan.auto_speed.minimum
  end
  local target=start+(finish-start)*plan_fraction(plan)
+ if minimum then target=math.max(target,minimum) end
  local closest=1
  for index=2,#speeds do
   if target<(speeds[index-1]+speeds[index])/2 then break end

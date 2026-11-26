@@ -233,7 +233,9 @@ s=at(80,35);step(s,2,.001);assert(s.plan.stage==2,'80% and 35% of their goals is
 s=at(90,25);step(s,2,.001);assert(s.plan.stage==2,'Exactly 25% means the next stage is due')
 s=at(90,24.9);step(s,1,.001);assert(s.plan.stage==1)
 -- The fastest goal can drive the speed and stage while the other goal is still open.
-s=staged({goals={goal_lead,goal_partner},stages=4,stage_progress='fastest'},'both',4)
+s=staged({goals={goal_lead,goal_partner},stages=4,stage_progress='fastest',
+ auto_speed={start=.5,finish=2,minimum=1}},'both',4)
+assert(Plan.speed_index(s)==2,'The minimum applies before either participant makes progress')
 s.tasks.participants['2'].charge.value=25
 step(s,1,.001)
 assert(s.plan.stage==2 and Plan.speed_index(s)==2,'The leading partner sets the stage and speed')
@@ -382,7 +384,17 @@ for stage=1,4 do s.plan.stage=stage;assert(Plan.speed_index(s)==stage)end
 s=session({end_policy={type='addon'}},'still');assert(Plan.speed_index(s)==2,'A single stage defaults to normal speed')
 s=session({end_policy={type='addon'},stages=4,auto_speed={start=1,finish=1.3}},'still');s.plan.stage_count=4
 assert(Plan.speed_index(s)==2);s.plan.stage=4;assert(Plan.speed_index(s)==3)
+s=staged({end_policy={type='addon'},stages=4,auto_speed={start=.5,finish=2,minimum=1}},'still',4)
+for stage,preset in ipairs({2,2,3,4})do
+ s.plan.stage=stage
+ assert(Plan.speed_index(s)==preset,'The minimum clamps the ramp without changing later stage speeds')
+end
+s.plan.stage=1
+assert(Plan.set_auto(s,false)and Plan.speed_index(s)==nil,'Manual speed remains available below the minimum')
+assert(Plan.set_auto(s,true)and Plan.speed_index(s)==2,'Resuming Auto restores the stage minimum')
 refused({end_policy={type='addon'},auto_speed={start=.1,finish=1}},'Invalid')
+refused({end_policy={type='addon'},auto_speed={start=.5,finish=2,minimum=.75}},'Invalid minimum')
+refused({end_policy={type='addon'},auto_speed={start=.5,finish=2,minimum='1.0'}},'Invalid minimum')
 s=session({end_policy={type='addon'},auto_speed=false},'still');assert(Plan.speed_index(s)==nil,'The player can keep speed control')
 -- Manual takeover: nothing automatic happens, the clock stops, and turning it back on re-evaluates.
 s=session({goals={goal_lead},task_progress_multiplier=2,end_policy={type='duration',seconds=100}},'hub')

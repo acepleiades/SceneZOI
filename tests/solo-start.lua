@@ -34,6 +34,17 @@ inzoi={EB1ManagerType={UI=1},EB1ZoiGroupType={Default=1},UB1ZoiGroupEditUIHandle
  end}}
 package.loaded['SceneZOI.Settings']={debug_start_enabled=function()return true end}
 local E=require("SceneZOIStarter.Entry");E.boot()
+local game_scale=0
+package.loaded["SceneZOI.Clock"]={game_scale=function()return game_scale end}
+local ok_open,err_open=pcall(E.open_partner,actor,noop)
+assert(not ok_open and err_open:match("game_paused$")and cap==4 and #sent==0,
+    "A paused partner request leaves the native picker cap and simulation queue alone")
+game_scale=1
+E.open_partner(actor,noop)
+assert(cap==2 and #sent==1 and P.unpack(sent[1])[2]=="open_partner",
+    "A fresh request can open the native partner picker after resuming")
+E.stop()
+assert(cap==4,"The regular picker cancel restores its cap")
 local function tick(dt)E.tick(dt or .05,actors,false)end
 local function open(token)
  cfg.selection_request=P.pack(token,"open","1");E.tick(.2,actors,false)

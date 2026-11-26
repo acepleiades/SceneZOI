@@ -267,7 +267,13 @@ while Auto-mode is on. `placement` and `lifetime` use the
 | `stage_priorities` | Optional list of 1–16 `{stage, matches}` entries. Each stage is a unique integer that must exist for every possible stage count. The 1–16 ordered scene queries in `matches` specify which loops to prefer first and which to try next. Stages without an entry use general selection. Check `features.autonomous_stage_priorities`. |
 | `variety_groups` | Up to 256 entries mapping scene IDs to group IDs, using the same lowercase identifier format. Use a shared group ID for loops representing the same position or activity. Scenes without a group use their own scene ID. Used with `stage_priorities`. |
 | `auto_restrictions` | Optional [scene search criteria](#search-and-session-restrictions) for automatic entry, navigation, transitions and task-completion routes. Lifetime restrictions also apply. Check `features.autonomous_auto_restrictions`. |
-| `auto_speed` | `true` or omitted uses 1.0× in a one-stage plan and steps from 0.5× to 2.0× across multiple stages. Set `false` to keep manual speed control, or supply `{start, finish}` from 0.5 to 2.0. Each stage selects the nearest player preset to its interpolated speed. Ties select the faster preset. Task rates use game time. |
+| `auto_speed` | `true` or omitted uses 1.0× in a one-stage plan and steps from 0.5× to 2.0× across multiple stages. Set `false` to keep manual speed control, or supply `{start, finish, minimum?}`. `start` and `finish` range from 0.5 to 2.0. Each stage selects the nearest player preset to its interpolated speed. Ties select the faster preset. Task rates use game time. |
+
+Set `minimum` to one of the four presets (0.5, 1.0, 1.5 or 2.0) to keep
+Auto-mode at or above that speed. With four stages, `{start: 0.5, finish: 2,
+minimum: 1}` gives 1.0×, 1.0×, 1.5× and 2.0×. This only affects the speed
+preset while Auto-mode is on. The stage thresholds still come from the plan.
+Check `features.autonomous_auto_speed_minimum` before passing `minimum`.
 
 ### Timed start with bundled content
 
@@ -469,6 +475,10 @@ an invitation or starting a scene. `code: "selected"` supplies the chosen
 `"picker_unavailable"` means the native picker could not complete. The
 result goes directly to the requesting add-on. This operation leaves
 existing gameplay groups intact.
+
+If the game clock is paused, the request returns `game_paused` with a
+localized `message` that you can show to the player. No picker opens and no
+finish event follows. Send a new request after the player resumes.
 
 With `features.partner_picker_candidate_filter == 1`, provide
 `candidate_ids` as an array of eligible entity IDs. If the player chooses

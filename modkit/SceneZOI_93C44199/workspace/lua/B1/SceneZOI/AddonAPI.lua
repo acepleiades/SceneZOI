@@ -230,7 +230,7 @@ local function execute(actor,req,row)
   return result
  end
  -- Backward compatibility with add-ons that read maximum_sessions as the single focused session limit.
- if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={stop_session_display_reason=1,partner_picker=1,partner_picker_candidate_filter=1,preflight_start_distance=1,autonomous_scenes=1,autonomous_stages=1,autonomous_stage_progress=1,autonomous_post_completion_stay=1,autonomous_stage_priorities=1,autonomous_auto_restrictions=1,autonomous_joint_goal_routes=1,autonomous_manual_completion_exit=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
+ if op=='get_version'then return {api_version=1,runtime_build=C.build,instance_id=instance,maximum_sessions=1,maximum_npc_sessions=C.max_npc_sessions,features={stop_session_display_reason=1,partner_picker=1,partner_picker_candidate_filter=1,preflight_start_distance=1,autonomous_scenes=1,autonomous_stages=1,autonomous_stage_progress=1,autonomous_post_completion_stay=1,autonomous_stage_priorities=1,autonomous_auto_restrictions=1,autonomous_joint_goal_routes=1,autonomous_manual_completion_exit=1,autonomous_auto_speed_minimum=1,session_registry=1,event_scopes=1,background_sessions=1,placement=1,session_lifetimes=1,scene_metadata=1,scene_search=1,session_restrictions=1,events=2,explicit_bindings=1,preflight=1,furniture_discovery=1,furniture_pairs=1,session_results=1,integration_leases=1,live_controls=1,presentation_overrides=1,facial_poses=1,head_attachments=1,appearance_variants=1,addon_data=1}}end
  if op=='open_partner_picker'then
   V.fields(args,{'candidate_ids'})
   local candidates
@@ -350,6 +350,9 @@ function M.receive(actor,content)
    unknown_operation=true,request_not_found=true,restore_pending=true,capability_not_granted=true,integration_not_registered=true,invalid_capability=true,participant_not_found=true,task_not_found=true,task_provider_unavailable=true,outfit_item_not_found=true,effect_already_exists=true,host_changed=true,integration_limit=true,attachment_limit=true,expression_set_not_found=true,expression_context_not_found=true,incompatible_expression_set=true,facial_pose_not_found=true,incompatible_facial_pose=true}
   local candidate=message:match('([a-z_]+)$')
   response.code=known[candidate]and candidate or 'invalid_request'
+  if req.operation=='open_partner_picker'and candidate=='game_paused'then
+   response.code='game_paused';response.message=require('SceneZOI.Localization').text('Paused with the game clock')
+  end
   if message:find('Scene is restricted for this session',1,true)then response.code='scene_restricted'end
  end
  row.response=response;cache[k]=row;order[#order+1]=k;latest[request_key(req)]=row

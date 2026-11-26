@@ -100,6 +100,7 @@ end
 function M.open_partner(actor,callback)
     local w=widget()
     assert(not pending and not w:IsVisible(),"picker_busy")
+    assert(require("SceneZOI.Clock").game_scale()>0,"game_paused")
     local asset=assert(UE.UObject.Load("/Game/Data/DataAsset/DA_ZoiGroup.DA_ZoiGroup"),"picker_unavailable")
     local p={token="partner."..os.time().."."..math.random(1,1073741823),actor=actor,widget=w,asset=asset,
         old_cap=asset.MaxZoiGroupMemberNum:Find(inzoi.EB1ZoiGroupType.Default),

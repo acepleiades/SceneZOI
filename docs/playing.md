@@ -9,7 +9,7 @@ A **session** lasts from entry to Exit and keeps the same participants. It can c
 ## Start a session
 
 - **With a gameplay mod**, use the interactions it adds. Leave debug start off unless you also want to pick scenes yourself.
-- **Without a gameplay mod**, open **Solo SceneZOI session** below **AI Emote** on your controlled Zoi. Click the cog, turn on **Debug â†’ SceneZOI manual start**, and exit. Use the new picker interaction on your controlled Zoi or on supported furniture. Choose whoever should take part and start the session.
+- **Without a gameplay mod**, open **Solo SceneZOI Session** below **AI Emote** on your controlled Zoi. Click the cog, turn on **Debug â†’ SceneZOI manual start**, and exit. Use the new picker interaction on your controlled Zoi or on supported furniture. Choose whoever should take part and start the session.
 
 Animation packs can add choices to the built-in solo and paired idle hubs. What you see depends on which packs are installed, which Zois you chose, and where the scene is taking place. For example, a bed scene needs a supported bed and clips made for that placement.
 
