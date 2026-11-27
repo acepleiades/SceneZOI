@@ -84,3 +84,22 @@ or overridden, and Exit restores the original local value and inheritance.
 
 The [old issue ledger](https://github.com/acepleiades/SceneZOI/blob/e0cb40d64bb8c313d5c7309c3c5605b231569892/docs/investigations/runtime-and-ui-issues.md)
 has earlier reproductions and measurements for regressions that need more history.
+
+## Deferred furniture menu follow-up
+
+Scrolling to the bottom of the double-bed menu can briefly show **(Debug)
+SceneZOI manual start** while Debug Start is off. The native list creates rows
+as they scroll into view, and SceneZOI currently filters the row after it exists.
+
+- [ ] Test removing only SceneZOI's furniture debug item before the game draws
+  its row when Debug Start is off. Use the exact SceneZOI interaction ID so the
+  check leaves other mods' entries alone. Avoid overriding shared game functions.
+
+Verify the proposed change in game.
+
+- With Debug Start off, open the double-bed menu and scroll up and down. The
+  debug row should stay hidden even as rows scroll into view.
+- With Debug Start on, reopen a supported furniture menu and verify the debug
+  option appears and opens the picker.
+- On the double bed and a sofa, confirm **Have Sex Here** keeps both icons and
+  opens its picker. Check that native furniture actions still work.
