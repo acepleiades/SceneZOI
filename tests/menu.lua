@@ -5,12 +5,23 @@ local function entry(key,target)return {Data={InteractionBagId=key,TargetEntityI
  GetVisibility=function(self)return self.visibility end,SetVisibility=function(self,v)self.visibility=v end}end
 local ours=entry(marker,1);local npc=entry(marker,2);local other_mod=entry("_UIMod_Other~demo",2);local native=entry("Talk",2)
 local object_rows,talk_rows={ours,native},{npc,other_mod}
+local open={object=true,talk=true}
+local windows={Find=function(_,kind)return {IsVisible=function()return open[kind]end}end}
+local scans={object=0,talk=0}
 UE={UGameplayStatics={GetPlayerController=function()return {GetCharacterEntityId=function()return {Value=controlled}end}end},
- UWidgetBlueprintLibrary={GetAllWidgetsOfClass=function(_,_,kind)return kind==1 and object_rows or talk_rows end}}
-inzoi={UB1ObjectInteractionListEntry={StaticClass=function()return 1 end},UB1TalkInteractionListEntry={StaticClass=function()return 2 end}}
+ UWidgetBlueprintLibrary={GetAllWidgetsOfClass=function(_,_,kind)
+    scans[kind]=scans[kind]+1
+    return kind=='object' and object_rows or talk_rows
+ end}}
+inzoi={UB1ObjectInteractionListEntry={StaticClass=function()return 'object'end},
+ UB1TalkInteractionListEntry={StaticClass=function()return 'talk'end},
+ EB1UIType={ObjectInteraction='object',TalkInteraction='talk'},EB1ManagerType={UI=4},
+ UB1System={Get=function()return {ManagerMap={Find=function()return {CachedWindowMap=windows}end}}end}}
 local debug_start=false
+local documents={by_kind={}}
+package.loaded['SceneZOI.DataFiles']={get=function()return documents end,documents=function(kind)return documents.by_kind[kind]or {}end}
 package.loaded['SceneZOI.Settings']={debug_start_enabled=function()return debug_start end}
-package.loaded['SceneZOI.Localization']={text=function(key)return key end}
+package.loaded['SceneZOI.Localization']={culture='en-US',text=function(key)return key end}
 ours.SizeBox_Tag=entry('MOD',1)
 ours.BW_Image_Modkit=entry('ModKit',1);ours.BW_Image_Modkit.visibility=1
 npc.BW_SizeBox_Tag=entry('MOD',1)
@@ -95,8 +106,27 @@ assert(M.tick(actors, false))
 assert(chair.visibility == 0 and unknown.visibility == 0, 'Pooled menu rows restore when reused by a native entry or supported target')
 unknown.Data.TargetEntityId.Value = 44
 assert(M.tick(actors, false) and unknown.visibility == 1)
+local furniture_ticks=0
+package.loaded['SceneZOI.Furniture'].tick=function() furniture_ticks=furniture_ticks+1 end
+open.object=false;open.talk=false
+scans.object=0;scans.talk=0
+assert(M.tick(actors,false) and M.tick(actors,false))
+assert(scans.object==0 and scans.talk==0 and furniture_ticks==2,
+    'Closed panels skip both widget scans while furniture status stays current')
+assert(unknown.visibility==0 and sofa.SizeBox_Tag.visibility==0 and sofa.BW_Image_Modkit.visibility==2,
+    'Closing the menu restores the pooled rows without another scan')
+open.object=true
+assert(M.tick(actors,false))
+assert(scans.object==1 and scans.talk==0 and unknown.visibility==1 and sofa.BW_Image_Modkit.visibility==4,
+    'The first open tick scans and styles only the object menu')
+open.object=false;open.talk=true
+assert(M.tick(actors,false))
+assert(scans.object==1 and scans.talk==1 and unknown.visibility==0,
+    'Switching to talk scans only talk rows and restores the object rows')
+open.object=true
+assert(M.tick(actors,false) and unknown.visibility==1)
 M.stop()
 assert(unknown.visibility == 0, 'Unload restores an add-on row hidden by the framework')
 assert(sofa.SizeBox_Tag.visibility==0 and sofa.BW_Image_Modkit.visibility==2, 'Unload restores the exact native badge and icon visibility')
 
-print("Native menu passed: control/readiness, add-on furniture, reused rows, exact native visibility, detached entries and unload cleanup.")
+print("Native menu passed: visible panels only, immediate styling, add-on furniture, pooled rows and cleanup.")

@@ -312,6 +312,38 @@ The entry uses the ModKit icon on the left. Your trigger still handles the click
 `targetEntityId` to your add-on and check availability for the chosen Zois
 before requesting playback. [Furniture profiles](furniture.md)
 
+If your interaction needs a localized caption or a fallback icon, register the
+row with SceneZOI instead of searching for its widget from your add-on. Check
+`get_version.features.shared_interaction_menu == 1`. Add an
+`interaction_menu` declaration to the same native declaration table used by
+content packs. Its `data.entries` list can style entries in both native menus.
+For example:
+
+```json
+{
+  "entries": [
+    {
+      "id": "_UIMod_MyAddOn_12345678/venue~scenezoi_furniture",
+      "menu": "object",
+      "label": "Invite Here",
+      "translations": { "fr-fr": "Inviter ici" }
+    }
+  ]
+}
+```
+
+For a native interaction use its exact interaction bag ID. Set `menu` to
+`object` for furniture or ground, or `talk` for the conversation tray. Use
+lowercase locale keys and supply an English fallback in `label`. An optional
+object `icon` supplies a texture only when the native icon is missing.
+Object rows can also declare `mood_locks` using the native emotion IDs that
+disable the interaction at intensity 3 or higher. Keep the same restriction
+in the code that accepts the click. If the game has no tooltip for a mood,
+you can supply a fallback in `data.mood_tooltip` with its own `label` and
+`translations`. The declaration styles the row during
+the shared menu pass. Your add-on still handles invitations, eligibility
+and gameplay outcomes.
+
 If your encounter should use a particular body or male genitals attachment,
 declare compatible variants and pass each Zoi's choices through the appearance
 API. These choices survive clothing updates and are restored on Exit without
