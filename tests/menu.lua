@@ -129,4 +129,46 @@ M.stop()
 assert(unknown.visibility == 0, 'Unload restores an add-on row hidden by the framework')
 assert(sofa.SizeBox_Tag.visibility==0 and sofa.BW_Image_Modkit.visibility==2, 'Unload restores the exact native badge and icon visibility')
 
+-- The UI Mod injects its raw entries before SceneZOI styles and filters them.
+-- A rejected fallback icon must not undo that work or skip subsequent rows.
+local hzoi_marker = '_UIMod_HZoiGameplayPrototype_4BD2AC16/venue-invitation~scenezoi_furniture'
+local heart_path = '/Game/UI/Icon/Conversation/Conversation_Icon_Mood.Conversation_Icon_Mood'
+local heart, icon_attempts = {}, 0
+documents = {by_kind = {interaction_menu = {{
+    source = 'fixture',
+    data = {entries = {{id = hzoi_marker, menu = 'object', label = 'Have Sex Here', icon = heart_path}}},
+}}}}
+UE.UObject = {Load = function(path)
+    assert(path == heart_path)
+    return heart
+end}
+UE.UWidgetBlueprintLibrary.GetBrushResource = function(brush) return brush.resource end
+local hzoi = entry(hzoi_marker, 42)
+hzoi.BW_Text_Content = {GetText = function() return 'Old label' end, SetText = function(_, label) hzoi.label = label end}
+hzoi.SizeBox_Tag = entry('MOD', 1)
+hzoi.BW_Image_Modkit = entry('ModKit', 1)
+hzoi.BW_Image_Modkit.visibility = 2
+hzoi.BW_Image_Icon = entry('Heart', 1)
+hzoi.BW_Image_Icon.visibility = 1
+hzoi.BW_Image_Icon.Brush = {}
+function hzoi.BW_Image_Icon:SetBrushFromTexture(texture)
+    assert(texture == heart)
+    icon_attempts = icon_attempts + 1
+    error("bad argument #1 to 'SetBrushFromTexture' (object needed but got nil or incompatible value)")
+end
+local disabled_debug = entry(future.Data.InteractionBagId, 31)
+local unsupported = entry(hzoi_marker, 43)
+controlled, debug_start = 3, false
+object_rows = {hzoi, disabled_debug, unsupported, native}
+local ok = M.tick({['3'] = {}}, true)
+assert(icon_attempts >= 1, 'Exercise a native texture assignment failure')
+assert(ok, 'An optional heart texture failure must not abort the native menu update')
+assert(hzoi.visibility == 0 and hzoi.label == 'Have Sex Here')
+assert(hzoi.SizeBox_Tag.visibility == 1 and hzoi.BW_Image_Modkit.visibility == 4,
+    'The usable HZoi row keeps its established ModKit icon and hides the raw badge')
+assert(disabled_debug.visibility == 1, 'Debug disabled still hides the SceneZOI row after an icon failure')
+assert(unsupported.visibility == 1 and native.visibility == 1,
+    'Subsequent unsupported rows are filtered without changing unrelated native rows')
+M.stop()
+
 print("Native menu passed: visible panels only, immediate styling, add-on furniture, pooled rows and cleanup.")

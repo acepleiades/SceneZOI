@@ -126,8 +126,16 @@ menu.stop()
 assert(floor.label.text == "" and talk.label.text == "")
 localization.culture = "en-US"
 sofa = entry(furniture, "Original caption", 1)
+local previous_texture = texture
+texture = {}
+function sofa.BW_Image_Icon:SetBrushFromTexture(value, match_size)
+    assert(not match_size and value ~= previous_texture, "The previous native texture was collected")
+    self.Brush.texture = value
+end
 apply({sofa}, {talk})
 assert(sofa.label.text == "Invite Here" and talk.label.text == "Invite")
+assert(sofa.BW_Image_Icon.Brush.texture == texture and texture_loads == 2,
+    "Reopening a menu must acquire a fresh native texture")
 assert(sofa.ToolTipText == "Mood restriction.")
 apply({}, {})
 assert(sofa.label.text == "Original caption" and talk.label.text == "")

@@ -1,6 +1,7 @@
 -- Optional presentation for exact add-on interaction IDs. Gameplay and click
 -- handling stay with the add-on; the shared menu supplies the native rows.
 local Files = require("SceneZOI.DataFiles")
+local Diagnostics = require("SceneZOI.Diagnostics")
 local Localization = require("SceneZOI.Localization")
 local Validate = require("SceneZOI.DataValidation")
 
@@ -10,7 +11,7 @@ local DIMMED_OPACITY = 0.5
 local EMOTION_TEXT = "/Game/Data/String/Data/ST_Emotion.ST_Emotion"
 local entry_fields = {"id", "menu", "label", "translations", "icon", "mood_locks"}
 local source, compiled
-local changed, textures = {}, {}
+local changed, failed_icons = {}, {}
 
 local function readLabel(spec)
     local label = Validate.name(spec.label)
@@ -114,6 +115,22 @@ local function brushResource(icon)
     return UE.UWidgetBlueprintLibrary.GetBrushResource(icon.Brush)
 end
 
+local function applyIcon(frame, row, state, path)
+    local icon = row.BW_Image_Icon
+    if not icon or icon:GetVisibility() ~= COLLAPSED then return end
+    -- A Lua reference alone does not keep an Unreal texture alive. Resolve it
+    -- in the current scan, then let the native brush hold it while it is shown.
+    local texture = frame.textures[path]
+    if not texture then
+        texture = assert(UE.UObject.Load(path), "Interaction menu texture could not be loaded")
+        frame.textures[path] = texture
+    end
+    local readable, original = pcall(brushResource, icon)
+    icon:SetBrushFromTexture(texture, false)
+    state.icon = {widget = icon, readable = readable, original = original, applied = texture}
+    icon:SetVisibility(ICON_VISIBLE)
+end
+
 local function restoreMood(row, remembered, bound)
     if remembered.opacity ~= nil and row:GetRenderOpacity() == DIMMED_OPACITY then
         row:SetRenderOpacity(remembered.opacity)
@@ -187,7 +204,8 @@ end
 
 ---@param controller AB1PlayerController?
 function M.frame(controller)
-    return {rules = registry(), controller = controller, culture = (Localization.culture or "en-US"):lower(), kept = {}}
+    return {rules = registry(), controller = controller, culture = (Localization.culture or "en-US"):lower(),
+        kept = {}, textures = {}}
 end
 
 ---@param row UB1ObjectInteractionListEntry|UB1TalkInteractionListEntry
@@ -225,19 +243,15 @@ function M.apply(frame, row, isObject, id, permitted)
             caption:SetText(label)
         end
     end
-    if rule.icon then
-        local icon = row.BW_Image_Icon
-        if icon and icon:GetVisibility() == COLLAPSED then
-            if textures[rule.icon] == nil then
-                local ok, texture = pcall(UE.UObject.Load, rule.icon)
-                textures[rule.icon] = ok and texture or false
-            end
-            if textures[rule.icon] then
-                local readable, original = pcall(brushResource, icon)
-                icon:SetBrushFromTexture(textures[rule.icon], false)
-                icon:SetVisibility(ICON_VISIBLE)
-                state.icon = {widget = icon, readable = readable, original = original, applied = textures[rule.icon]}
-            end
+    if rule.icon and not failed_icons[rule.icon] then
+        local ok, err = pcall(applyIcon, frame, row, state, rule.icon)
+        if not ok then
+            -- Keep filtering and styling the menu. Retry the optional image
+            -- on the next open instead of loading a bad asset every frame.
+            failed_icons[rule.icon] = true
+            Diagnostics.record("interaction_menu_icon_failed", {
+                interaction_id = id, asset = rule.icon, detail = Diagnostics.detail(err),
+            })
         end
     end
     if rule.moods then
@@ -263,6 +277,7 @@ end
 
 function M.stop()
     for row in pairs(changed) do pcall(restore, row) end
+    failed_icons = {}
 end
 
 return M
