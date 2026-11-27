@@ -2,6 +2,16 @@
     'use strict';
     function bindTextCommit(input, commit) {
         var sawDown = false, sawPress = false;
+        function selectValue() {
+            if (!input.disabled) input.select();
+        }
+        input.addEventListener('focusin', selectValue);
+        input.addEventListener('mousedown', function (event) {
+            if (event.button !== 0 || input.disabled || document.activeElement === input) return;
+            // Keep the initial selection instead of placing the caret in a full field.
+            event.preventDefault();
+            input.focus();
+        });
         function enter(event) {
             // Cohtml can deliver Return through the legacy keyboard fields.
             if (event.isComposing || !(event.key === 'Enter' || event.key === 'Return' ||
@@ -14,16 +24,16 @@
         input.addEventListener('keydown', function (event) {
             if (!enter(event)) return;
             sawDown = true;
-            if (!event.repeat) commit();
+            if (!event.repeat) { commit(); selectValue(); }
         });
         input.addEventListener('keypress', function (event) {
             if (!enter(event)) return;
             sawPress = true;
-            if (!sawDown && !event.repeat) commit();
+            if (!sawDown && !event.repeat) { commit(); selectValue(); }
         });
         input.addEventListener('keyup', function (event) {
             if (!enter(event)) return;
-            if (!sawDown && !sawPress) commit();
+            if (!sawDown && !sawPress) { commit(); selectValue(); }
             sawDown = sawPress = false;
         });
         input.addEventListener('blur', function () { sawDown = sawPress = false; });

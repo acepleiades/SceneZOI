@@ -5,6 +5,9 @@ Management. It opens Scene Settings in the same attached panel. Only one of
 these panels is open at a time; task-tray ordering, resizing, compact mode,
 native-menu blocking and Exit behavior are shared.
 
+Click a number to select its current value, type the replacement, and press
+Enter or leave the field to save it.
+
 ## Debug manual start
 
 Choose **Solo SceneZOI Session** below **AI Emote** on the controlled Zoi to open

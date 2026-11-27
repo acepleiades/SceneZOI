@@ -11,6 +11,11 @@ let taskRaw='',debugRaw='',settingsReads=0;
 let previewRaw='',previewReads=0,previewDeferred=null;
 let s={client:'test',sequence:1,revision:2,active:true,exiting:false,pendingNavigation:null},raw='',visible=true,deferred=null;
 const document={getElementById:k=>elements[k],activeElement:null,addEventListener(k,f){(docEvents[k]??=[]).push(f);}};
+for(const [id,input] of Object.entries(elements)){
+ if(!/^volume-number-|^attachment-preview-[XYZ]$/.test(id))continue;
+ input.select=function(){this.selectionStart=0;this.selectionEnd=this.value.length;};
+ input.focus=function(){document.activeElement=this;this.focusin?.();};
+}
 const context={window:{addEventListener(){}},document,setInterval(f){timers.push(f);},Number,String,Object,Math,Promise};
 vm.runInNewContext(fs.readFileSync('modkit/SceneZOI_93C44199/ui/scenezoi/settings-ui.js','utf8'),context);
 const ui=context.window.SceneZOISettingsUI.create({container:{},state:()=>s,visible:()=>visible,write(k,v){writes.push({k,v});return Promise.resolve();},cfg(command,key){if(key.startsWith('settings_'))settingsReads++;if(key==='settings_task_rates_state')return Promise.resolve({value:taskRaw});if(key==='settings_debug_start_state')return Promise.resolve({value:debugRaw});if(key==='attachment_preview_state'){previewReads++;return previewDeferred?new Promise(resolve=>{previewDeferred=resolve;}):Promise.resolve({value:previewRaw});}return deferred?new Promise(resolve=>{deferred.resolve=resolve;}):Promise.resolve({value:raw});}});
@@ -19,6 +24,11 @@ const event=x=>({button:0,clientX:x,preventDefault(){}});
 function frame(ack=0,values=[100,100,100],code='ok',rev=s.revision){return ['SZ2',s.client,s.sequence,rev,ack,code,...values].join('|');}
 async function poll(){timers[1]();for(let i=0;i<10;i++)await Promise.resolve();}
 function typed(k,value){number(k).value=value;number(k).change();}
+function replaceByTyping(input,value){
+ const next=input.value.slice(0,input.selectionStart)+value+input.value.slice(input.selectionEnd);
+ assert(next.length<=3,'The current value must be selected before typing into a full percentage field');
+ input.value=next;
+}
 function enter(input,type,fields){
  let prevented=false;
  input[type]({...fields,preventDefault(){prevented=true;}});
@@ -66,9 +76,20 @@ function enter(input,type,fields){
  taskRaw=frame(0,[100,100]);timers[0]();for(let i=0;i<10;i++)await Promise.resolve();
  assert(!number('task-female').disabled && !number('task-male').disabled);
  const previousAudio=number('male').value;
- number('task-female').value='50';
+ const taskField=number('task-female');
+ let prevented=false;
+ assert.equal(typeof taskField.mousedown,'function','Clicking a percentage must focus it for replacement');
+ taskField.mousedown({button:0,preventDefault(){prevented=true;}});
+ assert(prevented && document.activeElement===taskField);
+ assert.deepEqual([taskField.selectionStart,taskField.selectionEnd],[0,3]);
+ const beforeTyping=writes.length;
+ replaceByTyping(taskField,'50');
+ assert.equal(writes.length,beforeTyping,'Typing should wait for the usual commit');
  enter(number('task-female'),'keydown',{code:'NumpadEnter'});
- number('task-male').value='200';
+ assert.deepEqual([taskField.selectionStart,taskField.selectionEnd],[0,2]);
+ taskField.mousedown({button:0,preventDefault(){assert.fail('An already focused field must allow normal caret placement');}});
+ number('task-male').focus();
+ replaceByTyping(number('task-male'),'200');
  enter(number('task-male'),'keyup',{keyCode:13});
  assert.equal(writes.at(-1).k,'settings_task_rates');assert.match(writes.at(-1).v,/\|settings_task_rates\|2\|2\|50\|200$/);
  assert.equal(number('male').value,previousAudio,'Task edits must not alter volume controls');
@@ -133,6 +154,10 @@ async function checkAttachmentPreview(){
  assert(element('-export').disabled,'A scene with no preview edits has nothing to export');
  select('bone','joint_r');
  const x=element('-X'), y=element('-Y');
+ x.mousedown({button:0,preventDefault(){}});
+ assert.equal(document.activeElement,x);
+ assert.deepEqual([x.selectionStart,x.selectionEnd],[0,x.value.length],'Angle fields should also select the current value');
+ document.activeElement=null;
  const oldWrites=writes.length;
  x.value='181';x.change();
  assert.equal(writes.length,oldWrites);
