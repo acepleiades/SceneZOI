@@ -72,7 +72,7 @@ function fixture(options = {}) {
   root.choosePairs=choices=>context.SceneZOIControls.chooseFurniturePair(choices);
   root.canStart=()=>context.SceneZOIControls.available();
 
-  return {elements,root,timers,commands,hover,rects,classes,advanceTime(ms){time+=ms;},clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:()=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'}}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{
+  return {elements,root,timers,commands,hover,rects,classes,advanceTime(ms){time+=ms;},clickHide(){for(const fn of documentListeners.click)fn({target:{id:'hide-btn'},preventDefault(){},stopImmediatePropagation(){}});},start:(entry={})=>context.SceneZOIControls.start({initiator:String(controlled),node:'scenezoi.standing_idle',bindings:{male:'20522',female:'20524'},...entry}),setTasks:s=>{taskState=s;},setFocus:s=>{focusState=s;},setPlan:s=>{planState=s;},setState:s=>{state=s;},setNavigation:s=>{
       const [,client,sequence,revision,node]=s.split('|');
       focusState=`SZ2|1|test.session|${client}|${sequence}|${revision}|${node}|playing`;
       navigationState=s+'|test.session';
@@ -85,6 +85,8 @@ async function flush(){for(let i=0;i<60;i++)await Promise.resolve();}
 const writes=(ui,key)=>ui.commands.filter(c=>c.params?.key===key).map(c=>c.params.value);
 const reads=(ui,...keys)=>ui.commands.filter(c=>c.command==='uimod.cfg_load' && keys.includes(c.params.key)).length;
 async function run(){
+  const solo=fixture();await solo.start({bindings:{male:'20522'},solo_launcher:true});await flush();
+  assert.match(writes(solo,'request').at(-1),/\|male:20522\|none\|none\|none\|solo$/,'Start keeps the launcher mode after the optional furniture and API fields');
   const pairPicker=fixture();await flush();
   const pairResult=pairPicker.root.choosePairs([{id:'left',label:'Left seats'},{id:'right',label:'Right seats'}]);
   assert.equal(pairPicker.root.canStart(),false);assert.equal(pairPicker.root.style.visibility,'visible');

@@ -2,6 +2,7 @@
 return {
     solo_click_window = .35, mod_id = "SceneZOI_93C44199", section = "scenezoi_runtime", data_table = "Text", data_prefix = "SceneZOI_Declaration_",
     picker_cap = 3, poll_interval = 0.2, prepare_timeout = 8.0, lease_timeout = 6.0,
+    solo_restrictions = {allowed_content_ratings = {"GENERAL"}},
     max_npc_sessions = 15, standing_spacing_cm = 200, background_max_start_distance_cm = 1500,
     background_default_seconds = 600, background_max_seconds = 7200,
     plan_max_goals = 16, plan_max_completions = 100, plan_min_multiplier = 0.1, plan_max_multiplier = 5,

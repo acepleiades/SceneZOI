@@ -9,7 +9,7 @@
         var packet=p.pairReply;if(!packet || pending!==p)return Promise.resolve();
         return cfg('uimod.cfg_save','selection_pair',packet).then(function(){if(p.pairReply===packet)p.pairReply=null;});
     }
-    function selected(p,ids,node,roster,furniture,pairId){
+    function selected(p,ids,node,roster,furniture,pairId,entryMode){
         if(ids.length<1 || new Set(ids).size!==ids.length || ids[0]!==p.initiator){stop(p);return Promise.resolve();}
         var bindings={},seen=new Set();
         if(typeof node!=='string'||typeof roster!=='string'){stop(p);return Promise.resolve();}
@@ -22,7 +22,7 @@
         var ready=window.SceneZOIControls.refreshCatalog?window.SceneZOIControls.refreshCatalog():Promise.resolve();
         return ready.then(function(){
             if(pending!==p)return false;
-            pending=null;return window.SceneZOIControls.start({initiator:p.initiator,node:node,bindings:bindings,furniture:furniture==='none'?null:furniture,furniture_pair_id:pairId==='none'?null:pairId});
+            pending=null;return window.SceneZOIControls.start({initiator:p.initiator,node:node,bindings:bindings,furniture:furniture==='none'?null:furniture,furniture_pair_id:pairId==='none'?null:pairId,solo_launcher:entryMode==='solo'});
         }).catch(function(){if(pending===p)stop(p);else window.SceneZOIControls.decline(p.initiator,p.token);});
     }
     function poll(){
@@ -42,7 +42,7 @@
                     return writePairReply(p);
                 });
             }
-            if(f[2]==='selected')return selected(p,f[3].split('+'),f[4],f[5],f[6],f[7]);
+            if(f[2]==='selected')return selected(p,f[3].split('+'),f[4],f[5],f[6],f[7],f[9]);
             if(f[2]==='cancelled' || f[2]==='error' || f[2]==='unavailable')stop(p);
         }).catch(function(){}).then(function(){p.reading=false;});
     }

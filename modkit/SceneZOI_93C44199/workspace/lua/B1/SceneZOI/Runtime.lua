@@ -413,10 +413,13 @@ local function auto_allows(current, node_id)
     return not (current.plan and current.plan.auto_mode) or plan_allows(current.plan, node_id)
 end
 
-local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon, furniture_pair_id)
+local function create_session(client, sequence, initiator, node_id, roster, furniture_id, addon, furniture_pair_id, solo_launcher)
     local node = Catalog.get(node_id)
+    local restrictions = addon and addon.restrictions or solo_launcher and Config.solo_restrictions
+    if addon or restrictions then
+        assert(Search.allowed(Catalog.get_snapshot().nodes,node,restrictions),'Scene is restricted for this session')
+    end
     if addon then
-        assert(Search.allowed(Catalog.get_snapshot().nodes,node,addon.restrictions),'Scene is restricted for this session')
         assert(plan_allows(addon.plan, node_id), 'Scene is restricted in Auto-mode')
     end
     assert((node.furniture~=nil)==(furniture_id~=nil),'Scene requires the matching furniture context')
@@ -445,6 +448,7 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
         initiator = initiator, participant_ids = participant_ids, participants = participants,
         assets = assets, node = node, duration = duration, require_resolved_outfit = true,furniture=furniture,anchor=furniture and furniture.anchor,
         appearance_selections = require('SceneZOI.DataValidation').copy(addon and addon.appearance or {}),
+        session_restrictions = require('SceneZOI.DataValidation').copy(restrictions),
     })
     current.tasks=Tasks.new(Catalog.get_snapshot().tasks,participants,node)
     for _,person in ipairs(participants) do
@@ -459,7 +463,6 @@ local function create_session(client, sequence, initiator, node_id, roster, furn
     if addon then
         current.addon_id,current.addon_client_id,current.request_id=addon.req.addon_id,addon.req.client_id,addon.req.request_id
         current.addon_context=require('SceneZOI.DataValidation').copy(addon.context)
-        current.session_restrictions=require('SceneZOI.DataValidation').copy(addon.restrictions)
     end
     assert(not Save.overlaps(participant_ids, furniture_id,furniture and furniture.spot_ids), "restore_pending")
     if not addon then assert(Sessions.reserve(current.token, participant_ids, furniture_id,furniture and furniture.spot_ids)) end
@@ -497,7 +500,9 @@ local function begin(fields)
     local addon=Addons.context(fields[8]~='none'and fields[8]or nil,fields)
     assert(addon or not Addons.has_pending(),'Another scene start is pending')
     local furniture_id=fields[7]~='none'and fields[7]or nil
-    local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon,fields[9]~='none'and fields[9]or nil)
+    -- Keep the original launcher's policy even if debug mode changes during the session.
+    local solo_launcher = not addon and fields[10] == 'solo' or nil
+    local current = create_session(client, sequence, initiator, node_id, roster, furniture_id, addon,fields[9]~='none'and fields[9]or nil,solo_launcher)
     current.manual_sofa_start = not addon and current.furniture and current.furniture.profile.kind=='sofa.pair' or false
     Sessions.add(current)
     Sessions.focus(current)

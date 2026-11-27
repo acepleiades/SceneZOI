@@ -42,7 +42,9 @@ function M.new()
     for _, name in ipairs({"DataFiles", "ExpressionLibrary", "FacialPoseLibrary", "VoiceLibrary"}) do
         package.loaded["SceneZOI." .. name] = {refresh = noop}
     end
-    package.loaded["SceneZOI.SceneSearch"] = {allowed = yes}
+    package.loaded["SceneZOI.SceneSearch"] = {allowed = function(...)
+        return not fixture.scene_allowed or fixture.scene_allowed(...)
+    end}
     package.loaded["SceneZOI.AddonEffects"] = {idle = noop, retain = noop, restore = noop, tick = noop, release = noop, player_outfit = noop}
     package.loaded["SceneZOI.AddonControl"] = {reset = noop, tick = noop, init = noop, enter = noop, sample = noop, speed = function() return 1 end,
         ended = noop, release = noop, facts = function() return {} end, note_restoration = noop}

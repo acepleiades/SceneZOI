@@ -13,11 +13,11 @@ local function cfg(command,key,value)
     if command=="uimod.cfg_load" and not ok then return nil end
     assert(ok,message);return data or message
 end
-local function publish(token,kind,detail,node,bindings,context)
+local function publish(token,kind,detail,node,bindings,context,entry_mode)
     local source = context or pending
     local furniture = source and source.furniture
     cfg("uimod.cfg_save","selection_state",Protocol.pack(token,kind,detail or "none",node or "none",bindings or "none",furniture or "none",source and source.furniture_pair_id or 'none',
-        kind=='choosing_pair'and source and Protocol.encode(Json.encode(source.pair_choices))or 'none'))
+        kind=='choosing_pair'and source and Protocol.encode(Json.encode(source.pair_choices))or 'none',entry_mode or 'none'))
     if kind=="selected" or kind=="unavailable" or kind=="error" then
         Diagnostics.record("picker_"..kind, {picker_id=token, scene_id=node, bindings=bindings, furniture_id=furniture,
             code=kind=="unavailable" and detail or kind=="error" and "selection_error" or "ok",
@@ -164,10 +164,10 @@ local function update(dt,actors,busy)
                     assert(not furniture,"Furniture starts require debug mode")
                     assert(require('SceneZOI.Controller').controlled_id(actors)==fields[3],"The controlled Zoi changed before Solo Start")
                     local held=require('SceneZOI.Sessions').holder(fields[3])
-                    local chosen=not held and solo_start(actor,nil,{"GENERAL"})
+                    local chosen=not held and solo_start(actor,nil,Config.solo_restrictions.allowed_content_ratings)
                     if chosen then
                         local role,id=next(chosen.bindings)
-                        publish(fields[1],"selected",id,chosen.node,role..":"..id)
+                        publish(fields[1],"selected",id,chosen.node,role..":"..id,nil,"solo")
                     else
                         require('SceneZOI.Runtime').authorize_rejected_focus(actor,fields[1])
                         pcall(require('SceneZOI.Localization').toast,held and 'A participant is already in another session.' or 'SceneZOI could not find a suitable starting scene for the selected Zois.')

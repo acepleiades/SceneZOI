@@ -35,7 +35,7 @@ function fixture(controlled='1',body={1:'Male',2:'Male',3:'Female',4:'Female'},f
  const l={...common,setTimeout:(f)=>retries.push(f),inzoi:{cli:{execute:cli},trigger:{onActivated:f=>activate=f},view:{hide:()=>{visible=false;hides++;}}}};
  vm.runInNewContext(launcher,l);
  return {activate:(id=controlled,kind='scenezoi_demo')=>{if(visible){visible=false;return Promise.resolve();}visible=true;return activate({triggerId:kind,targetEntityId:id});},
-  poll:()=>timer(),set:(kind,ids,node='scenezoi.standing_idle',roles='female:3+male:1',bed='none',pair='none')=>values.selection_state=['SZ2',values.selection_request.split('|')[1],kind,ids,node,roles,bed,pair].join('|'),
+  poll:()=>timer(),set:(kind,ids,node='scenezoi.standing_idle',roles='female:3+male:1',bed='none',pair='none',mode='none')=>values.selection_state=['SZ2',values.selection_request.split('|')[1],kind,ids,node,roles,bed,pair,'none',mode].join('|'),
   starts,declines,declineTokens,notices,toasts,reads,pairChoices,setPairChoices:choices=>{values.selection_state=['SZ2',values.selection_request.split('|')[1],'choosing_pair','none','none','none','50','none',Buffer.from(JSON.stringify(choices),'utf8').toString('hex')].join('|');},get pairReply(){return values.selection_pair;},advanceTime:ms=>{tick+=ms;},setRequest:raw=>{values.selection_request=raw;},idle:()=>{available=true;},restartHost:(name='nextHost')=>{values.selection_host_ready='SZ2|'+name+'|ready|none';values.selection_ui_ready='none';},retry:()=>retries.splice(0).forEach(f=>f()),get request(){return values.selection_request;},get ready(){return values.selection_ui_ready;},get launcher(){return values.selection_launcher_ready;},startReceiver,get hides(){return hides;},setPhase:phase=>{values.state='SZ2|session|1|'+phase+'|ok';},busy:()=>{available=false;values.state='SZ2|session|1|playing|ok';}};
 }
 async function boot(f){
@@ -106,6 +106,9 @@ async function run(){
  const afterRejection=quiet.reads.length;quiet.advanceTime(200);await quiet.poll();
  assert.deepEqual(quiet.reads.slice(afterRejection),['selection_request'],'Throttling must not increase active picker readiness polling');
  const failed=await boot(fixture());await failed.activate();await failed.poll();failed.set('error','departure_failed');await failed.poll();await flush();assert.equal(failed.starts.length,0);assert.equal(failed.declines.length,1);
+ const solo=await boot(fixture());await solo.activate();await solo.poll();
+ solo.set('selected','1','other.hub','solo:1','none','none','solo');await solo.poll();await flush();
+ assert.equal(solo.starts[0].solo_launcher,true,'Carry the default launcher mode to Start');
  const repeated=await boot(fixture());
  for(let n=0;n<8;n++){
   const old=repeated.request;await repeated.activate();await flush();assert.notEqual(repeated.request,old,'Every single native activation must write a new request');
@@ -115,7 +118,7 @@ async function run(){
  for(const ids of ['1','1+1','3+1','1+2','1+3+4','1+2+3','1+2+3+4']){
   const f=await boot(fixture());await f.activate();await f.poll();f.set('selected',ids);await f.poll();await flush();assert.equal(f.starts.length,0,ids);
  }
- for(const [ids,roles] of [['1','solo:1'],['1+2','first:1+second:2'],['3+4','first:3+second:4'],['1+3+4','one:1+two:3+three:4'],['1+2+3','one:1+two:2+three:3']]){const f=await boot(fixture(ids[0]));await f.activate();await flush();await f.poll();f.set('selected',ids,'other.hub',roles);await f.poll();await flush();assert.equal(f.starts.length,1);assert.equal(f.starts[0].node,'other.hub');}
+ for(const [ids,roles] of [['1','solo:1'],['1+2','first:1+second:2'],['3+4','first:3+second:4'],['1+3+4','one:1+two:3+three:4'],['1+2+3','one:1+two:2+three:3']]){const f=await boot(fixture(ids[0]));await f.activate();await flush();await f.poll();f.set('selected',ids,'other.hub',roles);await f.poll();await flush();assert.equal(f.starts.length,1);assert.equal(f.starts[0].node,'other.hub');assert.equal(f.starts[0].solo_launcher,false);}
  console.log('Demo entry passed: separate launcher/receiver, eight single native activations, discovered MF/MM/FF/MFF/MMF roles accepted; unavailable scenes declined, self-only preflight, busy guard/departure failure, stale boot request and cancellation.');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});

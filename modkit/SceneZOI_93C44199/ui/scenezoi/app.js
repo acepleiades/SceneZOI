@@ -218,9 +218,15 @@
             function (error) { forget(); throw error; });
         return job.promise;
     }
-    function send(action, initiator, roster, node, furniture, apiToken, pairId) {
+    function send(action, initiator, roster, node, furniture, apiToken, pairId, soloLauncher) {
         var fields = ['SZ2', client, String(sequence), action];
-        if (initiator && roster) {fields.push(initiator, node, roster);if(furniture||apiToken||pairId)fields.push(furniture||"none");if(apiToken||pairId)fields.push(apiToken||"none");if(pairId)fields.push(pairId);}
+        if (initiator && roster) {
+            fields.push(initiator, node, roster);
+            if(furniture||apiToken||pairId||soloLauncher)fields.push(furniture||"none");
+            if(apiToken||pairId||soloLauncher)fields.push(apiToken||"none");
+            if(pairId||soloLauncher)fields.push(pairId||"none");
+            if(soloLauncher)fields.push("solo");
+        }
         var packet = fields.join('|');
         pendingCommand = packet;
         return writePacket('request', packet);
@@ -320,7 +326,7 @@
                 pendingPlayback=null;playbackCounter=0;acknowledgedPlayback=0;speedIndex=2;gameScale=1;
                 heartbeat=0;pendingCommand=null;
                 openPanel();show(window.SceneZOILocalization.text('Preparing Scene Mode…'));
-                return send('start',initiator,roster,node,entry.furniture,entry.api_token,entry.furniture_pair_id).then(function(){return true;});
+                return send('start',initiator,roster,node,entry.furniture,entry.api_token,entry.furniture_pair_id,entry.solo_launcher).then(function(){return true;});
             }).catch(function(error){
                 if(pendingCommand){show(window.SceneZOILocalization.text('Retrying the scene request…'));return false;}
                 if(active){active=false;pendingCommand=null;show(window.SceneZOILocalization.text('Could not request Scene Mode.'));}

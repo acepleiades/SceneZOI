@@ -82,6 +82,7 @@ local function direct(token,id,furniture)
 end
 local solo=direct('solo','1')
 assert(solo[2]=='selected' and solo[3]=='1' and solo[4]=='scenezoi.solo_idle_female' and solo[5]=='female:1' and solo[6]=='none')
+assert(solo[9]=='solo','Pass the default launcher policy to the start handshake')
 assert(direct('furniture','1','50')[2]=='error','Default mode refuses furniture even if invoked directly')
 possessed='2';assert(direct('stale','1')[2]=='error','A click for a previous Zoi must not start')
 possessed='1';owner='other';assert(direct('held','1')[3]=='participant_busy')
