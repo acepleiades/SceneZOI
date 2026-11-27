@@ -6,8 +6,8 @@
   <meta name="description" data-i18n="pageDescription" data-i18n-attribute="content" content="Download SceneZOI, the free, open-source animation framework for inZOI. Find release notes, installation instructions and authoring guides.">
   <title data-i18n="pageTitle">SceneZOI — Download for inZOI</title>
   <link rel="icon" href="site-assets/icon.png">
-  <link rel="stylesheet" href="site-assets/site.css?v=4">
-  <script src="site-assets/language.js" defer></script>
+  <link rel="stylesheet" href="site-assets/site.css?v=5">
+  <script src="site-assets/language.js?v=2" defer></script>
   <script src="site-assets/releases.js?v=2" defer></script>
 </head>
 <body>
@@ -60,20 +60,21 @@
         </div>
         <div>
           <h3 data-i18n="start">Start a scene</h3>
+          <p data-i18n="withGameplay"><strong>With a gameplay mod:</strong> Start scenes through the interactions added by <a href="https://acepleiades.github.io/HZoi-Gameplay/">HZoi Gameplay</a>. You can leave debug start off.</p>
           <p data-i18n="withoutGameplay"><strong>Without a gameplay mod:</strong> Enable the manual picker once in Scene Settings.</p>
           <ol class="steps">
             <li data-i18n="solo">Click your controlled Zoi and choose <strong>Solo SceneZOI Session</strong> below <strong>AI Emote</strong> to open Scene Settings.</li>
             <li data-i18n="debug">Click the cog icon. Under <strong>Debug</strong>, enable <strong>SceneZOI manual start</strong>, then exit the solo session.</li>
             <li data-i18n="picker">Use the debug start on your controlled Zoi or supported furniture to open the picker and start a scene.</li>
           </ol>
-          <p data-i18n="withGameplay"><strong>With a gameplay mod:</strong> Start scenes through the gameplay mod's own interactions. You can leave debug start off. VelvetZOI is one example. <a href="https://www.nexusmods.com/inzoi/mods/1804">VelvetZOI on Nexus Mods</a> · <a href="https://www.patreon.com/VelvetZOI/posts/velvetzoi-public-174762693">VelvetZOI on Patreon</a>. Have an idea for your own mod? <a href="https://github.com/acepleiades/SceneZOI/blob/main/docs/addon-authoring.md">Build a gameplay add-on for SceneZOI</a>.</p>
+          <p data-i18n="createGameplay">Have an idea for your own mod? <a href="https://github.com/acepleiades/SceneZOI/blob/main/docs/addon-authoring.md">Build a gameplay add-on for SceneZOI</a>.</p>
         </div>
       </div>
-      <details>
-        <summary data-i18n="optional">Optional HZoi content pack</summary>
-        <p data-i18n="hzoi">SceneZOI itself is <strong>all-ages</strong>. HZoi is a <strong>separate adult content pack</strong>. Extract HZoi into the same Mods directory, check that <code>HZoi_660649D8</code> contains its own <code>mod_manifest.json</code>, and <strong>enable both mods</strong>. <a href="https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155">Get HZoi</a></p>
-        <p data-i18n="body">SceneZOI ships no nude body meshes. For adult content, a compatible body replacer such as <strong>Supponpon</strong> or <strong>ZoiBits</strong> is recommended. <strong>Jiggle physics are optional.</strong> SceneZOI supports compatible male body replacers automatically. <a href="https://github.com/acepleiades/SceneZOI/issues">Report a compatibility issue</a></p>
-      </details>
+      <div class="content-pack">
+        <h3 data-i18n="optional">Optional HZoi content pack</h3>
+        <p data-i18n="hzoi">HZoi is a <strong>separate adult content pack</strong> for SceneZOI. It adds animations for standing, bed and sofa scenes, along with sound effects, voices, facial expressions and male genital meshes. Extract HZoi into the same Mods directory, check that <code>HZoi_660649D8</code> contains its own <code>mod_manifest.json</code>, and <strong>enable both mods</strong>. <a href="https://www.patreon.com/skyrimaceanimations/posts/scenezoi-hzoi-174452155">Get HZoi</a></p>
+        <p data-i18n="body">SceneZOI ships no nude body meshes. For adult content, a compatible body replacer such as <strong>Supponpon</strong> or <strong>ZoiBits</strong> is recommended. <strong>Jiggle physics are recommended.</strong> SceneZOI supports compatible male body replacers automatically. <a href="https://github.com/acepleiades/SceneZOI/issues">Report a compatibility issue</a></p>
+      </div>
     </section>
 
     <section class="panel changes" id="changelog">

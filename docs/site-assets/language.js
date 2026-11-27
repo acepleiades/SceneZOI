@@ -19,6 +19,7 @@ const languages = {
 };
 const defaultLanguage = "en-US";
 const languageStorageKey = "scenezoi-site-language";
+const languageVersion = new URL(document.currentScript.src).search;
 const languageRoot = new URL("./locales/", document.currentScript.src);
 const languagePicker = document.getElementById("site-language");
 const originalSiteText = new WeakMap();
@@ -90,7 +91,7 @@ async function setSiteLanguage(language, remember = false) {
   const request = ++languageRequest;
   if (!siteTranslations.has(language)) {
     try {
-      const response = await fetch(new URL(language + ".json", languageRoot));
+      const response = await fetch(new URL(language + ".json" + languageVersion, languageRoot));
       if (!response.ok) throw new Error("Language file unavailable");
       siteTranslations.set(language, await response.json());
     } catch {

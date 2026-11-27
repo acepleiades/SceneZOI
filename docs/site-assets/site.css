@@ -82,9 +82,8 @@ html[lang="ja-JP"] .hero h1 span { display: block; }
 .steps li { padding-left: .3rem; margin-bottom: .7rem; }
 .steps li::marker { color: var(--blue); font-weight: 750; }
 code { padding: .1em .25em; border-radius: .25em; background: #eaf2fa; font-size: .88em; overflow-wrap: anywhere; }
-details { border-top: 1px solid var(--line); }
-details p { margin-bottom: .75rem; }
-summary { cursor: pointer; color: var(--blue); font-weight: 650; padding: .65rem 0; }
+.content-pack { border-top: 1px solid var(--line); padding-top: .85rem; }
+.content-pack h3 { font-size: 1.05rem; margin-bottom: .35rem; }
 #release-notes { margin-top: .7rem; overflow-wrap: anywhere; }
 #release-language { font-size: .88rem; }
 html[lang="en-US"] #release-language { display: none; }
