@@ -92,6 +92,10 @@ Otherwise, match `completion_responses[participant_role][exact_task_id]` to the 
 
 ## Regular movement timing
 
+Use the basic repeating motion as the timing reference. A longer change in
+posture can span several strokes without changing where the low-speed hold
+should land in each stroke. [Basic and gradual cycles](dictionary.md#motion-and-timing)
+
 `cycles_per_second` describes the consistent underlying movement in the exported clip at default playback speed, even when slower gestures or pose changes are layered into that clip. It is within 0.001–60; clip duration times frequency must be a positive whole number, so the uniform rhythm repeats at the clip seam.
 
 `peak_phase` defaults to 0.5, within 0–1. It names the pose around which the lowest-speed hold is centered. For a one-second cycle authored at 60 fps, phase 0.5 is frame 30; phase 0 and 1 describe the same repeating endpoint. Cycle response boundaries are half a period before/after each peak. The engine plays at the authored 1× baseline until it reaches the next response boundary, so synchronization preserves clip phase.

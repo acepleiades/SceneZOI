@@ -17,6 +17,12 @@ Use the shared vocabulary below, then add the fields from
 [Scene fields](#scene-fields) to your JSON. Gameplay-specific extra information
 can go in namespaced `addon_data`; see [the controls reference](addon-controls.md#inert-metadata-and-sdk-helpers).
 
+For example, a pregnancy add-on needs the action and roles at the time a Zoi
+finishes. It cannot safely infer that from an explicit rating or the scene's
+title. Accurate metadata helps the picker, Auto-mode and other mods agree
+on what the scene can be used for.
+[Gameplay examples](gameplay-mod-ideas.md) · [Actions, tags and ratings in the dictionary](dictionary.md)
+
 ## Scene fields
 
 This fragment describes standing/kneeling fellatio. The scene's `participants`

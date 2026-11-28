@@ -18,6 +18,12 @@ read the [HZoi examples](content-examples.md). The
 [framework scenes](../packs/scenezoi/scenes/) show how the neutral hubs connect
 animation packs.
 
+If your pack supplies only [voices](voice-set-authoring.md),
+[expressions](expressions.md#authoring-your-own-sets) or [sounds](sfx.md#import-and-register-sounds),
+go straight to the guide for that content. The
+[SceneZOI dictionary](dictionary.md) explains how those packs differ from
+an animation pack or a gameplay add-on.
+
 ## Port existing animations
 
 1. Identify which source clip belongs to each Zoi. Retarget the body motion

@@ -26,10 +26,13 @@ SceneZOI runs on its own. Animation packs can add new scenes to its built-in idl
 
 ## Make a mod for SceneZOI
 
+[All authoring guides](docs/README.md) · [SceneZOI dictionary](docs/dictionary.md) · [Gameplay mod ideas](docs/gameplay-mod-ideas.md)
+
 - **Port existing animations.** Retarget the body tracks to inZOI and build a scene around them. If you're missing a separate track for anatomy or another attachment, pose the mesh in game and use an AI assistant to transfer the preview values into your scene JSON. [Porting workflow](docs/authoring.md#port-existing-animations) · [Missing attachment tracks](docs/authoring.md#port-an-animation-without-a-separate-attachment-track)
 - **Create animations.** Use the Maya or Blender rig and exporter to make sexual, suggestive or affectionate scenes, or other interactions the game does not provide. [Make your first animation](docs/first-animation.md) · [Write and package a content pack](docs/authoring.md)
 - **Voice sets.** Give Zois their own voices for existing scenes or new ones. [Make a voice set](docs/voice-set-authoring.md)
 - **Expression sets.** Give Zois different facial reactions in the same scene. You can use the game's facial animation clips. [Make an expression set](docs/expressions.md#authoring-your-own-sets)
+- **Sound effects.** Import contact, prop or ambient effects and make them play where the action happens. [Add sound effects](docs/sfx.md#import-and-register-sounds)
 - **Bodies and skeletal attachments.** Offer alternative bodies, male genitals, tongues or props. Choose a mesh for each Zoi and keep it through clothing changes without making it their permanent saved body. [Body and attachment choices](docs/appearance-variants.md)
 - **Gameplay mods.** Find compatible scenes, start one for the player or NPCs, and react to what happens in it. [Make a gameplay add-on](docs/addon-authoring.md) · [API reference](docs/addons.md) · [HZoi Gameplay example](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md)
 

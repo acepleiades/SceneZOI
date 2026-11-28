@@ -25,6 +25,12 @@ open-source add-on. Read its
 [gameplay authoring notes](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md)
 to follow a real invitation through venue selection, playback and outcomes.
 
+Looking for a starting point for your own idea? The
+[gameplay mod Q&A](gameplay-mod-ideas.md) covers pregnancy, STIs, paid
+encounters, succubi and vampires. It points to the SceneZOI events and inZOI
+systems each idea needs. See the [dictionary](dictionary.md) for terms used
+across both guides.
+
 ## Plan the encounter
 
 Decide what happens before, during and after the scene. In the case of a sexual
@@ -598,6 +604,10 @@ state if it must survive saving or loading during that handoff.
 If death is an allowed outcome, do not give an automatic plan a Feeding goal
 that ends the scene before depletion can occur: choose your goals and end policy
 to match the encounter. [Task controls](addon-controls.md#live-controls)
+
+The [vampire mod Q&A](gameplay-mod-ideas.md#how-would-you-create-a-vampire-mod-for-scenezoi)
+shows how to keep the player's choice to stop feeding separate from the
+feeding and blood-depletion meters.
 
 ## Character bindings alongside other script mods
 

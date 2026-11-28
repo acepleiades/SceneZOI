@@ -494,6 +494,10 @@ without a partner ID. The native window controls which tiles it displays.
 
 ## Events and ownership
 
+The [gameplay mod Q&A](gameplay-mod-ideas.md#listen-to-sessions-from-any-add-on)
+shows how to use these events for pregnancy, STIs, settlements and supernatural
+encounters, including when to observe a session started by another mod.
+
 Snapshots include session `id`/public event `session_id`, event name/index, node ID,
 revision, phase, participants/roles/body/control identity, speed, applicable task
 details, resolved tags/actions and calculated `content_rating`. Add-on starts also

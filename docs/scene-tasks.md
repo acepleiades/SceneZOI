@@ -11,6 +11,10 @@ SceneZOI handles progress and completion events. Your scene chooses the rates,
 caps, sounds and visual responses; a gameplay mod decides consequences such as
 payment or what happens to a drained target.
 
+For the difference between a task, a completion goal and an automatic stage,
+see the [dictionary](dictionary.md#tasks-goals-and-stages). For a two-task
+example outside of sex, see the [vampire feeding Q&A](gameplay-mod-ideas.md#how-would-you-create-a-vampire-mod-for-scenezoi).
+
 ## Use the shared Excitement task
 
 Add this fragment to a scene with `male` and `female` roles:

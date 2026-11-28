@@ -3,6 +3,10 @@
 For questions, authoring help and collaboration, join the
 [OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
 
+If a guide uses a term you don't recognize, look it up in the
+[SceneZOI dictionary](dictionary.md). For examples of what a gameplay
+add-on can do, start with the [gameplay mod Q&A](gameplay-mod-ideas.md).
+
 ## Play
 
 [Download and install](../README.md#player-downloads) · [Start a scene or report a problem](playing.md) · [Scene Settings](settings.md)
@@ -24,11 +28,20 @@ For questions, authoring help and collaboration, join the
 | Clips from a separately installed library | [Optional animation assets](authoring.md#optional-animation-assets) |
 | Alternative bodies, male genitals, tongues or other skeletal attachments | [Declare variants and set scene defaults](appearance-variants.md) |
 
-## Make a voice or expression set
+<a id="make-a-voice-or-expression-set"></a>
+
+## Make a voice, expression or sound pack
+
+You can add voices, facial clips, or sounds to the content library without
+authoring new body animations. Choose the guide for the kind of content you
+want to make.
 
 - [Make a voice set](voice-set-authoring.md). Import vocal clips, give them a context, and check the in-game voice volume controls. The [voice reference](voices.md) covers the full schema and one-shot responses.
 - [Make an expression set](expressions.md#authoring-your-own-sets). Give Zois their own facial personality using stock or custom clips, then
   keep their choices across scenes and saves.
+
+- [Add sound effects](sfx.md#import-and-register-sounds). Import your own clips,
+  publish a reusable sound set and call it from a scene.
 
 [Voice and expression choices](playing.md#voice-and-expression-choices) shows how players assign sets to individual Zois.
 
@@ -36,6 +49,7 @@ For questions, authoring help and collaboration, join the
 
 Follow [Add-on authoring](addon-authoring.md) to set up the [Lua SDK](../sdk/README.md) and start a scene. Use the [API reference](addons.md) for scene searches, autonomous plans and events, and [live controls](addon-controls.md) for changes during a session.
 
+- [How would you make a pregnancy, STI, prostitution, succubus or vampire mod?](gameplay-mod-ideas.md) Find the events, native systems and design choices for each.
 - [Read HZoi Gameplay's implementation](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md). Follow a native invitation through venue selection, [goal-driven playback](addon-authoring.md#plan-an-encounter-from-foreplay-to-coitus) and consequences.
 - [Choose each Zoi's body and attachments](appearance-variants.md#choose-appearance-through-the-api). Pass individual choices through the API, keep compatible fallbacks and restore the native body on Exit.
 - [Start concurrent NPC solo scenes](addons.md#start-concurrent-solo-scenes). Use a separate roster and session for each scene; the controlled Zoi does not have to take part.

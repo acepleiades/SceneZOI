@@ -13,6 +13,9 @@ This guide uses the game's facial clips; you can also import your own compatible
 clips. For authoring help, join the
 [OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
 
+The [SceneZOI dictionary](dictionary.md) explains how contexts, facial poses
+and the player's chosen expression set work together.
+
 ## Authoring your own sets
 
 ### 1. Choose the contexts your scenes use

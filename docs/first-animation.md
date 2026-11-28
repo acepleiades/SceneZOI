@@ -94,6 +94,14 @@ debug-picker entry. [Participant setup](group-support.md) · [Scene entry and hu
    keyed controls, evaluated skeleton and exported or imported playback to
    identify where the mismatch first appears.
 
+If you want a scripted climax response, note the **basic cycle** of the
+thrust or stroke and where the deepest pose lands inside it. You can layer
+slower changes in posture or hand placement over that rhythm across the
+longer loop. Record timing from the exported clip at 1× so the response
+can slow the motion around the right pose.
+[Basic and gradual cycles](dictionary.md#motion-and-timing) ·
+[Set up a procedural completion response](completion-effects.md#add-a-response-to-your-scene)
+
 ## 4. Export each participant
 
 ### Export the Zoi bodies

@@ -15,21 +15,48 @@ entry to each scene that should play it. Use `continuous` for chained clips or
 `bone_distance` for contact timed from two moving points. Each emitter owns its
 own playback and is cleaned up when its scene ends.
 
+## Import and register sounds
+
+1. Import the WAV files into your own inZOI ModKit project as **SoundWave**
+   assets. Use **Copy Reference** on each clip. From the copied reference,
+   use the object path, for example
+   `/ExampleSounds/Audio/Contact.Contact`. Include the assets when you cook
+   the project.
+2. Add `sound_sets` to your pack manifest. Prefix the set IDs with your
+   pack ID. Below is a complete manifest for a pack that supplies only
+   audio. In an existing animation pack, add just the `sound_sets` field
+   and keep its scene directory and extensions.
+
+   ```json
+   {
+     "schema_version": 3,
+     "id": "example",
+     "nodes": [],
+     "extensions": [],
+     "sound_sets": {
+       "example.ambience": {"default": {"clips": ["/ExampleSounds/Audio/Room.Room"]}},
+       "example.contact": {"default": {"clips": ["/ExampleSounds/Audio/Contact.Contact"]}}
+     }
+   }
+   ```
+
+3. Point a scene's `sfx` emitter at the set ID, as shown below. An audio-only
+   pack can publish sets for another pack to use. Agree on the IDs and have
+   the consuming pack declare a dependency if those sounds should always be
+   available. A sound set only plays where a scene or task response asks for it.
+4. Stage the pack manifest with `tools/build_catalog.py --packs ... --project ...`,
+   then package, install and restart inZOI. Test with the packaged
+   SoundWaves and a scene that uses the set.
+   [Pack setup and build command](authoring.md#files-and-native-project) ·
+   [Package your project](development.md#isolated-packaging)
+
 ## Data
 
-A pack declares reusable `sound_sets`. Each set has a `default` clip group and/or
-`variants` selected by the scene speed (0.5, 1.0, 1.5, 2.0). A clip group contains
-`clips`, a nonempty list of SoundWave object paths. Paths are validated as data, not executed.
-
-For example, add this field to the pack manifest, using your own imported
-SoundWave paths:
-
-```json
-"sound_sets": {
-  "example.ambience": {"default": {"clips": ["/ExamplePack/Audio/Room.Room"]}},
-  "example.contact": {"default": {"clips": ["/ExamplePack/Audio/Contact.Contact"]}}
-}
-```
+A sound set has a `default` clip group, `variants` selected by scene
+playback speed (0.5, 1.0, 1.5, 2.0), or both. For example, keep everyday
+contact clips in `default` and set `"scene_speed": 2` on a variant with your
+faster contact clips. Each group must list at least one SoundWave object path
+in `clips`.
 
 A node references those lists through named `sfx` entries. The next block is
 the **contents of `sfx`**, so place it under `"sfx": { ... }` in your scene.
@@ -152,3 +179,5 @@ Mute Sound Effects and confirm these clips stop while the Zoi's voice remains.
 Navigate and Exit to check emitters stop. For silence, verify the sound-set ID,
 SoundWave paths, declared roles and bone names, then read the SFX warnings in
 `scenezoi_runtime`. The HZoi Reference audio files are deliberately silent.
+
+For a one-shot sound when a task finishes, use the [completion sound guide](scene-tasks.md#data-defined-completion-sounds).

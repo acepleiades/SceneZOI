@@ -7,6 +7,9 @@ moans, breaths and orgasm reactions; these belong in the voice system so the
 player's chosen voice and male/female voice volume controls apply. The choice
 persists for that Zoi across scenes and save files.
 
+For an explanation of why archetypes let different voice actors contribute
+to the same voice family, see the [SceneZOI dictionary](dictionary.md).
+
 ## Voices and sound effects
 
 | What the player hears | Use | Scene Settings volume |
