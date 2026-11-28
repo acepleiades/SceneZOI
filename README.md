@@ -31,7 +31,7 @@ SceneZOI runs on its own. Animation packs can add new scenes to its built-in idl
 - **Voice sets.** Give Zois their own voices for existing scenes or new ones. [Make a voice set](docs/voice-set-authoring.md)
 - **Expression sets.** Give Zois different facial reactions in the same scene. You can use the game's facial animation clips. [Make an expression set](docs/expressions.md#authoring-your-own-sets)
 - **Bodies and skeletal attachments.** Offer alternative bodies, male genitals, tongues or props. Choose a mesh for each Zoi and keep it through clothing changes without making it their permanent saved body. [Body and attachment choices](docs/appearance-variants.md)
-- **Gameplay mods.** Find compatible scenes, start one for the player or NPCs, and react to what happens in it. [Make a gameplay add-on](docs/addon-authoring.md) · [API reference](docs/addons.md)
+- **Gameplay mods.** Find compatible scenes, start one for the player or NPCs, and react to what happens in it. [Make a gameplay add-on](docs/addon-authoring.md) · [API reference](docs/addons.md) · [HZoi Gameplay example](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md)
 
 Each Zoi can have their own voice and expression choices, which carry over across scenes and save files. [Personality Management](docs/playing.md#voice-and-expression-choices)
 

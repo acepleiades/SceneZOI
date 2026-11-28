@@ -36,6 +36,7 @@ For questions, authoring help and collaboration, join the
 
 Follow [Add-on authoring](addon-authoring.md) to set up the [Lua SDK](../sdk/README.md) and start a scene. Use the [API reference](addons.md) for scene searches, autonomous plans and events, and [live controls](addon-controls.md) for changes during a session.
 
+- [Read HZoi Gameplay's implementation](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md). Follow a native invitation through venue selection, [goal-driven playback](addon-authoring.md#plan-an-encounter-from-foreplay-to-coitus) and consequences.
 - [Choose each Zoi's body and attachments](appearance-variants.md#choose-appearance-through-the-api). Pass individual choices through the API, keep compatible fallbacks and restore the native body on Exit.
 - [Start concurrent NPC solo scenes](addons.md#start-concurrent-solo-scenes). Use a separate roster and session for each scene; the controlled Zoi does not have to take part.
 

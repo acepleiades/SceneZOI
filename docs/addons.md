@@ -238,6 +238,11 @@ Call `get_version` and check `features.autonomous_scenes` before using
 counts or selectors. The operation uses background entry automatically and
 starts with Auto-mode enabled, whether or not a participant is controlled.
 
+To build a plan that favors foreplay before coitus, see the
+[staged goal example](addon-authoring.md#plan-an-encounter-from-foreplay-to-coitus)
+and the [HZoi Gameplay request](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/autonomous-scene-start.md).
+HZoi Gameplay uses staged Auto-mode for player invitations as well as NPC starts.
+
 Supply `initiator` and `participants` as decimal string IDs for loaded Zois.
 Include the initiator in the roster. Optional `bindings` pin named roles and
 `furniture_id` selects supported furniture. For a sofa, also pass the
@@ -337,6 +342,8 @@ distinguish loops by default. For example, pass
 `"variety_groups": {"author.loop_a": "author.position_a", "author.loop_b": "author.position_a"}`
 to count both alternatives as the same position. The current loop is eligible
 too, so it can continue when it is the only suitable choice in that tier.
+The goals can finish before the final stage is reached. Add
+`required_stages` only when a matching loop must play to satisfy the plan.
 Connect your activities with navigation links. If you want Auto-mode to play
 a transition between two activities, put the one-shot on the shortest navigation
 path between them. A shorter direct link can bypass it.
@@ -599,7 +606,8 @@ cleanup do not establish that the intended activity occurred.
 | `initiator_not_controlled` | Use the controlled initiator for a foreground start, or `background: true` for an eligible NPC. |
 | `participant_busy` | A requested Zoi is already reserved by another pending or active session. Use a disjoint roster or wait for cleanup. |
 | `furniture_unavailable` | The object may be occupied, unavailable or reserved. Discover supported furniture again; a previous search was not a reservation. |
-| `no_matching_scenes` | Check installed content, role/body requirements, required assets, furniture and search/session restrictions. |
+| `no_matching_scenes` | Check installed content, role/body requirements, required assets, furniture and search/session restrictions. For player starts through your add-on, [show your own message](addon-authoring.md#handle-a-start-with-no-matching-scene). |
+| `goal_unreachable`, `required_stage_unavailable` | Check that the task rates and caps let every participant finish on a single reachable route. Review navigation, completion redirects and any stage you made mandatory. |
 | `scene_restricted`, or a menu has no activity choices | Inspect the session's restrictions and `get_navigation`, rather than unrestricted `get_scene` edges. The initial hub may be allowed while its activity destinations are excluded. |
 | `session_not_owned` | Use the creating add-on and client for owner-only controls. Observing a session or controlling one of its Zois does not transfer ownership. |
 | `session_not_ready` | Wait for preparation or the current clothing/appearance change to finish before sending another change. |
@@ -617,10 +625,11 @@ and features before relying on them. Additional optional response fields may be
 added within version 1; unknown response fields should be ignored. Unsupported
 request versions fail explicitly.
 
-See the [authoring guide](addon-authoring.md) for three integration patterns,
-a [query using real content metadata](addon-authoring.md#query-real-content-declarations), and
-common pitfalls. The temporary installable acceptance mod has been removed;
-the reusable SDK is retained independently. Source regressions cover registry conflicts,
+See the [authoring guide](addon-authoring.md) for setup and
+a [query using real content metadata](addon-authoring.md#query-real-content-declarations).
+The [HZoi Gameplay authoring notes](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md)
+walk through a shipped add-on from the native invitation to the SceneZOI result.
+Source regressions cover registry conflicts,
 one-sided/mutual actions, copied JSON types, restricted API/UI/automatic/task routes,
 startup acknowledgement, ownership, retries and failure isolation. The validation
 report separates those checks from actual separate-package native evidence.

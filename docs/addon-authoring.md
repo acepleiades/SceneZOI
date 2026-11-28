@@ -20,6 +20,11 @@ encounters. Keep the [API reference](addons.md) nearby for individual request
 fields. For authoring help and collaboration, join the
 [OStim/SceneZOI Community Discord server](https://discord.gg/RECvhVaRcU).
 
+[HZoi Gameplay](https://github.com/acepleiades/HZoi-Gameplay) is a working
+open-source add-on. Read its
+[gameplay authoring notes](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md)
+to follow a real invitation through venue selection, playback and outcomes.
+
 ## Plan the encounter
 
 Decide what happens before, during and after the scene. In the case of a sexual
@@ -176,6 +181,12 @@ choose another activity or group. Release any reservations your mod made for
 that attempt. Completion rewards belong to a scene that actually played; this
 attempt never started.
 
+If your add-on chooses the venue, it can preflight the next candidate before
+giving up. If the player chose a specific bed, give them the choice of trying
+a different spot. Keep the encounter's activity and eligibility rules in
+place during retries. For an example that tries the next ranked venue, look
+for `nextVenue` in [HZoi Gameplay's invitation handler](https://github.com/acepleiades/HZoi-Gameplay/blob/main/prototype/queen-bed/HZoiGameplay_4BD2AC16/lua/B2/Components/VenueInvite.lua).
+
 For a player-requested encounter, the following B2 helper sends a notification
 to your own B1 script. Define it before creating your SDK client and call it
 from the `response` callback. Pass the current message carrier from
@@ -247,7 +258,7 @@ standing scenes, positive task rates and a cap that permits completion for both
 roles. The two IDs are examples; use the same eligible Zois you checked above.
 
 ```lua
-request(owner, "start_autonomous_scene", {
+local arguments = {
     initiator = "20522",
     participants = {"20522", "20526"},
     search = {
@@ -264,7 +275,8 @@ request(owner, "start_autonomous_scene", {
     },
     stages = 1,
     end_policy = {type = "goals"},
-})
+}
+request(owner, "start_autonomous_scene", arguments)
 ```
 
 `search` chooses the opening activity. `restrictions` limits everything that
@@ -275,9 +287,8 @@ Choose those limits according to your mod's rules.
 
 The plan starts with Auto-mode on. With one stage, its default animation speed
 is 1×. SceneZOI follows authored navigation and ends when both goals and their
-completion effects have finished. You can add stages and activity preferences
-later. Turning Auto-mode off pauses automatic navigation and planned Exit;
-the player can still navigate manually and use Exit.
+completion effects have finished. Turning Auto-mode off pauses automatic
+navigation and planned Exit. The player can still navigate manually and use Exit.
 
 Check the start reply for acceptance, then wait for `session_started` and keep
 its `session_id`. Acceptance means preparation was queued. It can still fail,
@@ -285,12 +296,73 @@ for example because a participant became busy or furniture was occupied.
 Use `get_request_status` if you need to check an uncertain start.
 [Automatic plans](addons.md#autonomous-scenes)
 
-For a player-directed encounter, use `start_at_hub` or `start_scene` instead.
-Ordinary starts require the controlled Zoi as initiator and participant.
+Use `start_at_hub` or `start_scene` to let the player choose each activity
+from the outset. Ordinary starts require the controlled Zoi as initiator
+and participant.
 Autonomous starts can use eligible loaded NPCs, including solo rosters, and can
 run alongside other sessions with separate participants. The message carrier
 does not have to participate in a background encounter.
 [NPC and concurrent sessions](addons.md#concurrent-and-background-sessions)
+
+## Plan an encounter from foreplay to coitus
+
+Use a staged plan when your mod should choose the order of activities. HZoi
+Gameplay does this for both player invitations and NPC encounters. The Zois
+start with foreplay when a viable opening is available, then favor coitus as
+their Excitement goals progress.
+[HZoi Gameplay's start request](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/autonomous-scene-start.md)
+
+In the previous example, add this block after building `arguments` and before
+calling `request`. This example uses three common action IDs so it can work
+with packs that supply different combinations of those activities.
+
+```lua
+local foreplay = {
+    any_actions = {"handjob", "fellatio"},
+    excluded_actions = {"vaginal_sex"},
+}
+local coitus = {any_actions = {"vaginal_sex"}}
+
+arguments.search = {any_actions = {"handjob", "fellatio", "vaginal_sex"}}
+arguments.stages = 4
+arguments.stage_progress = "fastest"
+arguments.stage_priorities = {
+    {stage = 1, matches = {foreplay, coitus}},
+    {stage = 2, matches = {foreplay, coitus}},
+    {stage = 3, matches = {coitus, foreplay}},
+    {stage = 4, matches = {coitus, foreplay}},
+}
+```
+
+Check `autonomous_stage_progress`, `autonomous_stage_priorities` and
+`autonomous_joint_goal_routes` in the version reply for this setup. With four
+stages, the leading goal makes later stages due at 25%, 50% and 75%. Ending
+still requires both goals. A stage can keep the current loop or pick another
+reachable loop. Four stages can play four different loops, fewer loops, or a
+single loop that lets both participants finish.
+
+For example, if a pack supplies only one compatible coitus loop, the second
+preference can make it the opening too. If a foreplay loop advances the
+meters but cannot finish both goals, SceneZOI looks for a route that can
+finish the remaining goals. A disconnected coitus loop is unavailable to
+that route, but SceneZOI can start from it if it can finish both goals. Use
+`required_stages` only when an activity must actually play for the plan to
+count as complete. Use `auto_restrictions` for rules that apply during Auto-mode
+and lifetime `restrictions` for rules that also apply to manual navigation.
+[Stage priorities and routes](addons.md#acceptance-progress-and-results)
+
+Before sending an invitation, preflight the plan with `validate_start` and
+`start_mode = "start_autonomous_scene"`. On a current host, check
+`reply.ok`, `reply.result.valid` and `route_uncertain`. A successful, proven
+route can reach every goal together with the selected Zois, roles and venue.
+`no_matching_scenes` means the entry search came up empty.
+`goal_unreachable` means the available plan cannot complete its goals.
+`route_uncertain` means the check could not prove the route. Decide whether
+to try another venue or report the problem. If the Zois have to walk,
+set `check_start_distance = false` on the first preflight. Run a new preflight
+with the distance check enabled after both Zois arrive.
+[No-match handling](#handle-a-start-with-no-matching-scene) ·
+[HZoi Gameplay's plan builder](https://github.com/acepleiades/HZoi-Gameplay/blob/main/prototype/queen-bed/HZoiGameplay_4BD2AC16/lua/B2/EncounterArguments.lua)
 
 ## Use a bed, sofa or a different body
 
@@ -342,7 +414,10 @@ in the code that accepts the click. If the game has no tooltip for a mood,
 you can supply a fallback in `data.mood_tooltip` with its own `label` and
 `translations`. The declaration styles the row during
 the shared menu pass. Your add-on still handles invitations, eligibility
-and gameplay outcomes.
+and gameplay outcomes. HZoi Gameplay uses this for its bed, sofa, ground and
+Romance menu options. Its walkthrough shows the native picker handoff and
+where to recheck the chosen partner and seat pair.
+[Menus and venue checks in HZoi Gameplay](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md#add-the-interaction-and-get-an-answer)
 
 If your encounter should use a particular body or male genitals attachment,
 declare compatible variants and pass each Zoi's choices through the appearance
@@ -364,7 +439,10 @@ earlier. `history_truncated` warns that the detailed history reached its limit.
 Your mod saves its own rewards, relationship changes and cooldowns. Record them
 once so receiving another status reply does not pay twice. Recent results can
 be queried with `get_session_result`, but SceneZOI's bounded result history is
-not permanent save data. [Outcomes and history](addon-controls.md#observation-and-outcomes)
+not permanent save data. HZoi Gameplay records each participant's task
+completions and uses confirmed cleanup to apply relationship changes.
+[Outcomes and history](addon-controls.md#observation-and-outcomes)
+· [HZoi Gameplay's encounter ledger](https://github.com/acepleiades/HZoi-Gameplay/blob/main/prototype/queen-bed/HZoiGameplay_4BD2AC16/lua/B2/EncounterLedger.lua)
 
 ## A romantic partner catches the encounter
 
@@ -491,6 +569,10 @@ a partner who could not see the encounter, cooldown rejection and the final
 relationship effects. The older `RangeReaction_AffairBySpouse` is a different,
 spouse-and-`Affair`-buff-gated reaction; playing its animation alone does not
 reproduce the confirmed-affair system.
+
+For a working implementation, HZoi Gameplay traces around walls and doors,
+records who caught whom, and delivers the native reaction after restoration.
+[Witness and cheating implementation](https://github.com/acepleiades/HZoi-Gameplay/blob/main/docs/gameplay-authoring.md#handle-witnesses-and-interruptions)
 
 ## A vampire feeding encounter
 
