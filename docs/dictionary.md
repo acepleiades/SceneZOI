@@ -40,6 +40,11 @@ or what a gameplay mod needs to do around it.
 - **Track.** One imported animation clip bound to a body or a skeletal mesh.
   The body tracks for a scene share a timeline and coordinate origin so the
   animated Zois line up. See [Make your first animation](first-animation.md).
+- **Optional animation tracks.** A scene can use tracks from a separate
+  library. Set `hide_if_tracks_missing: true` to show that scene only
+  when its required assets load and the clips match its duration. SceneZOI
+  hides the scene and the navigation links to it when the check fails.
+  [Optional animation assets](authoring.md#optional-animation-assets)
 - **Roster, role, and binding.** The roster is the list of Zois in the session.
   A role is an authored name such as `initiator` or `partner`. A binding
   assigns a particular Zoi to that role. Each role declares its appearance
@@ -149,15 +154,33 @@ those choices. See [a complete metadata example](content-examples.md#distinguish
 - **Expression context and set.** The scene asks for a facial context such as
   `Pleasure` or `Kiss`. The selected expression set supplies facial clips for
   that context. Two Zois can show different expressions in the same scene.
-  A **facial pose** holds specific joints, for example an open mouth layered
-  over a chosen expression. **Gaze** controls where a Zoi looks. See
-  [Expressions](expressions.md), [Facial poses](facial-poses.md), and [Gaze](gaze.md).
+  [Expressions](expressions.md)
+- **Facial pose.** A fixed shape for selected facial joints. It can apply
+  on its own or over an expression clip, leaving the other joints free to
+  animate. A pose definition supplies the target transforms for compatible
+  heads. [Define a facial pose](facial-poses.md#define-a-pose)
+- **Mouth pose.** A facial pose that holds a specific mouth shape. SceneZOI's
+  bundled rounded O, `scenezoi.open_o`, supplies jaw and lip transforms for
+  compatible male and female heads. Select it with `facial_pose` inside the role's
+  `expressions` entry. For example, use it with `context: "Pleasure"` so the
+  Zoi keeps their chosen expression while the mouth holds the O shape.
+  A separate tongue mesh can have its own synchronized attachment track.
+  [Use a mouth pose or attach a tongue](facial-poses.md#select-the-pose-and-attach-an-animated-mesh)
+- **Gaze.** The eye target for a role, such as the midpoint between a partner's
+  eyes. SceneZOI aims the eyes within their native limits. Aim the head and
+  neck in the animation itself for targets outside that range.
+  [Gaze](gaze.md)
 - **Sound effects (SFX).** Scene audio for contact, props, and ambience. A
   scene can choose from a shared sound set or detect contact timing from the
   movement of named bones. A moan put in `sfx` plays the scene's chosen sound
   through the **Sound Effects** slider, bypassing the player's per-Zoi voice
   choice and voice volume. Use a voice context or response for vocal clips
   you want the chosen voice to supply. See [Sound effects](sfx.md).
+- **Sound set and emitter.** A sound set lists reusable audio clips. An
+  emitter is a scene instruction that chooses the set, where the sound
+  comes from, and when it plays. For example, an emitter can chain ambience
+  clips or play a contact sound as two bones approach and separate.
+  [Sound effects](sfx.md)
 
 ## Motion and timing
 
@@ -185,6 +208,13 @@ An authored completion route can instead play a supplied animation.
 See [Completion effects and timing](completion-effects.md#regular-movement-timing)
 and the [worked task and response example](content-examples.md#connect-progress-to-independent-responses).
 
+**Scene playback speed** controls how fast the clips play. The **game clock**
+controls simulation time, including scene task progress and decay. It also
+pauses or fast-forwards the session with the game. Slowing an animation to
+0.5× leaves the task rate unchanged.
+[Playback controls](playing.md#during-a-session) ·
+[Task progression](scene-tasks.md#per-scene-progression)
+
 ## Placement, appearance, and the add-on API
 
 - **Anchor.** The position and orientation used to place a scene. A furniture
@@ -197,6 +227,18 @@ and the [worked task and response example](content-examples.md#connect-progress-
   binding and optionally its own animation track. A **coverage patch** fills
   a section of the body hidden for a compatible attachment. See
   [Appearance variants](appearance-variants.md) and [Coverage patches](coverage-patches.md).
+- **Attachment rest pose.** The unanimated shape of a skeletal attachment.
+  When you port an animation without a compatible attachment track, use the
+  mesh's rest pose or set fixed bone angles for that scene with
+  `attachment_rest_rotations`. A compatible track takes priority.
+  [Ported clips without an attachment track](appearance-variants.md#ported-clips-without-an-attachment-track)
+- **Preflight and reservation.** A preflight (`validate_start`) checks
+  whether the session can start with the current roster, content and venue.
+  SceneZOI rechecks availability during preparation and makes the actual
+  reservation then. A seat pair that was free during preflight can be
+  occupied by the time the Zois arrive.
+  [Starting and finding](addon-controls.md#starting-and-finding) ·
+  [Furniture reservations](furniture.md#placement-and-reservation)
 - **B1, B2, and the SDK.** B1 is the game's client and presentation environment.
   B2 runs the simulation and native gameplay interactions. Gameplay mods call
   SceneZOI through the public Lua SDK in B2. A request being accepted starts
